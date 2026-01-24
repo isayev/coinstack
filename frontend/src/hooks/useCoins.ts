@@ -3,6 +3,13 @@ import { api } from "@/lib/api";
 import { CoinDetail, CoinCreate, CoinUpdate, PaginatedCoins } from "@/types/coin";
 import { useFilterStore } from "@/stores/filterStore";
 
+export interface YearBucket {
+  start: number;
+  end: number;
+  count: number;
+  label: string;
+}
+
 export interface CollectionStats {
   total_coins: number;
   total_value: number;
@@ -18,6 +25,7 @@ export interface CollectionStats {
     min: number | null;
     max: number | null;
   };
+  year_distribution: YearBucket[];
 }
 
 export interface CoinNavigation {

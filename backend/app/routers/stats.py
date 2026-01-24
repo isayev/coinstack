@@ -63,6 +63,14 @@ class YearRange(BaseModel):
     max: int | None
 
 
+class YearBucket(BaseModel):
+    """Year distribution bucket."""
+    start: int
+    end: int
+    count: int
+    label: str
+
+
 class CollectionStats(BaseModel):
     """Complete collection statistics."""
     total_coins: int
@@ -82,6 +90,7 @@ class CollectionStats(BaseModel):
     grade_counts: dict
     rarity_counts: dict
     year_range: YearRange
+    year_distribution: List[YearBucket]
 
 
 @router.get("", response_model=CollectionStats)
@@ -235,6 +244,34 @@ async def get_collection_stats(db: Session = Depends(get_db)):
     if max_year is None:
         max_year = db.query(func.max(Coin.mint_year_start)).scalar()
     
+    # Year distribution (50-year buckets)
+    year_distribution = []
+    if min_year is not None and max_year is not None:
+        # Round to nearest 50-year bucket
+        bucket_start = (min_year // 50) * 50
+        bucket_end = ((max_year // 50) + 1) * 50
+        
+        for bucket in range(bucket_start, bucket_end, 50):
+            count = db.query(func.count(Coin.id)).filter(
+                Coin.mint_year_start >= bucket,
+                Coin.mint_year_start < bucket + 50
+            ).scalar() or 0
+            
+            if count > 0:  # Only include non-empty buckets
+                if bucket < 0:
+                    label = f"{abs(bucket + 49)}-{abs(bucket)} BC"
+                elif bucket == 0:
+                    label = "1-49 AD"
+                else:
+                    label = f"{bucket}-{bucket + 49} AD"
+                
+                year_distribution.append(YearBucket(
+                    start=bucket,
+                    end=bucket + 49,
+                    count=count,
+                    label=label
+                ))
+    
     return CollectionStats(
         total_coins=total_coins,
         total_value=float(total_value),
@@ -252,4 +289,5 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         grade_counts=grade_counts,
         rarity_counts=rarity_counts,
         year_range=YearRange(min=min_year, max=max_year),
+        year_distribution=year_distribution,
     )

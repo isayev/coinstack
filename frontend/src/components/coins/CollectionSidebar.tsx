@@ -528,6 +528,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
   const gradeCounts = stats?.grade_counts ?? {};
   const rarityCounts = stats?.rarity_counts ?? {};
   const yearRange = stats?.year_range ?? { min: null, max: null };
+  const yearDistribution = stats?.year_distribution ?? [];
   
   return (
     <div 
@@ -692,11 +693,47 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               </div>
             </div>
             
-            {/* Year distribution histogram (placeholder) */}
-            <div className="flex items-center justify-center py-2 opacity-30">
-              <PlaceholderSparkline width={20} height="sm" />
-            </div>
-            <p className="text-[10px] text-center" style={{ color: 'var(--text-tertiary)' }}>
+            {/* Year distribution histogram */}
+            {yearDistribution.length > 0 ? (
+              <div className="mt-3">
+                <div className="flex items-end gap-0.5 h-12">
+                  {yearDistribution.map((bucket, idx) => {
+                    const maxCount = Math.max(...yearDistribution.map(b => b.count));
+                    const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
+                    const isBc = bucket.start < 0;
+                    
+                    return (
+                      <div 
+                        key={idx}
+                        className="flex-1 rounded-t transition-all hover:opacity-80 cursor-pointer"
+                        style={{ 
+                          height: `${Math.max(height, 4)}%`,
+                          background: isBc ? 'var(--category-republic)' : 'var(--category-imperial)',
+                          minWidth: '8px',
+                        }}
+                        title={`${bucket.label}: ${bucket.count} coins`}
+                        onClick={() => {
+                          filters.setMintYearGte(bucket.start);
+                          filters.setMintYearLte(bucket.end);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex justify-between mt-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
+                  <span>{yearDistribution[0]?.label.split('-')[0] || ''}</span>
+                  <span>{yearDistribution[yearDistribution.length - 1]?.label.split(' ')[0].split('-')[1] || ''} AD</span>
+                </div>
+                <p className="text-[10px] text-center mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  Click bar to filter by period
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-2 opacity-30">
+                <PlaceholderSparkline width={20} height="sm" />
+              </div>
+            )}
+            <p className="text-[10px] text-center mt-1" style={{ color: 'var(--text-tertiary)' }}>
               Negative = BC, Positive = AD
             </p>
           </div>
