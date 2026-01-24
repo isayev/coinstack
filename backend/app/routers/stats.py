@@ -61,6 +61,7 @@ class YearRange(BaseModel):
     """Year range."""
     min: int | None
     max: int | None
+    unknown_count: int = 0
 
 
 class YearBucket(BaseModel):
@@ -256,6 +257,11 @@ async def get_collection_stats(db: Session = Depends(get_db)):
     if max_year is None:
         max_year = db.query(func.max(Coin.mint_year_start)).scalar()
     
+    # Count coins with unknown year
+    unknown_year_count = db.query(func.count(Coin.id)).filter(
+        Coin.mint_year_start.is_(None)
+    ).scalar() or 0
+    
     # Year distribution (50-year buckets)
     year_distribution = []
     if min_year is not None and max_year is not None:
@@ -300,6 +306,6 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         category_counts=category_counts,
         grade_counts=grade_counts,
         rarity_counts=rarity_counts,
-        year_range=YearRange(min=min_year, max=max_year),
+        year_range=YearRange(min=min_year, max=max_year, unknown_count=unknown_year_count),
         year_distribution=year_distribution,
     )

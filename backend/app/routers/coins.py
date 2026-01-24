@@ -286,6 +286,7 @@ async def list_coins(
     rarity: Optional[str] = None,
     is_circa: Optional[bool] = None,
     is_test_cut: Optional[bool] = None,
+    is_year_unknown: Optional[bool] = None,
     db: Session = Depends(get_db),
 ):
     """List coins with pagination, filters, and sorting."""
@@ -318,6 +319,8 @@ async def list_coins(
         filters["is_circa"] = is_circa
     if is_test_cut is not None:
         filters["is_test_cut"] = is_test_cut
+    if is_year_unknown is not None:
+        filters["is_year_unknown"] = is_year_unknown
     
     skip = (page - 1) * per_page
     coins, total = get_coins(db, skip=skip, limit=per_page, filters=filters, sort_by=sort_by, sort_dir=sort_dir)

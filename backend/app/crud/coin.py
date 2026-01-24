@@ -72,10 +72,13 @@ def get_coins(
         if "acquisition_price_lte" in filters:
             query = query.filter(Coin.acquisition_price <= filters["acquisition_price_lte"])
         # Date range filters
-        if "mint_year_gte" in filters:
-            query = query.filter(Coin.mint_year_start >= filters["mint_year_gte"])
-        if "mint_year_lte" in filters:
-            query = query.filter(Coin.mint_year_end <= filters["mint_year_lte"])
+        if "is_year_unknown" in filters and filters["is_year_unknown"]:
+            query = query.filter(Coin.mint_year_start.is_(None))
+        else:
+            if "mint_year_gte" in filters:
+                query = query.filter(Coin.mint_year_start >= filters["mint_year_gte"])
+            if "mint_year_lte" in filters:
+                query = query.filter(Coin.mint_year_end <= filters["mint_year_lte"])
         # New filters for refactored schema
         if "is_circa" in filters and filters["is_circa"] is not None:
             query = query.filter(Coin.is_circa == filters["is_circa"])

@@ -24,6 +24,7 @@ export interface CollectionStats {
   year_range: {
     min: number | null;
     max: number | null;
+    unknown_count: number;
   };
   year_distribution: YearBucket[];
 }

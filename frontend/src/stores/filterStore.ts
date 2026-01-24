@@ -34,6 +34,7 @@ interface FilterState {
   // Year range filters
   mint_year_gte: number | null;
   mint_year_lte: number | null;
+  is_year_unknown: boolean | null;
   
   // Boolean filters
   is_circa: boolean | null;
@@ -59,6 +60,7 @@ interface FilterState {
   setPriceRange: (v: [number, number]) => void;
   setMintYearGte: (v: number | null) => void;
   setMintYearLte: (v: number | null) => void;
+  setIsYearUnknown: (v: boolean | null) => void;
   setIsCirca: (v: boolean | null) => void;
   setIsTestCut: (v: boolean | null) => void;
   setStorageLocation: (v: string | null) => void;
@@ -82,6 +84,7 @@ const initialState = {
   priceRange: [0, 5000] as [number, number],
   mint_year_gte: null,
   mint_year_lte: null,
+  is_year_unknown: null,
   is_circa: null,
   is_test_cut: null,
   storage_location: null,
@@ -106,6 +109,7 @@ export const useFilterStore = create<FilterState>()(
       setPriceRange: (priceRange) => set({ priceRange }),
       setMintYearGte: (mint_year_gte) => set({ mint_year_gte }),
       setMintYearLte: (mint_year_lte) => set({ mint_year_lte }),
+      setIsYearUnknown: (is_year_unknown) => set({ is_year_unknown }),
       setIsCirca: (is_circa) => set({ is_circa }),
       setIsTestCut: (is_test_cut) => set({ is_test_cut }),
       setStorageLocation: (storage_location) => set({ storage_location }),
@@ -134,6 +138,7 @@ export const useFilterStore = create<FilterState>()(
         if (state.storage_location) count++;
         if (state.mint_year_gte !== null) count++;
         if (state.mint_year_lte !== null) count++;
+        if (state.is_year_unknown !== null) count++;
         if (state.is_circa !== null) count++;
         if (state.is_test_cut !== null) count++;
         if (state.priceRange[0] > 0 || state.priceRange[1] < 5000) count++;
@@ -165,6 +170,7 @@ export const useFilterStore = create<FilterState>()(
         // Year range
         if (state.mint_year_gte !== null) params.mint_year_gte = state.mint_year_gte;
         if (state.mint_year_lte !== null) params.mint_year_lte = state.mint_year_lte;
+        if (state.is_year_unknown !== null) params.is_year_unknown = state.is_year_unknown;
         
         // Boolean filters
         if (state.is_circa !== null) params.is_circa = state.is_circa;

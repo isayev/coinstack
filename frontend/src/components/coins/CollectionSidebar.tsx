@@ -528,7 +528,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
   const categoryCounts = stats?.category_counts ?? {};
   const gradeCounts = stats?.grade_counts ?? {};
   const rarityCounts = stats?.rarity_counts ?? {};
-  const yearRange = stats?.year_range ?? { min: null, max: null };
+  const yearRange = stats?.year_range ?? { min: null, max: null, unknown_count: 0 };
   const yearDistribution = stats?.year_distribution ?? [];
   
   return (
@@ -660,9 +660,14 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
         <FilterSection 
           title="Year Range"
           defaultOpen={false}
-          badge={(filters.mint_year_gte !== null || filters.mint_year_lte !== null) && (
+          badge={(filters.mint_year_gte !== null || filters.mint_year_lte !== null || filters.is_year_unknown) && (
             <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--metal-au)' }} />
           )}
+          onClear={(filters.mint_year_gte !== null || filters.mint_year_lte !== null || filters.is_year_unknown) ? () => {
+            filters.setMintYearGte(null);
+            filters.setMintYearLte(null);
+            filters.setIsYearUnknown(null);
+          } : undefined}
         >
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
@@ -737,6 +742,26 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             <p className="text-[10px] text-center mt-1" style={{ color: 'var(--text-tertiary)' }}>
               Negative = BC, Positive = AD
             </p>
+            
+            {/* Unknown Year option */}
+            {yearRange.unknown_count > 0 && (
+              <button
+                onClick={() => filters.setIsYearUnknown(filters.is_year_unknown ? null : true)}
+                className={cn(
+                  "w-full mt-3 flex items-center justify-between py-1.5 px-2 rounded transition-all",
+                  filters.is_year_unknown && "ring-1"
+                )}
+                style={{
+                  background: 'var(--unknown-subtle)',
+                  color: filters.is_year_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                  borderColor: filters.is_year_unknown ? 'var(--unknown)' : 'transparent',
+                  boxShadow: filters.is_year_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
+                }}
+              >
+                <span className="text-xs">Unknown Year</span>
+                <span className="text-xs tabular-nums opacity-60">{yearRange.unknown_count}</span>
+              </button>
+            )}
           </div>
         </FilterSection>
         
