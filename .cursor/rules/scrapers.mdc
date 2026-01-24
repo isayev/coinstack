@@ -1,0 +1,46 @@
+# Scraper Standards
+
+## Always Use Rich Scrapers
+
+When scraping auction data, ALWAYS use the rich/full scrapers located in subdirectories, NOT simple scrapers.
+
+### Available Rich Scrapers
+
+| Auction House | Location | Features |
+|---------------|----------|----------|
+| Heritage | `scrapers/heritage_rich/` | Playwright-based, handles captchas, full provenance extraction |
+| CNG | `scrapers/cng/` | JSON-LD extraction, structured data parsing |
+| Biddr | `scrapers/biddr/` | Supports all sub-houses (Savoca, Nummitra, Roma, etc.) |
+| eBay | `scrapers/ebay_rich/` | Handles ended listings, seller info extraction |
+| Agora | `scrapers/simple_agora.py` | Simple scraper (no rich version available) |
+
+### Scraper Architecture
+
+Rich scrapers follow this structure:
+```
+scrapers/{house}/
+  __init__.py     # Exports scraper, parser, models
+  models.py       # Pydantic models for extracted data
+  parser.py       # HTML/JSON parsing logic
+  scraper.py      # Main scraper class with Playwright
+```
+
+### Usage
+
+```python
+# Correct - use rich scrapers
+from app.services.scrapers.cng import CNGScraper, scrape_cng_lot
+from app.services.scrapers.biddr import BiddrScraper
+from app.services.scrapers.heritage_rich import HeritageScraper
+from app.services.scrapers.ebay_rich import EBayScraper
+
+# For Agora (no rich version)
+from app.services.scrapers.simple_agora import AgoraScraper
+```
+
+### Why Rich Scrapers?
+
+1. **Better data extraction** - Structured models, provenance parsing
+2. **JavaScript support** - Playwright handles dynamic content
+3. **Reliability** - Better error handling, retry logic
+4. **Maintainability** - Separated parser/scraper/models

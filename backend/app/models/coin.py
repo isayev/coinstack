@@ -188,6 +188,24 @@ class Coin(Base):
     llm_enriched = Column(JSON)
     llm_enriched_at = Column(DateTime)
     
+    # Field Source Tracking for Auto-Merge
+    # Tracks where each field value came from, trust levels, and user verification
+    # Structure: {
+    #   "field_name": {
+    #     "value": <current_value>,
+    #     "source": "cng" | "heritage" | "biddr" | "ebay" | "user",
+    #     "source_id": "lot-123",
+    #     "trust_level": 80,
+    #     "set_at": "2024-01-15T10:00:00Z",
+    #     "set_by": "system:auto_merge" | "user",
+    #     "batch_id": "uuid",
+    #     "user_verified": false,
+    #     "user_note": "optional note",
+    #     "previous": {"value": ..., "source": ...}
+    #   }
+    # }
+    field_sources = Column(JSON, default=dict)
+    
     # Constraints
     __table_args__ = (
         CheckConstraint(
@@ -206,6 +224,8 @@ class Coin(Base):
     tags = relationship("CoinTag", back_populates="coin", cascade="all, delete-orphan")
     countermarks = relationship("Countermark", back_populates="coin", cascade="all, delete-orphan")
     auction_data = relationship("AuctionData", back_populates="coin", cascade="all, delete-orphan")
+    import_record = relationship("ImportRecord", back_populates="coin", uselist=False, cascade="all, delete-orphan")
+    field_history = relationship("FieldHistory", back_populates="coin", cascade="all, delete-orphan", order_by="FieldHistory.changed_at.desc()")
     
     # Die study relationships
     obverse_die_matches = relationship(

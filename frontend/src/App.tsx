@@ -13,6 +13,8 @@ import { ImportPage } from "@/pages/ImportPage";
 import { StatsPage } from "@/pages/StatsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { BulkEnrichPage } from "@/pages/BulkEnrichPage";
+import { AuctionsPage } from "@/pages/AuctionsPage";
+import AuditPage from "@/pages/AuditPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +40,8 @@ function App() {
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/bulk-enrich" element={<BulkEnrichPage />} />
+              <Route path="/auctions" element={<AuctionsPage />} />
+              <Route path="/audit" element={<AuditPage />} />
             </Routes>
           </AppShell>
         </BrowserRouter>

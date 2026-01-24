@@ -32,7 +32,7 @@ class CoinReferenceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    reference_type_id: int
+    reference_type_id: Optional[int] = None
     is_primary: bool
     plate_coin: bool
     position: Optional[str] = None
@@ -69,6 +69,8 @@ class CoinImageOut(BaseModel):
     image_type: str
     file_path: str
     is_primary: bool
+    source_url: Optional[str] = None
+    source_house: Optional[str] = None
 
 
 # ============================================================================
@@ -129,6 +131,7 @@ class AuctionDataOut(BaseModel):
     grade: Optional[str] = None
     title: Optional[str] = None
     primary_photo_url: Optional[str] = None
+    photos: Optional[List[str]] = None
 
 
 class AuctionDataCreate(BaseModel):
@@ -224,6 +227,18 @@ class CoinListItem(BaseModel):
     estimated_value_usd: Optional[Decimal] = None
     storage_location: Optional[str] = None
     primary_image: Optional[str] = None
+    # Additional fields for redesigned table view
+    reign_start: Optional[int] = None
+    reign_end: Optional[int] = None
+    primary_reference: Optional[str] = None  # Formatted: "RIC I² 207"
+    weight_g: Optional[Decimal] = None
+    diameter_mm: Optional[Decimal] = None
+    die_axis: Optional[int] = None
+    acquisition_date: Optional[date] = None
+    acquisition_source: Optional[str] = None
+    # Obverse/Reverse legends for table view
+    obverse_legend: Optional[str] = None
+    reverse_legend: Optional[str] = None
 
 
 class CoinDetail(BaseModel):

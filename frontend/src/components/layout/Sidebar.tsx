@@ -3,12 +3,14 @@ import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import { 
   BarChart3, Upload, Settings, 
-  ChevronLeft, ChevronRight, Sparkles, Library
+  ChevronLeft, ChevronRight, Sparkles, Library, Gavel, ClipboardCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { to: "/", icon: Library, label: "Collection" },
+  { to: "/auctions", icon: Gavel, label: "Auctions" },
+  { to: "/audit", icon: ClipboardCheck, label: "Audit" },
   { to: "/stats", icon: BarChart3, label: "Statistics" },
   { to: "/import", icon: Upload, label: "Import" },
   { to: "/bulk-enrich", icon: Sparkles, label: "Enrich" },

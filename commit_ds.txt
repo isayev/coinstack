@@ -1,0 +1,40 @@
+feat(ui): Modular Design System with reusable components
+
+Architecture:
+- New design-system/ folder for reusable components
+- Centralized color configuration in colors.ts
+- Type-safe metal, rarity, grade, and category constants
+- Breaking change: Old CoinFilters replaced with CollectionSidebar
+
+Design System Components:
+- MetalBadge: Element-symbol style (Au, Ag, Æ) with size variants
+- MetalChip: Selectable filter chip with count
+- GradeBadge: Temperature-scaled colors (cold→hot)
+- GradeScale: Visual temperature scale component
+- RarityIndicator: Gemstone-inspired (dot/badge/full variants)
+- RarityLegend: Shows all rarity levels
+- PriceTrend: Price with change percentage and trend arrow
+- SimplePriceTrend: Compact trend indicator
+- Sparkline: Unicode block chart for trends
+- PlaceholderSparkline: Loading state sparkline
+
+CoinCard Redesign:
+- Category-colored left border (4px)
+- Hover state with quick actions (Edit, Expand, Share)
+- Price trend with sparkline in footer
+- Metal glow effect for precious metals on hover
+- Mock price data placeholders until real API ready
+
+CollectionSidebar (New):
+- Search with keyboard shortcut hint (⌘K)
+- Collection stats: total value, MoM change, avg grade, best ROI
+- Sparkline for value history
+- Metal chips with counts
+- Category bars with distribution visualization
+- Year range histogram placeholder
+- Alerts section with dismissible notifications
+- All filters from previous CoinFilters
+
+Breaking Changes:
+- CoinFilters.tsx removed, use CollectionSidebar instead
+- Design-system components should be imported from @/components/design-system

@@ -17,6 +17,8 @@ export type SortField =
 
 export type SortDirection = "asc" | "desc";
 
+export type PerPageOption = 20 | 50 | 100 | "all";
+
 interface FilterState {
   // Basic filters
   category: string | null;
@@ -50,6 +52,10 @@ interface FilterState {
   sortBy: SortField;
   sortDir: SortDirection;
   
+  // Pagination
+  page: number;
+  perPage: PerPageOption;
+  
   // Actions
   setCategory: (v: string | null) => void;
   setSubCategory: (v: string | null) => void;
@@ -71,6 +77,10 @@ interface FilterState {
   setSort: (field: SortField, dir?: SortDirection) => void;
   toggleSortDir: () => void;
   setFilter: (key: string, value: any) => void;
+  setPage: (page: number) => void;
+  setPerPage: (perPage: PerPageOption) => void;
+  nextPage: () => void;
+  prevPage: () => void;
   reset: () => void;
   toParams: () => Record<string, any>;
   getActiveFilterCount: () => number;
@@ -97,6 +107,8 @@ const initialState = {
   for_sale: null,
   sortBy: "year" as SortField,
   sortDir: "asc" as SortDirection,
+  page: 1,
+  perPage: 20 as PerPageOption,
 };
 
 export const useFilterStore = create<FilterState>()(
@@ -104,31 +116,37 @@ export const useFilterStore = create<FilterState>()(
     (set, get) => ({
       ...initialState,
       
-      setCategory: (category) => set({ category }),
-      setSubCategory: (sub_category) => set({ sub_category }),
-      setMetal: (metal) => set({ metal }),
-      setIssuingAuthority: (issuing_authority) => set({ issuing_authority }),
-      setIsRulerUnknown: (is_ruler_unknown) => set({ is_ruler_unknown }),
-      setMintName: (mint_name) => set({ mint_name }),
-      setIsMintUnknown: (is_mint_unknown) => set({ is_mint_unknown }),
-      setDenomination: (denomination) => set({ denomination }),
-      setGrade: (grade) => set({ grade }),
-      setRarity: (rarity) => set({ rarity }),
-      setPriceRange: (priceRange) => set({ priceRange }),
-      setMintYearGte: (mint_year_gte) => set({ mint_year_gte }),
-      setMintYearLte: (mint_year_lte) => set({ mint_year_lte }),
-      setIsYearUnknown: (is_year_unknown) => set({ is_year_unknown }),
-      setIsCirca: (is_circa) => set({ is_circa }),
-      setIsTestCut: (is_test_cut) => set({ is_test_cut }),
-      setStorageLocation: (storage_location) => set({ storage_location }),
+      setCategory: (category) => set({ category, page: 1 }),
+      setSubCategory: (sub_category) => set({ sub_category, page: 1 }),
+      setMetal: (metal) => set({ metal, page: 1 }),
+      setIssuingAuthority: (issuing_authority) => set({ issuing_authority, page: 1 }),
+      setIsRulerUnknown: (is_ruler_unknown) => set({ is_ruler_unknown, page: 1 }),
+      setMintName: (mint_name) => set({ mint_name, page: 1 }),
+      setIsMintUnknown: (is_mint_unknown) => set({ is_mint_unknown, page: 1 }),
+      setDenomination: (denomination) => set({ denomination, page: 1 }),
+      setGrade: (grade) => set({ grade, page: 1 }),
+      setRarity: (rarity) => set({ rarity, page: 1 }),
+      setPriceRange: (priceRange) => set({ priceRange, page: 1 }),
+      setMintYearGte: (mint_year_gte) => set({ mint_year_gte, page: 1 }),
+      setMintYearLte: (mint_year_lte) => set({ mint_year_lte, page: 1 }),
+      setIsYearUnknown: (is_year_unknown) => set({ is_year_unknown, page: 1 }),
+      setIsCirca: (is_circa) => set({ is_circa, page: 1 }),
+      setIsTestCut: (is_test_cut) => set({ is_test_cut, page: 1 }),
+      setStorageLocation: (storage_location) => set({ storage_location, page: 1 }),
       
       setSort: (field, dir) => set({ 
         sortBy: field, 
-        sortDir: dir ?? (field === get().sortBy ? get().sortDir : "asc")
+        sortDir: dir ?? (field === get().sortBy ? get().sortDir : "asc"),
+        page: 1, // Reset to first page on sort change
       }),
-      toggleSortDir: () => set({ sortDir: get().sortDir === "asc" ? "desc" : "asc" }),
+      toggleSortDir: () => set({ sortDir: get().sortDir === "asc" ? "desc" : "asc", page: 1 }),
       
-      setFilter: (key, value) => set({ [key]: value }),
+      setFilter: (key, value) => set({ [key]: value, page: 1 }), // Reset page on filter change
+      
+      setPage: (page) => set({ page }),
+      setPerPage: (perPage) => set({ perPage, page: 1 }), // Reset to first page when changing per_page
+      nextPage: () => set((state) => ({ page: state.page + 1 })),
+      prevPage: () => set((state) => ({ page: Math.max(1, state.page - 1) })),
       
       reset: () => set(initialState),
       
@@ -160,6 +178,8 @@ export const useFilterStore = create<FilterState>()(
         const params: Record<string, any> = {
           sort_by: state.sortBy,
           sort_dir: state.sortDir,
+          page: state.page,
+          per_page: state.perPage === "all" ? 1000 : state.perPage, // Use large number for "all"
         };
         
         // String filters

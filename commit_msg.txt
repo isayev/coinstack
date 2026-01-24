@@ -1,0 +1,34 @@
+feat: CoinStack v0.2.0 - Catalog integration and data model refactor
+
+Major features:
+- Type-centric reference system with ReferenceType table
+- Catalog integration: OCRE (RIC), CRRO (Crawford), RPC lookups
+- Legend expansion with dictionary (50+ abbreviations) + LLM fallback
+- Bulk enrichment with job queue and conflict resolution
+- Compare drawer for side-by-side local vs catalog data
+
+Data model enhancements:
+- Extended Coin model: is_circa, is_test_cut, die_axis, die_study_*, sub_category
+- New models: Countermark, AuctionData, PriceHistory
+- Expanded enums: Metal (11 types), Category (10 types)
+- ProvenanceEvent: auction details, hammer price, buyer's premium
+
+Import/Export improvements:
+- Robust Excel/CSV import with text normalization
+- BC/AD date handling (negative years for BC)
+- Abbreviated year expansion (159-60 -> 159-160)
+- Reference string parsing: RIC, RPC, Crawford, Sear, BMC, Cohen, etc.
+- Greek text and special character preservation
+
+Frontend enhancements:
+- Advanced filtering: year range, circa, test cut, rarity, grade
+- Sorting: year, name, weight, rarity (proper BC/AD ordering)
+- Navigation arrows on coin detail pages
+- Image zoom component with pan/rotate
+- Stats page with extended charts and weight tracking
+
+Backend improvements:
+- Catalog services: OCREService, CRROService, RPCService
+- DiffEnricher for computing catalog differences
+- LLMDisambiguator for Claude-powered reference disambiguation
+- Reference parser with 15+ catalog system support

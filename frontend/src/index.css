@@ -413,6 +413,18 @@
   .category-border-byzantine { border-left: 4px solid var(--category-byzantine); }
   .category-border-other { border-left: 4px solid var(--border-subtle); }
   
+  /* Category row tinting for table view */
+  .category-row-republic { background: rgba(192, 57, 43, 0.03); }
+  .category-row-imperial { background: rgba(155, 89, 182, 0.03); }
+  .category-row-provincial { background: rgba(52, 152, 219, 0.03); }
+  .category-row-late { background: rgba(212, 175, 55, 0.03); }
+  .category-row-greek { background: rgba(125, 140, 78, 0.03); }
+  .category-row-celtic { background: rgba(39, 174, 96, 0.03); }
+  .category-row-judaean { background: rgba(194, 149, 110, 0.03); }
+  .category-row-eastern { background: rgba(23, 165, 137, 0.03); }
+  .category-row-byzantine { background: rgba(146, 43, 33, 0.03); }
+  .category-row-other { background: transparent; }
+  
   /* ═══════════════════════════════════════════════════════════════
      PRICE TRENDS
      ═══════════════════════════════════════════════════════════════ */

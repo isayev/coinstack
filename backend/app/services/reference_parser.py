@@ -388,3 +388,18 @@ class ReferenceParser:
 
 # Singleton instance for convenience
 parser = ReferenceParser()
+
+
+def parse_references(text: str) -> list[ParseResult]:
+    """
+    Convenience function to parse multiple references from a text string.
+    
+    Uses the singleton parser instance.
+    
+    Args:
+        text: Text containing one or more reference strings (comma/semicolon separated)
+        
+    Returns:
+        List of ParseResult objects for each reference found
+    """
+    return parser.parse_multiple(text)

@@ -97,6 +97,8 @@ export interface CoinImage {
   image_type: string;
   file_path: string;
   is_primary: boolean;
+  source_url?: string | null;
+  source_house?: string | null;
 }
 
 
@@ -196,6 +198,7 @@ export interface AuctionData {
   grade?: string;
   title?: string;
   primary_photo_url?: string;
+  photos?: string[] | null;
 }
 
 export interface AuctionDataCreate {
@@ -241,6 +244,18 @@ export interface CoinListItem {
   estimated_value_usd?: string | number;
   storage_location?: string;
   primary_image?: string;
+  // Additional fields for redesigned table view
+  reign_start?: number;
+  reign_end?: number;
+  primary_reference?: string;
+  weight_g?: number;
+  diameter_mm?: number;
+  die_axis?: number;
+  acquisition_date?: string;
+  acquisition_source?: string;
+  // Obverse/Reverse legends
+  obverse_legend?: string;
+  reverse_legend?: string;
 }
 
 export interface CoinDetail {

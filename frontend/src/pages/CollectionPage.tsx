@@ -10,11 +10,15 @@
  * @module pages/CollectionPage
  */
 
+import { useState } from "react";
 import { useCoins } from "@/hooks/useCoins";
 import { CoinCard } from "@/components/coins/CoinCard";
+import { CoinTable } from "@/components/coins/CoinTable";
+import { ColumnConfig } from "@/components/coins/ColumnConfig";
 import { CollectionSidebar } from "@/components/coins/CollectionSidebar";
+import { Pagination } from "@/components/ui/Pagination";
 import { useUIStore } from "@/stores/uiStore";
-import { useFilterStore, SortField } from "@/stores/filterStore";
+import { useFilterStore, SortField, PerPageOption } from "@/stores/filterStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -25,15 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Grid3x3, ArrowUp, ArrowDown, LayoutGrid,
-  Calendar, User, Coins, CircleDot, Award, DollarSign, Clock, Scale, Sparkles, List
+  Grid3x3, LayoutGrid, ArrowUp, ArrowDown,
+  Calendar, User, Coins, CircleDot, Award, DollarSign, Clock, Scale, Sparkles, List, Settings2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { 
-  MetalBadge, 
-  GradeBadge,
-} from "@/components/design-system";
 
 // ============================================================================
 // SORT OPTIONS
@@ -53,79 +52,6 @@ const SORT_OPTIONS: { value: SortField; label: string; icon: React.ReactNode }[]
   { value: "created", label: "Added", icon: <Clock className="w-3.5 h-3.5" /> },
 ];
 
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function formatYearRange(
-  start: number | null | undefined, 
-  end: number | null | undefined, 
-  isCirca?: boolean
-): string {
-  if (!start && !end) return "—";
-  const prefix = isCirca ? "c. " : "";
-  
-  if (start && end && start !== end) {
-    const startStr = start < 0 ? `${Math.abs(start)}` : `${start}`;
-    const endStr = end < 0 ? `${Math.abs(end)} BC` : `${end} AD`;
-    const startSuffix = start < 0 && end > 0 ? " BC" : "";
-    return `${prefix}${startStr}${startSuffix}–${endStr}`;
-  }
-  
-  const year = start || end;
-  if (!year) return "—";
-  return `${prefix}${Math.abs(year)} ${year < 0 ? "BC" : "AD"}`;
-}
-
-// ============================================================================
-// TABLE HEADER
-// ============================================================================
-
-function TableHeader({ 
-  field, 
-  currentSort, 
-  sortDir, 
-  onSort, 
-  children,
-  className 
-}: { 
-  field: SortField;
-  currentSort: SortField;
-  sortDir: "asc" | "desc";
-  onSort: (field: SortField, dir?: "asc" | "desc") => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const isActive = currentSort === field;
-  
-  return (
-    <th 
-      className={cn(
-        "text-left px-4 py-2.5 font-medium text-xs select-none cursor-pointer transition-colors",
-        className
-      )}
-      style={{ color: isActive ? 'var(--metal-au)' : 'var(--text-tertiary)' }}
-      onClick={() => {
-        if (isActive) {
-          onSort(field, sortDir === "asc" ? "desc" : "asc");
-        } else {
-          onSort(field, "asc");
-        }
-      }}
-    >
-      <div className={cn("flex items-center gap-1", className?.includes("text-right") && "justify-end")}>
-        <span>{children}</span>
-        {isActive && (
-          sortDir === "asc" ? (
-            <ArrowUp className="w-3 h-3" />
-          ) : (
-            <ArrowDown className="w-3 h-3" />
-          )
-        )}
-      </div>
-    </th>
-  );
-}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -134,8 +60,12 @@ function TableHeader({
 export function CollectionPage() {
   const { data, isLoading, error } = useCoins();
   const { viewMode, setViewMode } = useUIStore();
-  const { sortBy, sortDir, setSort, toggleSortDir, getActiveFilterCount } = useFilterStore();
+  const { sortBy, sortDir, setSort, toggleSortDir, getActiveFilterCount, page, perPage, setPage, setPerPage } = useFilterStore();
   const navigate = useNavigate();
+  
+  // State for table view
+  const [selectedCoinIds, setSelectedCoinIds] = useState<Set<number>>(new Set());
+  const [showColumnConfig, setShowColumnConfig] = useState(false);
 
   const activeFilters = getActiveFilterCount();
 
@@ -295,12 +225,34 @@ export function CollectionPage() {
                   <List className="w-3.5 h-3.5" />
                 </Button>
               </div>
+              
+              {/* Column config toggle (only in table view) */}
+              {viewMode === "table" && (
+                <>
+                  <div className="w-px h-5" style={{ background: 'var(--border-subtle)' }} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    style={showColumnConfig ? { background: 'var(--metal-au-subtle)', color: 'var(--metal-au)' } : {}}
+                    onClick={() => setShowColumnConfig(!showColumnConfig)}
+                    title="Configure columns"
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-4">
+          {/* Column config (only in table view) */}
+          {viewMode === "table" && showColumnConfig && (
+            <ColumnConfig className="mb-4" />
+          )}
+          
           {/* Grid View - 5 columns optimal */}
           {viewMode === "grid" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4">
@@ -309,88 +261,25 @@ export function CollectionPage() {
               ))}
             </div>
           ) : (
-            /* Table View */
-            <div 
-              className="rounded-lg overflow-hidden"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-            >
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
-                    <TableHeader field="name" currentSort={sortBy} sortDir={sortDir} onSort={setSort}>
-                      Ruler
-                    </TableHeader>
-                    <TableHeader field="denomination" currentSort={sortBy} sortDir={sortDir} onSort={setSort}>
-                      Denomination
-                    </TableHeader>
-                    <TableHeader field="metal" currentSort={sortBy} sortDir={sortDir} onSort={setSort}>
-                      Metal
-                    </TableHeader>
-                    <TableHeader field="year" currentSort={sortBy} sortDir={sortDir} onSort={setSort}>
-                      Date
-                    </TableHeader>
-                    <TableHeader field="grade" currentSort={sortBy} sortDir={sortDir} onSort={setSort}>
-                      Grade
-                    </TableHeader>
-                    <TableHeader field="price" currentSort={sortBy} sortDir={sortDir} onSort={setSort} className="text-right">
-                      Price
-                    </TableHeader>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.items.map((coin, index) => (
-                    <tr 
-                      key={coin.id} 
-                      className="cursor-pointer transition-colors"
-                      style={{ 
-                        borderBottom: '1px solid var(--border-subtle)',
-                        background: index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'
-                      }}
-                      onClick={() => navigate(`/coins/${coin.id}`)}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'}
-                    >
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                            {coin.issuing_authority}
-                          </span>
-                          {coin.is_test_cut && (
-                            <span 
-                              className="text-[9px] px-1 py-0 rounded font-medium"
-                              style={{ background: 'rgba(255, 69, 58, 0.2)', color: '#FF453A' }}
-                            >
-                              TC
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-2.5" style={{ color: 'var(--text-secondary)' }}>
-                        {coin.denomination}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <MetalBadge metal={coin.metal} size="xs" />
-                      </td>
-                      <td className="px-4 py-2.5 tabular-nums text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        {formatYearRange(coin.mint_year_start, coin.mint_year_end, coin.is_circa)}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        {coin.grade ? (
-                          <GradeBadge grade={coin.grade} size="xs" />
-                        ) : (
-                          <span style={{ color: 'var(--text-tertiary)' }}>—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                        {coin.acquisition_price
-                          ? `$${Number(coin.acquisition_price).toLocaleString()}`
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            /* Table View - Redesigned */
+            <CoinTable 
+              coins={data?.items || []} 
+              selectedIds={selectedCoinIds}
+              onSelectionChange={setSelectedCoinIds}
+            />
+          )}
+
+          {/* Pagination */}
+          {data && data.items.length > 0 && (
+            <Pagination
+              currentPage={page}
+              totalPages={data.pages}
+              totalItems={data.total}
+              perPage={perPage}
+              onPageChange={setPage}
+              onPerPageChange={setPerPage}
+              className="mt-4"
+            />
           )}
 
           {/* Empty State */}

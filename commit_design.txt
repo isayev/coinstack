@@ -1,0 +1,48 @@
+feat(ui): Implement CoinStack Unified Design System
+
+Implements the user's complete design specification with chemically
+accurate colors, gemstone rarity system, and temperature-based grades.
+
+Base Theme:
+- Dark-first design: #0a0a0b base, #121214 surface, #1a1a1d cards
+- Text hierarchy: primary #f5f5f7, secondary #a1a1a6, tertiary #6e6e73
+- Gold/silver gradient for logo and accents
+
+Metal Colors (Chemically Accurate):
+- Au #FFD700, EL #E8D882, Ag #C0C0C0
+- Or #C9A227 (golden brass, NOT chocolate)
+- Cu #CD7F32, Æ #8B7355, Bi #9A9A8E
+- Po #5C5C52, Pb #6B6B7A
+
+Rarity System (Gemstone-Inspired, C→S→R1→R2→R3→U):
+- Common: #8E8E93 (Quartz)
+- Scarce: #AF52DE (Amethyst)
+- Rare: #5E5CE6 (Sapphire)
+- Very Rare: #30D158 (Emerald)
+- Extremely Rare: #FF375F (Ruby)
+- Unique: #FFFFFF (Diamond)
+
+Grades (Temperature Scale Cold→Hot):
+- Poor: #5AC8FA (freezing)
+- Good: #64D2FF (cold)
+- Fine: #30D158 (neutral)
+- EF: #FFD60A (warm)
+- AU: #FF9F0A (hot)
+- MS: #FF6B6B (fire)
+
+Categories (Era-Appropriate):
+- Republic: #C0392B (terracotta)
+- Imperial: #9B59B6 (Tyrian purple)
+- Provincial: #3498DB (Aegean blue)
+- Late Roman: #D4AF37 (Byzantine gold)
+- Celtic: #27AE60, Greek: #7D8C4E
+
+Card Design:
+- 4px category-colored left border
+- Element-symbol metal badges (Au, Ag, Æ)
+- Rarity dots with gemstone colors
+- Temperature-colored grade badges
+- 5 columns on desktop (optimal density)
+
+Price Trends:
+- Up: #30D158, Down: #FF453A

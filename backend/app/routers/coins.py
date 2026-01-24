@@ -2,6 +2,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional, Literal, List
+from pydantic import BaseModel
+from datetime import datetime
+import hashlib
+import httpx
+from pathlib import Path
+import logging
+
 from app.database import get_db
 from app.crud import get_coin, get_coins, create_coin, update_coin, delete_coin, get_coin_ids_sorted
 from app.schemas.coin import (
@@ -18,6 +25,9 @@ from app.schemas.coin import (
     AuctionDataOut,
 )
 from app.models.coin import Category, Metal
+from app.models.image import CoinImage, ImageType
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/coins", tags=["coins"])
 
@@ -32,6 +42,19 @@ def coin_to_list_item(coin) -> CoinListItem:
             break
     if not primary_image and coin.images:
         primary_image = coin.images[0].file_path
+    
+    # Get primary reference formatted string (use local_ref which is pre-formatted)
+    primary_reference = None
+    for ref in coin.references:
+        if ref.is_primary and ref.reference_type:
+            primary_reference = ref.reference_type.local_ref
+            break
+    # If no primary reference, use first available
+    if not primary_reference and coin.references:
+        for ref in coin.references:
+            if ref.reference_type:
+                primary_reference = ref.reference_type.local_ref
+                break
     
     return CoinListItem(
         id=coin.id,
@@ -52,6 +75,18 @@ def coin_to_list_item(coin) -> CoinListItem:
         estimated_value_usd=coin.estimated_value_usd,
         storage_location=coin.storage_location,
         primary_image=primary_image,
+        # Additional fields for redesigned table view
+        reign_start=coin.reign_start,
+        reign_end=coin.reign_end,
+        primary_reference=primary_reference,
+        weight_g=coin.weight_g,
+        diameter_mm=coin.diameter_mm,
+        die_axis=coin.die_axis,
+        acquisition_date=coin.acquisition_date,
+        acquisition_source=coin.acquisition_source,
+        # Obverse/Reverse legends
+        obverse_legend=coin.obverse_legend,
+        reverse_legend=coin.reverse_legend,
     )
 
 
@@ -95,6 +130,8 @@ def coin_to_detail(coin) -> CoinDetail:
             image_type=img.image_type.value,
             file_path=img.file_path,
             is_primary=img.is_primary,
+            source_url=img.source_url,
+            source_house=img.source_house,
         )
         for img in coin.images
     ]
@@ -159,6 +196,7 @@ def coin_to_detail(coin) -> CoinDetail:
             grade=ad.grade,
             title=ad.title,
             primary_photo_url=ad.primary_photo_url,
+            photos=ad.photos,
         )
         for ad in coin.auction_data
     ]
@@ -269,7 +307,7 @@ def coin_to_detail(coin) -> CoinDetail:
 @router.get("", response_model=PaginatedCoins)
 async def list_coins(
     page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
+    per_page: int = Query(20, ge=1, le=1000),  # Allow up to 1000 for "show all"
     sort_by: str = Query("year", description="Sort: year, name, denomination, metal, category, grade, price, acquired, created, value"),
     sort_dir: Literal["asc", "desc"] = Query("asc"),
     category: Optional[Category] = None,
@@ -437,3 +475,156 @@ async def delete_coin_endpoint(coin_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Coin not found")
     return None
+
+
+# Image management schemas
+class ImageSelectionItem(BaseModel):
+    url: str
+    image_type: str  # "obverse", "reverse", "other"
+    source: str
+    auction_id: Optional[int] = None
+
+
+class ImageSelectionsRequest(BaseModel):
+    images: List[ImageSelectionItem]
+
+
+@router.post("/{coin_id}/images")
+async def save_coin_images(
+    coin_id: int,
+    request: ImageSelectionsRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Save image selections for a coin.
+    Downloads images from URLs and stores them locally.
+    """
+    coin = get_coin(db, coin_id)
+    if not coin:
+        raise HTTPException(status_code=404, detail="Coin not found")
+    
+    # Create images directory if needed
+    image_dir = Path("data/coin_images")
+    image_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Map string types to enum
+    type_map = {
+        "obverse": ImageType.OBVERSE,
+        "reverse": ImageType.REVERSE,
+        "other": ImageType.OTHER,
+        "edge": ImageType.EDGE,
+        "slab": ImageType.SLAB,
+        "detail": ImageType.DETAIL,
+        "combined": ImageType.COMBINED,
+    }
+    
+    # Clear existing images for this coin (to replace with new selection)
+    # Keep track of existing source URLs to avoid re-downloading
+    existing_urls = {img.source_url: img for img in coin.images if img.source_url}
+    
+    # Delete old images
+    for img in coin.images[:]:
+        db.delete(img)
+    
+    saved_images = []
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for i, selection in enumerate(request.images):
+            try:
+                image_type = type_map.get(selection.image_type, ImageType.OTHER)
+                is_primary = (selection.image_type == "obverse")
+                
+                # Generate filename based on URL hash
+                url_hash = hashlib.md5(selection.url.encode()).hexdigest()[:12]
+                extension = "jpg"  # Default to jpg
+                if ".png" in selection.url.lower():
+                    extension = "png"
+                elif ".webp" in selection.url.lower():
+                    extension = "webp"
+                
+                filename = f"coin_{coin_id}_{selection.image_type}_{url_hash}.{extension}"
+                file_path = image_dir / filename
+                
+                # Download image if not already downloaded
+                if not file_path.exists():
+                    logger.info(f"Downloading image: {selection.url}")
+                    
+                    # Handle protocol-relative URLs
+                    url = selection.url
+                    if url.startswith("//"):
+                        url = "https:" + url
+                    
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Accept": "image/*",
+                        "Referer": "https://www.google.com/",
+                    }
+                    
+                    response = await client.get(url, headers=headers, follow_redirects=True)
+                    response.raise_for_status()
+                    
+                    file_path.write_bytes(response.content)
+                    logger.info(f"Saved image to: {file_path}")
+                
+                # Create CoinImage record
+                coin_image = CoinImage(
+                    coin_id=coin_id,
+                    image_type=image_type,
+                    file_path=f"/images/{filename}",
+                    file_name=filename,
+                    is_primary=is_primary,
+                    source_url=selection.url,
+                    source_house=selection.source,
+                    downloaded_at=datetime.utcnow(),
+                )
+                
+                db.add(coin_image)
+                saved_images.append({
+                    "url": selection.url,
+                    "type": selection.image_type,
+                    "file_path": f"/images/{filename}",
+                })
+                
+            except Exception as e:
+                logger.error(f"Failed to process image {selection.url}: {e}")
+                # Continue with other images
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "saved_count": len(saved_images),
+        "images": saved_images,
+    }
+
+
+@router.get("/{coin_id}/auction-images")
+async def get_coin_auction_images(
+    coin_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Get all available images from auction data for a coin.
+    """
+    coin = get_coin(db, coin_id)
+    if not coin:
+        raise HTTPException(status_code=404, detail="Coin not found")
+    
+    images = []
+    for auction in coin.auction_data:
+        if auction.photos:
+            for url in auction.photos:
+                # Filter out placeholder images
+                if url and "ajax-loader" not in url and "placeholder" not in url:
+                    images.append({
+                        "url": url,
+                        "source": auction.auction_house,
+                        "auction_id": auction.id,
+                        "auction_title": auction.title,
+                    })
+    
+    return {
+        "coin_id": coin_id,
+        "image_count": len(images),
+        "images": images,
+    }

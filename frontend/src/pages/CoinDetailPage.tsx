@@ -8,20 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImageGallery } from "@/components/coins/ImageZoom";
+import { ImageManager } from "@/components/coins/ImageManager";
 import { 
   ArrowLeft, Edit, Trash2, ExternalLink, 
   Scale, Ruler, CircleDot, Calendar,
   RefreshCw, Sparkles, Loader2, CheckCircle, XCircle, AlertCircle,
-  ChevronLeft, ChevronRight, Home, Coins, Gavel
+  ChevronLeft, ChevronRight, Home, Coins, Gavel, Image as ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CoinDetail } from "@/types/coin";
+import { ScrapeDialog } from "@/components/auctions/ScrapeDialog";
 
 export function CoinDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const coinId = Number(id);
-  const { data: coin, isLoading } = useCoin(coinId);
+  const { data: coin, isLoading, refetch } = useCoin(coinId);
   const { data: navigation } = useCoinNavigation(coinId);
   const deleteMutation = useDeleteCoin();
   
@@ -254,8 +256,12 @@ export function CoinDetailPage() {
             
             {/* Tabs */}
             <Tabs defaultValue="design" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-10">
+              <TabsList className="grid w-full grid-cols-5 h-10">
                 <TabsTrigger value="design" className="text-sm">Design</TabsTrigger>
+                <TabsTrigger value="images" className="text-sm">
+                  <ImageIcon className="w-3 h-3 mr-1" />
+                  Images
+                </TabsTrigger>
                 <TabsTrigger value="references" className="text-sm">References</TabsTrigger>
                 <TabsTrigger value="provenance" className="text-sm">Provenance</TabsTrigger>
                 <TabsTrigger value="notes" className="text-sm">Notes</TabsTrigger>
@@ -277,15 +283,25 @@ export function CoinDetailPage() {
                 />
               </TabsContent>
               
+              <TabsContent value="images" className="mt-6">
+                <ImageManager
+                  coinId={coin.id}
+                  auctionData={coin.auction_data || []}
+                  existingImages={coin.images || []}
+                  onImagesUpdated={() => refetch()}
+                />
+              </TabsContent>
+              
               <TabsContent value="references" className="mt-6">
                 <CatalogReferences coin={coin} />
               </TabsContent>
               
               <TabsContent value="provenance" className="mt-6 space-y-6">
                 <ProvenanceSection coin={coin} />
-                {coin.auction_data && coin.auction_data.length > 0 && (
-                  <AuctionDataSection auctionData={coin.auction_data} />
-                )}
+                <AuctionDataSection 
+                  auctionData={coin.auction_data} 
+                  coinId={coin.id}
+                />
               </TabsContent>
               
               <TabsContent value="notes" className="mt-6 space-y-4">
@@ -496,75 +512,116 @@ function ProvenanceSection({ coin }: { coin: any }) {
   );
 }
 
-// Auction data section component
-function AuctionDataSection({ auctionData }: { auctionData: CoinDetail["auction_data"] }) {
-  if (!auctionData || auctionData.length === 0) return null;
+// Auction data section component with scrape functionality
+function AuctionDataSection({ 
+  auctionData, 
+  coinId,
+  onRefresh 
+}: { 
+  auctionData: CoinDetail["auction_data"]; 
+  coinId: number;
+  onRefresh?: () => void;
+}) {
+  const [scrapeDialogOpen, setScrapeDialogOpen] = useState(false);
+  
+  const handleScrapeComplete = () => {
+    setScrapeDialogOpen(false);
+    onRefresh?.();
+  };
   
   return (
     <div className="space-y-3">
-      <h3 className="font-medium flex items-center gap-2">
-        <Gavel className="w-4 h-4" />
-        Auction History
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium flex items-center gap-2">
+          <Gavel className="w-4 h-4" />
+          Auction History
+        </h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setScrapeDialogOpen(true)}
+          className="gap-1"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          Add Auction
+        </Button>
+      </div>
       
-      <div className="space-y-3">
-        {auctionData.map((auction) => (
-          <Card key={auction.id} className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start gap-4">
-                <div className="space-y-1 min-w-0">
-                  <div className="font-medium truncate">
-                    {auction.auction_house}
-                    {auction.sale_name && ` - ${auction.sale_name}`}
+      {(!auctionData || auctionData.length === 0) ? (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <Gavel className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p>No auction records yet</p>
+            <p className="text-sm">Click "Add Auction" to scrape an auction URL</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {auctionData.map((auction) => (
+            <Card key={auction.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <div className="font-medium truncate">
+                      {auction.auction_house}
+                      {auction.sale_name && ` - ${auction.sale_name}`}
+                    </div>
+                    {auction.lot_number && (
+                      <div className="text-sm text-muted-foreground">
+                        Lot {auction.lot_number}
+                      </div>
+                    )}
+                    {auction.auction_date && (
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(auction.auction_date).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
-                  {auction.lot_number && (
-                    <div className="text-sm text-muted-foreground">
-                      Lot {auction.lot_number}
-                    </div>
-                  )}
-                  {auction.auction_date && (
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(auction.auction_date).toLocaleDateString()}
-                    </div>
-                  )}
+                  
+                  <div className="text-right shrink-0">
+                    {auction.hammer_price && (
+                      <div className="font-semibold text-green-600">
+                        ${Number(auction.hammer_price).toLocaleString()}
+                        {auction.total_price && auction.total_price !== auction.hammer_price && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            (${Number(auction.total_price).toLocaleString()} total)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {auction.estimate_low && auction.estimate_high && (
+                      <div className="text-xs text-muted-foreground">
+                        Est. ${Number(auction.estimate_low).toLocaleString()} - ${Number(auction.estimate_high).toLocaleString()}
+                      </div>
+                    )}
+                    {auction.grade && (
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {auction.grade}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="text-right shrink-0">
-                  {auction.hammer_price && (
-                    <div className="font-semibold text-green-600">
-                      ${Number(auction.hammer_price).toLocaleString()}
-                      {auction.total_price && auction.total_price !== auction.hammer_price && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          (${Number(auction.total_price).toLocaleString()} total)
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {auction.estimate_low && auction.estimate_high && (
-                    <div className="text-xs text-muted-foreground">
-                      Est. ${Number(auction.estimate_low).toLocaleString()} - ${Number(auction.estimate_high).toLocaleString()}
-                    </div>
-                  )}
-                  {auction.grade && (
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {auction.grade}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              
-              {auction.url && (
-                <Button variant="ghost" size="sm" className="mt-2 -ml-2" asChild>
-                  <a href={auction.url} target="_blank" rel="noopener noreferrer">
-                    View Listing
-                    <ExternalLink className="w-3 h-3 ml-1" />
-                  </a>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                {auction.url && (
+                  <Button variant="ghost" size="sm" className="mt-2 -ml-2" asChild>
+                    <a href={auction.url} target="_blank" rel="noopener noreferrer">
+                      View Listing
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </a>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      
+      <ScrapeDialog
+        open={scrapeDialogOpen}
+        onOpenChange={setScrapeDialogOpen}
+        coinId={coinId}
+        onComplete={handleScrapeComplete}
+      />
     </div>
   );
 }

@@ -1,0 +1,39 @@
+# CoinStack Port Configuration
+
+## MANDATORY PORT ASSIGNMENTS
+
+| Service  | Port | URL                    |
+|----------|------|------------------------|
+| Backend  | 8000 | http://localhost:8000  |
+| Frontend | 3000 | http://localhost:3000  |
+
+## RULES
+
+1. **Backend ALWAYS runs on port 8000** - No exceptions
+2. **Frontend ALWAYS runs on port 3000** - No exceptions
+3. **Frontend proxy ALWAYS points to http://localhost:8000**
+4. **Never change ports** - If port is busy, kill the process using it
+
+## Configuration Files
+
+- `frontend/vite.config.ts` - proxy target must be `http://localhost:8000`
+- `restart.ps1` - backend starts on 8000, frontend on 3000
+
+## Troubleshooting
+
+If port is busy:
+```powershell
+# Find and kill process on port 8000
+netstat -ano | findstr :8000
+taskkill /F /PID <pid>
+
+# Find and kill process on port 3000
+netstat -ano | findstr :3000
+taskkill /F /PID <pid>
+```
+
+## NEVER DO
+
+- Never use port 8080, 8001, or any other port for backend
+- Never use port 3001, 3002, or any other port for frontend
+- Never change proxy configuration to point to different ports

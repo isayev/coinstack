@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "claude-sonnet-4-20250514"
     LLM_RATE_LIMIT_PER_MINUTE: int = 10
     
+    # Scraper settings
+    SCRAPER_TIMEOUT: float = 30.0  # HTTP request timeout in seconds
+    SCRAPER_RATE_LIMIT: float = 2.0  # Seconds between requests to same auction house
+    SCRAPER_USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    
     # Logging
     LOG_LEVEL: str = "INFO"
     

@@ -1,0 +1,72 @@
+---
+description: Database safety protocol - backup before schema changes, keep 5 rolling copies
+alwaysApply: true
+---
+
+# Database Safety Rules
+
+## STRICT Requirements for Database Operations
+
+When working with database schema or making ANY changes that affect the database:
+
+### 1. Always Backup First
+
+Before ANY database schema change or migration:
+
+```bash
+# Create timestamped backup
+# Location: backend/backups/
+# Format: coinstack_YYYYMMDD_HHMMSS.db
+
+# Windows PowerShell:
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+Copy-Item "backend\coinstack.db" "backend\backups\coinstack_$timestamp.db"
+
+# Or create backups directory if it doesn't exist:
+New-Item -ItemType Directory -Force -Path "backend\backups"
+```
+
+### 2. Keep 5 Previous Copies
+
+Maintain rolling backups for safety:
+- Keep the 5 most recent backup copies
+- Delete oldest backup when creating new one if count exceeds 5
+- Never delete all backups
+
+```powershell
+# Cleanup old backups (keep 5 most recent)
+Get-ChildItem "backend\backups\coinstack_*.db" | 
+    Sort-Object LastWriteTime -Descending | 
+    Select-Object -Skip 5 | 
+    Remove-Item
+```
+
+### 3. Test Database After Changes
+
+After any schema modification:
+1. Verify database opens without errors
+2. Run Alembic migration if applicable: `alembic upgrade head`
+3. Test basic operations (SELECT, INSERT on affected tables)
+4. Verify existing data integrity
+
+### 4. Rollback Plan
+
+If migration fails or data is corrupted:
+```powershell
+# Restore from most recent backup
+Copy-Item "backend\backups\coinstack_LATEST.db" "backend\coinstack.db" -Force
+```
+
+## When This Rule Applies
+
+- Adding/removing columns to SQLAlchemy models
+- Changing column types or constraints
+- Creating new tables
+- Modifying relationships
+- Running Alembic migrations
+- Any direct SQL operations on the database
+
+## Database Location
+
+- Production DB: `backend/coinstack.db`
+- Backups: `backend/backups/`

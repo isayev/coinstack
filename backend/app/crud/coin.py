@@ -1,8 +1,9 @@
 """CRUD operations for coins."""
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, asc, desc, func, nulls_last, nulls_first
 from typing import Optional, List, Dict, Any, Literal
 from app.models import Coin
+from app.models.reference import CoinReference
 from app.schemas.coin import CoinCreate, CoinUpdate
 
 
@@ -49,6 +50,7 @@ def get_coins(
     sort_dir: Literal["asc", "desc"] = "asc",
 ) -> tuple[List[Coin], int]:
     """Get coins with pagination, filters, and sorting."""
+    # Base query for filtering (without eager loading for count)
     query = db.query(Coin)
     
     if filters:
@@ -119,6 +121,13 @@ def get_coins(
     
     # Add secondary sort by ID for stable ordering
     query = query.order_by(Coin.id)
+    
+    # Add eager loading for relationships needed in list view
+    query = query.options(
+        selectinload(Coin.references).joinedload(CoinReference.reference_type),
+        selectinload(Coin.images),
+        joinedload(Coin.mint),
+    )
     
     coins = query.offset(skip).limit(limit).all()
     
