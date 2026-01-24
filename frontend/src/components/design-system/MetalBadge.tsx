@@ -79,19 +79,22 @@ export function MetalChip({ metal, count, selected, onClick }: MetalChipProps) {
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-1.5 px-2 py-1 rounded-md transition-all',
+        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all',
         'font-mono text-xs font-semibold',
-        selected && 'ring-2 ring-offset-1'
+        selected && 'ring-2 ring-offset-2 scale-105'
       )}
       style={{
         background: `var(--metal-${config.cssVar}-subtle)`,
         color: `var(--metal-${config.cssVar}-text)`,
         border: `1px solid var(--metal-${config.cssVar}-border)`,
+        // Selected state: gold ring
+        boxShadow: selected ? `0 0 0 2px var(--bg-surface), 0 0 0 4px var(--metal-au)` : undefined,
       }}
+      title={config.name}
     >
       <span>{config.symbol}</span>
       {count !== undefined && (
-        <span className="opacity-70">{count}</span>
+        <span className="opacity-60 tabular-nums">{count}</span>
       )}
     </button>
   );

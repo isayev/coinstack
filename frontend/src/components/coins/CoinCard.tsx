@@ -118,11 +118,11 @@ export function CoinCard({ coin }: CoinCardProps) {
           </div>
         )}
         
-        {/* Top badges row */}
+        {/* Top badges row: [Au] ●R2 [VF] */}
         <div className="absolute top-2 right-2 flex items-center gap-1.5">
           <MetalBadge metal={coin.metal} size="sm" showGlow={isHovered} />
-          <RarityIndicator rarity={coin.rarity} variant="dot" />
-          {coin.grade && <GradeBadge grade={coin.grade} size="xs" />}
+          {coin.rarity && <RarityIndicator rarity={coin.rarity} variant="dot" />}
+          {coin.grade && <GradeBadge grade={coin.grade} size="sm" />}
         </div>
         
         {/* Test cut indicator */}

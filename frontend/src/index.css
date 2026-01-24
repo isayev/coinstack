@@ -221,6 +221,10 @@
     --category-byzantine: #922B21;
     --category-byzantine-subtle: rgba(146, 43, 33, 0.15);
     
+    /* Other/Unknown — Neutral gray */
+    --category-other: #6e6e73;
+    --category-other-subtle: rgba(110, 110, 115, 0.15);
+    
     /* ═══════════════════════════════════════════════════════════════
        PRICE TRENDS
        ═══════════════════════════════════════════════════════════════ */
