@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test/Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Temp files
+*.tmp
+*.temp
+.cache/
+
+# Collection data (personal)
+collection-v1.xlsx
+
+# Backend specific
+backend/data/
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/coinstack.log
+
+# Frontend specific
+frontend/node_modules/
+frontend/dist/

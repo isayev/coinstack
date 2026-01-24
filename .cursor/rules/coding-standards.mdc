@@ -1,0 +1,54 @@
+---
+description: Coding standards for CoinStack project
+alwaysApply: true
+---
+
+# CoinStack Coding Standards
+
+## Tech Stack
+
+- **Backend**: Python 3.12+, FastAPI, SQLAlchemy 2.0, Pydantic 2.x, SQLite
+- **Frontend**: React 18, TypeScript 5.x, Vite, TanStack Query, Zustand, Tailwind CSS, shadcn/ui
+
+## Python Standards
+
+- Use type hints for all function parameters and returns
+- Use Pydantic models for API schemas
+- Use SQLAlchemy ORM models for database
+- Follow PEP 8 naming conventions
+- Keep functions under 50 lines when possible
+
+## TypeScript Standards
+
+- Use strict TypeScript (`strict: true`)
+- Prefer interfaces over types for object shapes
+- Use React functional components with hooks
+- Keep components under 200 lines
+- Extract reusable logic into custom hooks
+
+## File Organization
+
+```
+backend/
+  app/
+    models/      # SQLAlchemy models
+    schemas/     # Pydantic schemas
+    routers/     # FastAPI routers
+    services/    # Business logic
+    crud/        # Database operations
+
+frontend/
+  src/
+    components/  # React components
+    pages/       # Page components
+    hooks/       # Custom hooks
+    stores/      # Zustand stores
+    types/       # TypeScript types
+    lib/         # Utilities
+```
+
+## Commit Messages
+
+- Use imperative mood: "Add feature" not "Added feature"
+- Keep subject line under 72 characters
+- Reference issues when applicable

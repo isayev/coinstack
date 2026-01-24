@@ -1,0 +1,3246 @@
+{
+  "converted": [
+    {
+      "issuing_authority": "Augustus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "mint_name": "Lugdunum",
+      "script": "Latin",
+      "portrait_subject": "Augustus",
+      "reign_start": -27,
+      "reign_end": 14,
+      "mint_year_start": -2,
+      "mint_year_end": 4,
+      "diameter_mm": 17.0,
+      "obverse_legend": "CAESAR AVGVSTVS-DIVI F PATER PATRIAE",
+      "obverse_description": "laureate head of Augustus right",
+      "reverse_legend": "AVGVSTI F COS DESIG PRINC IVVENT",
+      "reverse_description": "Gaius and Lucius Caesars, togate, standing facing, each supporting grounded shield with inner hand, spears resting against shields; simpulum (on left) and lituus (on right) turned inwards above, C L CAESARES in exergue.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "I",
+          "number": "207",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice F",
+      "surface_issues": [
+        "scratches"
+      ],
+      "acquisition_price": 384.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/ancients-augustus-27-bc-ad-14-ar-denarius-17mm-4h-ngc-choice-fine-scratches/a/232539-64039.s"
+    },
+    {
+      "issuing_authority": "Coson",
+      "denomination": "Stater",
+      "category": "provincial",
+      "metal": "gold",
+      "storage_location": "SlabBox1",
+      "mint_name": "Sarmatia, Olbia",
+      "script": "Greek",
+      "reign_start": -54,
+      "reign_end": -54,
+      "mint_year_start": -54,
+      "mint_year_end": -54,
+      "weight_g": 8.53,
+      "diameter_mm": 18.0,
+      "obverse_description": "KOΣΩN, Roman consul (L. Junius Brutus) walking left, accompanied by two lictors fore and aft, ΟΛΒ monogram in left field",
+      "reverse_description": "Eagle standing left on scepter, with spread wings, clutching laurel wreath in right talons; pellet below raised foot.",
+      "references": [
+        {
+          "system": "rpc",
+          "volume": "I",
+          "number": "1701",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice AU",
+      "strike_quality": 5,
+      "surface_quality": 4,
+      "acquisition_price": 2160.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-provincial/roman-provincial-scythia-geto-dacians-coson-ca-after-54-bc-av-stater-18mm-853-gm-12h-ngc-choice-au-5-5-4-5/a/3125-35124.s",
+      "personal_notes": "https://www.cngcoins.com/Coin.aspx?CoinID=60511"
+    },
+    {
+      "issuing_authority": "C. Malleolus",
+      "denomination": "Denarius",
+      "category": "republic",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "reign_start": -96,
+      "reign_end": -96,
+      "mint_year_start": -96,
+      "mint_year_end": -96,
+      "weight_g": 3.9,
+      "diameter_mm": 19.0,
+      "obverse_legend": "A•ALB•S•F-L•METEL",
+      "obverse_description": "laureate head of Apollo right; upward crescent below",
+      "reverse_legend": "C•MAL",
+      "reverse_description": "Roma seated left on pile of shields, grounded scepter in right hand, being crowned by Victory standing left behind; ROMA in exergue.",
+      "references": [
+        {
+          "system": "crawford",
+          "number": "335/1c",
+          "is_primary": true
+        }
+      ],
+      "grade": "XF",
+      "strike_quality": 4,
+      "surface_quality": 3,
+      "surface_issues": [
+        "brushed"
+      ],
+      "acquisition_price": 216.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-republic/roman-republic-c-malleolus-96-bc-ar-denarius-19mm-390-gm-8h-ngc-xf-4-5-3-5-brushed/a/3125-34018.s",
+      "provenance_notes": "From The Peh Family Collection, Part II. Ex Heritage Auctions, Auction 3011 (14 April 2011), lot 173."
+    },
+    {
+      "issuing_authority": "Tiberius",
+      "denomination": "Drachm",
+      "category": "provincial",
+      "metal": "silver",
+      "storage_location": "Velv2-5-1",
+      "mint_name": "CAPPADOCIA, Caesarea-Eusebia",
+      "script": "Greek?",
+      "portrait_subject": "Tiberius, with Drusus Caesar",
+      "reign_start": 14,
+      "reign_end": 37,
+      "mint_year_start": 33,
+      "mint_year_end": 34,
+      "weight_g": 3.35,
+      "diameter_mm": 17.0,
+      "obverse_description": "Laureate head of Tiberius right",
+      "reverse_description": "Bare head of Drusus left.",
+      "references": [
+        {
+          "system": "other",
+          "number": "Ganschow",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Münzen 35",
+          "is_primary": false
+        },
+        {
+          "system": "rpc",
+          "volume": "I",
+          "number": "3622",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sydenham",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Caesarea 43-7.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 180.0,
+      "acquisition_source": "CNG",
+      "acquisition_url": "https://auctions.cngcoins.com/lots/view/4-I2GSGD/cappadocia-caesarea-eusebia-tiberius-with-drusus-caesar-ad-14-37-ar-drachm-17mm-335-g-11h-struck-ad-334-near-vf",
+      "personal_notes": "Find patina, some roughness, hairlines. Near VF.",
+      "provenance_notes": "Ex MACM inventory MMoCA171C, purchased from Coincraft, 7 July 2003."
+    },
+    {
+      "issuing_authority": "Tiberius",
+      "denomination": "Æ25",
+      "category": "provincial",
+      "metal": "bronze",
+      "storage_location": "Velv3-2-3",
+      "mint_name": "Apameia, Syria",
+      "script": "Greek",
+      "portrait_subject": "Tiberius",
+      "reign_start": 14,
+      "reign_end": 14,
+      "mint_year_start": 14,
+      "mint_year_end": 15,
+      "weight_g": 9.58,
+      "diameter_mm": 22.0,
+      "obverse_description": "No legend, laureate head right",
+      "reverse_legend": "AΠAMEΩN THΣ IEΡAΣ KAI AΣYΛOY",
+      "reverse_description": "Nike walking left, holding wreath and palm branch. ςKT in left field",
+      "references": [
+        {
+          "system": "rpc",
+          "volume": "",
+          "number": "4374",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 40.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852667",
+      "personal_notes": "Dated local year 326 = AD 14-15"
+    },
+    {
+      "issuing_authority": "Nero",
+      "denomination": "Tetradrachm",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-2-7",
+      "mint_name": "Seleucis and Pieria. Antioch",
+      "script": "Greek",
+      "portrait_subject": "Nero",
+      "reign_start": 54,
+      "reign_end": 68,
+      "weight_g": 13.98,
+      "diameter_mm": 25.0,
+      "grade": "VF",
+      "acquisition_price": 150.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813191"
+    },
+    {
+      "issuing_authority": "Vespasian",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-5-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Titus, As Caesar",
+      "reign_start": 69,
+      "reign_end": 79,
+      "mint_year_start": 75,
+      "mint_year_end": 75,
+      "weight_g": 3.03,
+      "diameter_mm": 19.0,
+      "obverse_description": "Laureate head right",
+      "reverse_description": "Pax seated left, holding olive branch and resting arm on armrest of throne.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC II.1 783 (Vespasian)",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 162",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 170.0,
+      "acquisition_source": "CNG",
+      "acquisition_url": "https://auctions.cngcoins.com/lots/view/4-I2GBGT/titus-as-caesar-ad-69-79-ar-denarius-19mm-303-g-6h-rome-mint-struck-under-vespasian-ad-75-vf"
+    },
+    {
+      "issuing_authority": "Domitian",
+      "denomination": "As",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Domitian, as Augustus",
+      "reign_start": 81,
+      "reign_end": 96,
+      "weight_g": 10.94,
+      "diameter_mm": 28.0,
+      "obverse_legend": "IMP CAES DOMIT AVG GERM-COS XVI CENS PER P P",
+      "obverse_description": "laureate head of Domitian right",
+      "reverse_legend": "MONETA-AVGVSTI",
+      "reverse_description": "Moneta standing facing, head left, scales in outstretched right hand, cornucopia cradled in left arm; S-C across fields (S within scales).",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC II.1 756",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice VF",
+      "surface_issues": [
+        "altered surface"
+      ],
+      "acquisition_price": 169.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-domitian-as-augustus-ad-81-96-ae-as-28mm-1094-gm-5h-choice-vf-altered-surface/a/61519-25289.s",
+      "personal_notes": "Deep kaitoke green patina. Altered surface, thus ineligible for encapsulation.",
+      "provenance_notes": "From the Merrill A. Gibson Collection of Ancient Coins. Ex Apollo Numismatics, private sale with old dealer's tag included."
+    },
+    {
+      "issuing_authority": "Domitian",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-1-5",
+      "script": "Latin",
+      "portrait_subject": "Domitian",
+      "reign_start": 81,
+      "reign_end": 96,
+      "grade": "XF?",
+      "acquisition_price": 132.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/397040880671"
+    },
+    {
+      "issuing_authority": "Nerva",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Nerva",
+      "reign_start": 96,
+      "reign_end": 98,
+      "mint_year_start": 97,
+      "mint_year_end": 97,
+      "weight_g": 3.49,
+      "diameter_mm": 18.0,
+      "obverse_legend": "IMP NERVA CAES AVG-P M TR P COS III P P",
+      "obverse_description": "laureate head of Nerva right",
+      "reverse_legend": "FORTVNA-P R",
+      "reverse_description": "Fortuna seated left, grain ears in right hand, transverse spear in left.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "II",
+          "number": "17",
+          "is_primary": true
+        }
+      ],
+      "grade": "FV",
+      "strike_quality": 4,
+      "surface_quality": 3,
+      "acquisition_price": 336.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-nerva-ad-96-98-ar-denarius-18mm-349-gm-5h-ngc-vf-4-5-3-5/a/232540-61099.s"
+    },
+    {
+      "issuing_authority": "Trajan",
+      "denomination": "Tetradrachm",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-3-1",
+      "mint_name": "Seleucis and Pieria. Antioch",
+      "script": "Greek",
+      "portrait_subject": "Trajan",
+      "reign_start": 98,
+      "reign_end": 117,
+      "weight_g": 13.41,
+      "diameter_mm": 25.0,
+      "acquisition_price": 110.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813195"
+    },
+    {
+      "issuing_authority": "Hadrian",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-1-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Hadrian",
+      "reign_start": 117,
+      "reign_end": 138,
+      "mint_year_start": 130,
+      "mint_year_end": 133,
+      "weight_g": 3.0,
+      "diameter_mm": 18.0,
+      "obverse_legend": "HADRIANVS AVG COS III P P",
+      "obverse_description": "draped bust right.",
+      "reverse_description": "GERMANIA, Germania standing facing, head left, holding spear and resting on shield.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC II.3-1514",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "BMCRE-842",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC-804.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 160.0,
+      "acquisition_source": "Coin Cabinet",
+      "acquisition_url": "https://www.biddr.com/auctions/thecoincabinet/browse?a=6251&l=7703316",
+      "personal_notes": "From the 'Travel Series' ('Provinces Cycle')."
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius, as Augustus",
+      "reign_start": 138,
+      "reign_end": 161,
+      "weight_g": 3.31,
+      "diameter_mm": 19.0,
+      "obverse_legend": "ANTONINVS-AVG PIVS P P",
+      "obverse_description": "bare head of Antoninus Pius righ",
+      "reverse_legend": "AVG PI-VS P M T-R P COS I I P P",
+      "reverse_description": "Pax standing facing, head left, branch in lowered right hand, grounded scepter in left.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC III -.",
+          "is_primary": true
+        }
+      ],
+      "grade": "AU",
+      "strike_quality": 4,
+      "surface_quality": 3,
+      "surface_issues": [
+        "brushed"
+      ],
+      "acquisition_price": 360.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/ancients-antoninus-pius-as-augustus-ad-138-161-ar-denarius-19mm-331-gm-5h-ngc-au-4-5-3-5-brushed/a/232539-64054.s",
+      "provenance_notes": "Cf. Harlan J. Berk, Sale 227 (14 May 2024), lot 18."
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 161,
+      "mint_year_end": 161,
+      "diameter_mm": 18.0,
+      "obverse_legend": "DIVVS-ANTONINVS",
+      "obverse_description": "bare head of Divus Antoninus Pius right",
+      "reverse_description": "CONSECRATIO, eagle standing right on garlanded cippus or altar, head reverted, wings spread.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC III (Marcus Aurelius) 430",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 164.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-antoninus-pius-ad-138-161-ar-denarius-18mm-6h-ngc-vf/a/232534-63080.s"
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-1-4",
+      "mint_name": "Rome?",
+      "script": "Latin",
+      "portrait_subject": "Diva Faustina I",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 140,
+      "mint_year_end": 140,
+      "weight_g": 3.35,
+      "diameter_mm": 17.0,
+      "obverse_description": "DIVA AVG-FAVSTINA Draped bust right, hair elaborately waved in several loops around head, drawn up and coiled on top",
+      "reverse_description": "PIET AS AVG Pietas standing facing, head left, box in left hand, sprinkling incense with right hand over lit altar to left",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC III",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "394a (Antoninus Pius)",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 70.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717703"
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-1-3",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 159,
+      "mint_year_end": 60,
+      "obverse_description": "ANTONINVS AVG PIVS PP TRP XXIII",
+      "reverse_description": "ROMA COS IIII/ Roma holding victory and spear",
+      "references": [
+        {
+          "system": "other",
+          "number": "RSC 695A RIC 303",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 70.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/146859059379"
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-3-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 152,
+      "mint_year_end": 153,
+      "weight_g": 2.77,
+      "diameter_mm": 17.0,
+      "obverse_legend": "IMP CAES T AEL HADR ANTONINVS AVG PIVS PP",
+      "obverse_description": "laureate head right",
+      "reverse_legend": "TR POT XV COS IIII",
+      "reverse_description": "Annona standing left, holding corn-ears and resting hand on modius set on ship to right.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "210",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear 4123",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC 961",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 52.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852943"
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-3-4",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 157,
+      "mint_year_end": 157,
+      "weight_g": 3.26,
+      "diameter_mm": 17.0,
+      "obverse_description": "ANTONINUS PIUS Denarius. Laureate head right",
+      "reverse_legend": "TR POT XX COS IIII",
+      "reverse_description": "Salus seated left, feeding serpent rising from altar.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "264",
+          "is_primary": true
+        },
+        {
+          "system": "ric",
+          "volume": "III",
+          "number": "264",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "BMCRE 882",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC 1023.",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 29.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852947"
+    },
+    {
+      "issuing_authority": "Antoninus Pius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-4-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Antoninus Pius",
+      "reign_start": 138,
+      "reign_end": 161,
+      "mint_year_start": 150,
+      "mint_year_end": 151,
+      "weight_g": 3.33,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP CAES T AEL HADR ANTONINVS AVG PIVS P P",
+      "obverse_description": "laureate head right.",
+      "reverse_description": "TR POT XIIII COS IIII around, TRANQ below, Tranquillitas, standing right, holding rudder on globe and corn-ears.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "202",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 825",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "BMC 736.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 64.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205809339170"
+    },
+    {
+      "issuing_authority": "Marcus Aurelius and Lucius Verus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-5-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Faustina Junior, Augusta",
+      "reign_start": 147,
+      "reign_end": 175,
+      "mint_year_start": 161,
+      "mint_year_end": 164,
+      "weight_g": 3.4,
+      "diameter_mm": 17.0,
+      "obverse_description": "Draped bust right, wearing stephane",
+      "reverse_description": "Draped Pulvinar on which are seated Commodus and Antoninus as infant boys.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "III",
+          "number": "712",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "MIR 18",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "27-4a Diad.",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC 191.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 80.0,
+      "acquisition_source": "CNG",
+      "acquisition_url": "https://auctions.cngcoins.com/lots/view/4-I2GBJZ/faustina-junior-augusta-ad-147-175-ar-denarius-17mm-340-g-12h-rome-mint-struck-under-marcus-aurelius-and-lucius-verus-ad-161-164-vf",
+      "personal_notes": "Toned with light iridescence, minor marks and roughness, trace deposits."
+    },
+    {
+      "issuing_authority": "Marcus Aurelius",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-3-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Marcus Aurelius",
+      "reign_start": 161,
+      "reign_end": 180,
+      "mint_year_start": 175,
+      "mint_year_end": 176,
+      "weight_g": 2.92,
+      "diameter_mm": 18.0,
+      "obverse_description": "M ANTONINVS AVG GERM SARM.Head of Marcus Aurelius, laureate, right. Marcus Antoninus Augustus, Germanicus, Sarmaticus. Marcus [Aurelius] Antoninus emperor (Augustus), conqueror of the Germans, conqueror of the Sarmatians.",
+      "reverse_description": "TR P XXX IMP VIII COS III. Roma, helmeted, in military dress, standing left, holding Victory on extended right hand and vertical spear, inverted, in left hand. Tribunicia Potestate Tricesima, Imperator Octavum, Consul Tertium.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "352",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 929a",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "BMC 669",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 75.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852941"
+    },
+    {
+      "issuing_authority": "Commodus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-1-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Commodus",
+      "reign_start": 180,
+      "reign_end": 192,
+      "mint_year_start": 180,
+      "mint_year_end": 181,
+      "weight_g": 2.66,
+      "diameter_mm": 18.0,
+      "obverse_legend": "M COMMODVS ANTONINVS AVG",
+      "obverse_description": "laureate head right.",
+      "reverse_description": "TR P VI IMP IIII COS III P P Roma seated left, holding Victory and spear.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC III-12",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "BMCRE-55",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC-803",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 104.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717719"
+    },
+    {
+      "issuing_authority": "Commodus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-1-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Commodus",
+      "reign_start": 180,
+      "reign_end": 192,
+      "weight_g": 2.81,
+      "diameter_mm": 17.0,
+      "obverse_description": "M COMMODVS ANTON AVG PIVS Laureate head right",
+      "reverse_description": "TR P VIIII IMP VI COS IIII P P Minerva advancing right, brandishing javelin and holding shield",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "III",
+          "number": "82",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "MIR 18",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "602-4/30",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC 914",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 53.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717721",
+      "personal_notes": "Reverse usually has owl - missing here"
+    },
+    {
+      "issuing_authority": "Commodus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-3-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Commodus",
+      "reign_start": 180,
+      "reign_end": 192,
+      "mint_year_start": 186,
+      "mint_year_end": 187,
+      "weight_g": 2.59,
+      "diameter_mm": 18.0,
+      "obverse_legend": "M COMM ANT P FEL AVG BRIT",
+      "obverse_description": "laureate head right",
+      "reverse_legend": "VIRTVT AVG P M TRP XII IMP VIII COS V PP",
+      "reverse_description": "Roma standing left, holding Victory, spear and shield.",
+      "references": [
+        {
+          "system": "other",
+          "number": "BMCRE 227. RIC 160. RSC 966. SEAR II 5722.",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 68.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197805692709"
+    },
+    {
+      "issuing_authority": "Septimius Severus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-5-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Septimius Severus",
+      "reign_start": 193,
+      "reign_end": 211,
+      "weight_g": 3.0,
+      "grade": "VF+",
+      "acquisition_price": 81.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666419"
+    },
+    {
+      "issuing_authority": "Septimius Severus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-2-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Julia Domna, Augusta",
+      "reign_start": 193,
+      "reign_end": 217,
+      "weight_g": 2.76,
+      "diameter_mm": 17.0,
+      "grade": "VF+",
+      "acquisition_price": 41.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6275&l=7735620"
+    },
+    {
+      "issuing_authority": "Septimius Severus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-5-5",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Geta, as Caesar",
+      "reign_start": 198,
+      "reign_end": 209,
+      "weight_g": 3.14,
+      "obverse_description": "GETA CAES PONT COS. Bareheaded and draped bust right.",
+      "reverse_description": "VOTA PVBLICA. Geta standing left, sacrificing over lighted altar to left with patera.",
+      "grade": "VF",
+      "acquisition_price": 51.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666433"
+    },
+    {
+      "issuing_authority": "Caracalla",
+      "denomination": "Tetradrachm",
+      "category": "provincial",
+      "metal": "silver",
+      "storage_location": "SlabBox1",
+      "mint_name": "Laodicea ad Mare, SYRIA",
+      "script": "Greek",
+      "portrait_subject": "Caracalla",
+      "reign_start": 198,
+      "reign_end": 217,
+      "mint_year_start": 209,
+      "mint_year_end": 211,
+      "diameter_mm": 31.0,
+      "obverse_legend": "•AYT•KAI•-•ANTΩNЄINOC•-•CЄ•",
+      "obverse_description": "laureate, draped small bust of Caracalla right, with older portrait, beard and mustache, seen from front",
+      "reverse_legend": "•ΔHMAPX•ЄΞ•YPATOC•TO•Γ•",
+      "reverse_description": "eagle standing facing, head left, wreath in beak, tail left, wings spread; star between legs.",
+      "references": [
+        {
+          "system": "other",
+          "number": "Prieur 1165. RPC V.3",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Online unassigned 87419.",
+          "is_primary": false
+        }
+      ],
+      "grade": "Choice VF",
+      "acquisition_price": 159.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-provincial/roman-provincial-syria-laodicea-ad-mare-caracalla-ad-198-217-bi-tetradrachm-31mm-1h-ngc-choice-vf/a/61524-24204.s"
+    },
+    {
+      "issuing_authority": "Caracalla",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-3-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Caracalla",
+      "reign_start": 198,
+      "reign_end": 217,
+      "mint_year_start": 213,
+      "mint_year_end": 213,
+      "weight_g": 3.34,
+      "diameter_mm": 20.0,
+      "obverse_description": "ANTONINVS PIVS AVG GERM - Laureate head right",
+      "reverse_description": "MONETA AVG - Moneta standing left, holding scales and cornucopia",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IVi",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "308",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "page 258 - Cohen 16",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 64.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/267389716696"
+    },
+    {
+      "issuing_authority": "Caracalla",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-4-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Caracalla",
+      "reign_start": 198,
+      "reign_end": 217,
+      "mint_year_start": 199,
+      "mint_year_end": 199,
+      "weight_g": 3.32,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP CAE M AVR ANT AVG P TR P II",
+      "obverse_description": "laureate, draped bust right",
+      "reverse_legend": "SPES PVBLICA",
+      "reverse_description": "Spes walking left, holding flower and raising hem of robe.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "28",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 600",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 52.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197805681393"
+    },
+    {
+      "issuing_authority": "Caracalla",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-4-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Caracalla",
+      "reign_start": 198,
+      "reign_end": 217,
+      "mint_year_start": 199,
+      "mint_year_end": 200,
+      "weight_g": 2.97,
+      "diameter_mm": 21.0,
+      "obverse_legend": "ANTONINVS AVGVSTVS",
+      "obverse_description": "laureate, draped and cuirassed bust right",
+      "reverse_legend": "SECVRIT ORBIS",
+      "reverse_description": "Securitas seated left, holding sceptre and propping head with left hand.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "44",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 573. Same as RIC 351b (Laodicea mint)",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RIC IVi",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "44Db",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 59.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197805685775"
+    },
+    {
+      "issuing_authority": "Caracalla",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-4-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Caracalla",
+      "reign_start": 198,
+      "reign_end": 217,
+      "mint_year_start": 217,
+      "mint_year_end": 217,
+      "weight_g": 2.97,
+      "diameter_mm": 21.0,
+      "obverse_description": "ANTONINVS PIVS AVG GERM - Laureate head right",
+      "reverse_description": "PM TR P XX COS IIII PP - Serapis, wearing polos (very small vertical hat), standing left, holding wreath and corn ears and a transverse scepter",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IVi",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "289c",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "page 255 - Cohen 382",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sear 6846",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 58.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205809337620"
+    },
+    {
+      "issuing_authority": "Elagabalus",
+      "denomination": "Tetradrachm",
+      "category": "provincial",
+      "metal": "billon",
+      "storage_location": "Velv1-1-6",
+      "mint_name": "Antioch",
+      "script": "Greek",
+      "portrait_subject": "Elagabalus",
+      "reign_start": 218,
+      "reign_end": 222,
+      "weight_g": 13.29,
+      "acquisition_price": 85.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/236327606942"
+    },
+    {
+      "issuing_authority": "Elagabalus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-4-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Elagabalus",
+      "reign_start": 218,
+      "reign_end": 222,
+      "mint_year_start": 220,
+      "mint_year_end": 222,
+      "weight_g": 2.1,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP ANTONINVS PIVS AVG",
+      "obverse_description": "laureate and draped bust of Elagabalus looking right, with horn over forehead",
+      "reverse_legend": "INVICTVS SACERDOS AVG",
+      "reverse_description": "Elagabalus standing facing, head left, holding patera over altar and club, recumbent bull behind altar; star in left field",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV/2",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Elagabalus",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "n° 88",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "p. 34",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "BMCRE V/2",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Elagabalus",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "n° 212",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "p. 562",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 67.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205738719319"
+    },
+    {
+      "issuing_authority": "Elagabalus",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-4-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Elagabalus",
+      "reign_start": 218,
+      "reign_end": 222,
+      "mint_year_start": 221,
+      "mint_year_end": 221,
+      "weight_g": 3.0,
+      "diameter_mm": 20.0,
+      "obverse_legend": "IMP ANTONINVS PIVS AVG",
+      "obverse_description": "laureate, horned, draped bust right",
+      "reverse_legend": "INVICTVS SACERDOS AVG",
+      "reverse_description": "Elagabalus standing left, holding patera, sacrificing over altar and holding branch downwards; star in field, (no bull behind altar)",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "87",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 71.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197684880656"
+    },
+    {
+      "issuing_authority": "Severus Alexander",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-4-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Severus Alexander",
+      "reign_start": 222,
+      "reign_end": 235,
+      "weight_g": 2.28,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP C M AVG SEV ALEXAND AVG",
+      "obverse_description": "laureate draped and cuirassed bust right",
+      "reverse_legend": "PAX AVG",
+      "reverse_description": "Pax running left, holding olive-branch and sceptre.",
+      "references": [
+        {
+          "system": "other",
+          "number": "Sear 7887v",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 187a    RIC 168",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 69.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197684876381"
+    },
+    {
+      "issuing_authority": "Severus Alexander",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv2-1-5",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Severus Alexander",
+      "reign_start": 222,
+      "reign_end": 235,
+      "mint_year_start": 232,
+      "mint_year_end": 232,
+      "weight_g": 3.34,
+      "diameter_mm": 19.0,
+      "obverse_legend": "MP ALEXANDER PIVS AVG",
+      "obverse_description": "laureate and draped bust of Severus Alexander to right.",
+      "reverse_legend": "MARS VLTOR",
+      "reverse_description": "Mars advancing right, holding spear in his right hand and shield in his left.",
+      "references": [
+        {
+          "system": "other",
+          "number": "BMC 837",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Cohen 161",
+          "is_primary": false
+        },
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "246",
+          "is_primary": false
+        }
+      ],
+      "grade": "Choice VF",
+      "acquisition_price": 98.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717751"
+    },
+    {
+      "issuing_authority": "Severus Alexander",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-2-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Severus Alexander",
+      "reign_start": 222,
+      "reign_end": 235,
+      "mint_year_start": 228,
+      "mint_year_end": 228,
+      "weight_g": 2.88,
+      "diameter_mm": 19.0,
+      "obverse_description": "IMP C M AVR SEV ALEXAND AVG. Bust of Severus Alexander, laureate, draped, right.",
+      "reverse_description": "P M TR P VII COS II P P. Mars, helmeted, in military attire, walking right, carrying spear in right hand and trophy in left hand.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV.2#73",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 56.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205795396806"
+    },
+    {
+      "issuing_authority": "Severus Alexander",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-2-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Severus Alexander",
+      "reign_start": 222,
+      "reign_end": 235,
+      "mint_year_start": 231,
+      "mint_year_end": 235,
+      "weight_g": 2.72,
+      "diameter_mm": 21.0,
+      "obverse_description": "IMP ALEXANDER PIVS AVG. Bust of Severus Alexander, laureate, draped, cuirassed, right.",
+      "reverse_description": "PROVIDENTIA AVG. Providentia, draped, standing front, head left, holding corn-ears in right hand and anchor in left hand; on ground, modius.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV.2#252d",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF+",
+      "acquisition_price": 67.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205795400353"
+    },
+    {
+      "issuing_authority": "Severus Alexander",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-3-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Severus Alexander",
+      "reign_start": 222,
+      "reign_end": 235,
+      "mint_year_start": 231,
+      "mint_year_end": 235,
+      "weight_g": 3.35,
+      "diameter_mm": 19.0,
+      "obverse_description": "IMP ALEXANDER PIVS AVG. Bust of Severus Alexander, laureate, draped, right.",
+      "reverse_description": "SPES PVBLICA. Spes, draped, walking left, holding flower in right hand and raising skirt with left hand. Spes Publica. Hope of the public.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV.2#254c   (Bmcre-900). (Rsc-546)",
+          "is_primary": true
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 98.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852937"
+    },
+    {
+      "issuing_authority": "Maximinus I",
+      "denomination": "Drachm",
+      "category": "provincial",
+      "metal": "bronze",
+      "storage_location": "SlabBox1",
+      "mint_name": "Anchialus, Thrace",
+      "script": "Greek",
+      "portrait_subject": "Maximinus I",
+      "reign_start": 235,
+      "reign_end": 238,
+      "weight_g": 8.25,
+      "diameter_mm": 26.0,
+      "obverse_description": "AVT MAΞIMEI-NO CEYCEBHC AVΓ (AVΓ ligate), laureate head of Maximinus I right, slight drapery on far shoulder",
+      "reverse_legend": "AΓX-IAΛ-EΩ-N",
+      "reverse_description": "dolphin right, between fish above left and fish below right.",
+      "references": [
+        {
+          "system": "rpc",
+          "volume": "VI",
+          "number": "669",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "surface_issues": [
+        "altered surface"
+      ],
+      "acquisition_price": 99.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-provincial/roman-provincial-thrace-anchialus-maximinus-i-ad-235-238-ae-26mm-825-gm-1h-vf-altered-surface/a/61519-25164.s",
+      "personal_notes": "Altered surface, thus ineligible for encapsulation.",
+      "provenance_notes": "From the Merrill A. Gibson Collection of Ancient Coins; Ex Apollo Numismatics, private sale with old dealer's tag included."
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-3",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "acquisition_price": 60.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/127382102346"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-5",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 242,
+      "mint_year_end": 244,
+      "weight_g": 3.72,
+      "diameter_mm": 24.0,
+      "obverse_description": "IMP GORDIANVS PIVS FEL AVG Bust of Gordian III, radiate, cuirassed, seen from behind, right",
+      "reverse_description": "ORIENS AVG Sol, radiate, nude except for cloak around shoulders, standing left, raising right hand and holding globe in left hand",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "213",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 64.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/177391324440"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-6",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 238,
+      "mint_year_end": 239,
+      "obverse_legend": "IMP CAES M ANT GORDIANVS AVG",
+      "obverse_description": "radiate bust right, draped and cuirassed",
+      "reverse_legend": "AEQVITAS AVG",
+      "reverse_description": "Aequitas standing left, holding scales and cornucopiae.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "177",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RIC IViii",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "177a (s) Scarce",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "page 34 - Cohen 17",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 33.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/236313291352"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 241,
+      "mint_year_end": 243,
+      "obverse_legend": "IMP GORDIANVS PIVS FEL AVG",
+      "obverse_description": "Radiate Crown, Draped, And Cuirassed Bust Of Gordian III Right",
+      "reverse_legend": "P M TR P V COS II P P",
+      "reverse_description": "Apollo, nude to waist, seated left, holding branch in extended right hand and resting left elbow on lyre.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "88",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear 8645",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 33.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/236313291352"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-4-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "weight_g": 4.5,
+      "diameter_mm": 24.0,
+      "obverse_legend": "IMP GORDIANVS PIVS FEL AVG",
+      "obverse_description": "radiate draped bust right",
+      "reverse_legend": "VICTOR AETER",
+      "reverse_description": "Victory standing left with palm, resting shield on captive at foot.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "154",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear 8662",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 67.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205738722651"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv1-4-5",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 240,
+      "mint_year_end": 240,
+      "weight_g": 2.86,
+      "diameter_mm": 20.0,
+      "obverse_legend": "IMP GORDIANVS PIVS FEL AVG",
+      "obverse_description": "Laureate, draped, cuirassed bust right, seen from behind",
+      "reverse_legend": "PIETAS-AVGVSTI",
+      "reverse_description": "Pietas, veiled, standing facing, head left, raising both hands",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "129",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear 8677",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 70.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205752376075"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "weight_g": 4.38,
+      "diameter_mm": 23.0,
+      "grade": "VF",
+      "acquisition_price": 46.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813295"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-1-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 243,
+      "mint_year_end": 244,
+      "weight_g": 3.82,
+      "diameter_mm": 23.0,
+      "obverse_description": "IMP GORDIANVS PIVS FEL AVG. Bust of Gordian III, radiate, draped, cuirassed, right",
+      "reverse_description": "FORT REDVX. Fortuna Redux. Fortune that brings back [the Emperor in safety]",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV.3#143",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 55.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197786701824"
+    },
+    {
+      "issuing_authority": "Gordian III",
+      "denomination": "Denarius",
+      "category": "imperial",
+      "metal": "silver",
+      "storage_location": "Velv3-2-6",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gordian III",
+      "reign_start": 238,
+      "reign_end": 244,
+      "mint_year_start": 241,
+      "mint_year_end": 241,
+      "weight_g": 2.94,
+      "diameter_mm": 20.0,
+      "obverse_description": "IMP GORDIANVS PIVS FEL AVG. Bust of Gordian III, laureate, draped, cuirassed, right.",
+      "reverse_description": "DIANA LVCIFERA. Diana, draped, standing right, holding lighted torch in right (?) hand. - Diana Lucifera. Diana, the bringer of light.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "127",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 52.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852911"
+    },
+    {
+      "issuing_authority": "Philip I Arab",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-3-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Philip I Arab",
+      "reign_start": 244,
+      "reign_end": 249,
+      "mint_year_start": 244,
+      "mint_year_end": 247,
+      "obverse_legend": "IMP M IVL PHILIPPVS AVG",
+      "obverse_description": "Radiate, draped, cuirassed bust right, seen from behind",
+      "reverse_legend": "AEQVITAS AVGG",
+      "reverse_description": "Aequitas standing left, scales in right hand, cornucopiae in lef",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Part III",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "27b",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 33.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/236313291352"
+    },
+    {
+      "issuing_authority": "Philip I Arab",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-3-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Philip I Arab",
+      "reign_start": 244,
+      "reign_end": 249,
+      "mint_year_start": 244,
+      "mint_year_end": 247,
+      "weight_g": 4.48,
+      "diameter_mm": 23.0,
+      "obverse_legend": "IMP M IVL PHILIPPVS AVG",
+      "obverse_description": "radiate, draped and cuirassed bust right",
+      "reverse_description": "ANNONA AVGG. Annona standing left, holding corn-ears over modius and cornucopiae",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "28",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 25.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 78.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205689751898"
+    },
+    {
+      "issuing_authority": "Philip I Arab",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-2-5",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Philip I Arab",
+      "reign_start": 244,
+      "reign_end": 249,
+      "weight_g": 3.65,
+      "diameter_mm": 23.0,
+      "grade": "VF",
+      "acquisition_price": 51.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6306&l=7777701"
+    },
+    {
+      "issuing_authority": "Philip I Arab",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Otacilia Severa",
+      "reign_start": 244,
+      "reign_end": 249,
+      "weight_g": 4.34,
+      "diameter_mm": 25.0,
+      "grade": "VF",
+      "acquisition_price": 51.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813302"
+    },
+    {
+      "issuing_authority": "Decius",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-1-1",
+      "script": "Latin",
+      "portrait_subject": "Decius",
+      "reign_start": 249,
+      "reign_end": 251,
+      "weight_g": 3.59,
+      "diameter_mm": 23.0,
+      "obverse_legend": "IMP TRAIANVS DECIVS AVG",
+      "obverse_description": "Radiate, draped and cuirassed bust of Trajan Decius right",
+      "reverse_legend": "VICTORIA AVG",
+      "reverse_description": "Victory advancing left with wreath and palm.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "7",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 60.0,
+      "acquisition_source": "Agora",
+      "acquisition_url": "https://agoraauctions.com/listing/viewdetail/60751/0/archive"
+    },
+    {
+      "issuing_authority": "Decius",
+      "denomination": "Tetradrachm",
+      "category": "provincial",
+      "metal": "billon",
+      "storage_location": "Velv1-1-7",
+      "mint_name": "Antioch",
+      "script": "Greek",
+      "portrait_subject": "Decius",
+      "reign_start": 249,
+      "reign_end": 251,
+      "weight_g": 11.28,
+      "diameter_mm": 26.8,
+      "obverse_description": "Laureate, draped and cuirassed bust of Trajan Decius right",
+      "reverse_description": "Eagle standing left on palm, holding wreath in beak, wings displayed",
+      "references": [
+        {
+          "system": "other",
+          "number": "SNG Cop 281-282",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 79.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/357554646693"
+    },
+    {
+      "issuing_authority": "Decius",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-5-6",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Decius",
+      "reign_start": 249,
+      "reign_end": 251,
+      "weight_g": 2.22,
+      "acquisition_price": 40.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666509"
+    },
+    {
+      "issuing_authority": "Decius",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-5-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Decius",
+      "reign_start": 249,
+      "reign_end": 251,
+      "weight_g": 3.49,
+      "acquisition_price": 46.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666510"
+    },
+    {
+      "issuing_authority": "Decius",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Herennia Etruscilla",
+      "reign_start": 249,
+      "reign_end": 253,
+      "diameter_mm": 23.0,
+      "obverse_legend": "HER ETRVSCILLA AVG",
+      "obverse_description": "draped bust of Herennia Etruscilla right, set on crescent, seen from front, wearing stephane, hair brushed in straight lines with long plait carried up the back of head",
+      "reverse_legend": "PVDICITIA-AVG",
+      "reverse_description": "Pudicitia standing facing, head left, adjusting veil with right hand, transverse scepter in left.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC IV.III (Trajan Decius) 58b.",
+          "is_primary": true
+        }
+      ],
+      "grade": "AU",
+      "acquisition_price": 159.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-herennia-etruscilla-ad-249-253-ar-antoninianus-23mm-7h-ngc-au/a/232538-63078.s"
+    },
+    {
+      "issuing_authority": "Trebonianus Gallus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-1-6",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Trebonianus Gallus",
+      "reign_start": 251,
+      "reign_end": 253,
+      "weight_g": 3.67,
+      "diameter_mm": 21.0,
+      "obverse_legend": "IMP CAE C VIB TREB GALLVS AVG",
+      "obverse_description": "armoured and draped bust with radiant crown on the right",
+      "reverse_description": "PIETAS AVGG Pietas, veiled, standing left, both hands raised",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "41",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Coh. 84.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 36.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717768"
+    },
+    {
+      "issuing_authority": "Trebonianus Gallus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-4-6",
+      "mint_name": "Milan",
+      "script": "Latin",
+      "portrait_subject": "Trebonianus Gallus",
+      "reign_start": 251,
+      "reign_end": 253,
+      "obverse_legend": "IMP C C VIB TREB GALLVS AVG",
+      "obverse_description": "radiate, draped, cuirassed bust right",
+      "reverse_legend": "PIETAS AVGG",
+      "reverse_description": "Pietas veiled, standing left by altar, raising both hands",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "72",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 88",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sear (1998) 2790",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sear 9643. ote: Sear 9643 repeats the citations of Sear 9638 (\"RIC 71",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "RSC 76",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Hunter 51\" in error.",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 76.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/257083795739"
+    },
+    {
+      "issuing_authority": "Volusian",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-4-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Volusian",
+      "reign_start": 251,
+      "reign_end": 253,
+      "obverse_legend": "IMP CAE C VIB VOLVSIANO AVG",
+      "obverse_description": "radiate, draped and cuirassed bust right",
+      "reverse_legend": "AEQVITAS AVGG",
+      "reverse_description": "Aequitas standing left, holding scales and cornucopiae",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "166",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "RSC 8",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sear 9740",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 68.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/257083800370"
+    },
+    {
+      "issuing_authority": "Valerian I",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-1-7",
+      "mint_name": "Rome or Lugdunum?",
+      "script": "Latin",
+      "portrait_subject": "Valerian I",
+      "reign_start": 253,
+      "reign_end": 260,
+      "weight_g": 4.3,
+      "diameter_mm": 22.0,
+      "obverse_description": "VALERIANVS P F AVG  radiate, draped and cuirassed bust right",
+      "reverse_description": "ORIENS AVGG Sol, radiate, walking left, raising right hand and holding globe in left hand.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC V.1# 13c",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 31.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717777"
+    },
+    {
+      "issuing_authority": "Valerian I",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-1-4",
+      "mint_name": "travel mint?",
+      "script": "Latin",
+      "portrait_subject": "Valerian I",
+      "reign_start": 253,
+      "reign_end": 260,
+      "mint_year_start": 257,
+      "mint_year_end": 257,
+      "weight_g": 4.1,
+      "diameter_mm": 21.0,
+      "obverse_description": "IMP • VALERIANVS • AVG • Imperator, or commander, Valerian, Augustus or Emperor. • Radiate, draped and cuirassed bust of Valerian right.",
+      "reverse_description": "P • M • TR P • V • COS • IIII • P • P • Pontifex Maximus, or head Priest, Tribune of the People for the fifth year, Consul for the fourth time, Pater Patriae or Father of Rome. • Valerian and Gallienus standing, facing each other, holding spears and shields between them. • This reverse is reminiscent of a similar reverse on a coin of Augustus for his two grandsons.",
+      "references": [
+        {
+          "system": "other",
+          "number": "\"Roman Coins & Their Values\" Volume 3",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "by David R. Sear. #9962.",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 25.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205738862830"
+    },
+    {
+      "issuing_authority": "Valerian I",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-6",
+      "mint_name": "Samosata or Antioch",
+      "script": "Latin",
+      "portrait_subject": "Valerian I",
+      "reign_start": 253,
+      "reign_end": 260,
+      "weight_g": 3.72,
+      "diameter_mm": 22.0,
+      "grade": "VF+",
+      "acquisition_price": 40.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813375"
+    },
+    {
+      "issuing_authority": "Valerian I",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-2-4",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Valerian I",
+      "reign_start": 253,
+      "reign_end": 260,
+      "weight_g": 4.08,
+      "diameter_mm": 22.0,
+      "obverse_description": "IMP C P LIC VALERIANVS AVG. Bust of Valerian, radiate, draped, right.",
+      "reverse_description": "RESTITVT ORIENTIS. Turreted woman (the Orient), draped, standing right, presenting wreath to emperor, standing left, holding spear in left hand.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "286",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 16.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852871"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "SlabBox1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus, Sole Reign",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.62,
+      "diameter_mm": 22.0,
+      "obverse_legend": "GALLIENVS AVG",
+      "obverse_description": "radiate head of Gallienus right",
+      "reverse_legend": "AETER-NITAS AVG",
+      "reverse_description": "Sol standing facing, radiate head left, nude save for chlamys across left shoulder, right hand raised in gesture of adlocutio, globe in outstretched left.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "V.I",
+          "number": "160",
+          "is_primary": true
+        }
+      ],
+      "grade": "MS",
+      "strike_quality": 4,
+      "surface_quality": 4,
+      "acquisition_price": 89.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-gallienus-sole-reign-ad-253-268-bi-antoninianus-22mm-362-gm-7h-ngc-ms-4-5-4-5/a/61519-25316.s",
+      "provenance_notes": "From the Merrill A. Gibson Collection of Ancient Coins."
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-2-6",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.65,
+      "diameter_mm": 23.0,
+      "grade": "VF+",
+      "acquisition_price": 41.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6306&l=7777713"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-4",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.48,
+      "diameter_mm": 20.0,
+      "grade": "VF+",
+      "acquisition_price": 44.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813333"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-5",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.88,
+      "diameter_mm": 22.0,
+      "grade": "XF",
+      "acquisition_price": 40.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813335"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-6",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 4.29,
+      "diameter_mm": 24.0,
+      "grade": "VF+",
+      "acquisition_price": 20.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813347"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-3-7",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.75,
+      "diameter_mm": 22.0,
+      "grade": "VF",
+      "acquisition_price": 21.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813351"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 2.67,
+      "diameter_mm": 22.0,
+      "grade": "VF",
+      "acquisition_price": 25.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813355"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-2",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 2.47,
+      "diameter_mm": 19.0,
+      "grade": "VF",
+      "acquisition_price": 22.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813359"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-3",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.3,
+      "diameter_mm": 23.0,
+      "grade": "VF",
+      "acquisition_price": 15.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813367"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 2.62,
+      "diameter_mm": 22.0,
+      "grade": "VF",
+      "acquisition_price": 26.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813368"
+    },
+    {
+      "issuing_authority": "Gallienus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-5",
+      "mint_name": "Samosata or Antioch",
+      "script": "Latin",
+      "portrait_subject": "Gallienus",
+      "reign_start": 253,
+      "reign_end": 268,
+      "weight_g": 3.29,
+      "diameter_mm": 21.0,
+      "grade": "VF+",
+      "acquisition_price": 33.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813374"
+    },
+    {
+      "issuing_authority": "Claudius II Gothicus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-3-5",
+      "mint_name": "Rome, 3rd officinal, Issue Iia",
+      "script": "Latin",
+      "portrait_subject": "Claudius II Gothicus",
+      "reign_start": 268,
+      "reign_end": 270,
+      "mint_year_start": 268,
+      "mint_year_end": 269,
+      "weight_g": 3.4,
+      "diameter_mm": 22.0,
+      "obverse_legend": "IMP C CLAVDIVS AVG",
+      "obverse_description": "radiate, draped, cuirassed bust right",
+      "reverse_legend": "SALVS AVG",
+      "reverse_description": "Salus standing left by altar, holding patera and sceptre, feeding serpent rising from altar",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "98",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear5 11366",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 20.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/357275279322"
+    },
+    {
+      "issuing_authority": "Claudius II Gothicus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-4-7",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Claudius II Gothicus",
+      "reign_start": 268,
+      "reign_end": 270,
+      "weight_g": 2.44,
+      "diameter_mm": 19.0,
+      "grade": "XF?",
+      "acquisition_price": 18.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6341&l=7813396"
+    },
+    {
+      "issuing_authority": "Claudius II Gothicus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-2-7",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Claudius II Gothicus",
+      "reign_start": 268,
+      "reign_end": 270,
+      "weight_g": 3.15,
+      "diameter_mm": 20.0,
+      "obverse_legend": "IMP C CLAVDIVS AVG",
+      "obverse_description": "radiate and draped bust right, seen from the back",
+      "reverse_legend": "IVVENTVS AVG",
+      "reverse_description": "Hercules standing front, head left, holding club and lionskin. Mintmark (officina letter) Δ",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "213",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear5 11344",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 29.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852920"
+    },
+    {
+      "issuing_authority": "Victorinus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "SlabBox1",
+      "mint_name": "Trier",
+      "script": "Latin",
+      "portrait_subject": "Victorinus",
+      "reign_start": 269,
+      "reign_end": 271,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP C VICTORINVS P F AVG",
+      "obverse_description": "radiate, draped, cuirassed bust of Victorinus right, seen from front",
+      "reverse_legend": "PA-X-A-VG",
+      "reverse_description": "Pax standing facing, head left, branch in raised right hand, transverse scepter in left; V in left field, star in right field.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "V.II",
+          "number": "118",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice AU",
+      "acquisition_price": 64.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-victorinus-ad-269-271-bi-antoninianus-19mm-1h-ngc-choice-au/a/232540-61115.s"
+    },
+    {
+      "issuing_authority": "Aurelian",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-1-1",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Aurelian",
+      "reign_start": 270,
+      "reign_end": 275,
+      "weight_g": 3.87,
+      "acquisition_price": 35.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666554"
+    },
+    {
+      "issuing_authority": "Aurelian",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-3-5",
+      "mint_name": "Cyzicus",
+      "script": "Latin",
+      "portrait_subject": "Severina",
+      "reign_start": 270,
+      "reign_end": 275,
+      "weight_g": 3.88,
+      "diameter_mm": 22.0,
+      "obverse_legend": "SEVERINA AVG",
+      "obverse_description": "diademed, draped bust right on crescent",
+      "reverse_legend": "CONCORDIAE MILITVM",
+      "reverse_description": "Concordia standing left, holding two standards. Mintmark XXI",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "18",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Cohen 7",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 29.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852962"
+    },
+    {
+      "issuing_authority": "Tacitus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-3-6",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Tacitus",
+      "reign_start": 275,
+      "reign_end": 276,
+      "mint_year_start": 275,
+      "mint_year_end": 276,
+      "weight_g": 3.53,
+      "diameter_mm": 23.0,
+      "obverse_legend": "IMP C M CL TACITVS AVG",
+      "obverse_description": "radiate, draped and cuirassed bust right",
+      "reverse_legend": "CLEMENTIA TEMP",
+      "reverse_description": "Emperor standing right, holding sceptre, receiving globe from Jupiter, standing left, holding sceptre, H in lower centre. Mintmark XXI",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "210",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "H",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Cohen 20",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 64.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7853014"
+    },
+    {
+      "issuing_authority": "Probus",
+      "denomination": "Æ3",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-7",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Probus",
+      "reign_start": 276,
+      "reign_end": 282,
+      "mint_year_start": 280,
+      "mint_year_end": 280,
+      "weight_g": 4.01,
+      "diameter_mm": 23.0,
+      "obverse_legend": "IMP C M AVR PROBVS P F AVG",
+      "obverse_description": "Radiate, draped and cuirassed bust of Probus left, holding eagle-tipped scepter",
+      "reverse_legend": "CONCORD MILIT",
+      "reverse_description": "Probus, togate, standing right clasping hands with Concordia standing left; Q in lower field // XXI",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "V",
+          "number": "666",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "C 161",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "SRCV 11967",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 54.0,
+      "acquisition_source": "Agora",
+      "acquisition_url": "https://agoraauctions.com/listing/viewdetail/60760/0/archive",
+      "personal_notes": "XF, well-struck and centered on adequate-sized flan; significant areas of reddish mint luster present, light olive patina in fields."
+    },
+    {
+      "issuing_authority": "Probus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-3-3",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Probus",
+      "reign_start": 276,
+      "reign_end": 282,
+      "mint_year_start": 280,
+      "mint_year_end": 280,
+      "weight_g": 3.06,
+      "diameter_mm": 22.0,
+      "obverse_legend": "IMP C M AVR PROBVS P F AVG",
+      "obverse_description": "radiate, cuirassed bust left holding spear over shoulder",
+      "reverse_legend": "PAX AVG",
+      "reverse_description": "Pax standing left, holding olive branch and transverse sceptre, V to right. Mintmark XXI",
+      "references": [
+        {
+          "system": "other",
+          "number": "IC 704",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "V",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 30.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/127345848283"
+    },
+    {
+      "issuing_authority": "Probus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-3-4",
+      "mint_name": "Rome",
+      "script": "Latin",
+      "portrait_subject": "Probus",
+      "reign_start": 276,
+      "reign_end": 282,
+      "weight_g": 3.8,
+      "diameter_mm": 24.0,
+      "obverse_legend": "IMP PROBVS AVG",
+      "obverse_description": "radiate, helmeted and cuirassed bust left with spear and shield",
+      "reverse_legend": "ROMAE AETER",
+      "reverse_description": "Roma seated in hexstyle temple with Victory and sceptre. Mintmark R star Γ",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "184",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "G",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 30.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/127345848283"
+    },
+    {
+      "issuing_authority": "Probus",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-2-5",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Probus",
+      "reign_start": 276,
+      "reign_end": 282,
+      "weight_g": 4.64,
+      "diameter_mm": 21.0,
+      "obverse_description": "IMP C M AVR PROBVS P F AVG. Bust of Probus, radiate, draped, cuirassed, right.",
+      "reverse_description": "CLEMENTIA TEMP / A // XXI Probus, standing right, holding sceptre, receiving Victory set on globe from Jupiter, standing left, holding sceptre. \t\t\"A•\" in field; \"XXI\" in exergue; A time of peace and calm.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC V.2#922c",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF+",
+      "acquisition_price": 40.0,
+      "acquisition_source": "Nummitra",
+      "acquisition_url": "https://www.biddr.com/auctions/nummitra/browse?a=6371&l=7852873"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "SlabBox1",
+      "mint_name": "Antioch",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "mint_year_start": 285,
+      "mint_year_end": 285,
+      "diameter_mm": 21.0,
+      "obverse_legend": "IMP C C VAL DIOCLETIANVS P F AVG",
+      "obverse_description": "radiate, draped, and cuirassed bust of Diocletian right, seen from front",
+      "reverse_legend": "IOVI CONSERVATO-RI AVGG",
+      "reverse_description": "Diocletian standing right (on left), grounded scepter in left hand receiving with right Victory on globe from Jupiter standing left (on right), grounded scepter in left hand; H in central field, XXI in exergue.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "V.II",
+          "number": "325",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice XF",
+      "acquisition_price": 109.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-diocletian-ad-284-305-bi-antoninianus-21mm-11h-ngc-choice-xf/a/232534-63101.s",
+      "provenance_notes": "From the Werner Collection"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-2",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "acquisition_price": 48.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/127382106837"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Aurelianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-2-4",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "weight_g": 3.03,
+      "obverse_description": "IMP DIOCLETIANVS AVG",
+      "reverse_legend": "IOVI CONSERVAT AVG",
+      "reverse_description": "Jupiter standing left holding thunderbolt and long scepter, XXIΓ? in exergue",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "",
+          "number": "161",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "\"285\"",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "Sear 12665",
+          "is_primary": false
+        }
+      ],
+      "acquisition_price": 63.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/256704704426"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Nummus",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-3-6",
+      "mint_name": "Heraclea",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "mint_year_start": 297,
+      "mint_year_end": 298,
+      "weight_g": 9.81,
+      "diameter_mm": 26.0,
+      "obverse_legend": "IMP C C VAL DIOCLETIANVS P F AVG",
+      "obverse_description": "Head of Diocletian, laureate, right.",
+      "reverse_legend": "GENIO POPVLI ROMANI",
+      "reverse_description": "Genius, wearing modius, nude, chlamys draped over left shoulder, standing left, pouring liquid from patera in right hand and holding cornucopia in left hand. Mintmark and officina between two dots in exergue: TS",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC VI#23a",
+          "is_primary": true
+        }
+      ],
+      "acquisition_price": 30.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/326774112326"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Aurelianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-1-2",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "weight_g": 4.11,
+      "acquisition_price": 23.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666567"
+    },
+    {
+      "issuing_authority": "Diocletian",
+      "denomination": "Aurelianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv3-1-3",
+      "script": "Latin",
+      "portrait_subject": "Diocletian",
+      "reign_start": 284,
+      "reign_end": 305,
+      "weight_g": 3.61,
+      "acquisition_price": 35.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666571"
+    },
+    {
+      "issuing_authority": "Maximianus Herculius",
+      "denomination": "Antoninianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-2-1",
+      "mint_name": "Cyzikos",
+      "script": "Latin",
+      "portrait_subject": "Maximianus Herculius",
+      "reign_start": 286,
+      "reign_end": 305,
+      "weight_g": 3.5,
+      "diameter_mm": 22.0,
+      "grade": "XF",
+      "acquisition_price": 31.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717816"
+    },
+    {
+      "issuing_authority": "Maximianus Herculius",
+      "denomination": "Aurelianus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv1-5-4",
+      "script": "Latin",
+      "portrait_subject": "Maximianus Herculius",
+      "reign_start": 286,
+      "reign_end": 305,
+      "acquisition_price": 3.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/116774589418"
+    },
+    {
+      "issuing_authority": "Maximinus II Daza",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv3-1-4",
+      "mint_name": "Cyzicus",
+      "script": "Latin",
+      "portrait_subject": "Maximinus II Daza, as Caesar",
+      "reign_start": 305,
+      "reign_end": 309,
+      "weight_g": 7.61,
+      "obverse_description": "GAL VAL MAXIMINVS NOB C. Laureate head right.",
+      "reverse_description": "GENIO CAESARIS / Γ / MKV. Genius standing left, holding patera, from which liquor flows, and cornucopia.",
+      "acquisition_price": 25.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666582"
+    },
+    {
+      "issuing_authority": "Galerius Maximianu",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "Velv2-2-2",
+      "mint_name": "Cyzikos",
+      "script": "Latin",
+      "portrait_subject": "Galerius Maximianu",
+      "reign_start": 305,
+      "reign_end": 311,
+      "mint_year_start": 308,
+      "mint_year_end": 308,
+      "weight_g": 7.9,
+      "diameter_mm": 27.0,
+      "obverse_legend": "IMP C GAL VAL MAXIMIANVS PF AVG",
+      "obverse_description": "laureate head right",
+      "reverse_legend": "GENIO POPV-LI ROMANI",
+      "reverse_description": "Genius standing left, modius on head, naked except for chlamys over left shoulder (falls low), holding patera from which liquid flows, and cornucopiae. Mintmark MKB",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC VI Cyzicus 36",
+          "is_primary": true
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 63.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717823"
+    },
+    {
+      "issuing_authority": "Galerius",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-2-1",
+      "script": "Latin",
+      "portrait_subject": "Galerius",
+      "reign_start": 305,
+      "reign_end": 311,
+      "diameter_mm": 28.0,
+      "grade": "XF",
+      "acquisition_price": 47.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/127382121955"
+    },
+    {
+      "issuing_authority": "Constantine I",
+      "denomination": "Centenionalis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-3",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Constantine I",
+      "reign_start": 307,
+      "reign_end": 337,
+      "weight_g": 2.62,
+      "diameter_mm": 19.0,
+      "obverse_legend": "IMP CONSTANTINVS AVG",
+      "obverse_description": "bust left in high crested helmet, cuirassed, with spear across right shoulder and shield",
+      "reverse_legend": "VICT LAETAE PRINC PERP",
+      "reverse_description": "two Victories facing each other inscribing VOT PR on shield set upon altar. I on altar. Mintmark dot ASIS dot.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC VII",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Siscia",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "82 rated Rare?",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "acquisition_price": 40.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205717499110"
+    },
+    {
+      "issuing_authority": "Constantine I",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv3-1-5",
+      "script": "Latin",
+      "portrait_subject": "Constantine I",
+      "reign_start": 307,
+      "reign_end": 337,
+      "weight_g": 3.0,
+      "obverse_description": "CONSTANTINVS AVG. Laureate head right.",
+      "reverse_description": "PROVIDENTIAE AVGG / SMANTB Camp gate with two turrets; above, star.",
+      "acquisition_price": 35.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666606"
+    },
+    {
+      "issuing_authority": "Licinius I",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-1",
+      "mint_name": "Heraclea",
+      "script": "Latin",
+      "portrait_subject": "Licinius I",
+      "reign_start": 308,
+      "reign_end": 324,
+      "mint_year_start": 313,
+      "mint_year_end": 313,
+      "weight_g": 3.83,
+      "diameter_mm": 23.0,
+      "obverse_legend": "IMP C VAL LICIN LICINIVS PF AVG",
+      "obverse_description": "Laureate head right",
+      "reverse_legend": "IOVI CONS-ERVATORI AVGG",
+      "reverse_description": "Jupiter standing left, chlamys hanging from left shoulder, holding Victory on globe and sceptre. Gamma in right field. Mintmark SMHT.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC VI Heraclea 73",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Sear 15240.",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 21.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/205717496632"
+    },
+    {
+      "issuing_authority": "Constantine I",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv2-2-3",
+      "mint_name": "Trier",
+      "script": "Latin",
+      "portrait_subject": "Constantine II, as Caesar",
+      "reign_start": 317,
+      "reign_end": 337,
+      "mint_year_start": 323,
+      "mint_year_end": 323,
+      "weight_g": 2.81,
+      "diameter_mm": 19.0,
+      "obverse_description": "CONSTANTINVS IVN N C. Laureate, cuirassed bust left, spear and shield decorated with two soldiers on right arm, holding horse by bridle with right hand",
+      "reverse_legend": "BEATA TRAN-QVILLITAS",
+      "reverse_description": "globe on altar inscribed VO-TIS-XX, three stars above. Mintmark dot-STR",
+      "grade": "VF",
+      "acquisition_price": 56.0,
+      "acquisition_source": "Savoca",
+      "acquisition_url": "https://www.biddr.com/auctions/savoca/browse?a=6253&l=7717868"
+    },
+    {
+      "issuing_authority": "Constantius II",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-2",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Constantius II, as Caesar",
+      "reign_start": 326,
+      "reign_end": 337,
+      "mint_year_start": 328,
+      "mint_year_end": 329,
+      "weight_g": 3.52,
+      "diameter_mm": 20.0,
+      "obverse_legend": "FL IVL CONSTANTIVS NOB C",
+      "obverse_description": "laureate, draped and cuirassed bust left",
+      "reverse_legend": "PROVIDENTIAE CAESS",
+      "reverse_description": "campgate with two turrets and star above, row of dots in top layer. Mintmark ΔSIS double crescent.",
+      "references": [
+        {
+          "system": "other",
+          "number": "Siscia RIC VII",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "217",
+          "is_primary": false
+        },
+        {
+          "system": "other",
+          "number": "page 452",
+          "is_primary": false
+        }
+      ],
+      "grade": "VF",
+      "acquisition_price": 30.0,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/197684910677"
+    },
+    {
+      "issuing_authority": "Constantine II",
+      "denomination": "Fllis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-6",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Constantine II, as Caesar",
+      "reign_start": 326,
+      "reign_end": 337,
+      "acquisition_price": 16.5,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/116775902220"
+    },
+    {
+      "issuing_authority": "Constantius II",
+      "denomination": "Nummus",
+      "category": "imperial",
+      "metal": "billon",
+      "storage_location": "SlabBox1",
+      "mint_name": "Alexandria",
+      "script": "Latin",
+      "portrait_subject": "Constantius II",
+      "reign_start": 337,
+      "reign_end": 361,
+      "mint_year_start": 340,
+      "mint_year_end": 340,
+      "diameter_mm": 15.0,
+      "obverse_legend": "CONSTANTI-VS MAX AVG",
+      "obverse_description": "laureate, draped, and cuirassed bust of Constantius II right",
+      "reverse_legend": "GLOR-IA EXERC-ITVS",
+      "reverse_description": "two soldiers standing face, heads towards one another, reversed spear in outer hand, resting on shield with inner hand, standard between; S-R across inner field, SMALB in exergue.",
+      "references": [
+        {
+          "system": "ric",
+          "volume": "VIII",
+          "number": "6",
+          "is_primary": true
+        }
+      ],
+      "grade": "AU",
+      "acquisition_price": 69.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-constantius-ii-ad-337-361-ae3-or-bi-nummus-15mm-11h-ngc-au/a/232536-61061.s"
+    },
+    {
+      "issuing_authority": "Constantius II",
+      "denomination": "Follis",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv3-1-6",
+      "script": "Latin",
+      "portrait_subject": "Constantius II",
+      "reign_start": 337,
+      "reign_end": 361,
+      "weight_g": 2.29,
+      "obverse_description": "CONSTANTIVS P F AVG. Laurel and rosette-diademed, draped and cuirassed bust right.",
+      "reverse_description": "GLORIA EXERCITVS. Two soldiers facing each other, each holding spear and shield set on ground; standard with christogram between them.",
+      "acquisition_price": 40.0,
+      "acquisition_source": "Rex",
+      "acquisition_url": "https://www.biddr.com/auctions/rexnumis/browse?a=6212&l=7666631"
+    },
+    {
+      "issuing_authority": "Valentinian I",
+      "denomination": "Æ3",
+      "category": "imperial",
+      "metal": "bronze",
+      "storage_location": "Velv1-5-5",
+      "mint_name": "Siscia",
+      "script": "Latin",
+      "portrait_subject": "Valentinian I",
+      "reign_start": 374,
+      "reign_end": 375,
+      "acquisition_price": 7.5,
+      "acquisition_source": "eBay",
+      "acquisition_url": "https://www.ebay.com/itm/116774590502"
+    },
+    {
+      "issuing_authority": "Honorius",
+      "denomination": "Solidus",
+      "category": "imperial",
+      "metal": "gold",
+      "storage_location": "SlabBox1",
+      "mint_name": "Constantinople",
+      "script": "Latin",
+      "portrait_subject": "Honorius",
+      "reign_start": 393,
+      "reign_end": 423,
+      "mint_year_start": 397,
+      "mint_year_end": 402,
+      "weight_g": 4.37,
+      "diameter_mm": 21.0,
+      "obverse_legend": "D N HONORI-VS P F AVG",
+      "obverse_description": "pearl-diademed, helmeted, and cuirassed bust of Honorius facing, head slightly right, spear in right hand over shoulder, shield decorated with horseman motif in left",
+      "reverse_legend": "CONCORDI-A AVGG I",
+      "reverse_description": "Constantinopolis seated facing on backless throne, helmeted head right, grounded scepter in right hand, Victory standing left on globe in outstretched left hand, right foot on prow; star in left field, CONOB in exergue.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC X (Arcadius)",
+          "is_primary": true
+        }
+      ],
+      "grade": "Choice XF",
+      "strike_quality": 5,
+      "surface_quality": 2,
+      "surface_issues": [
+        "light graffito, edge"
+      ],
+      "acquisition_price": 1020.0,
+      "acquisition_source": "Heritage",
+      "acquisition_url": "https://coins.ha.com/itm/ancients/roman-imperial/roman-imperial-honorius-western-roman-empire-ad-393-423-av-solidus-21mm-437-gm-5h-ngc-choice-xf-5-5-2-5-light-graffito-/a/232540-61116.s"
+    },
+    {
+      "issuing_authority": "Zeno",
+      "denomination": "Solidus",
+      "category": "imperial",
+      "metal": "gold",
+      "storage_location": "Velv1-1-2",
+      "mint_name": "Constantinople",
+      "script": "Latin",
+      "portrait_subject": "Zeno",
+      "reign_start": 476,
+      "reign_end": 491,
+      "weight_g": 4.5,
+      "diameter_mm": 21.0,
+      "obverse_legend": "D N ZENO PERP AVG",
+      "obverse_description": "pearl-diademed, helmeted and cuirassed bust facing slightly right, holding spear and shield decorated with horseman motif.",
+      "reverse_legend": "VICTORIA AVGGG B",
+      "reverse_description": "Victory standing left, holding long jewelled cross; star in right field, CONOB in exergue.",
+      "references": [
+        {
+          "system": "other",
+          "number": "RIC X-910 and 929",
+          "is_primary": true
+        },
+        {
+          "system": "other",
+          "number": "Depeyrot-108/1.",
+          "is_primary": false
+        }
+      ],
+      "grade": "XF",
+      "surface_issues": [
+        "area of weakness, a terrific rev."
+      ],
+      "acquisition_price": 1158.0,
+      "acquisition_source": "Coin Cabinet",
+      "acquisition_url": "https://www.biddr.com/auctions/thecoincabinet/browse?a=6251&l=7703586"
+    }
+  ],
+  "report": {
+    "stats": {
+      "total_rows": 117,
+      "processed": 110,
+      "skipped": 7,
+      "errors": 0,
+      "warnings": 0
+    },
+    "errors": [],
+    "warnings": [
+      "Row 112: Missing or invalid metal",
+      "Row 113: Missing or invalid metal",
+      "Row 114: Missing or invalid metal",
+      "Row 115: Missing or invalid metal",
+      "Row 116: Missing or invalid metal",
+      "Row 117: Missing or invalid metal",
+      "Row 118: Missing or invalid metal"
+    ]
+  }
+}

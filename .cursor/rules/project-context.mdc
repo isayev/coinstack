@@ -1,0 +1,40 @@
+---
+description: CoinStack project context and domain knowledge
+alwaysApply: true
+---
+
+# CoinStack Project Context
+
+## What is CoinStack?
+
+A personal ancient coin collection management system for numismatists. Single-user desktop/web app for cataloging Roman, Greek, Byzantine, and other ancient coins.
+
+## Domain Terms
+
+- **Denomination**: Coin type (Denarius, Antoninianus, Solidus, etc.)
+- **Metal**: Gold (AU), Silver (AR), Bronze (AE), Billon
+- **Obverse**: Front of coin (usually portrait)
+- **Reverse**: Back of coin (usually design/legend)
+- **Legend**: Text inscribed on coin
+- **Exergue**: Area below main reverse design
+- **Die Axis**: Orientation between obverse and reverse (0-12h)
+- **RIC/RPC/RSC**: Reference catalog systems
+- **NGC/PCGS**: Third-party grading services
+- **Slab**: Encapsulated graded coin
+
+## Categories
+
+- **Republic**: Roman Republic (509-27 BC)
+- **Imperial**: Roman Empire (27 BC - 476 AD)
+- **Provincial**: Roman provincial/Greek Imperial
+- **Byzantine**: Byzantine Empire (330-1453 AD)
+- **Greek**: Ancient Greek city-states
+
+## Data Model
+
+Core entity is `Coin` with relationships to:
+- `Mint` - Where coin was struck
+- `CoinReference` - Catalog references (RIC, RPC)
+- `CoinImage` - Obverse/reverse photos
+- `ProvenanceEvent` - Ownership history
+- `CoinTag` - Custom tags

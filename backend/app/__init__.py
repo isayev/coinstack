@@ -1,0 +1,1 @@
+"""CoinStack backend application."""
