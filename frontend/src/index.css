@@ -175,6 +175,10 @@
     --grade-ms: #FF6B6B;
     --grade-ms-bg: rgba(255, 107, 107, 0.15);
     
+    /* Unknown/Ungraded — Neutral muted */
+    --grade-unknown: #6e6e73;
+    --grade-unknown-bg: rgba(110, 110, 115, 0.15);
+    
     /* Certification services */
     --grade-ngc: #1A73E8;
     --grade-ngc-bg: rgba(26, 115, 232, 0.15);
@@ -231,6 +235,15 @@
     
     --price-up: #30D158;
     --price-down: #FF453A;
+    
+    /* ═══════════════════════════════════════════════════════════════
+       UNKNOWN/MISSING DATA — Consistent neutral styling
+       ═══════════════════════════════════════════════════════════════ */
+    
+    --unknown: #6e6e73;
+    --unknown-subtle: rgba(110, 110, 115, 0.12);
+    --unknown-border: rgba(110, 110, 115, 0.25);
+    --unknown-text: #8e8e93;
   }
   
   /* Light theme - minimal adjustments for mostly dark-first app */
@@ -381,6 +394,7 @@
   .grade-badge-ef { background: var(--grade-ef-bg); color: var(--grade-ef); }
   .grade-badge-au { background: var(--grade-au-bg); color: var(--grade-au); }
   .grade-badge-ms { background: var(--grade-ms-bg); color: var(--grade-ms); }
+  .grade-badge-unknown { background: var(--grade-unknown-bg); color: var(--grade-unknown); }
   .grade-badge-ngc { background: var(--grade-ngc-bg); color: var(--grade-ngc); }
   .grade-badge-pcgs { background: var(--grade-pcgs-bg); color: var(--grade-pcgs); }
   

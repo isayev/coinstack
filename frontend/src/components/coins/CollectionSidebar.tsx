@@ -50,6 +50,7 @@ const GRADE_FILTER_CONFIG: GradeFilterConfig[] = [
   { tier: 'ef', label: 'EF', cssVar: 'ef' },
   { tier: 'au', label: 'AU', cssVar: 'au' },
   { tier: 'ms', label: 'MS', cssVar: 'ms' },
+  { tier: 'unknown', label: 'Unknown', cssVar: 'unknown' },
 ];
 
 // ============================================================================

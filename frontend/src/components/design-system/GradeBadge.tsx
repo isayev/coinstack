@@ -39,24 +39,29 @@ export function GradeBadge({
   size = 'sm',
   className 
 }: GradeBadgeProps) {
-  const config = parseGrade(grade);
-  const tier: GradeTier = config?.tier || 'fine';
+  // Handle missing/unknown grades
+  const isUnknown = !grade || grade === '?' || grade.toLowerCase() === 'unknown';
+  const config = isUnknown ? null : parseGrade(grade);
+  const tier: GradeTier = config?.tier || 'unknown';
   
   // Check for service in grade string
-  const hasNGC = grade?.toUpperCase().includes('NGC') || service === 'NGC';
-  const hasPCGS = grade?.toUpperCase().includes('PCGS') || service === 'PCGS';
+  const hasNGC = !isUnknown && (grade?.toUpperCase().includes('NGC') || service === 'NGC');
+  const hasPCGS = !isUnknown && (grade?.toUpperCase().includes('PCGS') || service === 'PCGS');
   
   // Clean grade text (remove service prefix)
-  const cleanGrade = grade
-    ?.replace(/NGC\s*/i, '')
-    .replace(/PCGS\s*/i, '')
-    .trim();
+  const cleanGrade = isUnknown 
+    ? '?' 
+    : grade
+        ?.replace(/NGC\s*/i, '')
+        .replace(/PCGS\s*/i, '')
+        .trim();
   
   return (
     <div 
       className={cn(
         'inline-flex items-center gap-1 rounded font-semibold',
         SIZE_CLASSES[size],
+        isUnknown && 'opacity-50',
         className
       )}
       style={{
@@ -71,6 +76,7 @@ export function GradeBadge({
             ? 'var(--grade-pcgs)'
             : `var(--grade-${tier})`,
       }}
+      title={isUnknown ? 'Grade unknown' : undefined}
     >
       {/* Service badge */}
       {(hasNGC || hasPCGS) && (
@@ -98,7 +104,7 @@ export function GradeBadge({
 /**
  * GradeScale - Visual temperature scale showing all grades
  */
-export function GradeScale({ highlightTier }: { highlightTier?: GradeTier }) {
+export function GradeScale({ highlightTier, showUnknown = false }: { highlightTier?: GradeTier; showUnknown?: boolean }) {
   const tiers: { tier: GradeTier; label: string }[] = [
     { tier: 'poor', label: 'Poor' },
     { tier: 'good', label: 'Good' },
@@ -106,6 +112,7 @@ export function GradeScale({ highlightTier }: { highlightTier?: GradeTier }) {
     { tier: 'ef', label: 'EF' },
     { tier: 'au', label: 'AU' },
     { tier: 'ms', label: 'MS' },
+    ...(showUnknown ? [{ tier: 'unknown' as GradeTier, label: '?' }] : []),
   ];
   
   return (

@@ -116,7 +116,7 @@ export function CoinCard({ coin }: CoinCardProps) {
         <div className="absolute top-2 right-2 flex items-center gap-1.5">
           <MetalBadge metal={coin.metal} size="sm" showGlow={isHovered} />
           {coin.rarity && <RarityIndicator rarity={coin.rarity} variant="dot" />}
-          {coin.grade && <GradeBadge grade={coin.grade} size="sm" />}
+          <GradeBadge grade={coin.grade || "?"} size="sm" />
         </div>
         
         {/* Test cut indicator */}

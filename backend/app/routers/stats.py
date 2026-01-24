@@ -216,7 +216,7 @@ async def get_collection_stats(db: Session = Depends(get_db)):
     for grade, count in grade_query:
         if grade:
             g = grade.upper().strip()
-            tier = "other"
+            tier = "unknown"  # Default to unknown for unrecognized grades
             
             # Check tiers from highest to lowest specificity
             # MS tier: MS, Mint State, FDC, Uncirculated, BU
@@ -239,6 +239,9 @@ async def get_collection_stats(db: Session = Depends(get_db)):
                 tier = "poor"
             
             grade_counts[tier] = grade_counts.get(tier, 0) + count
+        else:
+            # Count coins with no grade as "unknown"
+            grade_counts["unknown"] = grade_counts.get("unknown", 0) + count
     
     # Count by rarity
     rarity_counts = {}

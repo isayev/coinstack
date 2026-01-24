@@ -85,8 +85,11 @@ def get_coins(
             query = query.filter(Coin.rarity == filters["rarity"])
         if "grade" in filters and filters["grade"]:
             grade_value = filters["grade"].lower()
+            # Check if filtering for unknown/missing grades
+            if grade_value == "unknown":
+                query = query.filter(Coin.grade.is_(None))
             # Check if it's a tier name
-            if grade_value in GRADE_TIER_PATTERNS:
+            elif grade_value in GRADE_TIER_PATTERNS:
                 patterns = GRADE_TIER_PATTERNS[grade_value]
                 query = query.filter(or_(*[Coin.grade.ilike(p) for p in patterns]))
             else:
@@ -153,7 +156,9 @@ def get_coin_ids_sorted(
             query = query.filter(Coin.rarity == filters["rarity"])
         if "grade" in filters and filters["grade"]:
             grade_value = filters["grade"].lower()
-            if grade_value in GRADE_TIER_PATTERNS:
+            if grade_value == "unknown":
+                query = query.filter(Coin.grade.is_(None))
+            elif grade_value in GRADE_TIER_PATTERNS:
                 patterns = GRADE_TIER_PATTERNS[grade_value]
                 query = query.filter(or_(*[Coin.grade.ilike(p) for p in patterns]))
             else:

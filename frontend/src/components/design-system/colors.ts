@@ -87,7 +87,7 @@ export function parseRarity(rarity: string | null | undefined): RarityType | nul
 // GRADE CONFIGURATION
 // ============================================================================
 
-export type GradeTier = 'poor' | 'good' | 'fine' | 'ef' | 'au' | 'ms';
+export type GradeTier = 'poor' | 'good' | 'fine' | 'ef' | 'au' | 'ms' | 'unknown';
 
 export interface GradeConfig {
   /** Temperature tier */
@@ -99,18 +99,19 @@ export interface GradeConfig {
 }
 
 export const GRADE_MAP: Record<string, GradeConfig> = {
-  'P':   { tier: 'poor', numeric: 1,   label: 'Poor' },
-  'FR':  { tier: 'poor', numeric: 1.5, label: 'Fair' },
-  'AG':  { tier: 'poor', numeric: 2,   label: 'About Good' },
-  'G':   { tier: 'good', numeric: 3,   label: 'Good' },
-  'VG':  { tier: 'good', numeric: 4,   label: 'Very Good' },
-  'F':   { tier: 'fine', numeric: 5,   label: 'Fine' },
-  'VF':  { tier: 'fine', numeric: 6,   label: 'Very Fine' },
-  'EF':  { tier: 'ef',   numeric: 7,   label: 'Extremely Fine' },
-  'XF':  { tier: 'ef',   numeric: 7,   label: 'Extremely Fine' },
-  'AU':  { tier: 'au',   numeric: 8,   label: 'About Uncirculated' },
-  'MS':  { tier: 'ms',   numeric: 9,   label: 'Mint State' },
-  'FDC': { tier: 'ms',   numeric: 10,  label: 'Fleur de Coin' },
+  'P':       { tier: 'poor',    numeric: 1,   label: 'Poor' },
+  'FR':      { tier: 'poor',    numeric: 1.5, label: 'Fair' },
+  'AG':      { tier: 'poor',    numeric: 2,   label: 'About Good' },
+  'G':       { tier: 'good',    numeric: 3,   label: 'Good' },
+  'VG':      { tier: 'good',    numeric: 4,   label: 'Very Good' },
+  'F':       { tier: 'fine',    numeric: 5,   label: 'Fine' },
+  'VF':      { tier: 'fine',    numeric: 6,   label: 'Very Fine' },
+  'EF':      { tier: 'ef',      numeric: 7,   label: 'Extremely Fine' },
+  'XF':      { tier: 'ef',      numeric: 7,   label: 'Extremely Fine' },
+  'AU':      { tier: 'au',      numeric: 8,   label: 'About Uncirculated' },
+  'MS':      { tier: 'ms',      numeric: 9,   label: 'Mint State' },
+  'FDC':     { tier: 'ms',      numeric: 10,  label: 'Fleur de Coin' },
+  'UNKNOWN': { tier: 'unknown', numeric: 0,   label: 'Unknown' },
 };
 
 /** Parse grade string to GradeConfig */
