@@ -210,25 +210,34 @@ async def get_collection_stats(db: Session = Depends(get_db)):
     category_counts = {stat.category: stat.count for stat in by_category}
     
     # Count by grade (parse grade string to tier)
+    # Order matters - check more specific patterns first
     grade_counts = {}
     grade_query = db.query(Coin.grade, func.count(Coin.id)).group_by(Coin.grade).all()
     for grade, count in grade_query:
         if grade:
-            # Map grade to tier
-            g = grade.upper().replace(" ", "")
+            g = grade.upper().strip()
             tier = "other"
-            if any(x in g for x in ["P", "FR", "AG"]):
-                tier = "poor"
-            elif any(x in g for x in ["G", "VG"]) and "AG" not in g:
-                tier = "good"
-            elif any(x in g for x in ["F", "VF"]) and "EF" not in g:
-                tier = "fine"
-            elif any(x in g for x in ["EF", "XF"]):
-                tier = "ef"
-            elif "AU" in g and "AUG" not in g:
-                tier = "au"
-            elif any(x in g for x in ["MS", "FDC", "UNC"]):
+            
+            # Check tiers from highest to lowest specificity
+            # MS tier: MS, Mint State, FDC, Uncirculated, BU
+            if any(x in g for x in ["MS", "FDC", "UNC", "BU", "MINT STATE"]):
                 tier = "ms"
+            # AU tier: AU, About/Almost Uncirculated (exclude "AUG" emperor names)
+            elif "AU" in g and "AUG" not in g and "AUGUSTUS" not in g:
+                tier = "au"
+            # EF tier: EF, XF, Extremely Fine
+            elif any(x in g for x in ["EF", "XF", "EXTREMELY"]):
+                tier = "ef"
+            # Fine tier: F, VF, Fine, Very Fine (must check AFTER EF/XF)
+            elif "VF" in g or g in ["F", "F+", "FINE"] or "VERY FINE" in g or g.startswith("CHOICE F") or g.startswith("FV"):
+                tier = "fine"
+            # Good tier: G, VG, Good, Very Good (exclude AG)
+            elif ("VG" in g or g in ["G", "G+", "GOOD"] or "VERY GOOD" in g) and "AG" not in g:
+                tier = "good"
+            # Poor tier: Poor, Fair, FR, AG, About Good
+            elif any(x in g for x in ["POOR", "FAIR", "FR", "AG", "ABOUT GOOD"]):
+                tier = "poor"
+            
             grade_counts[tier] = grade_counts.get(tier, 0) + count
     
     # Count by rarity

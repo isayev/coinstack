@@ -44,12 +44,12 @@ interface GradeFilterConfig {
 }
 
 const GRADE_FILTER_CONFIG: GradeFilterConfig[] = [
-  { tier: 'poor', label: 'Poor/Fair', cssVar: 'poor' },
-  { tier: 'good', label: 'Good/VG', cssVar: 'good' },
-  { tier: 'fine', label: 'Fine/VF', cssVar: 'fine' },
-  { tier: 'ef', label: 'EF/XF', cssVar: 'ef' },
+  { tier: 'poor', label: 'Poor', cssVar: 'poor' },
+  { tier: 'good', label: 'Good', cssVar: 'good' },
+  { tier: 'fine', label: 'Fine', cssVar: 'fine' },
+  { tier: 'ef', label: 'EF', cssVar: 'ef' },
   { tier: 'au', label: 'AU', cssVar: 'au' },
-  { tier: 'ms', label: 'MS/FDC', cssVar: 'ms' },
+  { tier: 'ms', label: 'MS', cssVar: 'ms' },
 ];
 
 // ============================================================================

@@ -6,6 +6,18 @@ from app.models import Coin
 from app.schemas.coin import CoinCreate, CoinUpdate
 
 
+# Grade tier patterns for filtering
+# Each tier maps to SQL ILIKE patterns that match grades in that tier
+# Patterns are checked with ILIKE, so they're case-insensitive
+GRADE_TIER_PATTERNS = {
+    'poor': ['Poor%', 'Fair%', 'FR%', 'AG%', 'About Good%', 'P-%', 'FR-%'],
+    'good': ['Good%', 'VG%', 'Very Good%', 'G-%', 'VG-%'],
+    'fine': ['F', 'F+', 'F-%', 'Fine%', 'VF', 'VF+', 'VF-%', 'VF?', 'Very Fine%', 'Choice F', 'Choice F+', 'Choice VF', 'Choice VF+', 'FV', 'FV+'],
+    'ef': ['EF', 'EF+', 'EF-%', 'EF?', 'XF', 'XF+', 'XF-%', 'XF?', 'Extremely Fine%', 'Choice EF', 'Choice EF+', 'Choice XF', 'Choice XF+'],
+    'au': ['AU', 'AU+', 'AU-%', 'AU?', 'About Unc%', 'Almost Unc%', 'Choice AU', 'Choice AU+'],
+    'ms': ['MS', 'MS-%', 'MS+', 'Mint State%', 'FDC%', 'Unc%', 'BU%'],
+}
+
 # Supported sort fields mapping
 SORT_FIELDS = {
     "year": Coin.mint_year_start,
@@ -72,7 +84,14 @@ def get_coins(
         if "rarity" in filters and filters["rarity"]:
             query = query.filter(Coin.rarity == filters["rarity"])
         if "grade" in filters and filters["grade"]:
-            query = query.filter(Coin.grade.ilike(f"%{filters['grade']}%"))
+            grade_value = filters["grade"].lower()
+            # Check if it's a tier name
+            if grade_value in GRADE_TIER_PATTERNS:
+                patterns = GRADE_TIER_PATTERNS[grade_value]
+                query = query.filter(or_(*[Coin.grade.ilike(p) for p in patterns]))
+            else:
+                # Exact or partial match for specific grades
+                query = query.filter(Coin.grade.ilike(f"%{filters['grade']}%"))
         # Ruler search (supports dynasty synonym expansion)
         if "rulers" in filters and filters["rulers"]:
             query = query.filter(Coin.issuing_authority.in_(filters["rulers"]))
@@ -133,7 +152,12 @@ def get_coin_ids_sorted(
         if "rarity" in filters and filters["rarity"]:
             query = query.filter(Coin.rarity == filters["rarity"])
         if "grade" in filters and filters["grade"]:
-            query = query.filter(Coin.grade.ilike(f"%{filters['grade']}%"))
+            grade_value = filters["grade"].lower()
+            if grade_value in GRADE_TIER_PATTERNS:
+                patterns = GRADE_TIER_PATTERNS[grade_value]
+                query = query.filter(or_(*[Coin.grade.ilike(p) for p in patterns]))
+            else:
+                query = query.filter(Coin.grade.ilike(f"%{filters['grade']}%"))
         if "rulers" in filters and filters["rulers"]:
             query = query.filter(Coin.issuing_authority.in_(filters["rulers"]))
     
