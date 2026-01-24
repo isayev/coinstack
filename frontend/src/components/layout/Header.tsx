@@ -9,28 +9,39 @@ export function Header() {
   const { setCommandPaletteOpen } = useUIStore();
   
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header 
+      className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-base)]/80"
+      style={{ 
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-subtle)'
+      }}
+    >
       <div className="flex h-14 items-center justify-between px-4">
         {/* Logo - Clickable to home */}
         <Link 
           to="/" 
           className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
         >
-          {/* Logo icon */}
-          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-primary/90 to-primary flex items-center justify-center shadow-sm">
-            <Coins className="w-4.5 h-4.5 text-primary-foreground" />
-            {/* Subtle shine effect */}
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/20 to-transparent" />
+          {/* Logo icon with gold/silver gradient */}
+          <div 
+            className="relative w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))'
+            }}
+          >
+            <Coins className="w-4 h-4 text-black" />
           </div>
           {/* Logo text */}
-          <div className="flex flex-col leading-none">
-            <span className="logo-text text-xl text-foreground">
-              CoinStack
-            </span>
-            <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">
-              Collection Manager
-            </span>
-          </div>
+          <span 
+            className="text-xl font-bold"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}
+          >
+            CoinStack
+          </span>
         </Link>
         
         {/* Right side controls */}
@@ -40,7 +51,8 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={() => setCommandPaletteOpen(true)}
-            className="text-muted-foreground hover:text-foreground"
+            className="hover:bg-[var(--bg-elevated)]"
+            style={{ color: 'var(--text-secondary)' }}
           >
             <Search className="w-4 h-4" />
           </Button>
@@ -48,7 +60,11 @@ export function Header() {
           {/* Add Coin button */}
           <Button 
             onClick={() => navigate("/coins/new")}
-            className="gap-2 shadow-sm"
+            className="gap-2"
+            style={{ 
+              background: 'var(--metal-au)',
+              color: 'var(--bg-base)'
+            }}
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add Coin</span>

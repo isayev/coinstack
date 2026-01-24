@@ -1,71 +1,71 @@
 import { CoinListItem } from "@/types/coin";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { Scissors, Calendar } from "lucide-react";
+import { Scissors } from "lucide-react";
 
 interface CoinCardProps {
   coin: CoinListItem;
 }
 
-// Get metal badge class
-function getMetalBadgeClass(metal: string): string {
-  const metalMap: Record<string, string> = {
-    gold: "badge-metal-gold",
-    electrum: "badge-metal-electrum",
-    silver: "badge-metal-silver",
-    bronze: "badge-metal-bronze",
-    copper: "badge-metal-copper",
-    billon: "badge-metal-billon",
-    orichalcum: "badge-metal-orichalcum",
-    lead: "badge-metal-lead",
-    potin: "badge-metal-potin",
-    ae: "badge-metal-ae",
-  };
-  return metalMap[metal?.toLowerCase()] || "badge-metal-ae";
-}
+// Metal configuration - element symbols and badge classes
+const METAL_CONFIG: Record<string, { symbol: string; badge: string }> = {
+  gold: { symbol: "Au", badge: "metal-badge-au" },
+  electrum: { symbol: "EL", badge: "metal-badge-el" },
+  silver: { symbol: "Ag", badge: "metal-badge-ag" },
+  orichalcum: { symbol: "Or", badge: "metal-badge-or" },
+  brass: { symbol: "Br", badge: "metal-badge-br" },
+  bronze: { symbol: "Cu", badge: "metal-badge-cu" },
+  copper: { symbol: "Cu", badge: "metal-badge-copper" },
+  ae: { symbol: "Æ", badge: "metal-badge-ae" },
+  billon: { symbol: "Bi", badge: "metal-badge-bi" },
+  potin: { symbol: "Po", badge: "metal-badge-po" },
+  lead: { symbol: "Pb", badge: "metal-badge-pb" },
+};
 
-// Get grade badge class
-function getGradeBadgeClass(grade: string): string {
-  if (!grade) return "";
-  const gradeLower = grade.toLowerCase();
-  
-  if (gradeLower.includes("ms") || gradeLower.includes("mint")) return "badge-grade-ms";
-  if (gradeLower.includes("au")) return "badge-grade-au";
-  if (gradeLower.includes("xf") || gradeLower.includes("ef")) return "badge-grade-xf";
-  if (gradeLower.includes("vf")) return "badge-grade-vf";
-  if (gradeLower.includes("fine") || gradeLower === "f" || gradeLower.includes(" f")) return "badge-grade-f";
-  if (gradeLower.includes("vg")) return "badge-grade-vg";
-  if (gradeLower.includes("good") || gradeLower === "g") return "badge-grade-g";
-  
-  return "";
-}
+// Category border classes
+const CATEGORY_BORDERS: Record<string, string> = {
+  republic: "category-border-republic",
+  imperial: "category-border-imperial",
+  provincial: "category-border-provincial",
+  late: "category-border-late",
+  greek: "category-border-greek",
+  celtic: "category-border-celtic",
+  judaea: "category-border-judaea",
+  judaean: "category-border-judaea",
+  eastern: "category-border-eastern",
+  byzantine: "category-border-byzantine",
+  other: "category-border-other",
+};
 
-// Get category badge class
-function getCategoryBadgeClass(category: string): string {
-  const catMap: Record<string, string> = {
-    imperial: "badge-cat-imperial",
-    republic: "badge-cat-republic",
-    provincial: "badge-cat-provincial",
-    greek: "badge-cat-greek",
-    byzantine: "badge-cat-byzantine",
-  };
-  return catMap[category?.toLowerCase()] || "";
-}
-
-// Get rarity badge class
-function getRarityBadgeClass(rarity: string): string {
+// Rarity dot classes (C→S→R1→R2→R3→U)
+function getRarityDotClass(rarity: string | null | undefined): string {
   if (!rarity) return "";
-  const rarityLower = rarity.toLowerCase();
+  const r = rarity.toLowerCase().trim();
   
-  if (rarityLower.includes("extremely") || rarityLower === "rr" || rarityLower === "r3") return "badge-rarity-extremely-rare";
-  if (rarityLower.includes("very") || rarityLower === "r2") return "badge-rarity-very-rare";
-  if (rarityLower.includes("rare") || rarityLower === "r" || rarityLower === "r1") return "badge-rarity-rare";
-  if (rarityLower.includes("scarce") || rarityLower === "s") return "badge-rarity-scarce";
-  if (rarityLower.includes("common") || rarityLower === "c") return "badge-rarity-common";
+  if (r === "u" || r === "unique") return "rarity-dot-u";
+  if (r === "r3" || r.includes("extremely")) return "rarity-dot-r3";
+  if (r === "r2" || r.includes("very")) return "rarity-dot-r2";
+  if (r === "r1" || r === "rare" || r === "r") return "rarity-dot-r1";
+  if (r === "s" || r.includes("scarce")) return "rarity-dot-s";
+  if (r === "c" || r.includes("common")) return "rarity-dot-c";
   
-  return "";
+  return "rarity-dot-c";
+}
+
+// Grade badge class (temperature scale)
+function getGradeBadgeClass(grade: string | null | undefined): string {
+  if (!grade) return "";
+  const g = grade.toUpperCase();
+  
+  if (g.includes("MS") || g.includes("FDC") || g.includes("MINT")) return "grade-badge-ms";
+  if (g.includes("AU") || g.includes("ABOUT UNC")) return "grade-badge-au";
+  if (g.includes("EF") || g.includes("XF") || g.includes("EXTREMELY")) return "grade-badge-ef";
+  if (g.includes("VF") || g.includes("VERY FINE") || g.includes("FINE")) return "grade-badge-fine";
+  if (g.includes("VG") || g.includes("VERY GOOD") || g.includes("GOOD")) return "grade-badge-good";
+  if (g.includes("NGC")) return "grade-badge-ngc";
+  if (g.includes("PCGS")) return "grade-badge-pcgs";
+  
+  return "grade-badge-poor";
 }
 
 // Format year display
@@ -76,13 +76,9 @@ function formatYear(start: number | null | undefined, end: number | null | undef
   
   if (start && end && start !== end) {
     const startStr = start < 0 ? `${Math.abs(start)}` : `${start}`;
-    const endStr = end < 0 ? `${Math.abs(end)} BC` : end.toString();
-    const startSuffix = start < 0 ? " BC" : "";
-    // If same era, only show suffix once
-    if ((start < 0 && end < 0) || (start > 0 && end > 0)) {
-      return `${prefix}${startStr}–${endStr}${start < 0 ? "" : " AD"}`;
-    }
-    return `${prefix}${startStr}${startSuffix}–${endStr} ${end > 0 ? "AD" : ""}`.trim();
+    const endStr = end < 0 ? `${Math.abs(end)} BC` : `${end} AD`;
+    const startSuffix = start < 0 && end > 0 ? " BC" : "";
+    return `${prefix}${startStr}${startSuffix}–${endStr}`;
   }
   
   const year = start || end;
@@ -90,164 +86,97 @@ function formatYear(start: number | null | undefined, end: number | null | undef
   return `${prefix}${Math.abs(year)} ${year < 0 ? "BC" : "AD"}`;
 }
 
-// Format display name for metal
-function formatMetal(metal: string): string {
-  if (!metal) return "";
-  const metalNames: Record<string, string> = {
-    gold: "Au",
-    electrum: "El",
-    silver: "Ar",
-    bronze: "Æ",
-    copper: "Cu",
-    billon: "Bil",
-    orichalcum: "Or",
-    lead: "Pb",
-    potin: "Pot",
-    ae: "Æ",
-  };
-  return metalNames[metal.toLowerCase()] || metal;
-}
-
 export function CoinCard({ coin }: CoinCardProps) {
   const navigate = useNavigate();
   
   const yearDisplay = formatYear(coin.mint_year_start, coin.mint_year_end, coin.is_circa);
-  const hasGrade = coin.grade && coin.grade.trim() !== "";
-  const gradeClass = getGradeBadgeClass(coin.grade || "");
-  const hasRarity = coin.rarity && coin.rarity.trim() !== "";
+  const metalConfig = METAL_CONFIG[coin.metal?.toLowerCase()] || { symbol: "?", badge: "metal-badge-ae" };
+  const categoryBorder = CATEGORY_BORDERS[coin.category?.toLowerCase()] || "category-border-other";
+  const rarityDot = getRarityDotClass(coin.rarity);
+  const gradeBadge = getGradeBadgeClass(coin.grade);
 
   return (
-    <Card 
+    <div 
       className={cn(
-        "coin-card group cursor-pointer overflow-hidden border",
-        "hover:border-primary/30 hover:shadow-md"
+        "coin-card cursor-pointer",
+        categoryBorder
       )}
       onClick={() => navigate(`/coins/${coin.id}`)}
     >
-      {/* Image container - compact aspect ratio */}
-      <div className="aspect-[4/3] bg-muted relative overflow-hidden">
+      {/* Image container */}
+      <div className="aspect-[4/3] relative overflow-hidden" style={{ background: 'var(--bg-surface)' }}>
         {coin.primary_image ? (
           <img 
             src={`/api${coin.primary_image}`} 
             alt={`${coin.issuing_authority} ${coin.denomination}`}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-muted to-muted/50">
-            <div className="text-muted-foreground/40 text-xs font-medium">No Image</div>
+          <div className="flex items-center justify-center h-full">
+            {/* Coin silhouette placeholder */}
+            <div 
+              className="w-20 h-20 rounded-full opacity-10"
+              style={{ background: `var(--metal-${metalConfig.symbol.toLowerCase() === 'au' ? 'au' : metalConfig.symbol.toLowerCase() === 'ag' ? 'ag' : 'ae'})` }}
+            />
           </div>
         )}
         
-        {/* Top-left: Category badge */}
-        {coin.category && (
-          <div className="absolute top-1.5 left-1.5">
-            <Badge 
-              variant="outline" 
-              className={cn(
-                "text-[9px] px-1.5 py-0 h-4 font-medium capitalize backdrop-blur-sm bg-background/80",
-                getCategoryBadgeClass(coin.category)
-              )}
-            >
-              {coin.category}
-            </Badge>
-          </div>
-        )}
-        
-        {/* Top-right: Metal badge */}
-        <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end">
-          <Badge 
-            variant="outline" 
-            className={cn(
-              "text-[10px] px-1.5 py-0 h-4.5 font-semibold backdrop-blur-sm bg-background/80",
-              getMetalBadgeClass(coin.metal)
-            )}
-          >
-            {formatMetal(coin.metal)}
-          </Badge>
-        </div>
-        
-        {/* Bottom indicators row */}
-        <div className="absolute bottom-1.5 left-1.5 right-1.5 flex justify-between items-end">
-          {/* Left: Test cut / Circa */}
-          <div className="flex gap-1">
-            {coin.is_test_cut && (
-              <Badge 
-                variant="outline"
-                className="badge-test-cut text-[9px] px-1 py-0 h-4 flex items-center gap-0.5 backdrop-blur-sm bg-background/80"
-              >
-                <Scissors className="w-2.5 h-2.5" />
-                TC
-              </Badge>
-            )}
-            {coin.is_circa && (
-              <Badge 
-                variant="outline"
-                className="badge-circa text-[9px] px-1 py-0 h-4 flex items-center gap-0.5 backdrop-blur-sm bg-background/80"
-              >
-                <Calendar className="w-2.5 h-2.5" />
-                c.
-              </Badge>
-            )}
+        {/* Top badges row */}
+        <div className="absolute top-2 right-2 flex items-center gap-1.5">
+          {/* Metal badge - element style */}
+          <div className={cn(
+            "metal-badge w-7 h-7 text-[10px]",
+            metalConfig.badge
+          )}>
+            {metalConfig.symbol}
           </div>
           
-          {/* Right: Rarity */}
-          {hasRarity && (
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-[9px] px-1.5 py-0 h-4 font-medium backdrop-blur-sm bg-background/80",
-                getRarityBadgeClass(coin.rarity || "")
-              )}
-            >
-              {coin.rarity}
-            </Badge>
+          {/* Rarity dot */}
+          {rarityDot && (
+            <div className={cn("rarity-dot", rarityDot)} />
+          )}
+          
+          {/* Grade badge */}
+          {coin.grade && (
+            <div className={cn("grade-badge text-[10px] py-0.5 px-1.5", gradeBadge)}>
+              {coin.grade}
+            </div>
           )}
         </div>
+        
+        {/* Test cut indicator */}
+        {coin.is_test_cut && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
+               style={{ background: 'rgba(255, 69, 58, 0.2)', color: '#FF453A' }}>
+            <Scissors className="w-3 h-3" />
+            TC
+          </div>
+        )}
       </div>
       
-      {/* Content section - compact */}
-      <div className="p-2.5 space-y-1">
+      {/* Content section */}
+      <div className="p-3" style={{ background: 'var(--bg-card)' }}>
         {/* Ruler name */}
-        <div className="font-semibold text-sm leading-tight truncate" title={coin.issuing_authority}>
+        <div className="font-semibold text-sm leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
           {coin.issuing_authority}
         </div>
         
-        {/* Denomination + Mint */}
-        <div className="text-xs text-muted-foreground truncate">
+        {/* Denomination + Mint + Year */}
+        <div className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-secondary)' }}>
           {coin.denomination}
-          {coin.mint_name && (
-            <span className="opacity-70"> · {coin.mint_name}</span>
-          )}
+          {coin.mint_name && ` · ${coin.mint_name}`}
+          {yearDisplay && ` · ${yearDisplay}`}
         </div>
         
-        {/* Bottom row: Year, Grade, Price */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/50">
-          {/* Year */}
-          <span className="text-[11px] text-muted-foreground tabular-nums font-medium">
-            {yearDisplay || "—"}
-          </span>
-          
-          {/* Grade badge */}
-          {hasGrade && (
-            <Badge 
-              variant="outline"
-              className={cn(
-                "text-[9px] px-1.5 py-0 h-4 font-medium",
-                gradeClass
-              )}
-            >
-              {coin.grade}
-            </Badge>
-          )}
-          
-          {/* Price */}
-          {coin.acquisition_price && (
-            <span className="text-xs font-semibold tabular-nums text-foreground">
+        {/* Footer: Price */}
+        {coin.acquisition_price && (
+          <div className="flex items-center justify-end mt-2 pt-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            <span className="text-xs font-medium tabular-nums" style={{ color: 'var(--text-primary)' }}>
               ${Number(coin.acquisition_price).toLocaleString()}
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }

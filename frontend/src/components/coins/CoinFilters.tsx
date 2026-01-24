@@ -3,7 +3,6 @@ import { useFilterStore } from "@/stores/filterStore";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   ChevronDown, ChevronRight, Filter, RotateCcw,
   Calendar, MapPin, Sparkles, Scissors
@@ -24,29 +23,28 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-// All metal options from expanded enum - with badge class references
+// Metal options with element symbols and badge classes
 const METALS = [
-  { value: "gold", label: "Au", fullLabel: "Gold", badgeClass: "badge-metal-gold" },
-  { value: "electrum", label: "El", fullLabel: "Electrum", badgeClass: "badge-metal-electrum" },
-  { value: "silver", label: "Ar", fullLabel: "Silver", badgeClass: "badge-metal-silver" },
-  { value: "billon", label: "Bil", fullLabel: "Billon", badgeClass: "badge-metal-billon" },
-  { value: "potin", label: "Pot", fullLabel: "Potin", badgeClass: "badge-metal-potin" },
-  { value: "orichalcum", label: "Or", fullLabel: "Orichalcum", badgeClass: "badge-metal-orichalcum" },
-  { value: "bronze", label: "Æ", fullLabel: "Bronze", badgeClass: "badge-metal-bronze" },
-  { value: "copper", label: "Cu", fullLabel: "Copper", badgeClass: "badge-metal-copper" },
-  { value: "lead", label: "Pb", fullLabel: "Lead", badgeClass: "badge-metal-lead" },
-  { value: "ae", label: "AE", fullLabel: "AE", badgeClass: "badge-metal-ae" },
+  { value: "gold", symbol: "Au", label: "Gold", badge: "metal-badge-au" },
+  { value: "electrum", symbol: "EL", label: "Electrum", badge: "metal-badge-el" },
+  { value: "silver", symbol: "Ag", label: "Silver", badge: "metal-badge-ag" },
+  { value: "orichalcum", symbol: "Or", label: "Orichalcum", badge: "metal-badge-or" },
+  { value: "bronze", symbol: "Cu", label: "Bronze", badge: "metal-badge-cu" },
+  { value: "ae", symbol: "Æ", label: "AE", badge: "metal-badge-ae" },
+  { value: "billon", symbol: "Bi", label: "Billon", badge: "metal-badge-bi" },
+  { value: "copper", symbol: "Cu", label: "Copper", badge: "metal-badge-copper" },
+  { value: "potin", symbol: "Po", label: "Potin", badge: "metal-badge-po" },
+  { value: "lead", symbol: "Pb", label: "Lead", badge: "metal-badge-pb" },
 ];
 
-// Rarity options
+// Rarity options (standard numismatic: C→S→R1→R2→R3→U)
 const RARITIES = [
-  { value: "common", label: "Common" },
-  { value: "uncommon", label: "Uncommon" },
-  { value: "scarce", label: "Scarce" },
-  { value: "rare", label: "Rare" },
-  { value: "very_rare", label: "Very Rare" },
-  { value: "extremely_rare", label: "Extremely Rare" },
-  { value: "unique", label: "Unique" },
+  { value: "common", code: "C", label: "Common" },
+  { value: "scarce", code: "S", label: "Scarce" },
+  { value: "rare", code: "R1", label: "Rare" },
+  { value: "very_rare", code: "R2", label: "Very Rare" },
+  { value: "extremely_rare", code: "R3", label: "Extremely Rare" },
+  { value: "unique", code: "U", label: "Unique" },
 ];
 
 // Storage locations
@@ -72,16 +70,17 @@ function FilterSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border-b border-border/50 pb-3">
+    <div style={{ borderBottom: '1px solid var(--border-subtle)' }} className="pb-3">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-primary transition-colors"
+        className="flex items-center justify-between w-full py-2 text-sm font-medium transition-colors"
+        style={{ color: 'var(--text-primary)' }}
       >
         <div className="flex items-center gap-2">
           {isOpen ? (
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
           )}
           <span>{title}</span>
         </div>
@@ -96,18 +95,39 @@ export function CoinFilters() {
   const filters = useFilterStore();
   const activeFilterCount = filters.getActiveFilterCount();
   
+  const selectedMetal = METALS.find(m => m.value === filters.metal);
+  
   return (
-    <div className="w-72 border-r bg-card/50 flex flex-col h-full">
+    <div 
+      className="w-72 flex flex-col h-full"
+      style={{ 
+        background: 'var(--bg-surface)',
+        borderRight: '1px solid var(--border-subtle)'
+      }}
+    >
       {/* Header */}
-      <div className="p-4 border-b sticky top-0 bg-card/95 backdrop-blur z-10">
+      <div 
+        className="p-4 sticky top-0 z-10"
+        style={{ 
+          background: 'var(--bg-surface)',
+          borderBottom: '1px solid var(--border-subtle)'
+        }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            <h3 className="font-semibold">Filters</h3>
+            <Filter className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Filters</h3>
             {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="h-5 px-1.5 text-xs">
+              <span 
+                className="h-5 px-1.5 text-xs rounded flex items-center justify-center font-medium"
+                style={{ 
+                  background: 'var(--metal-au-subtle)', 
+                  color: 'var(--metal-au-text)',
+                  border: '1px solid var(--metal-au-border)'
+                }}
+              >
                 {activeFilterCount}
-              </Badge>
+              </span>
             )}
           </div>
           {activeFilterCount > 0 && (
@@ -115,7 +135,8 @@ export function CoinFilters() {
               variant="ghost" 
               size="sm" 
               onClick={filters.reset}
-              className="h-8 px-2 text-muted-foreground hover:text-foreground"
+              className="h-8 px-2"
+              style={{ color: 'var(--text-tertiary)' }}
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
               Reset
@@ -125,24 +146,20 @@ export function CoinFilters() {
       </div>
       
       {/* Filter sections */}
-      <div className="flex-1 overflow-auto p-4 space-y-1">
+      <div className="flex-1 overflow-auto p-4 space-y-1 scrollbar-thin">
         {/* Category */}
-        <FilterSection 
-          title="Category" 
-          badge={filters.category && (
-            <Badge variant="outline" className="text-xs capitalize">
-              {filters.category.replace("_", " ")}
-            </Badge>
-          )}
-        >
+        <FilterSection title="Category">
           <Select 
             value={filters.category || "all"} 
             onValueChange={(v) => filters.setCategory(v === "all" ? null : v)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger 
+              className="h-9"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
               <SelectItem value="all">All Categories</SelectItem>
               {CATEGORIES.map((cat) => (
                 <SelectItem key={cat.value} value={cat.value}>
@@ -153,16 +170,20 @@ export function CoinFilters() {
           </Select>
         </FilterSection>
         
-        {/* Metal */}
+        {/* Metal - Element chips */}
         <FilterSection 
           title="Metal"
-          badge={filters.metal && (
-            <Badge variant="outline" className={cn(
-              "text-xs capitalize",
-              METALS.find(m => m.value === filters.metal)?.badgeClass
-            )}>
-              {METALS.find(m => m.value === filters.metal)?.fullLabel || filters.metal}
-            </Badge>
+          badge={selectedMetal && (
+            <span 
+              className="text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold"
+              style={{ 
+                background: `var(--metal-${selectedMetal.value === 'gold' ? 'au' : selectedMetal.value === 'silver' ? 'ag' : selectedMetal.value}-subtle)`,
+                color: `var(--metal-${selectedMetal.value === 'gold' ? 'au' : selectedMetal.value === 'silver' ? 'ag' : selectedMetal.value}-text)`,
+                border: `1px solid var(--metal-${selectedMetal.value === 'gold' ? 'au' : selectedMetal.value === 'silver' ? 'ag' : selectedMetal.value}-border)`
+              }}
+            >
+              {selectedMetal.symbol}
+            </span>
           )}
         >
           <div className="flex flex-wrap gap-1.5">
@@ -171,14 +192,13 @@ export function CoinFilters() {
                 key={metal.value}
                 onClick={() => filters.setMetal(filters.metal === metal.value ? null : metal.value)}
                 className={cn(
-                  "h-7 px-2.5 text-xs rounded-md border transition-all font-medium",
-                  filters.metal === metal.value
-                    ? cn(metal.badgeClass, "ring-1 ring-offset-1 ring-primary/50")
-                    : "border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                  "metal-badge w-8 h-8 text-xs transition-all",
+                  metal.badge,
+                  filters.metal === metal.value && "ring-2 ring-[var(--metal-au)] ring-offset-1 ring-offset-[var(--bg-surface)]"
                 )}
-                title={metal.fullLabel}
+                title={metal.label}
               >
-                {metal.label}
+                {metal.symbol}
               </button>
             ))}
           </div>
@@ -188,43 +208,42 @@ export function CoinFilters() {
         <FilterSection 
           title="Year Range"
           badge={(filters.mint_year_gte !== null || filters.mint_year_lte !== null) && (
-            <Badge variant="outline" className="text-xs">
-              <Calendar className="w-3 h-3 mr-1" />
-              Set
-            </Badge>
+            <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--metal-au)' }} />
           )}
         >
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-xs text-muted-foreground block mb-1">From</span>
+                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>From</span>
                 <Input
                   type="number"
-                  placeholder="-44 BCE"
+                  placeholder="-44 BC"
                   value={filters.mint_year_gte ?? ""}
                   onChange={(e) => {
                     const val = e.target.value;
                     filters.setMintYearGte(val ? parseInt(val) : null);
                   }}
                   className="h-8 text-sm"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
                 />
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block mb-1">To</span>
+                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>To</span>
                 <Input
                   type="number"
-                  placeholder="476 CE"
+                  placeholder="476 AD"
                   value={filters.mint_year_lte ?? ""}
                   onChange={(e) => {
                     const val = e.target.value;
                     filters.setMintYearLte(val ? parseInt(val) : null);
                   }}
                   className="h-8 text-sm"
+                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
                 />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Use negative numbers for BCE dates
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Use negative numbers for BC dates
             </p>
           </div>
         </FilterSection>
@@ -232,11 +251,6 @@ export function CoinFilters() {
         {/* Ruler / Authority */}
         <FilterSection 
           title="Ruler"
-          badge={filters.issuing_authority && (
-            <Badge variant="outline" className="text-xs truncate max-w-[100px]">
-              {filters.issuing_authority}
-            </Badge>
-          )}
           defaultOpen={false}
         >
           <Input
@@ -244,6 +258,7 @@ export function CoinFilters() {
             value={filters.issuing_authority || ""}
             onChange={(e) => filters.setIssuingAuthority(e.target.value || null)}
             className="h-9"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           />
         </FilterSection>
         
@@ -251,10 +266,7 @@ export function CoinFilters() {
         <FilterSection 
           title="Mint" 
           badge={filters.mint_name && (
-            <Badge variant="outline" className="text-xs">
-              <MapPin className="w-3 h-3 mr-1" />
-              Set
-            </Badge>
+            <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--metal-au)' }} />
           )}
           defaultOpen={false}
         >
@@ -263,31 +275,33 @@ export function CoinFilters() {
             value={filters.mint_name || ""}
             onChange={(e) => filters.setMintName(e.target.value || null)}
             className="h-9"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           />
         </FilterSection>
         
         {/* Rarity */}
         <FilterSection 
           title="Rarity"
-          badge={filters.rarity && (
-            <Badge variant="outline" className="text-xs capitalize">
-              {filters.rarity.replace("_", " ")}
-            </Badge>
-          )}
           defaultOpen={false}
         >
           <Select 
             value={filters.rarity || "all"} 
             onValueChange={(v) => filters.setRarity(v === "all" ? null : v)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger 
+              className="h-9"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
               <SelectValue placeholder="Any rarity" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
               <SelectItem value="all">Any Rarity</SelectItem>
               {RARITIES.map((r) => (
                 <SelectItem key={r.value} value={r.value}>
-                  {r.label}
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono text-xs">{r.code}</span>
+                    <span>{r.label}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -297,11 +311,6 @@ export function CoinFilters() {
         {/* Grade */}
         <FilterSection 
           title="Grade"
-          badge={filters.grade && (
-            <Badge variant="outline" className="text-xs">
-              {filters.grade}
-            </Badge>
-          )}
           defaultOpen={false}
         >
           <Input
@@ -309,27 +318,26 @@ export function CoinFilters() {
             value={filters.grade || ""}
             onChange={(e) => filters.setGrade(e.target.value || null)}
             className="h-9"
+            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           />
         </FilterSection>
         
         {/* Storage Location */}
         <FilterSection 
           title="Storage"
-          badge={filters.storage_location && (
-            <Badge variant="outline" className="text-xs">
-              {filters.storage_location}
-            </Badge>
-          )}
           defaultOpen={false}
         >
           <Select 
             value={filters.storage_location || "all"} 
             onValueChange={(v) => filters.setStorageLocation(v === "all" ? null : v)}
           >
-            <SelectTrigger className="h-9">
+            <SelectTrigger 
+              className="h-9"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
               <SelectValue placeholder="All locations" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
               <SelectItem value="all">All Locations</SelectItem>
               {STORAGE_LOCATIONS.map((loc) => (
                 <SelectItem key={loc.value} value={loc.value}>
@@ -344,10 +352,7 @@ export function CoinFilters() {
         <FilterSection 
           title="Attributes"
           badge={(filters.is_circa !== null || filters.is_test_cut !== null) && (
-            <Badge variant="outline" className="text-xs">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Set
-            </Badge>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--metal-au)' }} />
           )}
           defaultOpen={false}
         >
@@ -355,52 +360,76 @@ export function CoinFilters() {
             {/* Is Circa */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Circa Dating</span>
+                <Calendar className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Circa Dating</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={filters.is_circa === true ? "default" : "outline"}
-                  size="sm"
-                  className="h-6 px-2 text-xs"
+              <div className="flex items-center gap-1">
+                <button
+                  className={cn(
+                    "h-6 px-2 text-xs rounded transition-colors",
+                    filters.is_circa === true ? "font-medium" : ""
+                  )}
+                  style={{
+                    background: filters.is_circa === true ? 'var(--grade-fine-bg)' : 'var(--bg-card)',
+                    color: filters.is_circa === true ? 'var(--grade-fine)' : 'var(--text-tertiary)',
+                    border: `1px solid ${filters.is_circa === true ? 'var(--grade-fine)' : 'var(--border-subtle)'}`
+                  }}
                   onClick={() => filters.setIsCirca(filters.is_circa === true ? null : true)}
                 >
                   Yes
-                </Button>
-                <Button
-                  variant={filters.is_circa === false ? "default" : "outline"}
-                  size="sm"
-                  className="h-6 px-2 text-xs"
+                </button>
+                <button
+                  className={cn(
+                    "h-6 px-2 text-xs rounded transition-colors",
+                    filters.is_circa === false ? "font-medium" : ""
+                  )}
+                  style={{
+                    background: filters.is_circa === false ? 'var(--rarity-r3-bg)' : 'var(--bg-card)',
+                    color: filters.is_circa === false ? 'var(--rarity-r3)' : 'var(--text-tertiary)',
+                    border: `1px solid ${filters.is_circa === false ? 'var(--rarity-r3)' : 'var(--border-subtle)'}`
+                  }}
                   onClick={() => filters.setIsCirca(filters.is_circa === false ? null : false)}
                 >
                   No
-                </Button>
+                </button>
               </div>
             </div>
             
             {/* Is Test Cut */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Scissors className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Test Cut</span>
+                <Scissors className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Test Cut</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={filters.is_test_cut === true ? "default" : "outline"}
-                  size="sm"
-                  className="h-6 px-2 text-xs"
+              <div className="flex items-center gap-1">
+                <button
+                  className={cn(
+                    "h-6 px-2 text-xs rounded transition-colors",
+                    filters.is_test_cut === true ? "font-medium" : ""
+                  )}
+                  style={{
+                    background: filters.is_test_cut === true ? 'var(--grade-fine-bg)' : 'var(--bg-card)',
+                    color: filters.is_test_cut === true ? 'var(--grade-fine)' : 'var(--text-tertiary)',
+                    border: `1px solid ${filters.is_test_cut === true ? 'var(--grade-fine)' : 'var(--border-subtle)'}`
+                  }}
                   onClick={() => filters.setIsTestCut(filters.is_test_cut === true ? null : true)}
                 >
                   Yes
-                </Button>
-                <Button
-                  variant={filters.is_test_cut === false ? "default" : "outline"}
-                  size="sm"
-                  className="h-6 px-2 text-xs"
+                </button>
+                <button
+                  className={cn(
+                    "h-6 px-2 text-xs rounded transition-colors",
+                    filters.is_test_cut === false ? "font-medium" : ""
+                  )}
+                  style={{
+                    background: filters.is_test_cut === false ? 'var(--rarity-r3-bg)' : 'var(--bg-card)',
+                    color: filters.is_test_cut === false ? 'var(--rarity-r3)' : 'var(--text-tertiary)',
+                    border: `1px solid ${filters.is_test_cut === false ? 'var(--rarity-r3)' : 'var(--border-subtle)'}`
+                  }}
                   onClick={() => filters.setIsTestCut(filters.is_test_cut === false ? null : false)}
                 >
                   No
-                </Button>
+                </button>
               </div>
             </div>
           </div>

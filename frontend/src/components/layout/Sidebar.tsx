@@ -8,87 +8,60 @@ import {
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { 
-    to: "/", 
-    icon: Library, 
-    label: "Collection",
-    description: "Browse your coins"
-  },
-  { 
-    to: "/stats", 
-    icon: BarChart3, 
-    label: "Statistics",
-    description: "Collection analytics"
-  },
-  { 
-    to: "/import", 
-    icon: Upload, 
-    label: "Import",
-    description: "Add from file"
-  },
-  { 
-    to: "/bulk-enrich", 
-    icon: Sparkles, 
-    label: "Enrich",
-    description: "Catalog lookup"
-  },
-  { 
-    to: "/settings", 
-    icon: Settings, 
-    label: "Settings",
-    description: "Preferences"
-  },
+  { to: "/", icon: Library, label: "Collection" },
+  { to: "/stats", icon: BarChart3, label: "Statistics" },
+  { to: "/import", icon: Upload, label: "Import" },
+  { to: "/bulk-enrich", icon: Sparkles, label: "Enrich" },
+  { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   
   return (
-    <aside className={cn(
-      "fixed left-0 top-14 bottom-0 z-40 border-r bg-card/50 backdrop-blur-sm transition-all duration-200 flex flex-col",
-      sidebarOpen ? "w-52" : "w-14"
-    )}>
+    <aside 
+      className={cn(
+        "fixed left-0 top-14 bottom-0 z-40 transition-all duration-200 flex flex-col",
+        sidebarOpen ? "w-48" : "w-14"
+      )}
+      style={{ 
+        background: 'var(--bg-surface)',
+        borderRight: '1px solid var(--border-subtle)'
+      }}
+    >
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-0.5 p-2 pt-3">
-        {navItems.map(({ to, icon: Icon, label, description }) => (
+      <nav className="flex-1 flex flex-col gap-1 p-2 pt-3">
+        {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) => cn(
-              "flex items-center gap-3 px-2.5 py-2 rounded-md transition-all group relative",
+              "flex items-center gap-3 px-2.5 py-2 rounded-md transition-all relative",
               isActive 
-                ? "bg-primary/10 text-primary font-medium" 
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                ? "font-medium" 
+                : "hover:bg-[var(--bg-elevated)]"
             )}
+            style={({ isActive }) => ({
+              color: isActive ? 'var(--metal-au)' : 'var(--text-secondary)',
+              background: isActive ? 'var(--metal-au-subtle)' : undefined,
+            })}
           >
             {({ isActive }) => (
               <>
-                {/* Active indicator */}
+                {/* Active indicator bar */}
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
+                  <div 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full"
+                    style={{ background: 'var(--metal-au)' }}
+                  />
                 )}
                 
                 {/* Icon */}
-                <div className={cn(
-                  "flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center transition-colors",
-                  isActive 
-                    ? "bg-primary/15 text-primary" 
-                    : "bg-muted/50 text-muted-foreground group-hover:bg-muted group-hover:text-foreground"
-                )}>
-                  <Icon className="w-4 h-4" />
-                </div>
+                <Icon className="w-5 h-5 flex-shrink-0" />
                 
-                {/* Label and description */}
+                {/* Label */}
                 {sidebarOpen && (
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm truncate">{label}</span>
-                    <span className={cn(
-                      "text-[10px] truncate transition-colors",
-                      isActive ? "text-primary/70" : "text-muted-foreground/70"
-                    )}>
-                      {description}
-                    </span>
-                  </div>
+                  <span className="text-sm">{label}</span>
                 )}
               </>
             )}
@@ -97,14 +70,15 @@ export function Sidebar() {
       </nav>
       
       {/* Bottom section */}
-      <div className="p-2 border-t">
+      <div className="p-2" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <Button
           variant="ghost"
           size="sm"
           className={cn(
-            "w-full justify-center text-muted-foreground hover:text-foreground",
+            "w-full justify-center",
             sidebarOpen ? "px-2" : "px-0"
           )}
+          style={{ color: 'var(--text-tertiary)' }}
           onClick={toggleSidebar}
         >
           {sidebarOpen ? (
