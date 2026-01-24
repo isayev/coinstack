@@ -48,8 +48,8 @@ htmlcov/
 *.temp
 .cache/
 
-# Collection data (personal)
-collection-v1.xlsx
+# Collection data in root (use original-data/ for reference)
+/collection-v1.xlsx
 
 # Backend specific
 backend/data/
