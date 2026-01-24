@@ -1,7 +1,7 @@
-"""Coin model."""
+"""Coin model - Clean refactor with enhanced enums and fields."""
 from sqlalchemy import (
     Column, Integer, String, Numeric, Date, Boolean,
-    ForeignKey, Enum, Text, JSON, DateTime
+    ForeignKey, Enum, Text, JSON, DateTime, CheckConstraint
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -10,23 +10,32 @@ from app.database import Base
 
 
 class Category(enum.Enum):
-    """Coin category."""
+    """Coin category - ordered chronologically."""
+    GREEK = "greek"
+    CELTIC = "celtic"
     REPUBLIC = "republic"
     IMPERIAL = "imperial"
     PROVINCIAL = "provincial"
+    JUDAEAN = "judaean"
     BYZANTINE = "byzantine"
-    GREEK = "greek"
+    MIGRATION = "migration"          # Ostrogothic, Vandal, etc.
+    PSEUDO_ROMAN = "pseudo_roman"    # Imitations
     OTHER = "other"
 
 
 class Metal(enum.Enum):
-    """Coin metal type."""
+    """Coin metal type - ordered by value/rarity."""
     GOLD = "gold"
+    ELECTRUM = "electrum"        # Gold-silver alloy (Greek)
     SILVER = "silver"
     BILLON = "billon"
-    BRONZE = "bronze"
+    POTIN = "potin"              # Tin-rich bronze (Celtic/Alexandrian)
     ORICHALCUM = "orichalcum"
+    BRONZE = "bronze"
     COPPER = "copper"
+    LEAD = "lead"                # Tesserae/tokens
+    AE = "ae"                    # Generic bronze when composition unknown
+    UNCERTAIN = "uncertain"      # When metal cannot be determined
 
 
 class DatingCertainty(enum.Enum):
@@ -65,8 +74,15 @@ class Rarity(enum.Enum):
     UNIQUE = "unique"
 
 
+class Orientation(enum.Enum):
+    """Coin orientation for photography/display."""
+    OBVERSE_UP = "obverse_up"
+    REVERSE_UP = "reverse_up"
+    ROTATED = "rotated"
+
+
 class Coin(Base):
-    """Coin model."""
+    """Coin model - Enhanced with die study, precision, and constraints."""
     
     __tablename__ = "coins"
     
@@ -77,6 +93,7 @@ class Coin(Base):
     
     # Classification
     category = Column(Enum(Category), nullable=False, index=True)
+    sub_category = Column(String(50), index=True)  # "Julio-Claudian", "Flavian", etc.
     denomination = Column(String(50), nullable=False, index=True)
     metal = Column(Enum(Metal), nullable=False, index=True)
     series = Column(String(100))
@@ -91,15 +108,18 @@ class Coin(Base):
     reign_end = Column(Integer)
     mint_year_start = Column(Integer)
     mint_year_end = Column(Integer)
+    is_circa = Column(Boolean, default=False)  # Date uncertainty flag
     dating_certainty = Column(Enum(DatingCertainty), default=DatingCertainty.BROAD)
     dating_notes = Column(String(255))
     
-    # Physical Attributes
-    weight_g = Column(Numeric(6, 2))
+    # Physical Attributes - Enhanced precision
+    weight_g = Column(Numeric(6, 3))  # 0.001g precision for die studies
     diameter_mm = Column(Numeric(5, 2))
     diameter_min_mm = Column(Numeric(5, 2))
     thickness_mm = Column(Numeric(4, 2))
-    die_axis = Column(Integer)
+    die_axis = Column(Integer)  # 0-12 clock position, validated by constraint
+    orientation = Column(Enum(Orientation), default=Orientation.OBVERSE_UP)
+    is_test_cut = Column(Boolean, default=False)  # Provincial diagnostic cut
     
     # Design: Obverse
     obverse_legend = Column(String(255))
@@ -142,6 +162,7 @@ class Coin(Base):
     estimate_low = Column(Numeric(10, 2))
     estimate_high = Column(Numeric(10, 2))
     estimate_date = Column(Date)
+    estimated_value_usd = Column(Numeric(10, 2))  # From comps
     insured_value = Column(Numeric(10, 2))
     
     # Storage
@@ -156,11 +177,24 @@ class Coin(Base):
     historical_significance = Column(Text)
     die_match_notes = Column(Text)
     personal_notes = Column(Text)
-    provenance_notes = Column(Text)  # Brief pedigree/provenance text
+    provenance_notes = Column(Text)
+    
+    # Die Study Linkage - Self-referential for die matches
+    die_study_obverse_id = Column(Integer, ForeignKey("coins.id"), nullable=True)
+    die_study_reverse_id = Column(Integer, ForeignKey("coins.id"), nullable=True)
+    die_study_group = Column(String(50))
     
     # LLM Enrichment
     llm_enriched = Column(JSON)
     llm_enriched_at = Column(DateTime)
+    
+    # Constraints
+    __table_args__ = (
+        CheckConstraint(
+            'die_axis IS NULL OR (die_axis >= 0 AND die_axis <= 12)',
+            name='ck_die_axis_range'
+        ),
+    )
     
     # Relationships
     references = relationship("CoinReference", back_populates="coin", cascade="all, delete-orphan")
@@ -170,3 +204,19 @@ class Coin(Base):
     )
     images = relationship("CoinImage", back_populates="coin", cascade="all, delete-orphan")
     tags = relationship("CoinTag", back_populates="coin", cascade="all, delete-orphan")
+    countermarks = relationship("Countermark", back_populates="coin", cascade="all, delete-orphan")
+    auction_data = relationship("AuctionData", back_populates="coin", cascade="all, delete-orphan")
+    
+    # Die study relationships
+    obverse_die_matches = relationship(
+        "Coin", 
+        foreign_keys=[die_study_obverse_id],
+        remote_side=[id],
+        backref="obverse_die_source"
+    )
+    reverse_die_matches = relationship(
+        "Coin",
+        foreign_keys=[die_study_reverse_id],
+        remote_side=[id],
+        backref="reverse_die_source"
+    )

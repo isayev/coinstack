@@ -11,6 +11,7 @@ export interface MetalStat {
   metal: string;
   count: number;
   total_value: number;
+  total_weight: number;
 }
 
 export interface RulerStat {

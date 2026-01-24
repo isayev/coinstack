@@ -3,7 +3,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
 import { 
   Coins, BarChart3, Upload, Settings, 
-  ChevronLeft, ChevronRight 
+  ChevronLeft, ChevronRight, Sparkles 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/", icon: Coins, label: "Collection" },
   { to: "/stats", icon: BarChart3, label: "Statistics" },
   { to: "/import", icon: Upload, label: "Import" },
+  { to: "/bulk-enrich", icon: Sparkles, label: "Bulk Enrich" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

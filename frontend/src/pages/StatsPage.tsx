@@ -10,19 +10,35 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
-import { Coins, DollarSign, TrendingUp, Award, Layers, MapPin } from "lucide-react";
+import { Coins, DollarSign, TrendingUp, Award, Layers, MapPin, Scale } from "lucide-react";
 
-// Color palettes
-const CATEGORY_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
-const METAL_COLORS = {
+// Color palettes - expanded for new enums
+const CATEGORY_COLORS: Record<string, string> = {
+  greek: "#3b82f6",
+  celtic: "#059669",
+  republic: "#f59e0b",
+  imperial: "#ef4444",
+  provincial: "#8b5cf6",
+  judaean: "#0ea5e9",
+  byzantine: "#a855f7",
+  migration: "#6366f1",
+  pseudo_roman: "#ec4899",
+  other: "#6b7280",
+};
+
+const METAL_COLORS: Record<string, string> = {
   gold: "#fbbf24",
+  electrum: "#d4af37",
   silver: "#94a3b8",
-  bronze: "#f97316",
   billon: "#71717a",
-  copper: "#ea580c",
+  potin: "#78716c",
   orichalcum: "#eab308",
+  bronze: "#f97316",
+  copper: "#ea580c",
+  lead: "#64748b",
+  ae: "#a1a1aa",
+  uncertain: "#d1d5db",
 };
 
 export function StatsPage() {
@@ -67,16 +83,19 @@ export function StatsPage() {
   // Add colors to metal data
   const metalData = stats.by_metal.map((m) => ({
     ...m,
-    name: m.metal.charAt(0).toUpperCase() + m.metal.slice(1),
-    fill: METAL_COLORS[m.metal as keyof typeof METAL_COLORS] || "#6b7280",
+    name: m.metal.charAt(0).toUpperCase() + m.metal.slice(1).replace("_", " "),
+    fill: METAL_COLORS[m.metal] || "#6b7280",
   }));
 
-  // Format category names
-  const categoryData = stats.by_category.map((c, i) => ({
+  // Format category names with proper colors
+  const categoryData = stats.by_category.map((c) => ({
     ...c,
-    name: c.category.charAt(0).toUpperCase() + c.category.slice(1),
-    fill: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+    name: c.category.charAt(0).toUpperCase() + c.category.slice(1).replace("_", " "),
+    fill: CATEGORY_COLORS[c.category] || "#6b7280",
   }));
+  
+  // Calculate weight stats
+  const totalWeight = stats.by_metal.reduce((sum, m) => sum + (m.total_weight || 0), 0);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -153,6 +172,57 @@ export function StatsPage() {
             </div>
             <div className="text-2xl font-bold mt-1">
               ${stats.lowest_value_coin.toFixed(0)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Additional Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border-yellow-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
+              <Scale className="w-4 h-4 text-yellow-600" />
+              <span className="text-sm text-muted-foreground">Total Weight</span>
+            </div>
+            <div className="text-2xl font-bold mt-1 text-yellow-600">
+              {totalWeight > 0 ? `${totalWeight.toFixed(1)}g` : "N/A"}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
+              <Coins className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-muted-foreground">Categories</span>
+            </div>
+            <div className="text-2xl font-bold mt-1 text-blue-600">
+              {stats.by_category.length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-purple-600" />
+              <span className="text-sm text-muted-foreground">Metals</span>
+            </div>
+            <div className="text-2xl font-bold mt-1 text-purple-600">
+              {stats.by_metal.length}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-muted-foreground">Rulers</span>
+            </div>
+            <div className="text-2xl font-bold mt-1 text-green-600">
+              {stats.top_rulers.length}+
             </div>
           </CardContent>
         </Card>
@@ -246,7 +316,7 @@ export function StatsPage() {
                 <XAxis type="number" />
                 <YAxis dataKey="ruler" type="category" width={75} tick={{ fontSize: 12 }} />
                 <Tooltip
-                  formatter={(value: number, name: string, props: any) => [
+                  formatter={(value: number, _name: string, props: any) => [
                     `${value} coins ($${props.payload.total_value.toLocaleString()})`,
                     "Count",
                   ]}

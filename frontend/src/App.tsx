@@ -12,6 +12,7 @@ import { EditCoinPage } from "@/pages/EditCoinPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { StatsPage } from "@/pages/StatsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
+import { BulkEnrichPage } from "@/pages/BulkEnrichPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,6 +37,7 @@ function App() {
               <Route path="/import" element={<ImportPage />} />
               <Route path="/stats" element={<StatsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/bulk-enrich" element={<BulkEnrichPage />} />
             </Routes>
           </AppShell>
         </BrowserRouter>

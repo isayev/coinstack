@@ -8,7 +8,10 @@ from fastapi.exceptions import RequestValidationError
 from app.config import get_settings
 from app.database import engine, Base
 # Import models to register them with Base before create_all
-from app.models import Coin, Mint, CoinReference, ProvenanceEvent, CoinImage, CoinTag
+from app.models import (
+    Coin, Mint, CoinReference, ReferenceType, ReferenceMatchAttempt,
+    ProvenanceEvent, CoinImage, CoinTag, Countermark, AuctionData, PriceHistory
+)
 
 # Configure logging
 logging.basicConfig(
@@ -80,11 +83,15 @@ from app.routers.coins import router as coins_router
 from app.routers.import_export import router as import_export_router
 from app.routers.stats import router as stats_router
 from app.routers.settings import router as settings_router
+from app.routers.catalog import router as catalog_router
+from app.routers.legend import router as legend_router
 
 app.include_router(coins_router, prefix=settings.API_PREFIX)
 app.include_router(import_export_router, prefix=settings.API_PREFIX)
 app.include_router(stats_router, prefix=settings.API_PREFIX)
 app.include_router(settings_router, prefix=settings.API_PREFIX)
+app.include_router(catalog_router, prefix=settings.API_PREFIX)
+app.include_router(legend_router, prefix=settings.API_PREFIX)
 
 if __name__ == "__main__":
     import uvicorn

@@ -9,11 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CoinDetail, CoinCreate } from "@/types/coin";
 import { Loader2 } from "lucide-react";
 
-// Form schema
+// Form schema - matches new expanded enums
 const coinSchema = z.object({
-  category: z.enum(["republic", "imperial", "provincial", "byzantine", "greek", "other"]),
+  category: z.enum(["greek", "celtic", "republic", "imperial", "provincial", "judaean", "byzantine", "migration", "pseudo_roman", "other"]),
+  sub_category: z.string().optional(),
   denomination: z.string().min(1, "Denomination is required"),
-  metal: z.enum(["gold", "silver", "billon", "bronze", "orichalcum", "copper"]),
+  metal: z.enum(["gold", "electrum", "silver", "billon", "potin", "orichalcum", "bronze", "copper", "lead", "ae", "uncertain"]),
   issuing_authority: z.string().min(1, "Issuing authority is required"),
   series: z.string().optional(),
   portrait_subject: z.string().optional(),
@@ -22,12 +23,16 @@ const coinSchema = z.object({
   reign_end: z.coerce.number().optional().nullable(),
   mint_year_start: z.coerce.number().optional().nullable(),
   mint_year_end: z.coerce.number().optional().nullable(),
+  is_circa: z.boolean().optional(),
   weight_g: z.coerce.number().optional().nullable(),
   diameter_mm: z.coerce.number().optional().nullable(),
   die_axis: z.coerce.number().min(0).max(12).optional().nullable(),
+  is_test_cut: z.boolean().optional(),
   obverse_legend: z.string().optional(),
+  obverse_legend_expanded: z.string().optional(),
   obverse_description: z.string().optional(),
   reverse_legend: z.string().optional(),
+  reverse_legend_expanded: z.string().optional(),
   reverse_description: z.string().optional(),
   exergue: z.string().optional(),
   grade_service: z.enum(["ngc", "pcgs", "self", "dealer"]).optional().nullable(),
@@ -62,6 +67,7 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
     resolver: zodResolver(coinSchema),
     defaultValues: {
       category: coin?.category || "imperial",
+      sub_category: coin?.sub_category || "",
       denomination: coin?.denomination || "",
       metal: coin?.metal || "silver",
       issuing_authority: coin?.issuing_authority || "",
@@ -72,12 +78,16 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
       reign_end: coin?.reign_end || null,
       mint_year_start: coin?.mint_year_start || null,
       mint_year_end: coin?.mint_year_end || null,
+      is_circa: coin?.is_circa || false,
       weight_g: coin?.weight_g || null,
       diameter_mm: coin?.diameter_mm || null,
       die_axis: coin?.die_axis || null,
+      is_test_cut: coin?.is_test_cut || false,
       obverse_legend: coin?.obverse_legend || "",
+      obverse_legend_expanded: coin?.obverse_legend_expanded || "",
       obverse_description: coin?.obverse_description || "",
       reverse_legend: coin?.reverse_legend || "",
+      reverse_legend_expanded: coin?.reverse_legend_expanded || "",
       reverse_description: coin?.reverse_description || "",
       exergue: coin?.exergue || "",
       grade_service: (coin?.grade_service as any) || null,
@@ -138,11 +148,15 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="greek">Greek</SelectItem>
+                      <SelectItem value="celtic">Celtic</SelectItem>
                       <SelectItem value="republic">Republic</SelectItem>
                       <SelectItem value="imperial">Imperial</SelectItem>
                       <SelectItem value="provincial">Provincial</SelectItem>
+                      <SelectItem value="judaean">Judaean</SelectItem>
                       <SelectItem value="byzantine">Byzantine</SelectItem>
-                      <SelectItem value="greek">Greek</SelectItem>
+                      <SelectItem value="migration">Migration Period</SelectItem>
+                      <SelectItem value="pseudo_roman">Pseudo-Roman</SelectItem>
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -157,11 +171,16 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="gold">Gold</SelectItem>
+                      <SelectItem value="electrum">Electrum</SelectItem>
                       <SelectItem value="silver">Silver</SelectItem>
                       <SelectItem value="billon">Billon</SelectItem>
-                      <SelectItem value="bronze">Bronze</SelectItem>
+                      <SelectItem value="potin">Potin</SelectItem>
                       <SelectItem value="orichalcum">Orichalcum</SelectItem>
+                      <SelectItem value="bronze">Bronze</SelectItem>
                       <SelectItem value="copper">Copper</SelectItem>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="ae">AE (Generic)</SelectItem>
+                      <SelectItem value="uncertain">Uncertain</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

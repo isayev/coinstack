@@ -23,6 +23,7 @@ class MetalStat(BaseModel):
     metal: str
     count: int
     total_value: float
+    total_weight: float = 0.0
 
 
 class RulerStat(BaseModel):
@@ -101,18 +102,20 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         for stat in category_stats
     ]
     
-    # By metal
+    # By metal (with weight)
     metal_stats = db.query(
         Coin.metal,
         func.count(Coin.id).label("count"),
-        func.coalesce(func.sum(Coin.acquisition_price), 0).label("total")
+        func.coalesce(func.sum(Coin.acquisition_price), 0).label("total"),
+        func.coalesce(func.sum(Coin.weight_g), 0).label("weight")
     ).group_by(Coin.metal).all()
     
     by_metal = [
         MetalStat(
             metal=stat[0].value if stat[0] else "unknown",
             count=stat[1],
-            total_value=float(stat[2] or 0)
+            total_value=float(stat[2] or 0),
+            total_weight=float(stat[3] or 0)
         )
         for stat in metal_stats
     ]
