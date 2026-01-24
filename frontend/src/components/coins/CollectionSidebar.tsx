@@ -3,11 +3,12 @@
  * 
  * Design spec includes:
  * - Search with keyboard shortcut
- * - Collection stats with sparklines
+ * - Collection stats with real data
  * - Metal chips with counts
  * - Category bars with distribution
+ * - Grade bars with temperature colors
  * - Year range slider with histogram
- * - Alerts section
+ * - Alerts section (muted placeholders)
  * 
  * @module coins/CollectionSidebar
  */
@@ -15,22 +16,41 @@
 import { useState } from 'react';
 import { useFilterStore } from "@/stores/filterStore";
 import { useUIStore } from "@/stores/uiStore";
+import { useCollectionStats } from "@/hooks/useCoins";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { 
-  Search, ChevronDown, ChevronRight, RotateCcw, Bell, X,
+  Search, ChevronDown, ChevronRight, RotateCcw, Bell,
   Calendar, Scissors
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   MetalChip,
-  Sparkline,
   PlaceholderSparkline,
   MetalType,
   CATEGORY_CONFIG,
   CategoryType,
+  GradeTier,
 } from "@/components/design-system";
+
+// ============================================================================
+// GRADE CONFIGURATION (Temperature Scale)
+// ============================================================================
+
+interface GradeFilterConfig {
+  tier: GradeTier;
+  label: string;
+  cssVar: string;
+}
+
+const GRADE_FILTER_CONFIG: GradeFilterConfig[] = [
+  { tier: 'poor', label: 'Poor/Fair', cssVar: 'poor' },
+  { tier: 'good', label: 'Good/VG', cssVar: 'good' },
+  { tier: 'fine', label: 'Fine/VF', cssVar: 'fine' },
+  { tier: 'ef', label: 'EF/XF', cssVar: 'ef' },
+  { tier: 'au', label: 'AU', cssVar: 'au' },
+  { tier: 'ms', label: 'MS/FDC', cssVar: 'ms' },
+];
 
 // ============================================================================
 // STATS SECTION
@@ -38,22 +58,15 @@ import {
 
 interface CollectionStatsProps {
   totalCoins: number;
-  totalValue?: number;
-  valueChange?: number;
-  avgGrade?: string;
-  bestRoi?: { coin: string; percent: number };
+  totalValue: number;
+  isLoading?: boolean;
 }
 
 function CollectionStats({ 
   totalCoins, 
-  totalValue = 28450, // Placeholder
-  valueChange = 12,   // Placeholder
-  avgGrade = "VF",    // Placeholder
-  bestRoi = { coin: "Nero denarius", percent: 42 } // Placeholder
+  totalValue,
+  isLoading = false,
 }: CollectionStatsProps) {
-  // Mock sparkline data
-  const valueHistory = [20, 22, 21, 25, 24, 28, 26, 30, 28, 32, 30, 34];
-  
   return (
     <div 
       className="rounded-lg p-3"
@@ -64,41 +77,38 @@ function CollectionStats({
           📊 Collection
         </span>
         <span className="text-xs tabular-nums" style={{ color: 'var(--text-secondary)' }}>
-          {totalCoins} coins
+          {isLoading ? '...' : `${totalCoins} coins`}
         </span>
       </div>
       
-      {/* Value with sparkline */}
+      {/* Value */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-            ${totalValue.toLocaleString()}
+            ${isLoading ? '...' : totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
+          {/* Muted placeholder for future market data */}
           <span 
-            className="ml-1 text-xs"
-            style={{ color: valueChange > 0 ? 'var(--price-up)' : 'var(--price-down)' }}
+            className="ml-1 text-xs opacity-30"
+            style={{ color: 'var(--text-tertiary)' }}
+            title="Market trends coming soon"
           >
-            {valueChange > 0 ? '+' : ''}{valueChange}% MoM
+            — MoM
           </span>
         </div>
-        <Sparkline 
-          data={valueHistory} 
-          width={10} 
-          height="sm" 
-          trend={valueChange > 0 ? 'up' : 'down'}
-        />
+        {/* Muted placeholder sparkline */}
+        <PlaceholderSparkline width={10} height="sm" className="opacity-20" />
       </div>
       
-      {/* Secondary stats */}
+      {/* Muted secondary stats placeholder */}
       <div 
-        className="mt-2 pt-2 text-xs flex items-center gap-3"
+        className="mt-2 pt-2 text-xs flex items-center gap-3 opacity-30"
         style={{ borderTop: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)' }}
+        title="Analytics coming soon"
       >
-        <span>Avg: <strong style={{ color: 'var(--grade-fine)' }}>{avgGrade}</strong></span>
+        <span>Avg: <strong>—</strong></span>
         <span>·</span>
-        <span>
-          Best ROI: <strong style={{ color: 'var(--price-up)' }}>+{bestRoi.percent}%</strong> ({bestRoi.coin})
-        </span>
+        <span>Best ROI: <strong>—</strong></span>
       </div>
     </div>
   );
@@ -165,29 +175,27 @@ function FilterSection({
 interface MetalFilterProps {
   selected: string | null;
   onSelect: (metal: string | null) => void;
-  counts?: Record<string, number>;
+  counts: Record<string, number>;
 }
 
 const DISPLAY_METALS: MetalType[] = ['gold', 'silver', 'ae', 'bronze', 'billon', 'copper', 'orichalcum', 'lead'];
 
-function MetalFilter({ selected, onSelect, counts = {} }: MetalFilterProps) {
-  // Mock counts if not provided
-  const mockCounts: Record<string, number> = {
-    gold: 12, silver: 45, ae: 48, bronze: 15, billon: 5, copper: 3, orichalcum: 2, lead: 1
-  };
-  const displayCounts = Object.keys(counts).length > 0 ? counts : mockCounts;
-  
+function MetalFilter({ selected, onSelect, counts }: MetalFilterProps) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {DISPLAY_METALS.map((metal) => (
-        <MetalChip
-          key={metal}
-          metal={metal}
-          count={displayCounts[metal]}
-          selected={selected === metal}
-          onClick={() => onSelect(selected === metal ? null : metal)}
-        />
-      ))}
+      {DISPLAY_METALS.map((metal) => {
+        const count = counts[metal] || 0;
+        if (count === 0 && selected !== metal) return null; // Hide metals with no coins
+        return (
+          <MetalChip
+            key={metal}
+            metal={metal}
+            count={count}
+            selected={selected === metal}
+            onClick={() => onSelect(selected === metal ? null : metal)}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -199,24 +207,22 @@ function MetalFilter({ selected, onSelect, counts = {} }: MetalFilterProps) {
 interface CategoryFilterProps {
   selected: string | null;
   onSelect: (category: string | null) => void;
-  counts?: Record<string, number>;
+  counts: Record<string, number>;
 }
 
-const DISPLAY_CATEGORIES: CategoryType[] = ['imperial', 'provincial', 'republic', 'greek', 'celtic', 'byzantine'];
+const DISPLAY_CATEGORIES: CategoryType[] = ['imperial', 'provincial', 'republic', 'greek', 'celtic', 'byzantine', 'late', 'judaea', 'eastern'];
 
-function CategoryFilter({ selected, onSelect, counts = {} }: CategoryFilterProps) {
-  // Mock counts
-  const mockCounts: Record<string, number> = {
-    imperial: 67, provincial: 28, republic: 12, greek: 8, celtic: 3, byzantine: 2
-  };
-  const displayCounts = Object.keys(counts).length > 0 ? counts : mockCounts;
-  const maxCount = Math.max(...Object.values(displayCounts));
+function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
+  const maxCount = Math.max(...Object.values(counts), 1);
+  
+  // Filter to only show categories with coins
+  const activeCategories = DISPLAY_CATEGORIES.filter(cat => counts[cat] > 0 || selected === cat);
   
   return (
-    <div className="space-y-2">
-      {DISPLAY_CATEGORIES.map((cat) => {
+    <div className="space-y-1.5">
+      {activeCategories.map((cat) => {
         const config = CATEGORY_CONFIG[cat];
-        const count = displayCounts[cat] || 0;
+        const count = counts[cat] || 0;
         const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
         const isSelected = selected === cat;
         
@@ -225,35 +231,41 @@ function CategoryFilter({ selected, onSelect, counts = {} }: CategoryFilterProps
             key={cat}
             onClick={() => onSelect(isSelected ? null : cat)}
             className={cn(
-              "w-full flex items-center gap-2 py-1 px-2 rounded transition-colors",
+              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
               isSelected && "ring-1"
             )}
             style={{
               background: isSelected ? `var(--category-${config.cssVar}-subtle)` : 'transparent',
             }}
           >
-            {/* Checkbox-like indicator */}
+            {/* Color indicator */}
             <div 
-              className="w-4 h-4 rounded-full flex items-center justify-center"
+              className="w-3 h-3 rounded-sm flex-shrink-0"
               style={{ 
-                background: isSelected ? `var(--category-${config.cssVar})` : 'var(--bg-surface)',
-                border: `2px solid var(--category-${config.cssVar})`
+                background: `var(--category-${config.cssVar})`,
+                opacity: isSelected ? 1 : 0.7,
               }}
-            >
-              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-            </div>
+            />
             
-            {/* Label and count */}
-            <span className="text-sm flex-1 text-left" style={{ color: 'var(--text-secondary)' }}>
+            {/* Label */}
+            <span 
+              className="text-sm flex-1 text-left"
+              style={{ color: isSelected ? `var(--category-${config.cssVar})` : 'var(--text-secondary)' }}
+            >
               {config.label}
             </span>
-            <span className="text-xs tabular-nums" style={{ color: 'var(--text-tertiary)' }}>
-              ({count})
+            
+            {/* Count */}
+            <span 
+              className="text-xs tabular-nums"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {count}
             </span>
             
             {/* Distribution bar */}
             <div 
-              className="w-20 h-1.5 rounded-full overflow-hidden"
+              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
               style={{ background: 'var(--bg-surface)' }}
             >
               <div 
@@ -267,82 +279,228 @@ function CategoryFilter({ selected, onSelect, counts = {} }: CategoryFilterProps
           </button>
         );
       })}
+      {activeCategories.length === 0 && (
+        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+          No categories found
+        </p>
+      )}
     </div>
   );
 }
 
 // ============================================================================
-// ALERTS SECTION
+// GRADE FILTER WITH TEMPERATURE BARS (Similar to Category)
 // ============================================================================
 
-interface Alert {
-  id: string;
-  type: 'price' | 'comp' | 'match';
-  message: string;
-  highlight?: string;
+interface GradeFilterProps {
+  selected: string | null;
+  onSelect: (grade: string | null) => void;
+  counts: Record<string, number>;
 }
 
-function AlertsSection() {
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
+  const maxCount = Math.max(...Object.values(counts), 1);
   
-  // Mock alerts (placeholder)
-  const alerts: Alert[] = [
-    { id: '1', type: 'comp', message: 'New comp: RIC I 207 sold', highlight: '$420 (+15%)' },
-    { id: '2', type: 'price', message: 'Price drop: Nero denarius', highlight: '-8%' },
-    { id: '3', type: 'match', message: 'Die match found:', highlight: 'RIC III 61' },
-  ];
-  
-  const visibleAlerts = alerts.filter(a => !dismissed.has(a.id));
-  
-  if (visibleAlerts.length === 0) return null;
+  // Filter to only show grades with coins
+  const activeGrades = GRADE_FILTER_CONFIG.filter(g => counts[g.tier] > 0 || selected === g.tier);
   
   return (
+    <div className="space-y-1.5">
+      {activeGrades.map(({ tier, label, cssVar }) => {
+        const count = counts[tier] || 0;
+        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        const isSelected = selected === tier;
+        
+        return (
+          <button
+            key={tier}
+            onClick={() => onSelect(isSelected ? null : tier)}
+            className={cn(
+              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
+              isSelected && "ring-1"
+            )}
+            style={{
+              background: isSelected ? `var(--grade-${cssVar}-bg)` : 'transparent',
+            }}
+          >
+            {/* Temperature color indicator */}
+            <div 
+              className="w-3 h-3 rounded-sm flex-shrink-0"
+              style={{ 
+                background: `var(--grade-${cssVar})`,
+                opacity: isSelected ? 1 : 0.7,
+              }}
+            />
+            
+            {/* Label */}
+            <span 
+              className="text-sm flex-1 text-left"
+              style={{ color: isSelected ? `var(--grade-${cssVar})` : 'var(--text-secondary)' }}
+            >
+              {label}
+            </span>
+            
+            {/* Count */}
+            <span 
+              className="text-xs tabular-nums"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {count}
+            </span>
+            
+            {/* Distribution bar */}
+            <div 
+              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
+              style={{ background: 'var(--bg-surface)' }}
+            >
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${barWidth}%`,
+                  background: `var(--grade-${cssVar})`
+                }}
+              />
+            </div>
+          </button>
+        );
+      })}
+      {activeGrades.length === 0 && (
+        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+          No graded coins
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// RARITY FILTER
+// ============================================================================
+
+interface RarityFilterProps {
+  selected: string | null;
+  onSelect: (rarity: string | null) => void;
+  counts: Record<string, number>;
+}
+
+const RARITY_OPTIONS = [
+  { value: 'common', label: 'Common', code: 'C', cssVar: 'c' },
+  { value: 'scarce', label: 'Scarce', code: 'S', cssVar: 's' },
+  { value: 'rare', label: 'Rare', code: 'R1', cssVar: 'r1' },
+  { value: 'very_rare', label: 'Very Rare', code: 'R2', cssVar: 'r2' },
+  { value: 'extremely_rare', label: 'Extremely Rare', code: 'R3', cssVar: 'r3' },
+  { value: 'unique', label: 'Unique', code: 'U', cssVar: 'u' },
+];
+
+function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
+  const maxCount = Math.max(...Object.values(counts), 1);
+  
+  // Filter to only show rarities with coins
+  const activeRarities = RARITY_OPTIONS.filter(r => counts[r.value] > 0 || selected === r.value);
+  
+  return (
+    <div className="space-y-1.5">
+      {activeRarities.map(({ value, label, code, cssVar }) => {
+        const count = counts[value] || 0;
+        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        const isSelected = selected === value;
+        
+        return (
+          <button
+            key={value}
+            onClick={() => onSelect(isSelected ? null : value)}
+            className={cn(
+              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
+              isSelected && "ring-1"
+            )}
+            style={{
+              background: isSelected ? `var(--rarity-${cssVar}-bg)` : 'transparent',
+            }}
+          >
+            {/* Rarity dot */}
+            <div 
+              className={cn("w-2 h-2 rounded-full flex-shrink-0", value === 'unique' && 'animate-pulse')}
+              style={{ background: `var(--rarity-${cssVar})` }}
+            />
+            
+            {/* Code + Label */}
+            <span 
+              className="text-sm flex-1 text-left"
+              style={{ color: isSelected ? `var(--rarity-${cssVar})` : 'var(--text-secondary)' }}
+            >
+              <span className="font-semibold">{code}</span> {label}
+            </span>
+            
+            {/* Count */}
+            <span 
+              className="text-xs tabular-nums"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              {count}
+            </span>
+            
+            {/* Distribution bar */}
+            <div 
+              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
+              style={{ background: 'var(--bg-surface)' }}
+            >
+              <div 
+                className="h-full rounded-full transition-all"
+                style={{ 
+                  width: `${barWidth}%`,
+                  background: `var(--rarity-${cssVar})`
+                }}
+              />
+            </div>
+          </button>
+        );
+      })}
+      {activeRarities.length === 0 && (
+        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+          No rarity data
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// ALERTS SECTION (Muted placeholder)
+// ============================================================================
+
+function AlertsSection() {
+  return (
     <div 
-      className="rounded-lg p-3"
+      className="rounded-lg p-3 opacity-40"
       style={{ background: 'var(--bg-elevated)' }}
+      title="Market alerts coming soon"
     >
       <div className="flex items-center gap-2 mb-2">
-        <Bell className="w-4 h-4" style={{ color: 'var(--metal-au)' }} />
-        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+        <Bell className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+        <span className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
           Alerts
         </span>
         <span 
           className="text-[10px] px-1.5 py-0.5 rounded"
-          style={{ background: 'var(--metal-au-subtle)', color: 'var(--metal-au-text)' }}
+          style={{ background: 'var(--bg-surface)', color: 'var(--text-tertiary)' }}
         >
-          {visibleAlerts.length}
+          Soon
         </span>
       </div>
       
-      <div className="space-y-2">
-        {visibleAlerts.map((alert) => (
-          <div 
-            key={alert.id}
-            className="flex items-start gap-2 text-xs"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <span>•</span>
-            <span className="flex-1">
-              {alert.message}{' '}
-              <span 
-                className="font-semibold"
-                style={{ 
-                  color: alert.type === 'price' && alert.highlight?.includes('-') 
-                    ? 'var(--price-down)' 
-                    : 'var(--price-up)' 
-                }}
-              >
-                {alert.highlight}
-              </span>
-            </span>
-            <button
-              onClick={() => setDismissed(prev => new Set([...prev, alert.id]))}
-              className="opacity-50 hover:opacity-100"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        ))}
+      <div className="space-y-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="flex items-start gap-2">
+          <span>•</span>
+          <span>Price alerts for watched coins</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span>•</span>
+          <span>New auction comparables</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <span>•</span>
+          <span>Die match notifications</span>
+        </div>
       </div>
     </div>
   );
@@ -356,10 +514,20 @@ interface CollectionSidebarProps {
   totalCoins?: number;
 }
 
-export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
+export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSidebarProps) {
   const filters = useFilterStore();
   const { setCommandPaletteOpen } = useUIStore();
+  const { data: stats, isLoading: statsLoading } = useCollectionStats();
   const activeFilterCount = filters.getActiveFilterCount();
+  
+  // Use real stats data
+  const totalCoins = stats?.total_coins ?? propTotalCoins ?? 0;
+  const totalValue = stats?.total_value ?? 0;
+  const metalCounts = stats?.metal_counts ?? {};
+  const categoryCounts = stats?.category_counts ?? {};
+  const gradeCounts = stats?.grade_counts ?? {};
+  const rarityCounts = stats?.rarity_counts ?? {};
+  const yearRange = stats?.year_range ?? { min: null, max: null };
   
   return (
     <div 
@@ -393,7 +561,11 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
       
       {/* Stats */}
       <div className="p-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <CollectionStats totalCoins={totalCoins} />
+        <CollectionStats 
+          totalCoins={totalCoins} 
+          totalValue={totalValue}
+          isLoading={statsLoading}
+        />
       </div>
       
       {/* Filters header */}
@@ -441,6 +613,7 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
           <MetalFilter 
             selected={filters.metal}
             onSelect={(m) => filters.setMetal(m)}
+            counts={metalCounts}
           />
         </FilterSection>
         
@@ -452,12 +625,39 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
           <CategoryFilter 
             selected={filters.category}
             onSelect={(c) => filters.setCategory(c)}
+            counts={categoryCounts}
+          />
+        </FilterSection>
+        
+        {/* Grade - NEW temperature-scale design */}
+        <FilterSection 
+          title="Grade"
+          onClear={filters.grade ? () => filters.setGrade(null) : undefined}
+        >
+          <GradeFilter 
+            selected={filters.grade}
+            onSelect={(g) => filters.setGrade(g)}
+            counts={gradeCounts}
+          />
+        </FilterSection>
+        
+        {/* Rarity */}
+        <FilterSection 
+          title="Rarity"
+          defaultOpen={false}
+          onClear={filters.rarity ? () => filters.setRarity(null) : undefined}
+        >
+          <RarityFilter 
+            selected={filters.rarity}
+            onSelect={(r) => filters.setRarity(r)}
+            counts={rarityCounts}
           />
         </FilterSection>
         
         {/* Year Range */}
         <FilterSection 
           title="Year Range"
+          defaultOpen={false}
           badge={(filters.mint_year_gte !== null || filters.mint_year_lte !== null) && (
             <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--metal-au)' }} />
           )}
@@ -465,10 +665,12 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>From</span>
+                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  From {yearRange.min !== null && `(${yearRange.min < 0 ? Math.abs(yearRange.min) + ' BC' : yearRange.min + ' AD'})`}
+                </span>
                 <Input
                   type="number"
-                  placeholder="-44 BC"
+                  placeholder={yearRange.min !== null ? String(yearRange.min) : "-44"}
                   value={filters.mint_year_gte ?? ""}
                   onChange={(e) => filters.setMintYearGte(e.target.value ? parseInt(e.target.value) : null)}
                   className="h-8 text-sm"
@@ -476,10 +678,12 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
                 />
               </div>
               <div>
-                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>To</span>
+                <span className="text-xs block mb-1" style={{ color: 'var(--text-tertiary)' }}>
+                  To {yearRange.max !== null && `(${yearRange.max < 0 ? Math.abs(yearRange.max) + ' BC' : yearRange.max + ' AD'})`}
+                </span>
                 <Input
                   type="number"
-                  placeholder="476 AD"
+                  placeholder={yearRange.max !== null ? String(yearRange.max) : "476"}
                   value={filters.mint_year_lte ?? ""}
                   onChange={(e) => filters.setMintYearLte(e.target.value ? parseInt(e.target.value) : null)}
                   className="h-8 text-sm"
@@ -489,11 +693,11 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
             </div>
             
             {/* Year distribution histogram (placeholder) */}
-            <div className="flex items-center justify-center py-2">
+            <div className="flex items-center justify-center py-2 opacity-30">
               <PlaceholderSparkline width={20} height="sm" />
             </div>
             <p className="text-[10px] text-center" style={{ color: 'var(--text-tertiary)' }}>
-              Use negative numbers for BC dates
+              Negative = BC, Positive = AD
             </p>
           </div>
         </FilterSection>
@@ -518,41 +722,6 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
             className="h-8 text-sm"
             style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
           />
-        </FilterSection>
-        
-        {/* Grade */}
-        <FilterSection title="Grade" defaultOpen={false}>
-          <Input
-            placeholder="VF, EF, MS..."
-            value={filters.grade || ""}
-            onChange={(e) => filters.setGrade(e.target.value || null)}
-            className="h-8 text-sm"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-          />
-        </FilterSection>
-        
-        {/* Rarity */}
-        <FilterSection title="Rarity" defaultOpen={false}>
-          <Select 
-            value={filters.rarity || "all"} 
-            onValueChange={(v) => filters.setRarity(v === "all" ? null : v)}
-          >
-            <SelectTrigger 
-              className="h-8 text-sm"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-            >
-              <SelectValue placeholder="Any rarity" />
-            </SelectTrigger>
-            <SelectContent style={{ background: 'var(--bg-card)' }}>
-              <SelectItem value="all">Any Rarity</SelectItem>
-              <SelectItem value="common">C - Common</SelectItem>
-              <SelectItem value="scarce">S - Scarce</SelectItem>
-              <SelectItem value="rare">R1 - Rare</SelectItem>
-              <SelectItem value="very_rare">R2 - Very Rare</SelectItem>
-              <SelectItem value="extremely_rare">R3 - Extremely Rare</SelectItem>
-              <SelectItem value="unique">U - Unique</SelectItem>
-            </SelectContent>
-          </Select>
         </FilterSection>
         
         {/* Attributes */}
@@ -586,7 +755,7 @@ export function CollectionSidebar({ totalCoins = 0 }: CollectionSidebarProps) {
         </FilterSection>
       </div>
       
-      {/* Alerts */}
+      {/* Alerts (muted placeholder) */}
       <div className="p-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <AlertsSection />
       </div>

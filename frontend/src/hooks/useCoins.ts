@@ -3,6 +3,19 @@ import { api } from "@/lib/api";
 import { CoinDetail, CoinCreate, CoinUpdate, PaginatedCoins } from "@/types/coin";
 import { useFilterStore } from "@/stores/filterStore";
 
+export interface CollectionStats {
+  total_coins: number;
+  total_value: number;
+  metal_counts: Record<string, number>;
+  category_counts: Record<string, number>;
+  grade_counts: Record<string, number>;
+  rarity_counts: Record<string, number>;
+  year_range: {
+    min: number | null;
+    max: number | null;
+  };
+}
+
 export interface CoinNavigation {
   prev_id: number | null;
   next_id: number | null;
@@ -87,5 +100,16 @@ export function useDeleteCoin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coins"] });
     },
+  });
+}
+
+export function useCollectionStats() {
+  return useQuery({
+    queryKey: ["collection-stats"],
+    queryFn: async () => {
+      const response = await api.get<CollectionStats>("/api/coins/stats/aggregates");
+      return response.data;
+    },
+    staleTime: 30000, // Cache for 30 seconds
   });
 }

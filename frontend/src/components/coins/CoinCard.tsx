@@ -20,7 +20,6 @@ import {
   MetalBadge, 
   GradeBadge, 
   RarityIndicator, 
-  PriceTrend,
   Sparkline,
   parseCategory,
   CATEGORY_CONFIG,
@@ -52,7 +51,8 @@ function formatYear(
   return `${prefix}${Math.abs(year)} ${year < 0 ? "BC" : "AD"}`;
 }
 
-// Mock price trend data (placeholder until real data available)
+// Mock price trend data (placeholder until real market data available)
+// Using muted styling to indicate inactive/future functionality
 function getMockPriceTrend(coinId: number): number[] {
   // Generate deterministic "random" data based on coin ID
   const seed = coinId * 7919;
@@ -63,11 +63,6 @@ function getMockPriceTrend(coinId: number): number[] {
   });
 }
 
-// Mock price change (placeholder)
-function getMockPriceChange(coinId: number): number {
-  return ((coinId * 7) % 30) - 10; // -10% to +20%
-}
-
 export function CoinCard({ coin }: CoinCardProps) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
@@ -76,9 +71,8 @@ export function CoinCard({ coin }: CoinCardProps) {
   const category = parseCategory(coin.category);
   const categoryConfig = CATEGORY_CONFIG[category];
   
-  // Mock data for price trends (will be replaced with real data)
+  // Mock data for price trends (muted placeholder for future functionality)
   const priceTrend = getMockPriceTrend(coin.id);
-  const priceChange = getMockPriceChange(coin.id);
   
   return (
     <div 
@@ -200,25 +194,37 @@ export function CoinCard({ coin }: CoinCardProps) {
           {yearDisplay && ` · ${yearDisplay}`}
         </div>
         
-        {/* Footer: Price trend + Sparkline */}
+        {/* Footer: Price + muted sparkline placeholder */}
         <div 
           className="mt-2 pt-2 flex items-center justify-between"
           style={{ borderTop: '1px solid var(--border-subtle)' }}
         >
-          {/* Price with trend */}
-          <PriceTrend 
-            currentPrice={coin.acquisition_price}
-            changePercent={priceChange}
-            size="xs"
-          />
+          {/* Actual acquisition price */}
+          {coin.acquisition_price ? (
+            <span 
+              className="text-xs font-semibold tabular-nums"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              ${Number(coin.acquisition_price).toLocaleString()}
+            </span>
+          ) : (
+            <span 
+              className="text-xs"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              —
+            </span>
+          )}
           
-          {/* Mini sparkline */}
-          <Sparkline 
-            data={priceTrend} 
-            width={10} 
-            height="xs"
-            trend={priceChange > 0 ? 'up' : priceChange < 0 ? 'down' : 'neutral'}
-          />
+          {/* Muted sparkline placeholder (future market data) */}
+          <div className="opacity-20" title="Market trends coming soon">
+            <Sparkline 
+              data={priceTrend} 
+              width={10} 
+              height="xs"
+              trend="neutral"
+            />
+          </div>
         </div>
       </div>
     </div>

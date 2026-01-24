@@ -282,6 +282,10 @@ async def list_coins(
     acquisition_price_lte: Optional[float] = None,
     mint_year_gte: Optional[int] = None,
     mint_year_lte: Optional[int] = None,
+    grade: Optional[str] = None,
+    rarity: Optional[str] = None,
+    is_circa: Optional[bool] = None,
+    is_test_cut: Optional[bool] = None,
     db: Session = Depends(get_db),
 ):
     """List coins with pagination, filters, and sorting."""
@@ -306,6 +310,14 @@ async def list_coins(
         filters["mint_year_gte"] = mint_year_gte
     if mint_year_lte:
         filters["mint_year_lte"] = mint_year_lte
+    if grade:
+        filters["grade"] = grade
+    if rarity:
+        filters["rarity"] = rarity
+    if is_circa is not None:
+        filters["is_circa"] = is_circa
+    if is_test_cut is not None:
+        filters["is_test_cut"] = is_test_cut
     
     skip = (page - 1) * per_page
     coins, total = get_coins(db, skip=skip, limit=per_page, filters=filters, sort_by=sort_by, sort_dir=sort_dir)
@@ -416,3 +428,76 @@ async def delete_coin_endpoint(coin_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Coin not found")
     return None
+
+
+@router.get("/stats/aggregates")
+async def get_collection_stats(db: Session = Depends(get_db)):
+    """Get collection statistics: counts by metal, category, grade, and totals."""
+    from sqlalchemy import func
+    from app.models.coin import Coin
+    
+    # Total counts
+    total_coins = db.query(func.count(Coin.id)).scalar() or 0
+    total_value = db.query(func.sum(Coin.acquisition_price)).scalar() or 0
+    
+    # Count by metal
+    metal_counts = {}
+    metal_query = db.query(Coin.metal, func.count(Coin.id)).group_by(Coin.metal).all()
+    for metal, count in metal_query:
+        if metal:
+            metal_counts[metal.value] = count
+    
+    # Count by category  
+    category_counts = {}
+    category_query = db.query(Coin.category, func.count(Coin.id)).group_by(Coin.category).all()
+    for category, count in category_query:
+        if category:
+            category_counts[category.value] = count
+    
+    # Count by grade (parse grade string to tier)
+    grade_counts = {}
+    grade_query = db.query(Coin.grade, func.count(Coin.id)).group_by(Coin.grade).all()
+    for grade, count in grade_query:
+        if grade:
+            # Map grade to tier
+            g = grade.upper().replace(" ", "")
+            tier = "other"
+            if any(x in g for x in ["P", "FR", "AG"]):
+                tier = "poor"
+            elif any(x in g for x in ["G", "VG"]) and "AG" not in g:
+                tier = "good"
+            elif any(x in g for x in ["F", "VF"]) and "EF" not in g:
+                tier = "fine"
+            elif any(x in g for x in ["EF", "XF"]):
+                tier = "ef"
+            elif "AU" in g and "AUG" not in g:
+                tier = "au"
+            elif any(x in g for x in ["MS", "FDC", "UNC"]):
+                tier = "ms"
+            grade_counts[tier] = grade_counts.get(tier, 0) + count
+    
+    # Count by rarity
+    rarity_counts = {}
+    rarity_query = db.query(Coin.rarity, func.count(Coin.id)).group_by(Coin.rarity).all()
+    for rarity, count in rarity_query:
+        if rarity:
+            rarity_counts[rarity.value] = count
+    
+    # Year range
+    min_year = db.query(func.min(Coin.mint_year_start)).scalar()
+    max_year = db.query(func.max(Coin.mint_year_end)).scalar()
+    if max_year is None:
+        max_year = db.query(func.max(Coin.mint_year_start)).scalar()
+    
+    return {
+        "total_coins": total_coins,
+        "total_value": float(total_value) if total_value else 0,
+        "metal_counts": metal_counts,
+        "category_counts": category_counts,
+        "grade_counts": grade_counts,
+        "rarity_counts": rarity_counts,
+        "year_range": {
+            "min": min_year,
+            "max": max_year,
+        }
+    }
