@@ -9,13 +9,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Check, X, AlertTriangle } from "lucide-react";
-import { useEnrichCoin, EnrichmentDiff, Conflict } from "@/hooks/useCatalog";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
+import { EnrichmentDiff, Conflict } from "@/hooks/useCatalog";
 
 interface CompareDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  coinId: number;
   diff: EnrichmentDiff | null;
   onApply: (applyConflicts: string[]) => void;
   isApplying: boolean;
@@ -24,7 +23,6 @@ interface CompareDrawerProps {
 export function CompareDrawer({
   open,
   onOpenChange,
-  coinId,
   diff,
   onApply,
   isApplying,

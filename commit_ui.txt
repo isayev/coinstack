@@ -1,0 +1,38 @@
+feat(ui): Comprehensive UI/UX redesign with numismatic theme
+
+Design System:
+- New color palette with warm parchment light theme and collector's cabinet dark theme
+- Museum/archival aesthetic with Cormorant Garamond headings and Source Sans 3 body
+- Custom CSS variables for metals, grades, categories, and rarity levels
+
+Coin Cards:
+- Smaller, more compact 4:3 aspect ratio cards (was 1:1)
+- More information dense: category, metal, rarity, year, grade, price all visible
+- Semantic badge colors for metal types (Au, Ar, Æ abbreviations)
+- Visual indicators for test cuts and circa dating
+
+Grid Layout:
+- Up to 7 columns on 2xl screens (was 5)
+- Responsive breakpoints: 2/3/4/5/6/7 columns
+- Tighter 3-unit gap (was 4)
+
+Navigation:
+- Logo now clickable, links to home page
+- Added "Collection Manager" subtitle to brand
+- Improved sidebar with icon containers and descriptions
+
+Badge System:
+- Metal badges with proper numismatic abbreviations and colors
+- Grade badges (MS, AU, XF, VF, F, VG, G) with quality-based colors
+- Category badges (Imperial, Republic, Provincial, Greek, Byzantine)
+- Rarity badges (Common to Extremely Rare)
+- Certification badges (NGC, PCGS, ANACS)
+
+Filter Panel:
+- Improved metal selector with abbreviation buttons
+- Better visual hierarchy with badge previews
+
+Typography:
+- Serif headings (Cormorant Garamond) for elegance
+- Clean sans-serif body (Source Sans 3) for readability
+- Proper font weight hierarchy

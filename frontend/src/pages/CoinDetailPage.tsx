@@ -278,10 +278,7 @@ export function CoinDetailPage() {
               </TabsContent>
               
               <TabsContent value="references" className="mt-6">
-                <CatalogReferences 
-                  coin={coin} 
-                  onEnrichClick={() => {}}
-                />
+                <CatalogReferences coin={coin} />
               </TabsContent>
               
               <TabsContent value="provenance" className="mt-6 space-y-6">
@@ -605,11 +602,9 @@ function ConfidenceBadge({ confidence }: { confidence: number | null | undefined
 
 // Catalog references component
 function CatalogReferences({ 
-  coin, 
-  onEnrichClick 
+  coin
 }: { 
   coin: any; 
-  onEnrichClick: () => void;
 }) {
   const [refreshingRef, setRefreshingRef] = useState<number | null>(null);
   const lookupMutation = useLookupReference();

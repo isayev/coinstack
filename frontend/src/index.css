@@ -1,51 +1,180 @@
+/* Import distinctive fonts - must come before tailwind directives */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Museum Archive Light Theme - Warm parchment tones */
+    --background: 40 30% 98%;
+    --foreground: 30 20% 12%;
+    --card: 40 40% 99%;
+    --card-foreground: 30 20% 12%;
+    --popover: 40 40% 99%;
+    --popover-foreground: 30 20% 12%;
+    --primary: 35 80% 40%;
+    --primary-foreground: 40 30% 98%;
+    --secondary: 35 15% 92%;
+    --secondary-foreground: 30 20% 20%;
+    --muted: 35 20% 94%;
+    --muted-foreground: 30 10% 45%;
+    --accent: 35 60% 90%;
+    --accent-foreground: 30 20% 15%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 40 30% 98%;
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 35 80% 40%;
+    --radius: 0.375rem;
+    
+    /* Metal colors - Light mode */
+    --metal-gold: 45 90% 47%;
+    --metal-gold-bg: 45 70% 95%;
+    --metal-electrum: 48 70% 55%;
+    --metal-electrum-bg: 48 50% 95%;
+    --metal-silver: 220 15% 60%;
+    --metal-silver-bg: 220 10% 95%;
+    --metal-bronze: 25 70% 45%;
+    --metal-bronze-bg: 25 50% 94%;
+    --metal-copper: 15 65% 40%;
+    --metal-copper-bg: 15 45% 94%;
+    --metal-billon: 200 10% 50%;
+    --metal-billon-bg: 200 8% 94%;
+    --metal-orichalcum: 42 65% 50%;
+    --metal-orichalcum-bg: 42 45% 94%;
+    --metal-lead: 220 5% 45%;
+    --metal-lead-bg: 220 5% 92%;
+    --metal-potin: 30 8% 48%;
+    --metal-potin-bg: 30 6% 93%;
+    --metal-ae: 25 25% 45%;
+    --metal-ae-bg: 25 15% 93%;
+    
+    /* Grade colors */
+    --grade-mint: 150 60% 40%;
+    --grade-mint-bg: 150 40% 95%;
+    --grade-au: 45 70% 45%;
+    --grade-au-bg: 45 50% 95%;
+    --grade-xf: 200 50% 45%;
+    --grade-xf-bg: 200 35% 95%;
+    --grade-vf: 180 35% 42%;
+    --grade-vf-bg: 180 25% 94%;
+    --grade-f: 35 30% 50%;
+    --grade-f-bg: 35 20% 94%;
+    --grade-vg: 30 20% 50%;
+    --grade-vg-bg: 30 15% 93%;
+    --grade-g: 25 15% 55%;
+    --grade-g-bg: 25 10% 93%;
+    
+    /* Category colors */
+    --cat-imperial: 260 45% 50%;
+    --cat-imperial-bg: 260 30% 95%;
+    --cat-republic: 350 50% 50%;
+    --cat-republic-bg: 350 35% 95%;
+    --cat-provincial: 180 45% 40%;
+    --cat-provincial-bg: 180 30% 94%;
+    --cat-greek: 210 50% 45%;
+    --cat-greek-bg: 210 35% 95%;
+    --cat-byzantine: 280 40% 45%;
+    --cat-byzantine-bg: 280 28% 95%;
+    
+    /* Rarity colors */
+    --rarity-common: 120 25% 45%;
+    --rarity-common-bg: 120 18% 94%;
+    --rarity-scarce: 45 50% 45%;
+    --rarity-scarce-bg: 45 35% 94%;
+    --rarity-rare: 25 60% 48%;
+    --rarity-rare-bg: 25 42% 94%;
+    --rarity-very-rare: 350 55% 50%;
+    --rarity-very-rare-bg: 350 40% 95%;
+    --rarity-extremely-rare: 280 50% 50%;
+    --rarity-extremely-rare-bg: 280 35% 95%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Collector's Cabinet Dark Theme - Rich blacks with precious metal accents */
+    --background: 30 15% 7%;
+    --foreground: 40 20% 92%;
+    --card: 30 12% 10%;
+    --card-foreground: 40 20% 92%;
+    --popover: 30 12% 10%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 40 75% 55%;
+    --primary-foreground: 30 15% 7%;
+    --secondary: 30 10% 15%;
+    --secondary-foreground: 40 20% 88%;
+    --muted: 30 8% 15%;
+    --muted-foreground: 35 12% 55%;
+    --accent: 35 35% 18%;
+    --accent-foreground: 40 30% 90%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 40 20% 95%;
+    --border: 30 10% 18%;
+    --input: 30 10% 18%;
+    --ring: 40 75% 55%;
+    
+    /* Metal colors - Dark mode (more luminous) */
+    --metal-gold: 45 85% 55%;
+    --metal-gold-bg: 45 40% 15%;
+    --metal-electrum: 48 65% 60%;
+    --metal-electrum-bg: 48 30% 14%;
+    --metal-silver: 220 20% 70%;
+    --metal-silver-bg: 220 12% 16%;
+    --metal-bronze: 25 60% 55%;
+    --metal-bronze-bg: 25 35% 14%;
+    --metal-copper: 15 55% 52%;
+    --metal-copper-bg: 15 30% 13%;
+    --metal-billon: 200 15% 60%;
+    --metal-billon-bg: 200 10% 15%;
+    --metal-orichalcum: 42 55% 58%;
+    --metal-orichalcum-bg: 42 30% 14%;
+    --metal-lead: 220 8% 55%;
+    --metal-lead-bg: 220 6% 14%;
+    --metal-potin: 30 10% 55%;
+    --metal-potin-bg: 30 8% 13%;
+    --metal-ae: 25 20% 55%;
+    --metal-ae-bg: 25 12% 14%;
+    
+    /* Grade colors - Dark mode */
+    --grade-mint: 150 55% 50%;
+    --grade-mint-bg: 150 30% 14%;
+    --grade-au: 45 65% 55%;
+    --grade-au-bg: 45 35% 14%;
+    --grade-xf: 200 45% 55%;
+    --grade-xf-bg: 200 28% 15%;
+    --grade-vf: 180 32% 50%;
+    --grade-vf-bg: 180 20% 14%;
+    --grade-f: 35 28% 55%;
+    --grade-f-bg: 35 18% 14%;
+    --grade-vg: 30 18% 55%;
+    --grade-vg-bg: 30 12% 13%;
+    --grade-g: 25 12% 58%;
+    --grade-g-bg: 25 8% 13%;
+    
+    /* Category colors - Dark mode */
+    --cat-imperial: 260 40% 60%;
+    --cat-imperial-bg: 260 25% 15%;
+    --cat-republic: 350 45% 58%;
+    --cat-republic-bg: 350 28% 14%;
+    --cat-provincial: 180 40% 50%;
+    --cat-provincial-bg: 180 25% 14%;
+    --cat-greek: 210 45% 55%;
+    --cat-greek-bg: 210 28% 15%;
+    --cat-byzantine: 280 35% 55%;
+    --cat-byzantine-bg: 280 22% 14%;
+    
+    /* Rarity colors - Dark mode */
+    --rarity-common: 120 22% 50%;
+    --rarity-common-bg: 120 15% 13%;
+    --rarity-scarce: 45 45% 52%;
+    --rarity-scarce-bg: 45 28% 13%;
+    --rarity-rare: 25 55% 55%;
+    --rarity-rare-bg: 25 35% 13%;
+    --rarity-very-rare: 350 50% 55%;
+    --rarity-very-rare-bg: 350 32% 14%;
+    --rarity-extremely-rare: 280 45% 58%;
+    --rarity-extremely-rare-bg: 280 28% 14%;
   }
 }
 
@@ -53,7 +182,249 @@
   * {
     @apply border-border;
   }
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Source Sans 3', system-ui, sans-serif;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Metal badge variants */
+  .badge-metal-gold {
+    background-color: hsl(var(--metal-gold-bg));
+    color: hsl(var(--metal-gold));
+    border-color: hsl(var(--metal-gold) / 0.3);
+  }
+  .badge-metal-electrum {
+    background-color: hsl(var(--metal-electrum-bg));
+    color: hsl(var(--metal-electrum));
+    border-color: hsl(var(--metal-electrum) / 0.3);
+  }
+  .badge-metal-silver {
+    background-color: hsl(var(--metal-silver-bg));
+    color: hsl(var(--metal-silver));
+    border-color: hsl(var(--metal-silver) / 0.3);
+  }
+  .badge-metal-bronze {
+    background-color: hsl(var(--metal-bronze-bg));
+    color: hsl(var(--metal-bronze));
+    border-color: hsl(var(--metal-bronze) / 0.3);
+  }
+  .badge-metal-copper {
+    background-color: hsl(var(--metal-copper-bg));
+    color: hsl(var(--metal-copper));
+    border-color: hsl(var(--metal-copper) / 0.3);
+  }
+  .badge-metal-billon {
+    background-color: hsl(var(--metal-billon-bg));
+    color: hsl(var(--metal-billon));
+    border-color: hsl(var(--metal-billon) / 0.3);
+  }
+  .badge-metal-orichalcum {
+    background-color: hsl(var(--metal-orichalcum-bg));
+    color: hsl(var(--metal-orichalcum));
+    border-color: hsl(var(--metal-orichalcum) / 0.3);
+  }
+  .badge-metal-lead {
+    background-color: hsl(var(--metal-lead-bg));
+    color: hsl(var(--metal-lead));
+    border-color: hsl(var(--metal-lead) / 0.3);
+  }
+  .badge-metal-potin {
+    background-color: hsl(var(--metal-potin-bg));
+    color: hsl(var(--metal-potin));
+    border-color: hsl(var(--metal-potin) / 0.3);
+  }
+  .badge-metal-ae {
+    background-color: hsl(var(--metal-ae-bg));
+    color: hsl(var(--metal-ae));
+    border-color: hsl(var(--metal-ae) / 0.3);
+  }
+  
+  /* Grade badge variants */
+  .badge-grade-ms, .badge-grade-mint {
+    background-color: hsl(var(--grade-mint-bg));
+    color: hsl(var(--grade-mint));
+    border-color: hsl(var(--grade-mint) / 0.3);
+  }
+  .badge-grade-au, .badge-grade-choice-au {
+    background-color: hsl(var(--grade-au-bg));
+    color: hsl(var(--grade-au));
+    border-color: hsl(var(--grade-au) / 0.3);
+  }
+  .badge-grade-xf, .badge-grade-ef, .badge-grade-choice-xf {
+    background-color: hsl(var(--grade-xf-bg));
+    color: hsl(var(--grade-xf));
+    border-color: hsl(var(--grade-xf) / 0.3);
+  }
+  .badge-grade-vf, .badge-grade-choice-vf {
+    background-color: hsl(var(--grade-vf-bg));
+    color: hsl(var(--grade-vf));
+    border-color: hsl(var(--grade-vf) / 0.3);
+  }
+  .badge-grade-f, .badge-grade-choice-f, .badge-grade-fine {
+    background-color: hsl(var(--grade-f-bg));
+    color: hsl(var(--grade-f));
+    border-color: hsl(var(--grade-f) / 0.3);
+  }
+  .badge-grade-vg {
+    background-color: hsl(var(--grade-vg-bg));
+    color: hsl(var(--grade-vg));
+    border-color: hsl(var(--grade-vg) / 0.3);
+  }
+  .badge-grade-g, .badge-grade-good {
+    background-color: hsl(var(--grade-g-bg));
+    color: hsl(var(--grade-g));
+    border-color: hsl(var(--grade-g) / 0.3);
+  }
+  
+  /* Category badge variants */
+  .badge-cat-imperial {
+    background-color: hsl(var(--cat-imperial-bg));
+    color: hsl(var(--cat-imperial));
+    border-color: hsl(var(--cat-imperial) / 0.3);
+  }
+  .badge-cat-republic {
+    background-color: hsl(var(--cat-republic-bg));
+    color: hsl(var(--cat-republic));
+    border-color: hsl(var(--cat-republic) / 0.3);
+  }
+  .badge-cat-provincial {
+    background-color: hsl(var(--cat-provincial-bg));
+    color: hsl(var(--cat-provincial));
+    border-color: hsl(var(--cat-provincial) / 0.3);
+  }
+  .badge-cat-greek {
+    background-color: hsl(var(--cat-greek-bg));
+    color: hsl(var(--cat-greek));
+    border-color: hsl(var(--cat-greek) / 0.3);
+  }
+  .badge-cat-byzantine {
+    background-color: hsl(var(--cat-byzantine-bg));
+    color: hsl(var(--cat-byzantine));
+    border-color: hsl(var(--cat-byzantine) / 0.3);
+  }
+  
+  /* Rarity badge variants */
+  .badge-rarity-common {
+    background-color: hsl(var(--rarity-common-bg));
+    color: hsl(var(--rarity-common));
+    border-color: hsl(var(--rarity-common) / 0.3);
+  }
+  .badge-rarity-scarce {
+    background-color: hsl(var(--rarity-scarce-bg));
+    color: hsl(var(--rarity-scarce));
+    border-color: hsl(var(--rarity-scarce) / 0.3);
+  }
+  .badge-rarity-rare {
+    background-color: hsl(var(--rarity-rare-bg));
+    color: hsl(var(--rarity-rare));
+    border-color: hsl(var(--rarity-rare) / 0.3);
+  }
+  .badge-rarity-very-rare {
+    background-color: hsl(var(--rarity-very-rare-bg));
+    color: hsl(var(--rarity-very-rare));
+    border-color: hsl(var(--rarity-very-rare) / 0.3);
+  }
+  .badge-rarity-extremely-rare {
+    background-color: hsl(var(--rarity-extremely-rare-bg));
+    color: hsl(var(--rarity-extremely-rare));
+    border-color: hsl(var(--rarity-extremely-rare) / 0.3);
+  }
+  
+  /* Certification badges */
+  .badge-cert-ngc {
+    background: linear-gradient(135deg, hsl(220 50% 94%), hsl(220 40% 90%));
+    color: hsl(220 60% 35%);
+    border-color: hsl(220 40% 70%);
+    font-weight: 600;
+  }
+  .badge-cert-pcgs {
+    background: linear-gradient(135deg, hsl(210 50% 94%), hsl(210 40% 90%));
+    color: hsl(210 55% 35%);
+    border-color: hsl(210 40% 70%);
+    font-weight: 600;
+  }
+  .badge-cert-anacs {
+    background: linear-gradient(135deg, hsl(35 50% 94%), hsl(35 40% 88%));
+    color: hsl(35 60% 32%);
+    border-color: hsl(35 40% 65%);
+    font-weight: 600;
+  }
+  
+  .dark .badge-cert-ngc {
+    background: linear-gradient(135deg, hsl(220 35% 18%), hsl(220 30% 22%));
+    color: hsl(220 50% 70%);
+    border-color: hsl(220 30% 35%);
+  }
+  .dark .badge-cert-pcgs {
+    background: linear-gradient(135deg, hsl(210 35% 18%), hsl(210 30% 22%));
+    color: hsl(210 45% 68%);
+    border-color: hsl(210 30% 35%);
+  }
+  .dark .badge-cert-anacs {
+    background: linear-gradient(135deg, hsl(35 30% 16%), hsl(35 25% 20%));
+    color: hsl(35 50% 65%);
+    border-color: hsl(35 25% 30%);
+  }
+  
+  /* Test cut indicator */
+  .badge-test-cut {
+    @apply bg-destructive/10 text-destructive border-destructive/30;
+  }
+  
+  /* Circa indicator */
+  .badge-circa {
+    @apply bg-amber-500/10 text-amber-600 border-amber-500/20;
+  }
+  .dark .badge-circa {
+    @apply bg-amber-500/15 text-amber-400 border-amber-500/25;
+  }
+}
+
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Subtle card hover effect */
+.coin-card {
+  @apply transition-all duration-200;
+}
+.coin-card:hover {
+  @apply shadow-lg;
+  transform: translateY(-2px);
+}
+
+/* Logo styling */
+.logo-text {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  @apply font-bold tracking-tight;
 }

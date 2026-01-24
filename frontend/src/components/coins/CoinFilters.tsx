@@ -24,19 +24,18 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
-// All metal options from expanded enum
+// All metal options from expanded enum - with badge class references
 const METALS = [
-  { value: "gold", label: "Gold", color: "bg-yellow-500" },
-  { value: "electrum", label: "Electrum", color: "bg-amber-400" },
-  { value: "silver", label: "Silver", color: "bg-slate-400" },
-  { value: "billon", label: "Billon", color: "bg-zinc-500" },
-  { value: "potin", label: "Potin", color: "bg-stone-500" },
-  { value: "orichalcum", label: "Orichalcum", color: "bg-yellow-600" },
-  { value: "bronze", label: "Bronze", color: "bg-orange-600" },
-  { value: "copper", label: "Copper", color: "bg-orange-700" },
-  { value: "lead", label: "Lead", color: "bg-slate-600" },
-  { value: "ae", label: "AE", color: "bg-neutral-500" },
-  { value: "uncertain", label: "Uncertain", color: "bg-gray-400" },
+  { value: "gold", label: "Au", fullLabel: "Gold", badgeClass: "badge-metal-gold" },
+  { value: "electrum", label: "El", fullLabel: "Electrum", badgeClass: "badge-metal-electrum" },
+  { value: "silver", label: "Ar", fullLabel: "Silver", badgeClass: "badge-metal-silver" },
+  { value: "billon", label: "Bil", fullLabel: "Billon", badgeClass: "badge-metal-billon" },
+  { value: "potin", label: "Pot", fullLabel: "Potin", badgeClass: "badge-metal-potin" },
+  { value: "orichalcum", label: "Or", fullLabel: "Orichalcum", badgeClass: "badge-metal-orichalcum" },
+  { value: "bronze", label: "Æ", fullLabel: "Bronze", badgeClass: "badge-metal-bronze" },
+  { value: "copper", label: "Cu", fullLabel: "Copper", badgeClass: "badge-metal-copper" },
+  { value: "lead", label: "Pb", fullLabel: "Lead", badgeClass: "badge-metal-lead" },
+  { value: "ae", label: "AE", fullLabel: "AE", badgeClass: "badge-metal-ae" },
 ];
 
 // Rarity options
@@ -158,25 +157,29 @@ export function CoinFilters() {
         <FilterSection 
           title="Metal"
           badge={filters.metal && (
-            <Badge variant="outline" className="text-xs capitalize">
-              {filters.metal}
+            <Badge variant="outline" className={cn(
+              "text-xs capitalize",
+              METALS.find(m => m.value === filters.metal)?.badgeClass
+            )}>
+              {METALS.find(m => m.value === filters.metal)?.fullLabel || filters.metal}
             </Badge>
           )}
         >
           <div className="flex flex-wrap gap-1.5">
             {METALS.map((metal) => (
-              <Button
+              <button
                 key={metal.value}
-                variant={filters.metal === metal.value ? "default" : "outline"}
-                size="sm"
                 onClick={() => filters.setMetal(filters.metal === metal.value ? null : metal.value)}
                 className={cn(
-                  "h-7 px-2 text-xs",
-                  filters.metal === metal.value && metal.color
+                  "h-7 px-2.5 text-xs rounded-md border transition-all font-medium",
+                  filters.metal === metal.value
+                    ? cn(metal.badgeClass, "ring-1 ring-offset-1 ring-primary/50")
+                    : "border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 )}
+                title={metal.fullLabel}
               >
                 {metal.label}
-              </Button>
+              </button>
             ))}
           </div>
         </FilterSection>
