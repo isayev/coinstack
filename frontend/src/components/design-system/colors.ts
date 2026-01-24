@@ -116,8 +116,42 @@ export const GRADE_MAP: Record<string, GradeConfig> = {
 /** Parse grade string to GradeConfig */
 export function parseGrade(grade: string | null | undefined): GradeConfig | null {
   if (!grade) return null;
+  
+  // Clean and uppercase the grade string
   const g = grade.replace(/\d+/g, '').toUpperCase().trim();
-  return GRADE_MAP[g] || null;
+  
+  // Direct match first
+  if (GRADE_MAP[g]) return GRADE_MAP[g];
+  
+  // Check for grade codes within the string (order matters - check specific first)
+  // MS tier
+  if (g.includes('MS') || g.includes('FDC') || g.includes('MINT') || g.includes('UNC') || g.includes('BU')) {
+    return GRADE_MAP['MS'];
+  }
+  // AU tier (check before VF to avoid "AU" in "AUGUSTUS" false match)
+  if (g.includes('AU') && !g.includes('AUG')) {
+    return GRADE_MAP['AU'];
+  }
+  // EF tier (check before Fine to avoid "F" in "EF/XF" confusion)
+  if (g.includes('EF') || g.includes('XF') || g.includes('EXTREMELY')) {
+    return GRADE_MAP['EF'];
+  }
+  // Fine tier (check for F, VF, Fine - but not EF/XF which were caught above)
+  // "Choice F", "F+", "VF", "Very Fine", "FV" should all map here
+  if (g.includes('VF') || g.includes('FINE') || g === 'FV' || g.startsWith('FV') ||
+      /\bF\b/.test(g) || /\bF\+/.test(g) || g.endsWith(' F') || g === 'F' || g === 'F+') {
+    return GRADE_MAP['VF'];
+  }
+  // Good tier (exclude AG which is poor)
+  if ((g.includes('VG') || g === 'G' || g.includes('GOOD')) && !g.includes('AG')) {
+    return GRADE_MAP['VG'];
+  }
+  // Poor tier
+  if (g.includes('POOR') || g.includes('FAIR') || g.includes('FR') || g.includes('AG')) {
+    return GRADE_MAP['AG'];
+  }
+  
+  return null;
 }
 
 // ============================================================================
