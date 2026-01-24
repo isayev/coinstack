@@ -58,12 +58,18 @@ def get_coins(
             query = query.filter(Coin.sub_category == filters["sub_category"])
         if "metal" in filters and filters["metal"]:
             query = query.filter(Coin.metal == filters["metal"])
-        if "issuing_authority" in filters and filters["issuing_authority"]:
+        if "is_ruler_unknown" in filters and filters["is_ruler_unknown"]:
+            query = query.filter(Coin.issuing_authority.is_(None))
+        elif "issuing_authority" in filters and filters["issuing_authority"]:
             query = query.filter(Coin.issuing_authority.ilike(f"%{filters['issuing_authority']}%"))
         if "denomination" in filters and filters["denomination"]:
             query = query.filter(Coin.denomination.ilike(f"%{filters['denomination']}%"))
-        if "mint_name" in filters and filters["mint_name"]:
-            query = query.filter(Coin.mint_name.ilike(f"%{filters['mint_name']}%"))
+        if "is_mint_unknown" in filters and filters["is_mint_unknown"]:
+            query = query.filter(Coin.mint_id.is_(None))
+        elif "mint_name" in filters and filters["mint_name"]:
+            # Join with Mint table and filter by name
+            from app.models.mint import Mint
+            query = query.join(Mint, Coin.mint_id == Mint.id).filter(Mint.name.ilike(f"%{filters['mint_name']}%"))
         if "storage_location" in filters and filters["storage_location"]:
             # Support prefix matching for storage locations like "Velv1" matching "Velv1-1-1"
             query = query.filter(Coin.storage_location.ilike(f"{filters['storage_location']}%"))
@@ -135,12 +141,17 @@ def get_coin_ids_sorted(
             query = query.filter(Coin.sub_category == filters["sub_category"])
         if "metal" in filters and filters["metal"]:
             query = query.filter(Coin.metal == filters["metal"])
-        if "issuing_authority" in filters and filters["issuing_authority"]:
+        if "is_ruler_unknown" in filters and filters["is_ruler_unknown"]:
+            query = query.filter(Coin.issuing_authority.is_(None))
+        elif "issuing_authority" in filters and filters["issuing_authority"]:
             query = query.filter(Coin.issuing_authority.ilike(f"%{filters['issuing_authority']}%"))
         if "denomination" in filters and filters["denomination"]:
             query = query.filter(Coin.denomination.ilike(f"%{filters['denomination']}%"))
-        if "mint_name" in filters and filters["mint_name"]:
-            query = query.filter(Coin.mint_name.ilike(f"%{filters['mint_name']}%"))
+        if "is_mint_unknown" in filters and filters["is_mint_unknown"]:
+            query = query.filter(Coin.mint_id.is_(None))
+        elif "mint_name" in filters and filters["mint_name"]:
+            from app.models.mint import Mint
+            query = query.join(Mint, Coin.mint_id == Mint.id).filter(Mint.name.ilike(f"%{filters['mint_name']}%"))
         if "storage_location" in filters and filters["storage_location"]:
             query = query.filter(Coin.storage_location.ilike(f"{filters['storage_location']}%"))
         if "acquisition_price_gte" in filters:

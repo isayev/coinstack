@@ -530,6 +530,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
   const rarityCounts = stats?.rarity_counts ?? {};
   const yearRange = stats?.year_range ?? { min: null, max: null, unknown_count: 0 };
   const yearDistribution = stats?.year_distribution ?? [];
+  const unknownCounts = stats?.unknown_counts ?? { grade: 0, year: 0, ruler: 0, mint: 0, denomination: 0, rarity: 0 };
   
   return (
     <div 
@@ -766,25 +767,79 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
         </FilterSection>
         
         {/* Ruler */}
-        <FilterSection title="Ruler" defaultOpen={false}>
-          <Input
-            placeholder="Search rulers..."
-            value={filters.issuing_authority || ""}
-            onChange={(e) => filters.setIssuingAuthority(e.target.value || null)}
-            className="h-8 text-sm"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-          />
+        <FilterSection 
+          title="Ruler" 
+          defaultOpen={false}
+          onClear={(filters.issuing_authority || filters.is_ruler_unknown) ? () => {
+            filters.setIssuingAuthority(null);
+            filters.setIsRulerUnknown(null);
+          } : undefined}
+        >
+          <div className="space-y-2">
+            <Input
+              placeholder="Search rulers..."
+              value={filters.issuing_authority || ""}
+              onChange={(e) => filters.setIssuingAuthority(e.target.value || null)}
+              className="h-8 text-sm"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+              disabled={filters.is_ruler_unknown === true}
+            />
+            {unknownCounts.ruler > 0 && (
+              <button
+                onClick={() => filters.setIsRulerUnknown(filters.is_ruler_unknown ? null : true)}
+                className={cn(
+                  "w-full flex items-center justify-between py-1.5 px-2 rounded transition-all",
+                  filters.is_ruler_unknown && "ring-1"
+                )}
+                style={{
+                  background: 'var(--unknown-subtle)',
+                  color: filters.is_ruler_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                  boxShadow: filters.is_ruler_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
+                }}
+              >
+                <span className="text-xs">Unknown Ruler</span>
+                <span className="text-xs tabular-nums opacity-60">{unknownCounts.ruler}</span>
+              </button>
+            )}
+          </div>
         </FilterSection>
         
         {/* Mint */}
-        <FilterSection title="Mint" defaultOpen={false}>
-          <Input
-            placeholder="Search mints..."
-            value={filters.mint_name || ""}
-            onChange={(e) => filters.setMintName(e.target.value || null)}
-            className="h-8 text-sm"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-          />
+        <FilterSection 
+          title="Mint" 
+          defaultOpen={false}
+          onClear={(filters.mint_name || filters.is_mint_unknown) ? () => {
+            filters.setMintName(null);
+            filters.setIsMintUnknown(null);
+          } : undefined}
+        >
+          <div className="space-y-2">
+            <Input
+              placeholder="Search mints..."
+              value={filters.mint_name || ""}
+              onChange={(e) => filters.setMintName(e.target.value || null)}
+              className="h-8 text-sm"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+              disabled={filters.is_mint_unknown === true}
+            />
+            {unknownCounts.mint > 0 && (
+              <button
+                onClick={() => filters.setIsMintUnknown(filters.is_mint_unknown ? null : true)}
+                className={cn(
+                  "w-full flex items-center justify-between py-1.5 px-2 rounded transition-all",
+                  filters.is_mint_unknown && "ring-1"
+                )}
+                style={{
+                  background: 'var(--unknown-subtle)',
+                  color: filters.is_mint_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                  boxShadow: filters.is_mint_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
+                }}
+              >
+                <span className="text-xs">Unknown Mint</span>
+                <span className="text-xs tabular-nums opacity-60">{unknownCounts.mint}</span>
+              </button>
+            )}
+          </div>
         </FilterSection>
         
         {/* Attributes */}

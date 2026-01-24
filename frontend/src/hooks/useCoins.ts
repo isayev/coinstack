@@ -10,6 +10,15 @@ export interface YearBucket {
   label: string;
 }
 
+export interface UnknownCounts {
+  grade: number;
+  year: number;
+  ruler: number;
+  mint: number;
+  denomination: number;
+  rarity: number;
+}
+
 export interface CollectionStats {
   total_coins: number;
   total_value: number;
@@ -27,6 +36,7 @@ export interface CollectionStats {
     unknown_count: number;
   };
   year_distribution: YearBucket[];
+  unknown_counts: UnknownCounts;
 }
 
 export interface CoinNavigation {

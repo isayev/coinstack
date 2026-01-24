@@ -72,6 +72,16 @@ class YearBucket(BaseModel):
     label: str
 
 
+class UnknownCounts(BaseModel):
+    """Counts of coins with missing/unknown values."""
+    grade: int = 0
+    year: int = 0
+    ruler: int = 0
+    mint: int = 0
+    denomination: int = 0
+    rarity: int = 0
+
+
 class CollectionStats(BaseModel):
     """Complete collection statistics."""
     total_coins: int
@@ -92,6 +102,7 @@ class CollectionStats(BaseModel):
     rarity_counts: dict
     year_range: YearRange
     year_distribution: List[YearBucket]
+    unknown_counts: UnknownCounts
 
 
 @router.get("", response_model=CollectionStats)
@@ -262,6 +273,23 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         Coin.mint_year_start.is_(None)
     ).scalar() or 0
     
+    # Count all unknown/missing values
+    unknown_grade_count = db.query(func.count(Coin.id)).filter(
+        Coin.grade.is_(None)
+    ).scalar() or 0
+    unknown_ruler_count = db.query(func.count(Coin.id)).filter(
+        Coin.issuing_authority.is_(None)
+    ).scalar() or 0
+    unknown_mint_count = db.query(func.count(Coin.id)).filter(
+        Coin.mint_id.is_(None)
+    ).scalar() or 0
+    unknown_denomination_count = db.query(func.count(Coin.id)).filter(
+        Coin.denomination.is_(None)
+    ).scalar() or 0
+    unknown_rarity_count = db.query(func.count(Coin.id)).filter(
+        Coin.rarity.is_(None)
+    ).scalar() or 0
+    
     # Year distribution (50-year buckets)
     year_distribution = []
     if min_year is not None and max_year is not None:
@@ -308,4 +336,12 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         rarity_counts=rarity_counts,
         year_range=YearRange(min=min_year, max=max_year, unknown_count=unknown_year_count),
         year_distribution=year_distribution,
+        unknown_counts=UnknownCounts(
+            grade=unknown_grade_count,
+            year=unknown_year_count,
+            ruler=unknown_ruler_count,
+            mint=unknown_mint_count,
+            denomination=unknown_denomination_count,
+            rarity=unknown_rarity_count,
+        ),
     )

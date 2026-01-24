@@ -23,7 +23,9 @@ interface FilterState {
   sub_category: string | null;
   metal: string | null;
   issuing_authority: string | null;
+  is_ruler_unknown: boolean | null;
   mint_name: string | null;
+  is_mint_unknown: boolean | null;
   denomination: string | null;
   grade: string | null;
   rarity: string | null;
@@ -53,7 +55,9 @@ interface FilterState {
   setSubCategory: (v: string | null) => void;
   setMetal: (v: string | null) => void;
   setIssuingAuthority: (v: string | null) => void;
+  setIsRulerUnknown: (v: boolean | null) => void;
   setMintName: (v: string | null) => void;
+  setIsMintUnknown: (v: boolean | null) => void;
   setDenomination: (v: string | null) => void;
   setGrade: (v: string | null) => void;
   setRarity: (v: string | null) => void;
@@ -77,7 +81,9 @@ const initialState = {
   sub_category: null,
   metal: null,
   issuing_authority: null,
+  is_ruler_unknown: null,
   mint_name: null,
+  is_mint_unknown: null,
   denomination: null,
   grade: null,
   rarity: null,
@@ -102,7 +108,9 @@ export const useFilterStore = create<FilterState>()(
       setSubCategory: (sub_category) => set({ sub_category }),
       setMetal: (metal) => set({ metal }),
       setIssuingAuthority: (issuing_authority) => set({ issuing_authority }),
+      setIsRulerUnknown: (is_ruler_unknown) => set({ is_ruler_unknown }),
       setMintName: (mint_name) => set({ mint_name }),
+      setIsMintUnknown: (is_mint_unknown) => set({ is_mint_unknown }),
       setDenomination: (denomination) => set({ denomination }),
       setGrade: (grade) => set({ grade }),
       setRarity: (rarity) => set({ rarity }),
@@ -131,7 +139,9 @@ export const useFilterStore = create<FilterState>()(
         if (state.sub_category) count++;
         if (state.metal) count++;
         if (state.issuing_authority) count++;
+        if (state.is_ruler_unknown !== null) count++;
         if (state.mint_name) count++;
+        if (state.is_mint_unknown !== null) count++;
         if (state.denomination) count++;
         if (state.grade) count++;
         if (state.rarity) count++;
@@ -157,7 +167,9 @@ export const useFilterStore = create<FilterState>()(
         if (state.sub_category) params.sub_category = state.sub_category;
         if (state.metal) params.metal = state.metal;
         if (state.issuing_authority) params.issuing_authority = state.issuing_authority;
+        if (state.is_ruler_unknown !== null) params.is_ruler_unknown = state.is_ruler_unknown;
         if (state.mint_name) params.mint_name = state.mint_name;
+        if (state.is_mint_unknown !== null) params.is_mint_unknown = state.is_mint_unknown;
         if (state.denomination) params.denomination = state.denomination;
         if (state.grade) params.grade = state.grade;
         if (state.rarity) params.rarity = state.rarity;

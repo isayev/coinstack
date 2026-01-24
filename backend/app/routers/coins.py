@@ -287,6 +287,8 @@ async def list_coins(
     is_circa: Optional[bool] = None,
     is_test_cut: Optional[bool] = None,
     is_year_unknown: Optional[bool] = None,
+    is_ruler_unknown: Optional[bool] = None,
+    is_mint_unknown: Optional[bool] = None,
     db: Session = Depends(get_db),
 ):
     """List coins with pagination, filters, and sorting."""
@@ -321,6 +323,10 @@ async def list_coins(
         filters["is_test_cut"] = is_test_cut
     if is_year_unknown is not None:
         filters["is_year_unknown"] = is_year_unknown
+    if is_ruler_unknown is not None:
+        filters["is_ruler_unknown"] = is_ruler_unknown
+    if is_mint_unknown is not None:
+        filters["is_mint_unknown"] = is_mint_unknown
     
     skip = (page - 1) * per_page
     coins, total = get_coins(db, skip=skip, limit=per_page, filters=filters, sort_by=sort_by, sort_dir=sort_dir)
