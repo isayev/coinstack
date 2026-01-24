@@ -1,6 +1,18 @@
+/**
+ * CollectionPage - Main coin collection view
+ * 
+ * Features:
+ * - Grid view with hover-interactive cards
+ * - Table view with sortable columns
+ * - Sidebar with stats, filters, and alerts
+ * - 5 columns optimal for desktop
+ * 
+ * @module pages/CollectionPage
+ */
+
 import { useCoins } from "@/hooks/useCoins";
 import { CoinCard } from "@/components/coins/CoinCard";
-import { CoinFilters } from "@/components/coins/CoinFilters";
+import { CollectionSidebar } from "@/components/coins/CollectionSidebar";
 import { useUIStore } from "@/stores/uiStore";
 import { useFilterStore, SortField } from "@/stores/filterStore";
 import { Button } from "@/components/ui/button";
@@ -18,6 +30,14 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { 
+  MetalBadge, 
+  GradeBadge,
+} from "@/components/design-system";
+
+// ============================================================================
+// SORT OPTIONS
+// ============================================================================
 
 const SORT_OPTIONS: { value: SortField; label: string; icon: React.ReactNode }[] = [
   { value: "year", label: "Year", icon: <Calendar className="w-3.5 h-3.5" /> },
@@ -33,8 +53,15 @@ const SORT_OPTIONS: { value: SortField; label: string; icon: React.ReactNode }[]
   { value: "created", label: "Added", icon: <Clock className="w-3.5 h-3.5" /> },
 ];
 
-// Format year range for table view
-function formatYearRange(start: number | null | undefined, end: number | null | undefined, isCirca?: boolean): string {
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+function formatYearRange(
+  start: number | null | undefined, 
+  end: number | null | undefined, 
+  isCirca?: boolean
+): string {
   if (!start && !end) return "—";
   const prefix = isCirca ? "c. " : "";
   
@@ -50,23 +77,59 @@ function formatYearRange(start: number | null | undefined, end: number | null | 
   return `${prefix}${Math.abs(year)} ${year < 0 ? "BC" : "AD"}`;
 }
 
-// Get metal badge for table
-function getMetalStyle(metal: string): { symbol: string; bg: string; text: string; border: string } {
-  const m = metal?.toLowerCase();
-  const styles: Record<string, { symbol: string; bg: string; text: string; border: string }> = {
-    gold: { symbol: "Au", bg: "var(--metal-au-subtle)", text: "var(--metal-au-text)", border: "var(--metal-au-border)" },
-    electrum: { symbol: "EL", bg: "var(--metal-el-subtle)", text: "var(--metal-el-text)", border: "var(--metal-el-border)" },
-    silver: { symbol: "Ag", bg: "var(--metal-ag-subtle)", text: "var(--metal-ag-text)", border: "var(--metal-ag-border)" },
-    orichalcum: { symbol: "Or", bg: "var(--metal-or-subtle)", text: "var(--metal-or-text)", border: "var(--metal-or-border)" },
-    bronze: { symbol: "Cu", bg: "var(--metal-cu-subtle)", text: "var(--metal-cu-text)", border: "var(--metal-cu-border)" },
-    copper: { symbol: "Cu", bg: "var(--metal-copper-subtle)", text: "var(--metal-copper-text)", border: "var(--metal-copper-border)" },
-    ae: { symbol: "Æ", bg: "var(--metal-ae-subtle)", text: "var(--metal-ae-text)", border: "var(--metal-ae-border)" },
-    billon: { symbol: "Bi", bg: "var(--metal-bi-subtle)", text: "var(--metal-bi-text)", border: "var(--metal-bi-border)" },
-    potin: { symbol: "Po", bg: "var(--metal-po-subtle)", text: "var(--metal-po-text)", border: "var(--metal-po-border)" },
-    lead: { symbol: "Pb", bg: "var(--metal-pb-subtle)", text: "var(--metal-pb-text)", border: "var(--metal-pb-border)" },
-  };
-  return styles[m] || { symbol: "?", bg: "var(--metal-ae-subtle)", text: "var(--metal-ae-text)", border: "var(--metal-ae-border)" };
+// ============================================================================
+// TABLE HEADER
+// ============================================================================
+
+function TableHeader({ 
+  field, 
+  currentSort, 
+  sortDir, 
+  onSort, 
+  children,
+  className 
+}: { 
+  field: SortField;
+  currentSort: SortField;
+  sortDir: "asc" | "desc";
+  onSort: (field: SortField, dir?: "asc" | "desc") => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const isActive = currentSort === field;
+  
+  return (
+    <th 
+      className={cn(
+        "text-left px-4 py-2.5 font-medium text-xs select-none cursor-pointer transition-colors",
+        className
+      )}
+      style={{ color: isActive ? 'var(--metal-au)' : 'var(--text-tertiary)' }}
+      onClick={() => {
+        if (isActive) {
+          onSort(field, sortDir === "asc" ? "desc" : "asc");
+        } else {
+          onSort(field, "asc");
+        }
+      }}
+    >
+      <div className={cn("flex items-center gap-1", className?.includes("text-right") && "justify-end")}>
+        <span>{children}</span>
+        {isActive && (
+          sortDir === "asc" ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )
+        )}
+      </div>
+    </th>
+  );
 }
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export function CollectionPage() {
   const { data, isLoading, error } = useCoins();
@@ -76,11 +139,15 @@ export function CollectionPage() {
 
   const activeFilters = getActiveFilterCount();
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-3.5rem)]">
-        <CoinFilters />
-        <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <CollectionSidebar totalCoins={0} />
+        <div 
+          className="flex-1 flex items-center justify-center"
+          style={{ background: 'var(--bg-base)' }}
+        >
           <div className="flex flex-col items-center gap-3">
             <div 
               className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin"
@@ -93,11 +160,15 @@ export function CollectionPage() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="flex h-[calc(100vh-3.5rem)]">
-        <CoinFilters />
-        <div className="flex-1 flex items-center justify-center p-6" style={{ background: 'var(--bg-base)' }}>
+        <CollectionSidebar totalCoins={0} />
+        <div 
+          className="flex-1 flex items-center justify-center p-6"
+          style={{ background: 'var(--bg-base)' }}
+        >
           <div 
             className="px-4 py-3 rounded-lg"
             style={{ background: 'rgba(255, 69, 58, 0.15)', color: '#FF453A' }}
@@ -113,8 +184,14 @@ export function CollectionPage() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
-      <CoinFilters />
-      <div className="flex-1 overflow-auto scrollbar-thin" style={{ background: 'var(--bg-base)' }}>
+      {/* Sidebar */}
+      <CollectionSidebar totalCoins={data?.total || 0} />
+      
+      {/* Main content */}
+      <div 
+        className="flex-1 overflow-auto scrollbar-thin"
+        style={{ background: 'var(--bg-base)' }}
+      >
         {/* Header bar */}
         <div 
           className="sticky top-0 z-10 backdrop-blur px-4 py-3"
@@ -152,7 +229,10 @@ export function CollectionPage() {
               {/* Sort control */}
               <div className="flex items-center gap-1.5">
                 <Select value={sortBy} onValueChange={(v) => setSort(v as SortField)}>
-                  <SelectTrigger className="w-[130px] h-8 text-xs" style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
+                  <SelectTrigger 
+                    className="w-[130px] h-8 text-xs"
+                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+                  >
                     <div className="flex items-center gap-1.5">
                       {currentSortOption?.icon}
                       <SelectValue />
@@ -221,7 +301,7 @@ export function CollectionPage() {
 
         {/* Content */}
         <div className="p-4">
-          {/* Grid View - 5 columns optimal as per design spec */}
+          {/* Grid View - 5 columns optimal */}
           {viewMode === "grid" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4">
               {data?.items.map((coin) => (
@@ -258,64 +338,56 @@ export function CollectionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.items.map((coin, index) => {
-                    const metalStyle = getMetalStyle(coin.metal);
-                    return (
-                      <tr 
-                        key={coin.id} 
-                        className="cursor-pointer transition-colors"
-                        style={{ 
-                          borderBottom: '1px solid var(--border-subtle)',
-                          background: index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'
-                        }}
-                        onClick={() => navigate(`/coins/${coin.id}`)}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'}
-                      >
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                              {coin.issuing_authority}
-                            </span>
-                            {coin.is_test_cut && (
-                              <span 
-                                className="text-[9px] px-1 py-0 rounded font-medium"
-                                style={{ background: 'rgba(255, 69, 58, 0.2)', color: '#FF453A' }}
-                              >
-                                TC
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5" style={{ color: 'var(--text-secondary)' }}>
-                          {coin.denomination}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span 
-                            className="text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold"
-                            style={{ 
-                              background: metalStyle.bg,
-                              color: metalStyle.text,
-                              border: `1px solid ${metalStyle.border}`
-                            }}
-                          >
-                            {metalStyle.symbol}
+                  {data?.items.map((coin, index) => (
+                    <tr 
+                      key={coin.id} 
+                      className="cursor-pointer transition-colors"
+                      style={{ 
+                        borderBottom: '1px solid var(--border-subtle)',
+                        background: index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'
+                      }}
+                      onClick={() => navigate(`/coins/${coin.id}`)}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-elevated)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = index % 2 === 0 ? 'transparent' : 'var(--bg-surface)'}
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                            {coin.issuing_authority}
                           </span>
-                        </td>
-                        <td className="px-4 py-2.5 tabular-nums text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                          {formatYearRange(coin.mint_year_start, coin.mint_year_end, coin.is_circa)}
-                        </td>
-                        <td className="px-4 py-2.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-                          {coin.grade || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: 'var(--text-primary)' }}>
-                          {coin.acquisition_price
-                            ? `$${Number(coin.acquisition_price).toLocaleString()}`
-                            : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          {coin.is_test_cut && (
+                            <span 
+                              className="text-[9px] px-1 py-0 rounded font-medium"
+                              style={{ background: 'rgba(255, 69, 58, 0.2)', color: '#FF453A' }}
+                            >
+                              TC
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5" style={{ color: 'var(--text-secondary)' }}>
+                        {coin.denomination}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <MetalBadge metal={coin.metal} size="xs" />
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        {formatYearRange(coin.mint_year_start, coin.mint_year_end, coin.is_circa)}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        {coin.grade ? (
+                          <GradeBadge grade={coin.grade} size="xs" />
+                        ) : (
+                          <span style={{ color: 'var(--text-tertiary)' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-right font-medium tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                        {coin.acquisition_price
+                          ? `$${Number(coin.acquisition_price).toLocaleString()}`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -352,52 +424,5 @@ export function CollectionPage() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Sortable table header component
-function TableHeader({ 
-  field, 
-  currentSort, 
-  sortDir, 
-  onSort, 
-  children,
-  className 
-}: { 
-  field: SortField;
-  currentSort: SortField;
-  sortDir: "asc" | "desc";
-  onSort: (field: SortField, dir?: "asc" | "desc") => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const isActive = currentSort === field;
-  
-  return (
-    <th 
-      className={cn(
-        "text-left px-4 py-2.5 font-medium text-xs select-none cursor-pointer transition-colors",
-        className
-      )}
-      style={{ color: isActive ? 'var(--metal-au)' : 'var(--text-tertiary)' }}
-      onClick={() => {
-        if (isActive) {
-          onSort(field, sortDir === "asc" ? "desc" : "asc");
-        } else {
-          onSort(field, "asc");
-        }
-      }}
-    >
-      <div className={cn("flex items-center gap-1", className?.includes("text-right") && "justify-end")}>
-        <span>{children}</span>
-        {isActive && (
-          sortDir === "asc" ? (
-            <ArrowUp className="w-3 h-3" />
-          ) : (
-            <ArrowDown className="w-3 h-3" />
-          )
-        )}
-      </div>
-    </th>
   );
 }
