@@ -6,6 +6,10 @@ import { useFilterStore } from "@/stores/filterStore";
 export interface CollectionStats {
   total_coins: number;
   total_value: number;
+  average_price: number;
+  median_price: number;
+  highest_value_coin: number;
+  lowest_value_coin: number;
   metal_counts: Record<string, number>;
   category_counts: Record<string, number>;
   grade_counts: Record<string, number>;
@@ -107,7 +111,7 @@ export function useCollectionStats() {
   return useQuery({
     queryKey: ["collection-stats"],
     queryFn: async () => {
-      const response = await api.get<CollectionStats>("/api/coins/stats/aggregates");
+      const response = await api.get<CollectionStats>("/api/stats");
       return response.data;
     },
     staleTime: 30000, // Cache for 30 seconds

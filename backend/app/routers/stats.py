@@ -45,6 +45,24 @@ class PriceRangeStat(BaseModel):
     count: int
 
 
+class GradeStat(BaseModel):
+    """Grade statistics."""
+    tier: str
+    count: int
+
+
+class RarityStat(BaseModel):
+    """Rarity statistics."""
+    rarity: str
+    count: int
+
+
+class YearRange(BaseModel):
+    """Year range."""
+    min: int | None
+    max: int | None
+
+
 class CollectionStats(BaseModel):
     """Complete collection statistics."""
     total_coins: int
@@ -58,6 +76,12 @@ class CollectionStats(BaseModel):
     top_rulers: List[RulerStat]
     by_storage: List[StorageStat]
     price_distribution: List[PriceRangeStat]
+    # New fields for sidebar filters
+    metal_counts: dict
+    category_counts: dict
+    grade_counts: dict
+    rarity_counts: dict
+    year_range: YearRange
 
 
 @router.get("", response_model=CollectionStats)
@@ -172,6 +196,45 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         ).scalar() or 0
         price_distribution.append(PriceRangeStat(range=label, count=count))
     
+    # Build count dictionaries for sidebar filters
+    metal_counts = {stat.metal: stat.count for stat in by_metal}
+    category_counts = {stat.category: stat.count for stat in by_category}
+    
+    # Count by grade (parse grade string to tier)
+    grade_counts = {}
+    grade_query = db.query(Coin.grade, func.count(Coin.id)).group_by(Coin.grade).all()
+    for grade, count in grade_query:
+        if grade:
+            # Map grade to tier
+            g = grade.upper().replace(" ", "")
+            tier = "other"
+            if any(x in g for x in ["P", "FR", "AG"]):
+                tier = "poor"
+            elif any(x in g for x in ["G", "VG"]) and "AG" not in g:
+                tier = "good"
+            elif any(x in g for x in ["F", "VF"]) and "EF" not in g:
+                tier = "fine"
+            elif any(x in g for x in ["EF", "XF"]):
+                tier = "ef"
+            elif "AU" in g and "AUG" not in g:
+                tier = "au"
+            elif any(x in g for x in ["MS", "FDC", "UNC"]):
+                tier = "ms"
+            grade_counts[tier] = grade_counts.get(tier, 0) + count
+    
+    # Count by rarity
+    rarity_counts = {}
+    rarity_query = db.query(Coin.rarity, func.count(Coin.id)).group_by(Coin.rarity).all()
+    for rarity, count in rarity_query:
+        if rarity:
+            rarity_counts[rarity.value] = count
+    
+    # Year range
+    min_year = db.query(func.min(Coin.mint_year_start)).scalar()
+    max_year = db.query(func.max(Coin.mint_year_end)).scalar()
+    if max_year is None:
+        max_year = db.query(func.max(Coin.mint_year_start)).scalar()
+    
     return CollectionStats(
         total_coins=total_coins,
         total_value=float(total_value),
@@ -184,4 +247,9 @@ async def get_collection_stats(db: Session = Depends(get_db)):
         top_rulers=top_rulers,
         by_storage=by_storage,
         price_distribution=price_distribution,
+        metal_counts=metal_counts,
+        category_counts=category_counts,
+        grade_counts=grade_counts,
+        rarity_counts=rarity_counts,
+        year_range=YearRange(min=min_year, max=max_year),
     )
