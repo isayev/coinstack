@@ -99,9 +99,14 @@ RULERS = {
     "Carinus": (283, 285),
     "Numerian": (283, 284),
     
+    # Palmyrene Empire (breakaway state)
+    "Odaenathus": (260, 267),
+    "Zenobia": (267, 272),
+    "Vabalathus": (270, 272),
+    
     # Tetrarchy and Constantine
     "Diocletian": (284, 305),
-    "Maximian": (286, 305),
+    "Maximian": (286, 310),      # Fixed: Resumed power 306-310
     "Constantius I": (293, 306),
     "Constantius Chlorus": (293, 306),
     "Galerius": (293, 311),
@@ -137,8 +142,8 @@ RULERS = {
     # Theodosian Dynasty
     "Theodosius I": (379, 395),
     "Theodosius the Great": (379, 395),
-    "Arcadius": (383, 408),
-    "Honorius": (393, 423),
+    "Arcadius": (395, 408),      # Fixed: Was co-emperor under Theodosius until 395
+    "Honorius": (395, 423),      # Fixed: Was co-emperor under Theodosius until 395
     "Theodosius II": (408, 450),
     "Constantius III": (421, 421),
     "Valentinian III": (425, 455),
