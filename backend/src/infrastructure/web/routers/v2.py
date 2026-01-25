@@ -37,6 +37,9 @@ class CreateCoinRequest(BaseModel):
     acquisition_date: Optional[date] = None
     acquisition_url: Optional[str] = None
     images: List[ImageRequest] = []
+    # Collection management
+    storage_location: Optional[str] = None
+    personal_notes: Optional[str] = None
 
 class DimensionsResponse(BaseModel):
     weight_g: Decimal
@@ -69,6 +72,28 @@ class ImageResponse(BaseModel):
     image_type: str
     is_primary: bool
 
+class DesignResponse(BaseModel):
+    obverse_legend: Optional[str] = None
+    obverse_description: Optional[str] = None
+    reverse_legend: Optional[str] = None
+    reverse_description: Optional[str] = None
+    exergue: Optional[str] = None
+
+class CatalogReferenceResponse(BaseModel):
+    catalog: str
+    number: str
+    volume: Optional[str] = None
+    suffix: Optional[str] = None
+    raw_text: str = ""
+
+class ProvenanceEntryResponse(BaseModel):
+    source_type: str
+    source_name: str
+    event_date: Optional[date] = None
+    lot_number: Optional[str] = None
+    notes: Optional[str] = None
+    raw_text: str = ""
+
 class CoinResponse(BaseModel):
     id: Optional[int]
     category: str
@@ -78,11 +103,20 @@ class CoinResponse(BaseModel):
     grading: GradingResponse
     acquisition: Optional[AcquisitionResponse] = None
     images: List[ImageResponse] = []
+    # New fields
+    denomination: Optional[str] = None
+    portrait_subject: Optional[str] = None
+    design: Optional[DesignResponse] = None
+    references: List[CatalogReferenceResponse] = []
+    provenance: List[ProvenanceEntryResponse] = []
+    # Collection management
+    storage_location: Optional[str] = None
+    personal_notes: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 
     @staticmethod
-    def from_domain(coin) -> "CoinResponse":
+    def from_domain(coin: Coin) -> "CoinResponse":
         return CoinResponse(
             id=coin.id,
             category=coin.category.value,
@@ -119,7 +153,37 @@ class CoinResponse(BaseModel):
                     image_type=img.image_type,
                     is_primary=img.is_primary
                 ) for img in coin.images
-            ]
+            ],
+            denomination=coin.denomination,
+            portrait_subject=coin.portrait_subject,
+            design=DesignResponse(
+                obverse_legend=coin.design.obverse_legend,
+                obverse_description=coin.design.obverse_description,
+                reverse_legend=coin.design.reverse_legend,
+                reverse_description=coin.design.reverse_description,
+                exergue=coin.design.exergue
+            ) if coin.design else None,
+            references=[
+                CatalogReferenceResponse(
+                    catalog=ref.catalog,
+                    number=ref.number,
+                    volume=ref.volume,
+                    suffix=ref.suffix,
+                    raw_text=ref.raw_text
+                ) for ref in coin.references
+            ],
+            provenance=[
+                ProvenanceEntryResponse(
+                    source_type=p.source_type,
+                    source_name=p.source_name,
+                    event_date=p.event_date,
+                    lot_number=p.lot_number,
+                    notes=p.notes,
+                    raw_text=p.raw_text
+                ) for p in coin.provenance
+            ],
+            storage_location=coin.storage_location,
+            personal_notes=coin.personal_notes
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -174,12 +238,59 @@ def get_coins(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=1000),
     sort_by: Optional[str] = Query(None),
-    sort_dir: str = Query("asc", regex="^(asc|desc)$"),
+    sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
+    # Filter parameters
+    category: Optional[str] = Query(None, description="Filter by category (e.g., roman_imperial, greek)"),
+    metal: Optional[str] = Query(None, description="Filter by metal (e.g., gold, silver, bronze)"),
+    denomination: Optional[str] = Query(None, description="Filter by denomination (e.g., denarius, aureus)"),
+    grading_state: Optional[str] = Query(None, description="Filter by grading state (raw, slabbed)"),
+    grade_service: Optional[str] = Query(None, description="Filter by grading service (ngc, pcgs)"),
+    issuer: Optional[str] = Query(None, description="Filter by issuer name (partial match)"),
+    year_start: Optional[int] = Query(None, description="Filter by minimum year (negative for BC)"),
+    year_end: Optional[int] = Query(None, description="Filter by maximum year (negative for BC)"),
+    weight_min: Optional[float] = Query(None, description="Filter by minimum weight in grams"),
+    weight_max: Optional[float] = Query(None, description="Filter by maximum weight in grams"),
     repo: ICoinRepository = Depends(get_coin_repo)
 ):
+    """
+    Get paginated list of coins with optional filtering.
+    
+    Filters can be combined. All filters use AND logic.
+    """
     skip = (page - 1) * per_page
-    coins = repo.get_all(skip=skip, limit=per_page, sort_by=sort_by, sort_dir=sort_dir)
-    total = repo.count()
+    
+    # Build filters dict
+    filters = {}
+    if category:
+        filters["category"] = category
+    if metal:
+        filters["metal"] = metal
+    if denomination:
+        filters["denomination"] = denomination
+    if grading_state:
+        filters["grading_state"] = grading_state
+    if grade_service:
+        filters["grade_service"] = grade_service
+    if issuer:
+        filters["issuer"] = issuer
+    if year_start is not None:
+        filters["year_start"] = year_start
+    if year_end is not None:
+        filters["year_end"] = year_end
+    if weight_min is not None:
+        filters["weight_min"] = weight_min
+    if weight_max is not None:
+        filters["weight_max"] = weight_max
+    
+    # Pass filters to repository
+    coins = repo.get_all(
+        skip=skip, 
+        limit=per_page, 
+        sort_by=sort_by, 
+        sort_dir=sort_dir,
+        filters=filters if filters else None
+    )
+    total = repo.count(filters=filters if filters else None)
     pages = (total + per_page - 1) // per_page
     
     return PaginatedResponse(
@@ -240,7 +351,9 @@ def update_coin(
                 source=request.acquisition_source or "Unknown",
                 date=request.acquisition_date,
                 url=request.acquisition_url
-            ) if request.acquisition_price is not None else None
+            ) if request.acquisition_price is not None else None,
+            storage_location=request.storage_location,
+            personal_notes=request.personal_notes
         )
         
         # Add images manually here since DTO/UseCase flow is pending update
@@ -259,5 +372,54 @@ def delete_coin(
     coin_id: int,
     repo: ICoinRepository = Depends(get_coin_repo)
 ):
-    if hasattr(repo, 'delete'):
-        repo.delete(coin_id)
+    # First check if coin exists
+    coin = repo.get_by_id(coin_id)
+    if not coin:
+        raise HTTPException(status_code=404, detail=f"Coin {coin_id} not found")
+    
+    # Perform deletion
+    deleted = repo.delete(coin_id)
+    if not deleted:
+        raise HTTPException(status_code=500, detail="Failed to delete coin")
+
+
+# --- Reference Search Endpoint ---
+
+class ReferenceSearchResponse(BaseModel):
+    """Response for reference search endpoint."""
+    coins: List[CoinResponse]
+    total: int
+    catalog: str
+    number: str
+    volume: Optional[str] = None
+
+
+@router.get("/by-reference", response_model=ReferenceSearchResponse)
+def get_coins_by_reference(
+    catalog: str = Query(..., description="Catalog system (e.g., RIC, Crawford, Sear, RSC, RPC, BMC)"),
+    number: str = Query(..., description="Reference number (e.g., 756, 44/5, 1234a)"),
+    volume: Optional[str] = Query(None, description="Volume (e.g., II, V.1) - optional"),
+    repo: ICoinRepository = Depends(get_coin_repo)
+):
+    """
+    Search for coins by catalog reference.
+    
+    Examples:
+    - /api/v2/coins/by-reference?catalog=RIC&number=756
+    - /api/v2/coins/by-reference?catalog=RIC&volume=II&number=756
+    - /api/v2/coins/by-reference?catalog=Crawford&number=44/5
+    
+    Note: This endpoint requires the coin_references table to be populated.
+    Currently returns coins where the reference matches in the coin_references table.
+    """
+    # Use repository method to find coins by reference
+    # This will be implemented in the repository update (Phase 6)
+    coins = repo.get_by_reference(catalog=catalog, number=number, volume=volume)
+    
+    return ReferenceSearchResponse(
+        coins=[CoinResponse.from_domain(c) for c in coins],
+        total=len(coins),
+        catalog=catalog,
+        number=number,
+        volume=volume
+    )

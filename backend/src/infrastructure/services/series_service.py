@@ -3,7 +3,7 @@ from sqlalchemy import select
 from typing import Optional
 import re
 
-from src.infrastructure.persistence.models_series import SeriesModel, SeriesSlotModel
+from src.infrastructure.persistence.models_series import SeriesModel, SeriesSlotModel, SeriesMembershipModel
 
 class SeriesService:
     def __init__(self, session: Session):
@@ -20,7 +20,7 @@ class SeriesService:
             description=description
         )
         self.session.add(series)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(series)
         return series
 
@@ -36,9 +36,58 @@ class SeriesService:
             description=description
         )
         self.session.add(slot)
-        self.session.commit()
+        self.session.flush()
         self.session.refresh(slot)
         return slot
+
+    def add_coin_to_series(self, series_id: int, coin_id: int, slot_id: Optional[int] = None) -> SeriesMembershipModel:
+        # Check if already a member
+        existing = self.session.scalar(
+            select(SeriesMembershipModel).where(
+                SeriesMembershipModel.series_id == series_id,
+                SeriesMembershipModel.coin_id == coin_id
+            )
+        )
+        if existing:
+            if slot_id is not None:
+                existing.slot_id = slot_id
+                self.session.flush()
+            return existing
+
+        membership = SeriesMembershipModel(
+            series_id=series_id,
+            coin_id=coin_id,
+            slot_id=slot_id
+        )
+        self.session.add(membership)
+        
+        if slot_id:
+            slot = self.session.get(SeriesSlotModel, slot_id)
+            if slot:
+                slot.status = "filled"
+        
+        self.session.flush()
+        self.session.refresh(membership)
+        return membership
+
+    def remove_coin_from_series(self, series_id: int, coin_id: int) -> bool:
+        membership = self.session.scalar(
+            select(SeriesMembershipModel).where(
+                SeriesMembershipModel.series_id == series_id,
+                SeriesMembershipModel.coin_id == coin_id
+            )
+        )
+        if not membership:
+            return False
+        
+        if membership.slot_id:
+            slot = self.session.get(SeriesSlotModel, membership.slot_id)
+            if slot:
+                slot.status = "empty"
+        
+        self.session.delete(membership)
+        self.session.flush()
+        return True
 
     def _generate_slug(self, name: str) -> str:
         slug = name.lower()

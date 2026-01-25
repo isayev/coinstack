@@ -28,7 +28,26 @@ class VocabSyncService:
           OPTIONAL { ?uri nmo:hasEndDate ?end }
         }
         """
+        return await self._sync_sparql(query, "issuer")
 
+    async def sync_nomisma_mints(self) -> Dict[str, int]:
+        query = """
+        PREFIX nmo: <http://nomisma.org/ontology#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+
+        SELECT ?uri ?label ?start ?end WHERE {
+          ?uri a nmo:Mint ;
+               skos:prefLabel ?label .
+          FILTER(lang(?label) = "en")
+          OPTIONAL { ?uri nmo:hasStartDate ?start }
+          OPTIONAL { ?uri nmo:hasEndDate ?end }
+        }
+        """
+        return await self._sync_sparql(query, "mint")
+
+    async def _sync_sparql(self, query: str, entity_type: str) -> Dict[str, int]:
+        from src.infrastructure.persistence.models_vocab import MintModel
         try:
             response = await self.client.post(
                 self.NOMISMA_SPARQL,
@@ -47,35 +66,55 @@ class VocabSyncService:
                 end = self._parse_year(binding.get("end", {}).get("value"))
                 nomisma_id = uri.split("/")[-1]
 
-                # Check existing
-                stmt = select(IssuerModel).where(IssuerModel.nomisma_id == nomisma_id)
+                if entity_type == "issuer":
+                    stmt = select(IssuerModel).where(IssuerModel.nomisma_id == nomisma_id)
+                    model_class = IssuerModel
+                else:
+                    stmt = select(MintModel).where(MintModel.nomisma_id == nomisma_id)
+                    model_class = MintModel
+
                 existing = self.session.scalar(stmt)
 
                 if existing:
-                    # Update logic here (simplified for now)
-                    if existing.canonical_name != label or existing.reign_start != start or existing.reign_end != end:
+                    if existing.canonical_name != label or \
+                       (entity_type == "issuer" and (existing.reign_start != start or existing.reign_end != end)) or \
+                       (entity_type == "mint" and (existing.active_from != start or existing.active_to != end)):
                         existing.canonical_name = label
-                        existing.reign_start = start
-                        existing.reign_end = end
+                        if entity_type == "issuer":
+                            existing.reign_start = start
+                            existing.reign_end = end
+                        else:
+                            existing.active_from = start
+                            existing.active_to = end
                         stats["updated"] += 1
                     else:
                         stats["unchanged"] += 1
                 else:
-                    new_issuer = IssuerModel(
-                        canonical_name=label,
-                        nomisma_id=nomisma_id,
-                        reign_start=start,
-                        reign_end=end,
-                        issuer_type="unknown" # Default
-                    )
-                    self.session.add(new_issuer)
+                    if entity_type == "issuer":
+                        new_item = IssuerModel(
+                            canonical_name=label,
+                            nomisma_id=nomisma_id,
+                            reign_start=start,
+                            reign_end=end,
+                            issuer_type="unknown"
+                        )
+                    else:
+                        new_item = MintModel(
+                            canonical_name=label,
+                            nomisma_id=nomisma_id,
+                            active_from=start,
+                            active_to=end
+                        )
+                    self.session.add(new_item)
                     stats["added"] += 1
             
-            self.session.commit()
+            # Note: Do NOT commit here - transaction is managed by get_db() dependency
+            # Use flush() to get IDs and make changes visible within the transaction
+            self.session.flush()
             return stats
 
         except Exception as e:
-            logger.error(f"Sync failed: {e}")
+            logger.error(f"Sync failed for {entity_type}: {e}")
             raise
 
     def _parse_year(self, value: Optional[str]) -> Optional[int]:

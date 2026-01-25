@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings."""
     
     # Database
-    DATABASE_URL: str = "sqlite:///./data/coinstack.db"
+    DATABASE_URL: str = "sqlite:///./coinstack_v2.db"
     DATABASE_ECHO: bool = False
     
     # API
@@ -26,8 +26,19 @@ class Settings(BaseSettings):
     
     # Scraper settings
     SCRAPER_TIMEOUT: float = 30.0  # HTTP request timeout in seconds
-    SCRAPER_RATE_LIMIT: float = 2.0  # Seconds between requests to same auction house
+    SCRAPER_RATE_LIMIT: float = 2.0  # Default seconds between requests
     SCRAPER_USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+    # Per-source rate limits (seconds between requests)
+    # Different auction houses have different rate limit tolerance
+    SCRAPER_RATE_LIMITS: dict[str, float] = {
+        "heritage": 2.0,  # Heritage Auctions - moderate rate
+        "cng": 3.0,       # CNG (Classical Numismatic Group) - conservative rate
+        "ebay": 5.0,      # eBay - very conservative (anti-bot detection)
+        "biddr": 2.0,     # Biddr - moderate rate
+        "agora": 2.0,     # Agora Auctions - moderate rate
+        "default": 2.0    # Fallback for unknown sources
+    }
     
     # Logging
     LOG_LEVEL: str = "INFO"

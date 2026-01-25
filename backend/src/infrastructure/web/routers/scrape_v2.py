@@ -13,7 +13,7 @@ from src.infrastructure.scrapers.biddr.scraper import BiddrScraper
 from src.infrastructure.scrapers.ebay.scraper import EbayScraper
 from src.infrastructure.scrapers.agora.scraper import AgoraScraper
 
-from src.infrastructure.persistence.database import get_db
+from src.infrastructure.web.dependencies import get_db
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
 from src.infrastructure.repositories.auction_data_repository import SqlAlchemyAuctionDataRepository
 
