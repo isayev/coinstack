@@ -25,9 +25,10 @@ class NormalizationResult:
     details: Dict[str, Any] = field(default_factory=dict)
 
 class VocabNormalizer:
+    _issuer_cache: Optional[Dict[str, int]] = None
+
     def __init__(self, session: Session):
         self.session = session
-        self._issuer_cache: Optional[Dict[str, int]] = None
 
     def normalize_issuer(self, raw: str) -> NormalizationResult:
         if not raw:
@@ -71,14 +72,14 @@ class VocabNormalizer:
         return self._fuzzy_issuer_match(normalized)
 
     def _fuzzy_issuer_match(self, normalized: str) -> NormalizationResult:
-        if self._issuer_cache is None:
+        if VocabNormalizer._issuer_cache is None:
             self._build_issuer_cache()
         
-        matches = difflib.get_close_matches(normalized, self._issuer_cache.keys(), n=1, cutoff=0.8)
+        matches = difflib.get_close_matches(normalized, VocabNormalizer._issuer_cache.keys(), n=1, cutoff=0.8)
         
         if matches:
             best_match = matches[0]
-            issuer_id = self._issuer_cache[best_match]
+            issuer_id = VocabNormalizer._issuer_cache[best_match]
             # Fetch issuer
             issuer = self.session.get(IssuerModel, issuer_id)
             
@@ -97,16 +98,18 @@ class VocabNormalizer:
         return NormalizationResult(success=False)
 
     def _build_issuer_cache(self):
-        self._issuer_cache = {}
+        cache = {}
         # Load all issuers
         issuers = self.session.execute(select(IssuerModel)).scalars().all()
         for i in issuers:
-            self._issuer_cache[self._normalize_string(i.canonical_name)] = i.id
+            cache[self._normalize_string(i.canonical_name)] = i.id
         
         # Load all aliases
         aliases = self.session.execute(select(IssuerAliasModel)).scalars().all()
         for a in aliases:
-             self._issuer_cache[a.normalized_form] = a.issuer_id
+             cache[a.normalized_form] = a.issuer_id
+             
+        VocabNormalizer._issuer_cache = cache
 
     def _normalize_string(self, s: str) -> str:
         s = s.lower().strip()

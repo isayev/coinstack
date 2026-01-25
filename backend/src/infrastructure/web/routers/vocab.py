@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
 
-from src.infrastructure.web.dependencies import get_db
+from src.infrastructure.persistence.database import get_db, SessionLocal
 from src.infrastructure.persistence.models_vocab import IssuerModel, IssuerAliasModel
 from src.infrastructure.services.vocab_normalizer import VocabNormalizer, NormalizationResult
 from src.infrastructure.services.vocab_sync import VocabSyncService
@@ -91,17 +91,14 @@ async def trigger_sync_nomisma(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    # Instantiate service inside task? No, DB session might be closed.
-    # Better to just enqueue a task function that creates its own session or handles it.
-    # For simplicity here, we'll let the background task run.
-    # WARNING: Passing db session to background task is risky if request finishes and closes session.
-    # Correct pattern is to use a separate session factory in the background task.
-    # However, for this MVP/Prototype step, we'll define a wrapper.
-    
-    background_tasks.add_task(run_sync, db) 
+    background_tasks.add_task(run_sync)
     return SyncResponse(status="started", message="Nomisma sync started in background")
 
-async def run_sync(db: Session):
-    # Ideally use a fresh session
-    service = VocabSyncService(db)
-    await service.sync_nomisma_issuers()
+async def run_sync():
+    # Use a fresh session for background task
+    db = SessionLocal()
+    try:
+        service = VocabSyncService(db)
+        await service.sync_nomisma_issuers()
+    finally:
+        db.close()

@@ -46,9 +46,14 @@ class SeriesService:
         slug = re.sub(r'[\s_]+', '-', slug)
         slug = slug.strip('-')
         
+        # Truncate to avoid overflow when adding suffix (100 char limit on column)
+        slug = slug[:90]
+        
         base_slug = slug
         counter = 1
         
+        # Simple retry loop, in a real concurrent scenario handling IntegrityError is better
+        # but requires transaction rollback. For now, we improve the check.
         while True:
             stmt = select(SeriesModel).where(SeriesModel.slug == slug)
             if not self.session.scalar(stmt):

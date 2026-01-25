@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from unittest.mock import MagicMock, patch, AsyncMock
 from sqlalchemy.orm import Session
 from src.infrastructure.web.routers.vocab import router
-from src.infrastructure.web.dependencies import get_db
+from src.infrastructure.persistence.database import get_db
 
 # Mock DB Dependency
 mock_session = MagicMock()
@@ -21,6 +21,9 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 def test_list_issuers(monkeypatch):
+    # Reset mock
+    mock_session.reset_mock()
+    
     # Mock database query
     mock_query = MagicMock()
     mock_session.query.return_value = mock_query
@@ -43,8 +46,8 @@ def test_list_issuers(monkeypatch):
     
     assert response.status_code == 200
     data = response.json()
-    assert data["total"] == 1
     assert data["items"][0]["canonical_name"] == "Augustus"
+    assert data["total"] == 1
 
 def test_normalize_issuer():
     with patch("src.infrastructure.web.routers.vocab.VocabNormalizer") as MockNormalizer:
@@ -69,9 +72,15 @@ def test_normalize_issuer():
 
 def test_sync_trigger():
     # Mock BackgroundTasks and Service
-    with patch("src.infrastructure.web.routers.vocab.VocabSyncService") as MockSync:
+    with patch("src.infrastructure.web.routers.vocab.VocabSyncService") as MockSync, \
+         patch("src.infrastructure.web.routers.vocab.SessionLocal") as MockSessionLocal:
+        
         instance = MockSync.return_value
-        instance.sync_nomisma_issuers = AsyncMock() # Fix: Make it async
+        instance.sync_nomisma_issuers = AsyncMock()
+        
+        # We need to verify that run_sync would call SessionLocal
+        # But run_sync is a background task, TestClient doesn't execute it automatically unless we wait or invoke.
+        # However, the endpoint just adds it.
         
         response = client.post("/api/vocab/sync/nomisma")
         assert response.status_code == 202

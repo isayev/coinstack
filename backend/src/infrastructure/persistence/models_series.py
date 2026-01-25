@@ -1,4 +1,4 @@
-from sqlalchemy import String, Integer, Text, Boolean, DateTime, Enum, ForeignKey, CheckConstraint
+from sqlalchemy import String, Integer, Text, Boolean, DateTime, Enum, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 from datetime import datetime
@@ -44,4 +44,5 @@ class SeriesSlotModel(Base):
 
     __table_args__ = (
         CheckConstraint('slot_number > 0', name='check_slot_number'),
+        UniqueConstraint('series_id', 'slot_number', name='uq_series_slot_number'),
     )

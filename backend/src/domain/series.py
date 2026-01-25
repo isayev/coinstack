@@ -46,5 +46,7 @@ class Series:
     def completion_percentage(self) -> float:
         if not self.target_count or self.target_count <= 0:
             return 0.0
-        filled = sum(1 for s in self.slots if s.status == SlotStatus.FILLED)
+        
+        filled_statuses = {SlotStatus.FILLED, SlotStatus.UPGRADE_WANTED, SlotStatus.MULTIPLE}
+        filled = sum(1 for s in self.slots if s.status in filled_statuses)
         return (filled / self.target_count) * 100
