@@ -19,25 +19,26 @@ logger = logging.getLogger(__name__)
 class AgoraScraper(PlaywrightScraperBase, IScraper):
     """
     Scraper for Agora Auctions.
+    Includes automatic retry logic and rate limiting (2.0s between requests).
     """
-    
+
     BASE_URL = "https://agoraauctions.com"
-    MIN_DELAY = 1.0
-    
+
     def __init__(self, headless: bool = True):
-        super().__init__(headless=headless)
+        super().__init__(headless=headless, source="agora")
         self.parser = AgoraParser()
     
     def can_handle(self, url: str) -> bool:
         return "agoraauctions.com" in url or "agora-auctions" in url
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
-        """Scrape an Agora lot URL."""
+        """Scrape an Agora lot URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
             return None
-            
-        await asyncio.sleep(self.MIN_DELAY + random.uniform(0, 1))
-        
+
+        # Enforce rate limiting (handled by base class: 2.0s for Agora)
+        await self._enforce_rate_limit()
+
         page = await self.context.new_page()
         try:
             logger.info(f"Fetching Agora URL: {url}")

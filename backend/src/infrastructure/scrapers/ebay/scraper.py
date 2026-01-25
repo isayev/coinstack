@@ -27,30 +27,26 @@ USER_AGENTS = [
 class EbayScraper(PlaywrightScraperBase, IScraper):
     """
     Scraper for eBay listings with enhanced stealth.
+    Includes automatic retry logic and rate limiting (5.0s between requests).
     """
-    
+
     BASE_URL = "https://www.ebay.com"
-    MIN_DELAY = 5.0
-    
+
     def __init__(self, headless: bool = True):
-        super().__init__(headless=headless)
+        super().__init__(headless=headless, source="ebay")
         self.parser = EbayParser()
     
     def can_handle(self, url: str) -> bool:
         return "ebay.com" in url or "ebay" in url.lower()
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
-        """Scrape an eBay listing URL."""
+        """Scrape an eBay listing URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
             return None
-        
-        # Enhanced rate limiting for eBay
-        delay = self.MIN_DELAY + random.uniform(2.0, 5.0)
-        await asyncio.sleep(delay)
-        
-        # Use a new context for better isolation/stealth per request if possible, 
-        # but PlaywrightScraperBase reuses context. We'll stick to base for now.
-        
+
+        # Enforce rate limiting (handled by base class: 5.0s for eBay)
+        await self._enforce_rate_limit()
+
         page = await self.context.new_page()
         try:
             logger.info(f"Fetching eBay URL: {url}")
@@ -87,8 +83,9 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
             for _ in range(3):
                 await page.evaluate(f'window.scrollBy(0, {random.randint(300, 700)})')
                 await asyncio.sleep(random.uniform(0.5, 1.5))
-        except:
-            pass
+        except Exception as e:
+            logger.warning(f"Human scroll simulation failed: {type(e).__name__}: {str(e)}")
+            # Continue anyway - scrolling is nice-to-have for stealth
 
     def _map_to_domain(self, data: EbayCoinData) -> AuctionLot:
         """Map eBay model to generic Domain AuctionLot."""

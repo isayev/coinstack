@@ -22,27 +22,27 @@ class HeritageScraper(PlaywrightScraperBase, IScraper):
     """
     Scraper for Heritage Auctions (coins.ha.com).
     Uses Playwright for content fetching and regex for detailed parsing.
+    Includes automatic retry logic and rate limiting (2.0s between requests).
     """
-    
+
     BASE_URL = "https://coins.ha.com"
-    MIN_DELAY = 3.0
-    
+
     def __init__(self, headless: bool = True):
-        super().__init__(headless=headless)
+        super().__init__(headless=headless, source="heritage")
         self.parser = HeritageParser()
     
     def can_handle(self, url: str) -> bool:
         return "coins.ha.com" in url or "heritage" in url.lower()
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
-        """Scrape a Heritage lot URL."""
+        """Scrape a Heritage lot URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
             logger.error("Failed to start browser")
             return None
-        
-        # Rate limit
-        await asyncio.sleep(self.MIN_DELAY + random.uniform(0, 2))
-        
+
+        # Enforce rate limiting (handled by base class)
+        await self._enforce_rate_limit()
+
         page = await self.context.new_page()
         try:
             # Stealth already handled by base? No, base handles minimal.

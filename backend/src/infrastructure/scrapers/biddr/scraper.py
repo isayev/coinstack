@@ -19,26 +19,26 @@ logger = logging.getLogger(__name__)
 class BiddrScraper(PlaywrightScraperBase, IScraper):
     """
     Scraper for Biddr.com.
+    Includes automatic retry logic and rate limiting (2.0s between requests).
     """
-    
+
     BASE_URL = "https://www.biddr.com"
-    MIN_DELAY = 2.0
-    
+
     def __init__(self, headless: bool = True):
-        super().__init__(headless=headless)
+        super().__init__(headless=headless, source="biddr")
         self.parser = BiddrParser()
     
     def can_handle(self, url: str) -> bool:
         return "biddr.com" in url or "biddr" in url.lower()
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
-        """Scrape a Biddr lot URL."""
+        """Scrape a Biddr lot URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
             return None
-        
-        # Rate limit
-        await asyncio.sleep(self.MIN_DELAY + random.uniform(0, 2))
-        
+
+        # Enforce rate limiting (handled by base class: 2.0s for Biddr)
+        await self._enforce_rate_limit()
+
         page = await self.context.new_page()
         try:
             logger.info(f"Fetching Biddr URL: {url}")
@@ -54,8 +54,10 @@ class BiddrScraper(PlaywrightScraperBase, IScraper):
                     'h1, h2, .lot-info, [class*="lot"], [class*="description"]',
                     timeout=10000
                 )
-            except:
-                pass
+            except TimeoutError:
+                logger.warning(f"Timeout waiting for lot selector on {url}")
+            except Exception as e:
+                logger.error(f"Error waiting for lot selector on {url}: {type(e).__name__}: {str(e)}")
             
             html = await page.content()
             

@@ -20,26 +20,26 @@ logger = logging.getLogger(__name__)
 class CNGScraper(PlaywrightScraperBase, IScraper):
     """
     Scraper for Classical Numismatic Group (CNG).
+    Includes automatic retry logic and rate limiting (3.0s between requests).
     """
-    
+
     BASE_URL = "https://auctions.cngcoins.com"
-    MIN_DELAY = 2.0
-    
+
     def __init__(self, headless: bool = True):
-        super().__init__(headless=headless)
+        super().__init__(headless=headless, source="cng")
         self.parser = CNGParser()
     
     def can_handle(self, url: str) -> bool:
         return "cngcoins.com" in url or "cng" in url.lower()
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
-        """Scrape a CNG lot URL."""
+        """Scrape a CNG lot URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
             return None
-        
-        # Rate limit
-        await asyncio.sleep(self.MIN_DELAY + random.uniform(0, 2))
-        
+
+        # Enforce rate limiting (handled by base class: 3.0s for CNG)
+        await self._enforce_rate_limit()
+
         page = await self.context.new_page()
         try:
             logger.info(f"Fetching CNG URL: {url}")
@@ -52,8 +52,10 @@ class CNGScraper(PlaywrightScraperBase, IScraper):
             # Wait for Angular content
             try:
                 await page.wait_for_selector('[class*="lot"]', timeout=10000)
-            except:
-                pass
+            except TimeoutError:
+                logger.warning(f"Timeout waiting for lot selector on {url}")
+            except Exception as e:
+                logger.error(f"Error waiting for lot selector on {url}: {type(e).__name__}: {str(e)}")
             
             html = await page.content()
             

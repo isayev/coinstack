@@ -374,7 +374,7 @@ class HeritageParser:
         references = []
         
         for pattern, catalog in self.REFERENCE_PATTERNS:
-            for match in forPattern.finditer(text):
+            for match in pattern.finditer(text):
                 raw = match.group(0)
                 groups = match.groupdict()
                 

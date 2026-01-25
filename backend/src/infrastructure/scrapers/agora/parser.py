@@ -81,10 +81,10 @@ class AgoraParser:
                          # Attempt to parse date, format may vary so careful
                          # Often: "Tue, 12 Oct 2023 12:00:00 EST"
                          date_str = date_text.strip()
-                         # Simplify parsing logic or just leave as string if complex
-                         pass 
-                    except:
-                        pass
+                         # TODO: Implement actual date parsing logic
+                         pass
+                    except Exception as e:
+                        logger.warning(f"Failed to parse auction date '{date_text}': {type(e).__name__}: {str(e)}")
                     break
         
         # Images
@@ -165,7 +165,8 @@ class AgoraParser:
     def _parse_price(self, price_str: str) -> Optional[float]:
         try:
             return float(price_str.replace(',', '').replace('$', ''))
-        except:
+        except (ValueError, AttributeError) as e:
+            logger.debug(f"Failed to parse price '{price_str}': {type(e).__name__}")
             return None
 
     def _parse_physical(self, text: str) -> AgoraPhysicalData:
