@@ -15,14 +15,28 @@ class Metal(str, Enum):
     BILLON = "billon"
     POTIN = "potin"
     ORICHALCUM = "orichalcum"
+    LEAD = "lead"          # PB - ancient tokens, tesserae
+    AE = "ae"              # Generic bronze/copper (standard numismatic abbreviation)
 
 class Category(str, Enum):
+    # Core categories
     GREEK = "greek"
     ROMAN_IMPERIAL = "roman_imperial"
     ROMAN_REPUBLIC = "roman_republic"
     ROMAN_PROVINCIAL = "roman_provincial"
     BYZANTINE = "byzantine"
     MEDIEVAL = "medieval"
+    # Breakaway empires (historically distinct coinages)
+    GALLIC_EMPIRE = "gallic_empire"        # 260-274 AD - Postumus, Victorinus, Tetrici
+    PALMYRENE_EMPIRE = "palmyrene_empire"  # 270-273 AD - Zenobia, Vabalathus
+    ROMANO_BRITISH = "romano_british"      # 286-296 AD - Carausius, Allectus
+    # Other ancient categories
+    CELTIC = "celtic"
+    JUDAEAN = "judaean"
+    PARTHIAN = "parthian"
+    SASANIAN = "sasanian"
+    MIGRATION = "migration"                 # Post-Roman 'barbarian' coinage
+    OTHER = "other"
 
 class GradingState(str, Enum):
     RAW = "raw"
@@ -56,7 +70,9 @@ class Dimensions:
 @dataclass(frozen=True)
 class Attribution:
     issuer: str
+    issuer_id: Optional[int] = None
     mint: Optional[str] = None
+    mint_id: Optional[int] = None
     year_start: Optional[int] = None
     year_end: Optional[int] = None
 
@@ -71,7 +87,7 @@ class GradingDetails:
 
     def __post_init__(self):
         if self.grading_state == GradingState.SLABBED and not self.service:
-            pass
+            raise ValueError("Slabbed coins must have a grading service specified")
 
 @dataclass(frozen=True)
 class AcquisitionDetails:
@@ -84,6 +100,34 @@ class AcquisitionDetails:
     def __post_init__(self):
         if self.price < 0:
             raise ValueError("Price cannot be negative")
+
+@dataclass(frozen=True)
+class Design:
+    """Coin design details - legends, descriptions, and exergue text."""
+    obverse_legend: Optional[str] = None       # "IMP CAES DOMIT AVG GERM COS XVI..."
+    obverse_description: Optional[str] = None  # "laureate head of Domitian right"
+    reverse_legend: Optional[str] = None       # "MONETA AVGVSTI"
+    reverse_description: Optional[str] = None  # "Moneta standing left, holding scales"
+    exergue: Optional[str] = None              # Text below main reverse design
+
+@dataclass(frozen=True)
+class CatalogReference:
+    """A single catalog reference for a coin."""
+    catalog: str              # "RIC", "Crawford", "Sear", "RSC", "RPC", "BMC", "SNG"
+    number: str               # "756", "44/5", "1234a"
+    volume: Optional[str] = None   # "II", "V.1", etc.
+    suffix: Optional[str] = None   # Additional qualifiers
+    raw_text: str = ""        # Original text as found
+
+@dataclass(frozen=True)
+class ProvenanceEntry:
+    """A single provenance event in a coin's ownership history."""
+    source_type: str          # "collection", "auction", "dealer", "private_sale"
+    source_name: str          # "Hunt Collection", "Heritage", "CNG"
+    event_date: Optional[date] = None
+    lot_number: Optional[str] = None
+    notes: Optional[str] = None
+    raw_text: str = ""
 
 @dataclass(frozen=True)
 class CoinImage:
@@ -105,6 +149,15 @@ class Coin:
     acquisition: Optional[AcquisitionDetails] = None
     description: Optional[str] = None
     images: List[CoinImage] = field(default_factory=list)
+    # New fields from expert review
+    denomination: Optional[str] = None              # "denarius", "antoninianus", "sestertius"
+    portrait_subject: Optional[str] = None          # When different from issuer (e.g., heir, empress)
+    design: Optional[Design] = None                 # Legends and descriptions
+    references: List[CatalogReference] = field(default_factory=list)  # RIC, Crawford, etc.
+    provenance: List[ProvenanceEntry] = field(default_factory=list)   # Ownership history
+    # Collection management
+    storage_location: Optional[str] = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
+    personal_notes: Optional[str] = None            # Owner notes, observations, research
     
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None
@@ -114,14 +167,12 @@ class Coin:
     
     def add_image(self, url: str, image_type: str, is_primary: bool = False):
         if is_primary:
-            for img in self.images:
-                # We can't modify frozen dataclass items directly if we made them frozen,
-                # but CoinImage is frozen, the list isn't.
-                # However, changing is_primary on an existing frozen object requires replacement.
-                # For simplicity in this domain model, we might need a method to handle this
-                # or make CoinImage mutable (not ideal for VO).
-                # Let's assume we replace the list or images.
-                pass 
+            # Unset primary flag on all existing images by creating new instances
+            # (CoinImage is frozen, so we must replace rather than modify)
+            self.images = [
+                CoinImage(img.url, img.image_type, is_primary=False)
+                for img in self.images
+            ]
         self.images.append(CoinImage(url, image_type, is_primary))
     
     @property

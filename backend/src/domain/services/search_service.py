@@ -34,14 +34,23 @@ DYNASTY_RULERS = {
     "adoptive emperors": ["Nerva", "Trajan", "Hadrian", "Antoninus Pius", "Marcus Aurelius"],
     "five good emperors": ["Nerva", "Trajan", "Hadrian", "Antoninus Pius", "Marcus Aurelius"],
     
-    # Severan (AD 193-235)
-    "severan": ["Septimius Severus", "Caracalla", "Geta", "Macrinus", "Elagabalus", "Severus Alexander"],
-    "severans": ["Septimius Severus", "Caracalla", "Geta", "Macrinus", "Elagabalus", "Severus Alexander"],
+    # Severan (AD 193-235) - Note: Macrinus was NOT Severan (he killed Caracalla)
+    "severan": ["Septimius Severus", "Julia Domna", "Caracalla", "Geta", "Elagabalus", "Julia Maesa", "Severus Alexander", "Julia Mamaea"],
+    "severans": ["Septimius Severus", "Julia Domna", "Caracalla", "Geta", "Elagabalus", "Severus Alexander"],
     
     # Crisis of the Third Century (AD 235-284)
     "military emperors": ["Maximinus I", "Gordian I", "Gordian II", "Gordian III", "Philip I", "Decius", "Trebonianus Gallus", "Valerian", "Gallienus"],
     "barracks emperors": ["Maximinus I", "Gordian III", "Philip I", "Decius", "Gallienus"],
-    "gallic empire": ["Postumus", "Victorinus", "Tetricus I", "Tetricus II"],
+    "gallic empire": ["Postumus", "Laelianus", "Marius", "Victorinus", "Tetricus I", "Tetricus II"],
+    "gallic emperors": ["Postumus", "Laelianus", "Marius", "Victorinus", "Tetricus I", "Tetricus II"],
+    
+    # Palmyrene Empire (AD 267-273)
+    "palmyrene": ["Odaenathus", "Zenobia", "Vabalathus"],
+    "palmyrene empire": ["Odaenathus", "Zenobia", "Vabalathus"],
+    
+    # Romano-British Empire (AD 286-296)
+    "romano-british": ["Carausius", "Allectus"],
+    "british empire": ["Carausius", "Allectus"],
     
     # Tetrarchy (AD 284-324)
     "tetrarchy": ["Diocletian", "Maximian", "Constantius I", "Galerius"],

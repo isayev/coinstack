@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
-from src.domain.repositories import ICoinRepository
-from src.infrastructure.repositories.auction_data_repository import SqlAlchemyAuctionDataRepository
+from src.domain.repositories import ICoinRepository, IAuctionDataRepository
 from src.domain.services.scraper_orchestrator import ScraperOrchestrator
 from src.domain.auction import AuctionLot
 
 @dataclass
 class EnrichCoinDTO:
     coin_id: int
-    url: Optional[str] = None # Override URL needed? Usually takes from coin.
+    url: Optional[str] = None  # Override URL needed? Usually takes from coin.
 
 class EnrichCoinUseCase:
     """
@@ -22,7 +21,7 @@ class EnrichCoinUseCase:
     def __init__(
         self, 
         coin_repo: ICoinRepository,
-        auction_repo: SqlAlchemyAuctionDataRepository,
+        auction_repo: IAuctionDataRepository,
         orchestrator: ScraperOrchestrator
     ):
         self.coin_repo = coin_repo

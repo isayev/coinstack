@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Optional, List
 from decimal import Decimal
@@ -41,3 +41,4 @@ class AuctionLot:
     
     # Images
     primary_image_url: Optional[str] = None
+    additional_images: List[str] = field(default_factory=list)
