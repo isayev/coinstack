@@ -55,8 +55,12 @@ htmlcov/
 backend/data/
 backend/uploads/*
 !backend/uploads/.gitkeep
+backend/backups/
 backend/coinstack.log
 
 # Frontend specific
 frontend/node_modules/
 frontend/dist/
+
+# Excel temporary files
+~$*

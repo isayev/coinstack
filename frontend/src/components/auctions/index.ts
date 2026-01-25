@@ -1,3 +1,3 @@
-export { AuctionCard } from "./AuctionCard";
-export { AuctionTable } from "./AuctionTable";
-export { ScrapeDialog } from "./ScrapeDialog";
+export * from './AuctionCard';
+export * from './AuctionTable';
+export * from './ScrapeDialog';

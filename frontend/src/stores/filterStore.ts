@@ -1,16 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type SortField = 
-  | "year" 
-  | "name" 
-  | "denomination" 
-  | "metal" 
-  | "category" 
-  | "grade" 
-  | "price" 
-  | "acquired" 
-  | "created" 
+export type SortField =
+  | "year"
+  | "name"
+  | "denomination"
+  | "metal"
+  | "category"
+  | "grade"
+  | "price"
+  | "acquired"
+  | "created"
   | "value"
   | "weight"
   | "rarity";
@@ -31,31 +31,31 @@ interface FilterState {
   denomination: string | null;
   grade: string | null;
   rarity: string | null;
-  
+
   // Price filter
   priceRange: [number, number];
-  
+
   // Year range filters
   mint_year_gte: number | null;
   mint_year_lte: number | null;
   is_year_unknown: boolean | null;
-  
+
   // Boolean filters
   is_circa: boolean | null;
   is_test_cut: boolean | null;
-  
+
   // Other filters
   storage_location: string | null;
   for_sale: boolean | null;
-  
+
   // Sorting
   sortBy: SortField;
   sortDir: SortDirection;
-  
+
   // Pagination
   page: number;
   perPage: PerPageOption;
-  
+
   // Actions
   setCategory: (v: string | null) => void;
   setSubCategory: (v: string | null) => void;
@@ -105,8 +105,8 @@ const initialState = {
   is_test_cut: null,
   storage_location: null,
   for_sale: null,
-  sortBy: "year" as SortField,
-  sortDir: "asc" as SortDirection,
+  sortBy: "created" as SortField,
+  sortDir: "desc" as SortDirection,
   page: 1,
   perPage: 20 as PerPageOption,
 };
@@ -115,7 +115,7 @@ export const useFilterStore = create<FilterState>()(
   persist(
     (set, get) => ({
       ...initialState,
-      
+
       setCategory: (category) => set({ category, page: 1 }),
       setSubCategory: (sub_category) => set({ sub_category, page: 1 }),
       setMetal: (metal) => set({ metal, page: 1 }),
@@ -133,23 +133,23 @@ export const useFilterStore = create<FilterState>()(
       setIsCirca: (is_circa) => set({ is_circa, page: 1 }),
       setIsTestCut: (is_test_cut) => set({ is_test_cut, page: 1 }),
       setStorageLocation: (storage_location) => set({ storage_location, page: 1 }),
-      
-      setSort: (field, dir) => set({ 
-        sortBy: field, 
+
+      setSort: (field, dir) => set({
+        sortBy: field,
         sortDir: dir ?? (field === get().sortBy ? get().sortDir : "asc"),
         page: 1, // Reset to first page on sort change
       }),
       toggleSortDir: () => set({ sortDir: get().sortDir === "asc" ? "desc" : "asc", page: 1 }),
-      
+
       setFilter: (key, value) => set({ [key]: value, page: 1 }), // Reset page on filter change
-      
+
       setPage: (page) => set({ page }),
       setPerPage: (perPage) => set({ perPage, page: 1 }), // Reset to first page when changing per_page
       nextPage: () => set((state) => ({ page: state.page + 1 })),
       prevPage: () => set((state) => ({ page: Math.max(1, state.page - 1) })),
-      
+
       reset: () => set(initialState),
-      
+
       getActiveFilterCount: () => {
         const state = get();
         let count = 0;
@@ -172,7 +172,7 @@ export const useFilterStore = create<FilterState>()(
         if (state.priceRange[0] > 0 || state.priceRange[1] < 5000) count++;
         return count;
       },
-      
+
       toParams: () => {
         const state = get();
         const params: Record<string, any> = {
@@ -181,7 +181,7 @@ export const useFilterStore = create<FilterState>()(
           page: state.page,
           per_page: state.perPage === "all" ? 1000 : state.perPage, // Use large number for "all"
         };
-        
+
         // String filters
         if (state.category) params.category = state.category;
         if (state.sub_category) params.sub_category = state.sub_category;
@@ -194,20 +194,20 @@ export const useFilterStore = create<FilterState>()(
         if (state.grade) params.grade = state.grade;
         if (state.rarity) params.rarity = state.rarity;
         if (state.storage_location) params.storage_location = state.storage_location;
-        
+
         // Price range
         if (state.priceRange[0] > 0) params.acquisition_price_gte = state.priceRange[0];
         if (state.priceRange[1] < 5000) params.acquisition_price_lte = state.priceRange[1];
-        
+
         // Year range
         if (state.mint_year_gte !== null) params.mint_year_gte = state.mint_year_gte;
         if (state.mint_year_lte !== null) params.mint_year_lte = state.mint_year_lte;
         if (state.is_year_unknown !== null) params.is_year_unknown = state.is_year_unknown;
-        
+
         // Boolean filters
         if (state.is_circa !== null) params.is_circa = state.is_circa;
         if (state.is_test_cut !== null) params.is_test_cut = state.is_test_cut;
-        
+
         return params;
       },
     }),

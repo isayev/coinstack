@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Search, Grid, List, RefreshCw, Filter } from "lucide-react";
+import { Plus, Search, Grid, List, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +23,7 @@ type ViewMode = "grid" | "table";
 export function AuctionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [page, setPage] = useState(1);
-  const [perPage] = useState(20);
+  const [perPage, setPerPage] = useState(20);
   const [sortBy, setSortBy] = useState("auction_date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [scrapeDialogOpen, setScrapeDialogOpen] = useState(false);
@@ -198,9 +198,12 @@ export function AuctionsPage() {
       {/* Pagination */}
       {auctionsData && auctionsData.pages > 1 && (
         <Pagination
-          page={page}
+          currentPage={page}
           totalPages={auctionsData.pages}
+          totalItems={auctionsData.total}
+          perPage={perPage as any}
           onPageChange={setPage}
+          onPerPageChange={(v) => setPerPage(v as any)}
         />
       )}
 

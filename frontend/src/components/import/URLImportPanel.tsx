@@ -9,19 +9,19 @@
  * - Manual entry fallback
  */
 import { useState, useEffect, useMemo, ClipboardEvent } from "react";
-import { Link, Loader2, AlertCircle, ExternalLink, Clipboard } from "lucide-react";
+import { Link, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  useUrlImport, 
-  detectAuctionSource, 
+import {
+  useUrlImport,
+  detectAuctionSource,
   SOURCE_CONFIG,
   ImportPreviewResponse,
-  ImportError,
+
 } from "@/hooks/useImport";
 import { cn } from "@/lib/utils";
 
@@ -33,20 +33,20 @@ interface URLImportPanelProps {
 export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanelProps) {
   const [url, setUrl] = useState("");
   const [retryCountdown, setRetryCountdown] = useState(0);
-  
+
   const { mutate: fetchUrl, isPending, error, data, reset } = useUrlImport();
-  
+
   // Detect source from URL
   const detectedSource = useMemo(() => detectAuctionSource(url), [url]);
   const sourceConfig = detectedSource ? SOURCE_CONFIG[detectedSource] : null;
-  
+
   // Handle successful fetch
   useEffect(() => {
     if (data?.success) {
       onPreviewReady(data);
     }
   }, [data, onPreviewReady]);
-  
+
   // Countdown timer for rate limit retry
   useEffect(() => {
     if (error?.retryAfter) {
@@ -63,7 +63,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
       return () => clearInterval(interval);
     }
   }, [error?.retryAfter]);
-  
+
   // Auto-trigger on paste
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     const pastedText = e.clipboardData?.getData("text");
@@ -80,19 +80,19 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
       }
     }
   };
-  
+
   const handleFetch = () => {
     if (url) {
       reset();
       fetchUrl(url);
     }
   };
-  
+
   const handleRetry = () => {
     reset();
     fetchUrl(url);
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -149,7 +149,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
             )}
           </Button>
         </div>
-        
+
         {/* Source Detection Badge */}
         {detectedSource && !isPending && !error && sourceConfig && (
           <Badge
@@ -165,7 +165,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
             {sourceConfig.label} detected
           </Badge>
         )}
-        
+
         {/* Loading State */}
         {isPending && (
           <div className="space-y-3">
@@ -181,7 +181,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
             </div>
           </div>
         )}
-        
+
         {/* Error State */}
         {error && (
           <Alert variant="destructive">
@@ -222,7 +222,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
             </div>
           </Alert>
         )}
-        
+
         {/* Supported Sources Info */}
         {!isPending && !error && !data && (
           <div className="text-xs text-muted-foreground">

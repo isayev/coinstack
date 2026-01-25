@@ -1,326 +1,147 @@
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import { DomainCoinSchema, Category, Metal, GradingState, GradeService, Coin } from "@/domain/schemas"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CoinDetail, CoinCreate } from "@/types/coin";
 import { Loader2 } from "lucide-react";
 
-// Form schema - matches new expanded enums
-const coinSchema = z.object({
-  category: z.enum(["greek", "celtic", "republic", "imperial", "provincial", "judaean", "byzantine", "migration", "pseudo_roman", "other"]),
-  sub_category: z.string().optional(),
-  denomination: z.string().min(1, "Denomination is required"),
-  metal: z.enum(["gold", "electrum", "silver", "billon", "potin", "orichalcum", "bronze", "copper", "lead", "ae", "uncertain"]),
-  issuing_authority: z.string().min(1, "Issuing authority is required"),
-  series: z.string().optional(),
-  portrait_subject: z.string().optional(),
-  status: z.string().optional(),
-  reign_start: z.coerce.number().optional().nullable(),
-  reign_end: z.coerce.number().optional().nullable(),
-  mint_year_start: z.coerce.number().optional().nullable(),
-  mint_year_end: z.coerce.number().optional().nullable(),
-  is_circa: z.boolean().optional(),
-  weight_g: z.coerce.number().optional().nullable(),
-  diameter_mm: z.coerce.number().optional().nullable(),
-  die_axis: z.coerce.number().min(0).max(12).optional().nullable(),
-  is_test_cut: z.boolean().optional(),
-  obverse_legend: z.string().optional(),
-  obverse_legend_expanded: z.string().optional(),
-  obverse_description: z.string().optional(),
-  reverse_legend: z.string().optional(),
-  reverse_legend_expanded: z.string().optional(),
-  reverse_description: z.string().optional(),
-  exergue: z.string().optional(),
-  grade_service: z.enum(["ngc", "pcgs", "self", "dealer"]).optional().nullable(),
-  grade: z.string().optional(),
-  certification_number: z.string().optional(),
-  acquisition_date: z.string().optional(),
-  acquisition_price: z.coerce.number().optional().nullable(),
-  acquisition_source: z.string().optional(),
-  acquisition_url: z.string().optional(),
-  storage_location: z.string().optional(),
-  rarity: z.enum(["common", "scarce", "rare", "very_rare", "extremely_rare", "unique"]).optional().nullable(),
-  personal_notes: z.string().optional(),
-  historical_significance: z.string().optional(),
-});
-
-type CoinFormData = z.infer<typeof coinSchema>;
+// The form values follow the V2 nested structure
+const CreateCoinSchema = DomainCoinSchema.omit({ id: true });
+type CoinFormData = z.infer<typeof CreateCoinSchema>;
 
 interface CoinFormProps {
-  coin?: CoinDetail;
-  onSubmit: (data: CoinCreate) => void;
+  coin?: Coin;
+  onSubmit: (data: CoinFormData) => void;
   isSubmitting?: boolean;
+  defaultValues?: Partial<CoinFormData>;
 }
 
-export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
+export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefaultValues }: CoinFormProps) {
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { /* errors */ },
   } = useForm<CoinFormData>({
-    resolver: zodResolver(coinSchema),
-    defaultValues: {
-      category: coin?.category || "imperial",
-      sub_category: coin?.sub_category || "",
-      denomination: coin?.denomination || "",
+    resolver: zodResolver(CreateCoinSchema),
+    defaultValues: propDefaultValues || {
+      category: coin?.category || "roman_imperial",
       metal: coin?.metal || "silver",
-      issuing_authority: coin?.issuing_authority || "",
-      series: coin?.series || "",
-      portrait_subject: coin?.portrait_subject || "",
-      status: coin?.status || "",
-      reign_start: coin?.reign_start || null,
-      reign_end: coin?.reign_end || null,
-      mint_year_start: coin?.mint_year_start || null,
-      mint_year_end: coin?.mint_year_end || null,
-      is_circa: coin?.is_circa || false,
-      weight_g: coin?.weight_g || null,
-      diameter_mm: coin?.diameter_mm || null,
-      die_axis: coin?.die_axis || null,
-      is_test_cut: coin?.is_test_cut || false,
-      obverse_legend: coin?.obverse_legend || "",
-      obverse_legend_expanded: coin?.obverse_legend_expanded || "",
-      obverse_description: coin?.obverse_description || "",
-      reverse_legend: coin?.reverse_legend || "",
-      reverse_legend_expanded: coin?.reverse_legend_expanded || "",
-      reverse_description: coin?.reverse_description || "",
-      exergue: coin?.exergue || "",
-      grade_service: (coin?.grade_service as any) || null,
-      grade: coin?.grade || "",
-      certification_number: coin?.certification_number || "",
-      acquisition_date: coin?.acquisition_date || "",
-      acquisition_price: coin?.acquisition_price || null,
-      acquisition_source: coin?.acquisition_source || "",
-      acquisition_url: coin?.acquisition_url || "",
-      storage_location: coin?.storage_location || "",
-      rarity: (coin?.rarity as any) || null,
-      personal_notes: coin?.personal_notes || "",
-      historical_significance: coin?.historical_significance || "",
+      dimensions: {
+        weight_g: coin?.dimensions.weight_g || 0,
+        diameter_mm: coin?.dimensions.diameter_mm || 0,
+        die_axis: coin?.dimensions.die_axis || null,
+      },
+      attribution: {
+        issuer: coin?.attribution.issuer || "",
+        mint: coin?.attribution.mint || "",
+        year_start: coin?.attribution.year_start || null,
+        year_end: coin?.attribution.year_end || null,
+      },
+      grading: {
+        grading_state: coin?.grading.grading_state || "raw",
+        grade: coin?.grading.grade || "",
+        service: coin?.grading.service || null,
+        certification_number: coin?.grading.certification_number || "",
+        strike: coin?.grading.strike || "",
+        surface: coin?.grading.surface || "",
+      },
+      acquisition: coin?.acquisition || {
+        price: 0,
+        currency: "USD",
+        source: "",
+        date: "",
+        url: null,
+      },
+      images: coin?.images || []
     },
   });
 
   const category = watch("category");
   const metal = watch("metal");
-  const gradeService = watch("grade_service");
-  const rarity = watch("rarity");
-
-  const onFormSubmit = (data: CoinFormData) => {
-    // Clean up null/empty values
-    const cleaned: any = {};
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== "") {
-        cleaned[key] = value;
-      }
-    });
-    onSubmit(cleaned as CoinCreate);
-  };
+  const gradingState = watch("grading.grading_state");
+  const gradeService = watch("grading.service");
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
           <TabsTrigger value="basic">Basic</TabsTrigger>
-          <TabsTrigger value="dating">Dating</TabsTrigger>
-          <TabsTrigger value="physical">Physical</TabsTrigger>
+          <TabsTrigger value="physics">Physics</TabsTrigger>
           <TabsTrigger value="design">Design</TabsTrigger>
           <TabsTrigger value="grading">Grading</TabsTrigger>
           <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
-          <TabsTrigger value="notes">Notes</TabsTrigger>
+          <TabsTrigger value="images">Images</TabsTrigger>
         </TabsList>
 
         {/* Basic Info */}
         <TabsContent value="basic">
           <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardHeader><CardTitle>Classification & Attribution</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category *</label>
+                <Select value={category} onValueChange={(v) => setValue("category", v as Category)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="roman_imperial">Roman Imperial</SelectItem>
+                    <SelectItem value="roman_republic">Roman Republic</SelectItem>
+                    <SelectItem value="greek">Greek</SelectItem>
+                    <SelectItem value="byzantine">Byzantine</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Issuer / Authority *</label>
+                <Input {...register("attribution.issuer")} placeholder="e.g. Augustus" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mint</label>
+                <Input {...register("attribution.mint")} placeholder="e.g. Rome" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Category *</label>
-                  <Select value={category} onValueChange={(v) => setValue("category", v as any)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="greek">Greek</SelectItem>
-                      <SelectItem value="celtic">Celtic</SelectItem>
-                      <SelectItem value="republic">Republic</SelectItem>
-                      <SelectItem value="imperial">Imperial</SelectItem>
-                      <SelectItem value="provincial">Provincial</SelectItem>
-                      <SelectItem value="judaean">Judaean</SelectItem>
-                      <SelectItem value="byzantine">Byzantine</SelectItem>
-                      <SelectItem value="migration">Migration Period</SelectItem>
-                      <SelectItem value="pseudo_roman">Pseudo-Roman</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
+                  <label className="text-sm font-medium">Year Start</label>
+                  <Input type="number" {...register("attribution.year_start")} placeholder="-44" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Metal *</label>
-                  <Select value={metal} onValueChange={(v) => setValue("metal", v as any)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="gold">Gold</SelectItem>
-                      <SelectItem value="electrum">Electrum</SelectItem>
-                      <SelectItem value="silver">Silver</SelectItem>
-                      <SelectItem value="billon">Billon</SelectItem>
-                      <SelectItem value="potin">Potin</SelectItem>
-                      <SelectItem value="orichalcum">Orichalcum</SelectItem>
-                      <SelectItem value="bronze">Bronze</SelectItem>
-                      <SelectItem value="copper">Copper</SelectItem>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="ae">AE (Generic)</SelectItem>
-                      <SelectItem value="uncertain">Uncertain</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Denomination *</label>
-                  <Input {...register("denomination")} placeholder="e.g., Denarius, Antoninianus" />
-                  {errors.denomination && <p className="text-sm text-destructive">{errors.denomination.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Series</label>
-                  <Input {...register("series")} placeholder="e.g., CONSECRATIO" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Issuing Authority *</label>
-                  <Input {...register("issuing_authority")} placeholder="e.g., Augustus, Trajan" />
-                  {errors.issuing_authority && <p className="text-sm text-destructive">{errors.issuing_authority.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Portrait Subject</label>
-                  <Input {...register("portrait_subject")} placeholder="e.g., Augustus, Livia" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Input {...register("status")} placeholder="e.g., As Caesar, As Augustus" />
+                  <label className="text-sm font-medium">Year End</label>
+                  <Input type="number" {...register("attribution.year_end")} placeholder="14" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Dating */}
-        <TabsContent value="dating">
+        {/* Physics */}
+        <TabsContent value="physics">
           <Card>
-            <CardHeader>
-              <CardTitle>Dating</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Reign Start (Year)</label>
-                  <Input type="number" {...register("reign_start")} placeholder="e.g., -27 for 27 BC" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Reign End (Year)</label>
-                  <Input type="number" {...register("reign_end")} placeholder="e.g., 14 for AD 14" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Mint Year Start</label>
-                  <Input type="number" {...register("mint_year_start")} placeholder="Year coin was minted" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Mint Year End</label>
-                  <Input type="number" {...register("mint_year_end")} placeholder="If range" />
-                </div>
+            <CardHeader><CardTitle>Physical Measurements</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Metal *</label>
+                <Select value={metal} onValueChange={(v) => setValue("metal", v as Metal)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gold">Gold</SelectItem>
+                    <SelectItem value="silver">Silver</SelectItem>
+                    <SelectItem value="bronze">Bronze</SelectItem>
+                    <SelectItem value="billon">Billon</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-sm text-muted-foreground">Use negative numbers for BC dates (e.g., -44 for 44 BC)</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Physical */}
-        <TabsContent value="physical">
-          <Card>
-            <CardHeader>
-              <CardTitle>Physical Attributes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Weight (g)</label>
-                  <Input type="number" step="0.01" {...register("weight_g")} placeholder="e.g., 3.45" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Diameter (mm)</label>
-                  <Input type="number" step="0.1" {...register("diameter_mm")} placeholder="e.g., 19.5" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Die Axis (h)</label>
-                  <Input type="number" min="0" max="12" {...register("die_axis")} placeholder="0-12" />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Weight (g)</label>
+                <Input type="number" step="0.01" {...register("dimensions.weight_g")} />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Design */}
-        <TabsContent value="design">
-          <Card>
-            <CardHeader>
-              <CardTitle>Design Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h4 className="font-medium">Obverse</h4>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Legend</label>
-                    <Input {...register("obverse_legend")} placeholder="e.g., IMP CAESAR DIVI F AVGVSTVS" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Description</label>
-                    <textarea 
-                      {...register("obverse_description")} 
-                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      placeholder="Laureate head right..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Reverse</h4>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Legend</label>
-                    <Input {...register("reverse_legend")} placeholder="e.g., PONTIF MAXIM" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Description</label>
-                    <textarea 
-                      {...register("reverse_description")} 
-                      className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      placeholder="Livia seated right..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Exergue</label>
-                    <Input {...register("exergue")} placeholder="e.g., XXIR" />
-                  </div>
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Diameter (mm)</label>
+                <Input type="number" step="0.1" {...register("dimensions.diameter_mm")} />
               </div>
             </CardContent>
           </Card>
@@ -329,36 +150,36 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
         {/* Grading */}
         <TabsContent value="grading">
           <Card>
-            <CardHeader>
-              <CardTitle>Grading</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Grade Service</label>
-                  <Select value={gradeService || "none"} onValueChange={(v) => setValue("grade_service", v === "none" ? null : v as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="ngc">NGC</SelectItem>
-                      <SelectItem value="pcgs">PCGS</SelectItem>
-                      <SelectItem value="self">Self</SelectItem>
-                      <SelectItem value="dealer">Dealer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Grade</label>
-                  <Input {...register("grade")} placeholder="e.g., VF, Choice XF, MS 63" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Certification Number</label>
-                  <Input {...register("certification_number")} placeholder="NGC/PCGS cert number" />
-                </div>
+            <CardHeader><CardTitle>Grading & Condition</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Grading State</label>
+                <Select value={gradingState} onValueChange={(v) => setValue("grading.grading_state", v as GradingState)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="raw">Raw</SelectItem>
+                    <SelectItem value="slabbed">Slabbed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Grade</label>
+                <Input {...register("grading.grade")} placeholder="e.g. Choice XF" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Service</label>
+                <Select value={gradeService || "none"} onValueChange={(v) => setValue("grading.service", v === "none" ? null : v as GradeService)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="ngc">NGC</SelectItem>
+                    <SelectItem value="pcgs">PCGS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cert #</label>
+                <Input {...register("grading.certification_number")} />
               </div>
             </CardContent>
           </Card>
@@ -367,81 +188,19 @@ export function CoinForm({ coin, onSubmit, isSubmitting }: CoinFormProps) {
         {/* Acquisition */}
         <TabsContent value="acquisition">
           <Card>
-            <CardHeader>
-              <CardTitle>Acquisition Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Acquisition Date</label>
-                  <Input type="date" {...register("acquisition_date")} />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Price (USD)</label>
-                  <Input type="number" step="0.01" {...register("acquisition_price")} placeholder="e.g., 150.00" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Source</label>
-                  <Input {...register("acquisition_source")} placeholder="e.g., CNG, VCoins, Heritage" />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Storage Location</label>
-                  <Input {...register("storage_location")} placeholder="e.g., SlabBox1, Velv1-2-3" />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium">Listing URL</label>
-                  <Input {...register("acquisition_url")} placeholder="https://..." />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notes */}
-        <TabsContent value="notes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes & Research</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardHeader><CardTitle>Acquisition Details</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Rarity</label>
-                <Select value={rarity || "none"} onValueChange={(v) => setValue("rarity", v === "none" ? null : v as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select rarity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Not specified</SelectItem>
-                    <SelectItem value="common">Common</SelectItem>
-                    <SelectItem value="scarce">Scarce</SelectItem>
-                    <SelectItem value="rare">Rare</SelectItem>
-                    <SelectItem value="very_rare">Very Rare</SelectItem>
-                    <SelectItem value="extremely_rare">Extremely Rare</SelectItem>
-                    <SelectItem value="unique">Unique</SelectItem>
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium">Price</label>
+                <Input type="number" step="0.01" {...register("acquisition.price")} />
               </div>
-
               <div className="space-y-2">
-                <label className="text-sm font-medium">Historical Significance</label>
-                <textarea 
-                  {...register("historical_significance")} 
-                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="Historical context and significance..."
-                />
+                <label className="text-sm font-medium">Source</label>
+                <Input {...register("acquisition.source")} placeholder="Heritage, CNG, etc." />
               </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Personal Notes</label>
-                <textarea 
-                  {...register("personal_notes")} 
-                  className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  placeholder="Your personal notes about this coin..."
-                />
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium">URL</label>
+                <Input {...register("acquisition.url")} />
               </div>
             </CardContent>
           </Card>

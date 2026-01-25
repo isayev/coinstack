@@ -7,9 +7,9 @@
  * - Tabbed layout matching CoinForm
  * - Low-confidence field highlighting
  */
-import { useState, useCallback } from "react";
-import { 
-  Undo, AlertCircle, Info, CheckCircle2, 
+import { useCallback } from "react";
+import {
+  Undo, AlertCircle, Info,
   Coins, Calendar, Scale, Palette, Award, DollarSign, FileText
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,17 +19,17 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { 
-  CoinPreviewData, 
-  FieldConfidence, 
-  CONFIDENCE_CONFIG 
+import {
+  CoinPreviewData,
+  FieldConfidence,
+  CONFIDENCE_CONFIG
 } from "@/hooks/useImport";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +54,6 @@ interface FieldProps {
 
 function FieldWithConfidence({
   label,
-  field,
   value,
   originalValue,
   confidence,
@@ -65,9 +64,9 @@ function FieldWithConfidence({
   const stringValue = value?.toString() ?? "";
   const originalStringValue = originalValue?.toString() ?? "";
   const isModified = stringValue !== originalStringValue && originalStringValue !== "";
-  
+
   const config = confidence ? CONFIDENCE_CONFIG[confidence] : CONFIDENCE_CONFIG.high;
-  
+
   return (
     <div className="space-y-1.5">
       <Label className="flex items-center gap-2 text-sm">
@@ -143,18 +142,18 @@ export function CoinPreviewEditor({
   fieldConfidence,
   onChange,
 }: CoinPreviewEditorProps) {
-  
+
   const updateField = useCallback((field: keyof CoinPreviewData, value: any) => {
     onChange({
       ...data,
       [field]: value === "" ? undefined : value,
     });
   }, [data, onChange]);
-  
+
   const getConfidence = (field: string): FieldConfidence | undefined => {
     return fieldConfidence[field];
   };
-  
+
   return (
     <Tabs defaultValue="basic" className="w-full">
       <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
@@ -187,7 +186,7 @@ export function CoinPreviewEditor({
           Notes
         </TabsTrigger>
       </TabsList>
-      
+
       {/* Basic Info */}
       <TabsContent value="basic">
         <Card>
@@ -220,7 +219,7 @@ export function CoinPreviewEditor({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-1.5">
                 <Label>Metal *</Label>
                 <Select
@@ -244,7 +243,7 @@ export function CoinPreviewEditor({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <FieldWithConfidence
                 label="Denomination *"
                 field="denomination"
@@ -254,7 +253,7 @@ export function CoinPreviewEditor({
                 onChange={(v) => updateField("denomination", v)}
                 placeholder="e.g., Denarius, Antoninianus"
               />
-              
+
               <FieldWithConfidence
                 label="Issuing Authority *"
                 field="issuing_authority"
@@ -264,7 +263,7 @@ export function CoinPreviewEditor({
                 onChange={(v) => updateField("issuing_authority", v)}
                 placeholder="e.g., Augustus, Trajan"
               />
-              
+
               <FieldWithConfidence
                 label="Portrait Subject"
                 field="portrait_subject"
@@ -274,7 +273,7 @@ export function CoinPreviewEditor({
                 onChange={(v) => updateField("portrait_subject", v)}
                 placeholder="e.g., Augustus, Livia"
               />
-              
+
               <FieldWithConfidence
                 label="Mint"
                 field="mint_name"
@@ -288,7 +287,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Dating */}
       <TabsContent value="dating">
         <Card>
@@ -307,7 +306,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="e.g., -27 for 27 BC"
               />
-              
+
               <FieldWithConfidence
                 label="Reign End"
                 field="reign_end"
@@ -318,7 +317,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="e.g., 14 for AD 14"
               />
-              
+
               <FieldWithConfidence
                 label="Mint Year Start"
                 field="mint_year_start"
@@ -329,7 +328,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="Year struck"
               />
-              
+
               <FieldWithConfidence
                 label="Mint Year End"
                 field="mint_year_end"
@@ -347,7 +346,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Physical */}
       <TabsContent value="physical">
         <Card>
@@ -366,7 +365,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="e.g., 3.45"
               />
-              
+
               <FieldWithConfidence
                 label="Diameter (mm)"
                 field="diameter_mm"
@@ -377,7 +376,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="e.g., 19.5"
               />
-              
+
               <FieldWithConfidence
                 label="Die Axis (h)"
                 field="die_axis"
@@ -392,7 +391,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Design */}
       <TabsContent value="design">
         <Card>
@@ -422,7 +421,7 @@ export function CoinPreviewEditor({
                 placeholder="Laureate head right..."
               />
             </div>
-            
+
             <div className="space-y-4">
               <h4 className="font-medium text-sm">Reverse</h4>
               <FieldWithConfidence
@@ -457,7 +456,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Grading */}
       <TabsContent value="grading">
         <Card>
@@ -483,7 +482,7 @@ export function CoinPreviewEditor({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <FieldWithConfidence
                 label="Grade"
                 field="grade"
@@ -493,7 +492,7 @@ export function CoinPreviewEditor({
                 onChange={(v) => updateField("grade", v)}
                 placeholder="e.g., VF, Choice XF, MS 63"
               />
-              
+
               <FieldWithConfidence
                 label="Certification Number"
                 field="certification_number"
@@ -504,7 +503,7 @@ export function CoinPreviewEditor({
                 placeholder="NGC/PCGS cert number"
               />
             </div>
-            
+
             {data.grade_service === "ngc" && (
               <div className="grid grid-cols-2 gap-4">
                 <FieldWithConfidence
@@ -517,7 +516,7 @@ export function CoinPreviewEditor({
                   type="number"
                   placeholder="1-5"
                 />
-                
+
                 <FieldWithConfidence
                   label="Surface Quality (1-5)"
                   field="surface_quality"
@@ -533,7 +532,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Acquisition */}
       <TabsContent value="acquisition">
         <Card>
@@ -552,7 +551,7 @@ export function CoinPreviewEditor({
                 type="text"
                 placeholder="YYYY-MM-DD"
               />
-              
+
               <FieldWithConfidence
                 label="Price"
                 field="acquisition_price"
@@ -563,7 +562,7 @@ export function CoinPreviewEditor({
                 type="number"
                 placeholder="e.g., 150.00"
               />
-              
+
               <FieldWithConfidence
                 label="Source"
                 field="acquisition_source"
@@ -573,7 +572,7 @@ export function CoinPreviewEditor({
                 onChange={(v) => updateField("acquisition_source", v)}
                 placeholder="e.g., Heritage Auctions"
               />
-              
+
               <FieldWithConfidence
                 label="Storage Location"
                 field="storage_location"
@@ -584,7 +583,7 @@ export function CoinPreviewEditor({
                 placeholder="e.g., SlabBox1"
               />
             </div>
-            
+
             {/* Auction info if available */}
             {data.hammer_price && (
               <div className="border-t pt-4 mt-4">
@@ -622,7 +621,7 @@ export function CoinPreviewEditor({
           </CardContent>
         </Card>
       </TabsContent>
-      
+
       {/* Notes */}
       <TabsContent value="notes">
         <Card>
@@ -649,7 +648,7 @@ export function CoinPreviewEditor({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <FieldWithConfidence
               label="Historical Significance"
               field="historical_significance"
@@ -660,7 +659,7 @@ export function CoinPreviewEditor({
               type="textarea"
               placeholder="Historical context and significance..."
             />
-            
+
             <FieldWithConfidence
               label="Personal Notes"
               field="personal_notes"
@@ -671,7 +670,7 @@ export function CoinPreviewEditor({
               type="textarea"
               placeholder="Your personal notes about this coin..."
             />
-            
+
             {/* References */}
             {data.references && data.references.length > 0 && (
               <div className="space-y-1.5">

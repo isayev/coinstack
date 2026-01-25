@@ -75,7 +75,6 @@ const DEFAULT_COLUMNS: ColumnConfig[] = [
  * and updating the order to match defaults
  */
 function mergeColumnsWithDefaults(storedColumns: ColumnConfig[]): ColumnConfig[] {
-  const storedIds = new Set(storedColumns.map((c) => c.id));
   const defaultIds = new Set(DEFAULT_COLUMNS.map((c) => c.id));
   
   // Start with default order

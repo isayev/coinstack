@@ -1,13 +1,3 @@
-/**
- * AuditPage - Enhanced data audit and enrichment dashboard
- * 
- * Features:
- * - Summary stats with category colors
- * - Sticky bulk action toolbar
- * - Field history tab
- * - Improved filtering and layout
- */
-
 import { useState } from "react";
 import {
   useDiscrepancies,
@@ -17,6 +7,12 @@ import {
   useBulkApplyEnrichments,
   useAutoApplyAllEnrichments,
   useFieldHistory,
+  type DiscrepancyFilters,
+  type EnrichmentFilters,
+  type DiscrepancyStatus,
+  type EnrichmentStatus,
+  type TrustLevel,
+  type FieldHistoryEntry,
 } from "@/hooks/useAudit";
 import {
   AuditSummaryStats,
@@ -63,7 +59,6 @@ import {
   Clock,
   Image as ImageIcon,
 } from "lucide-react";
-import type { DiscrepancyFilters, EnrichmentFilters, TrustLevel, DiscrepancyStatus, EnrichmentStatus } from "@/types/audit";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -92,7 +87,7 @@ function FieldHistoryTab() {
           <Input
             placeholder="Enter coin ID to view history..."
             value={coinId}
-            onChange={(e) => setCoinId(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCoinId(e.target.value)}
             className="w-48"
             type="number"
           />
@@ -115,7 +110,7 @@ function FieldHistoryTab() {
 
         {!isLoading && history && history.length > 0 && (
           <div className="space-y-2">
-            {history.map((entry) => (
+            {history.map((entry: FieldHistoryEntry) => (
               <div 
                 key={entry.id}
                 className={cn(
@@ -151,7 +146,7 @@ function FieldHistoryTab() {
                       {entry.change_type.replace(/_/g, ' ')}
                     </Badge>
                     {entry.new_source && (
-                      <SourceBadge source={entry.new_source} size="sm" showTrustIcon={false} />
+                      <SourceBadge source={entry.new_source} size="sm" />
                     )}
                   </div>
                   
@@ -205,10 +200,8 @@ function FieldHistoryTab() {
 }
 
 export default function AuditPage() {
-  // Tab state
   const [activeTab, setActiveTab] = useState("discrepancies");
 
-  // Filters
   const [discrepancyFilters, setDiscrepancyFilters] = useState<DiscrepancyFilters>({
     status: "pending",
     page: 1,
@@ -220,22 +213,18 @@ export default function AuditPage() {
     per_page: 20,
   });
 
-  // Selections for bulk actions
   const [selectedDiscrepancies, setSelectedDiscrepancies] = useState<number[]>([]);
   const [selectedEnrichments, setSelectedEnrichments] = useState<number[]>([]);
 
-  // Data queries
   const { data: discrepanciesData, isLoading: loadingDiscrepancies } =
     useDiscrepancies(discrepancyFilters);
   const { data: enrichmentsData, isLoading: loadingEnrichments } =
     useEnrichments(enrichmentFilters);
 
-  // Mutations
   const bulkResolve = useBulkResolveDiscrepancies();
   const bulkApply = useBulkApplyEnrichments();
   const autoApplyAll = useAutoApplyAllEnrichments();
 
-  // Audit execution
   const {
     start: startAudit,
     progress,
@@ -304,19 +293,16 @@ export default function AuditPage() {
     }
   };
 
-  // Check if bulk actions should show
   const showDiscrepancyBulkBar = selectedDiscrepancies.length > 0 && activeTab === 'discrepancies';
   const showEnrichmentBulkBar = selectedEnrichments.length > 0 && activeTab === 'enrichments';
 
   return (
     <div className="container mx-auto py-6 space-y-6 pb-24">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Audit</h1>
           <p className="text-muted-foreground">
-            Review and resolve discrepancies between coin data and auction
-            records
+            Review and resolve discrepancies between coin data and auction records
           </p>
         </div>
         <Button
@@ -333,17 +319,14 @@ export default function AuditPage() {
         </Button>
       </div>
 
-      {/* Audit Progress */}
       {progress && !isComplete && (
         <AuditProgress progress={progress} />
       )}
 
-      {/* Summary Stats */}
       <AuditSummaryStats />
 
-      {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="discrepancies" className="gap-2">
             <AlertTriangle className="w-4 h-4" />
             Discrepancies
@@ -376,9 +359,7 @@ export default function AuditPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Discrepancies Tab */}
         <TabsContent value="discrepancies" className="space-y-4">
-          {/* Filters */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -457,7 +438,7 @@ export default function AuditPage() {
                 <Input
                   placeholder="Field name..."
                   value={discrepancyFilters.field_name || ""}
-                  onChange={(e) =>
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setDiscrepancyFilters({
                       ...discrepancyFilters,
                       field_name: e.target.value || undefined,
@@ -470,9 +451,7 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          {/* Discrepancies List */}
           <div className="space-y-4">
-            {/* Select all */}
             {discrepanciesData && discrepanciesData.items.length > 0 && (
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -518,18 +497,16 @@ export default function AuditPage() {
               </Card>
             )}
 
-            {/* Pagination */}
             {discrepanciesData && discrepanciesData.pages > 1 && (
               <div className="flex items-center justify-between pt-4">
                 <span className="text-sm text-muted-foreground">
-                  Page {discrepanciesData.page} of {discrepanciesData.pages} (
-                  {discrepanciesData.total} total)
+                  Page {discrepanciesData.page} of {discrepanciesData.pages} ({discrepanciesData.total} total)
                 </span>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={discrepanciesData.page <= 1}
+                    disabled={discrepancyFilters.page! <= 1}
                     onClick={() =>
                       setDiscrepancyFilters({
                         ...discrepancyFilters,
@@ -543,7 +520,7 @@ export default function AuditPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={discrepanciesData.page >= discrepanciesData.pages}
+                    disabled={discrepancyFilters.page! >= discrepanciesData.pages}
                     onClick={() =>
                       setDiscrepancyFilters({
                         ...discrepancyFilters,
@@ -560,9 +537,7 @@ export default function AuditPage() {
           </div>
         </TabsContent>
 
-        {/* Enrichments Tab */}
         <TabsContent value="enrichments" className="space-y-4">
-          {/* Quick Actions */}
           {enrichmentsData && enrichmentsData.total > 0 && (
             <Card className="border-emerald-500/30 bg-emerald-500/5">
               <CardContent className="py-4">
@@ -577,11 +552,7 @@ export default function AuditPage() {
                     onClick={() => {
                       autoApplyAll.mutate(undefined, {
                         onSuccess: (result) => {
-                          toast.success(`Applied ${result.applied} enrichments`, {
-                            description: Object.entries(result.applied_by_field)
-                              .map(([field, count]) => `${field}: ${count}`)
-                              .join(", "),
-                          });
+                          toast.success(`Applied ${result.applied} enrichments`);
                         },
                         onError: () => {
                           toast.error("Failed to apply enrichments");
@@ -603,7 +574,6 @@ export default function AuditPage() {
             </Card>
           )}
 
-          {/* Filters */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -652,6 +622,7 @@ export default function AuditPage() {
                     <SelectItem value="authoritative">Authoritative</SelectItem>
                     <SelectItem value="high">High</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -685,9 +656,7 @@ export default function AuditPage() {
             </CardContent>
           </Card>
 
-          {/* Enrichments List */}
           <div className="space-y-4">
-            {/* Select all */}
             {enrichmentsData && enrichmentsData.items.length > 0 && (
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -732,18 +701,16 @@ export default function AuditPage() {
               </Card>
             )}
 
-            {/* Pagination */}
             {enrichmentsData && enrichmentsData.pages > 1 && (
               <div className="flex items-center justify-between pt-4">
                 <span className="text-sm text-muted-foreground">
-                  Page {enrichmentsData.page} of {enrichmentsData.pages} (
-                  {enrichmentsData.total} total)
+                  Page {enrichmentsData.page} of {enrichmentsData.pages} ({enrichmentsData.total} total)
                 </span>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={enrichmentsData.page <= 1}
+                    disabled={enrichmentFilters.page! <= 1}
                     onClick={() =>
                       setEnrichmentFilters({
                         ...enrichmentFilters,
@@ -757,7 +724,7 @@ export default function AuditPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={enrichmentsData.page >= enrichmentsData.pages}
+                    disabled={enrichmentFilters.page! >= enrichmentsData.pages}
                     onClick={() =>
                       setEnrichmentFilters({
                         ...enrichmentFilters,
@@ -774,12 +741,10 @@ export default function AuditPage() {
           </div>
         </TabsContent>
 
-        {/* Auto-Merge Tab */}
         <TabsContent value="auto-merge">
           <AutoMergeTab />
         </TabsContent>
 
-        {/* History Tab */}
         <TabsContent value="images">
           <ImageReviewTab />
         </TabsContent>
@@ -789,7 +754,6 @@ export default function AuditPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Sticky Bulk Actions Bar */}
       {(showDiscrepancyBulkBar || showEnrichmentBulkBar) && (
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t shadow-lg z-50">
           <div className="container mx-auto py-3 flex items-center justify-between">

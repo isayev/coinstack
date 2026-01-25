@@ -1,232 +1,124 @@
-/**
- * CoinCard - Main collection card component
- * 
- * Design spec: 280×380px card with:
- * - Category-colored left border (4px)
- * - Metal badge (element symbol style)
- * - Rarity dot + Grade badge
- * - Price trend with percentage
- * - Hover state with quick actions
- * 
- * @module coins/CoinCard
- */
-
-import { useState } from 'react';
-import { CoinListItem } from "@/types/coin";
-import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
-import { Edit, Zap, Share2, Scissors } from "lucide-react";
-import { 
-  MetalBadge, 
-  GradeBadge, 
-  RarityIndicator, 
-  Sparkline,
-  parseCategory,
-  CATEGORY_CONFIG,
-} from "@/components/design-system";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card"
+import { Coin } from "@/domain/schemas"
+import { MetalBadge } from "./MetalBadge"
+import { GradeBadge } from "./GradeBadge"
+import { Separator } from "@/components/ui/separator"
+import { Scale, Ruler, Coins } from "lucide-react"
+import { formatYear } from "@/lib/formatters"
 
 interface CoinCardProps {
-  coin: CoinListItem;
+  coin: Coin
+  onClick?: (coin: Coin) => void
 }
 
-// Format year display
-function formatYear(
-  start: number | null | undefined, 
-  end: number | null | undefined, 
-  isCirca?: boolean
-): string {
-  if (!start && !end) return "";
-  
-  const prefix = isCirca ? "c. " : "";
-  
-  if (start && end && start !== end) {
-    const startStr = start < 0 ? `${Math.abs(start)}` : `${start}`;
-    const endStr = end < 0 ? `${Math.abs(end)} BC` : `${end} AD`;
-    const startSuffix = start < 0 && end > 0 ? " BC" : "";
-    return `${prefix}${startStr}${startSuffix}–${endStr}`;
+export function CoinCard({ coin, onClick }: CoinCardProps) {
+  const handleClick = () => {
+    if (onClick) onClick(coin)
   }
-  
-  const year = start || end;
-  if (!year) return "";
-  return `${prefix}${Math.abs(year)} ${year < 0 ? "BC" : "AD"}`;
-}
 
-// Mock price trend data (placeholder until real market data available)
-// Using muted styling to indicate inactive/future functionality
-function getMockPriceTrend(coinId: number): number[] {
-  // Generate deterministic "random" data based on coin ID
-  const seed = coinId * 7919;
-  return Array.from({ length: 12 }, (_, i) => {
-    const base = 50 + (seed % 50);
-    const noise = Math.sin(i * 0.8 + seed) * 15;
-    return Math.round(base + noise + i * 2);
-  });
-}
+  // Format year range
+  const displayYear = () => {
+    const { year_start, year_end } = coin.attribution
+    if (year_start === null || year_start === undefined) return "Date Unknown"
+    if (year_end === null || year_end === undefined || year_start === year_end) {
+      return formatYear(year_start)
+    }
+    return `${formatYear(year_start)}–${formatYear(year_end)}`
+  }
 
-export function CoinCard({ coin }: CoinCardProps) {
-  const navigate = useNavigate();
-  const [isHovered, setIsHovered] = useState(false);
-  
-  const yearDisplay = formatYear(coin.mint_year_start, coin.mint_year_end, coin.is_circa);
-  const category = parseCategory(coin.category);
-  const categoryConfig = CATEGORY_CONFIG[category];
-  
-  // Mock data for price trends (muted placeholder for future functionality)
-  const priceTrend = getMockPriceTrend(coin.id);
-  
   return (
-    <div 
-      className={cn(
-        "rounded-lg overflow-hidden cursor-pointer transition-all duration-200",
-        "hover:shadow-lg"
-      )}
-      style={{ 
-        background: 'var(--bg-card)',
-        borderLeft: `4px solid var(--category-${categoryConfig.cssVar})`,
-      }}
-      onClick={() => navigate(`/coins/${coin.id}`)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <Card
+      className="coin-card cursor-pointer hover:shadow-md transition-shadow h-full flex flex-col overflow-hidden"
+      onClick={handleClick}
     >
-      {/* Image container */}
-      <div 
-        className="aspect-[4/3] relative overflow-hidden"
-        style={{ background: 'var(--bg-surface)' }}
-      >
-        {coin.primary_image ? (
-          <img 
-            src={`/api${coin.primary_image}`} 
-            alt={`${coin.issuing_authority} ${coin.denomination}`}
-            className={cn(
-              "object-cover w-full h-full transition-transform duration-300",
-              isHovered && "scale-105"
-            )}
+      {/* Primary Image */}
+      <div className="aspect-[4/3] bg-muted relative overflow-hidden border-b">
+        {coin.images && coin.images.length > 0 ? (
+          <img
+            src={coin.images.find((img: any) => img.is_primary)?.url || coin.images[0].url}
+            alt={coin.attribution.issuer || "Coin Image"}
+            className="object-cover w-full h-full transition-transform hover:scale-105"
           />
         ) : (
-          <div className="flex items-center justify-center h-full">
-            {/* Coin silhouette placeholder */}
-            <div 
-              className="w-20 h-20 rounded-full opacity-10"
-              style={{ background: 'var(--metal-ag)' }}
-            />
+          <div className="flex items-center justify-center h-full text-muted-foreground/40">
+            <Coins className="w-12 h-12" />
           </div>
         )}
-        
-        {/* Top badges row: [Au] ●R2 [VF] */}
-        <div className="absolute top-2 right-2 flex items-center gap-1.5">
-          <MetalBadge metal={coin.metal} size="sm" showGlow={isHovered} />
-          {coin.rarity && <RarityIndicator rarity={coin.rarity} variant="dot" />}
-          <GradeBadge grade={coin.grade || "?"} size="sm" />
+      </div>
+
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex justify-between items-start gap-2">
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-bold leading-tight">
+              {coin.attribution.issuer}
+            </CardTitle>
+            <CardDescription className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              {coin.attribution.mint || "Uncertain Mint"} • {displayYear()}
+            </CardDescription>
+          </div>
+          {coin.metal && <MetalBadge metal={coin.metal} />}
         </div>
-        
-        {/* Test cut indicator */}
-        {coin.is_test_cut && (
-          <div 
-            className="absolute bottom-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium"
-            style={{ background: 'rgba(255, 69, 58, 0.2)', color: '#FF453A' }}
-          >
-            <Scissors className="w-3 h-3" />
-            TC
+      </CardHeader>
+
+      <CardContent className="pb-3 flex-grow space-y-4">
+        {/* Physics Grid */}
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Scale className="w-4 h-4" />
+            <span>{coin.dimensions.weight_g}g</span>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Ruler className="w-4 h-4" />
+            <span>{coin.dimensions.diameter_mm}mm</span>
+          </div>
+        </div>
+
+        {/* Category Chip */}
+        <div className="flex flex-wrap gap-2">
+          <div className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider border opacity-70
+             ${getCategoryStyle(coin.category)}`}>
+            {coin.category.replace('_', ' ')}
+          </div>
+        </div>
+      </CardContent>
+
+      <Separator className="bg-border/50" />
+
+      <CardFooter className="pt-3 pb-3 flex justify-between items-center bg-muted/20">
+        <GradeBadge
+          grade={coin.grading.grade || "Ungraded"}
+          service={coin.grading.service || undefined}
+        />
+
+        {coin.acquisition?.price && (
+          <div className="font-mono text-sm font-medium text-muted-foreground">
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: coin.acquisition.currency || 'USD'
+            }).format(coin.acquisition.price)}
           </div>
         )}
-        
-        {/* Hover actions overlay */}
-        <div 
-          className={cn(
-            "absolute inset-0 flex items-end justify-center pb-3",
-            "bg-gradient-to-t from-black/60 via-black/20 to-transparent",
-            "transition-opacity duration-200",
-            isHovered ? "opacity-100" : "opacity-0"
-          )}
-        >
-          <div className="flex gap-2">
-            <button
-              className="p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/coins/${coin.id}/edit`);
-              }}
-              title="Edit"
-            >
-              <Edit className="w-4 h-4 text-white" />
-            </button>
-            <button
-              className="p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                // TODO: Expand legend action
-              }}
-              title="Expand Legend"
-            >
-              <Zap className="w-4 h-4 text-white" />
-            </button>
-            <button
-              className="p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                // TODO: Share action
-              }}
-              title="Share"
-            >
-              <Share2 className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Content section */}
-      <div className="p-3" style={{ background: 'var(--bg-card)' }}>
-        {/* Ruler name */}
-        <div 
-          className="font-semibold text-sm leading-tight truncate"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {coin.issuing_authority}
-        </div>
-        
-        {/* Denomination + Mint + Year */}
-        <div 
-          className="text-xs mt-0.5 truncate"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          {coin.denomination}
-          {coin.mint_name && ` · ${coin.mint_name}`}
-          {yearDisplay && ` · ${yearDisplay}`}
-        </div>
-        
-        {/* Footer: Price + muted sparkline placeholder */}
-        <div 
-          className="mt-2 pt-2 flex items-center justify-between"
-          style={{ borderTop: '1px solid var(--border-subtle)' }}
-        >
-          {/* Actual acquisition price */}
-          {coin.acquisition_price ? (
-            <span 
-              className="text-xs font-semibold tabular-nums"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              ${Number(coin.acquisition_price).toLocaleString()}
-            </span>
-          ) : (
-            <span 
-              className="text-xs"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              —
-            </span>
-          )}
-          
-          {/* Muted sparkline placeholder (future market data) */}
-          <div className="opacity-20" title="Market trends coming soon">
-            <Sparkline 
-              data={priceTrend} 
-              width={10} 
-              height="xs"
-              trend="neutral"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+      </CardFooter>
+    </Card>
+  )
+}
+
+function getCategoryStyle(category: string): string {
+  // Map category to our tailwind-config colors (via inline styles or utility classes if generated)
+  // For now using borders/text colors based on the design tokens we added
+  switch (category) {
+    case 'roman_imperial': return 'border-category-imperial text-category-imperial'
+    case 'roman_republic': return 'border-category-republic text-category-republic'
+    case 'greek': return 'border-category-greek text-category-greek'
+    case 'byzantine': return 'border-category-byzantine text-category-byzantine'
+    case 'roman_provincial': return 'border-category-provincial text-category-provincial'
+    default: return 'border-muted-foreground text-muted-foreground'
+  }
 }

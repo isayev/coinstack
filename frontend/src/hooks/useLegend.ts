@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { LegendExpansionRequest, LegendExpansionResponse } from "@/types/coin";
+import api from "@/api/api";
+import { LegendExpansionRequest, LegendExpansionResponse } from "@/domain/schemas";
 
 export function useExpandLegend() {
   return useMutation({

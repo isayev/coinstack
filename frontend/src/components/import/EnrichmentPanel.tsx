@@ -8,11 +8,11 @@
  * - Shows lookup status for each reference
  */
 import { useState } from "react";
-import { 
-  Sparkles, 
-  Loader2, 
-  Check, 
-  X, 
+import {
+  Sparkles,
+  Loader2,
+  Check,
+  X,
   ExternalLink,
   AlertCircle,
   CheckCircle2,
@@ -29,9 +29,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { 
-  useEnrichPreview, 
-  EnrichmentField,
+import {
+  useEnrichPreview,
   CoinPreviewData,
 } from "@/hooks/useImport";
 import { cn } from "@/lib/utils";
@@ -72,17 +71,17 @@ export function EnrichmentPanel({
 }: EnrichmentPanelProps) {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set());
   const { mutate: enrich, isPending, data, error, reset } = useEnrichPreview();
-  
+
   const handleEnrich = () => {
     // Build context from current data
     const context: Record<string, unknown> = {};
     if (currentData.issuing_authority) context.ruler = currentData.issuing_authority;
     if (currentData.denomination) context.denomination = currentData.denomination;
     if (currentData.mint_name) context.mint = currentData.mint_name;
-    
+
     enrich({ references, context });
   };
-  
+
   const handleToggleField = (field: string) => {
     setSelectedFields((prev) => {
       const next = new Set(prev);
@@ -94,7 +93,7 @@ export function EnrichmentPanel({
       return next;
     });
   };
-  
+
   const handleSelectAll = () => {
     if (data?.suggestions) {
       // Filter to only fields that would be fills (current value is empty)
@@ -105,10 +104,10 @@ export function EnrichmentPanel({
       setSelectedFields(new Set(fillableFields));
     }
   };
-  
+
   const handleApply = () => {
     if (!data?.suggestions) return;
-    
+
     const updates: Partial<CoinPreviewData> = {};
     for (const field of selectedFields) {
       const suggestion = data.suggestions[field];
@@ -116,18 +115,18 @@ export function EnrichmentPanel({
         (updates as any)[field] = suggestion.value;
       }
     }
-    
+
     onApplyEnrichment(updates);
     setSelectedFields(new Set());
   };
-  
+
   // Count fills vs conflicts
   const getFillsAndConflicts = () => {
     if (!data?.suggestions) return { fills: 0, conflicts: 0 };
-    
+
     let fills = 0;
     let conflicts = 0;
-    
+
     for (const [field, suggestion] of Object.entries(data.suggestions)) {
       const currentValue = currentData[field as keyof CoinPreviewData];
       if (!currentValue) {
@@ -136,16 +135,16 @@ export function EnrichmentPanel({
         conflicts++;
       }
     }
-    
+
     return { fills, conflicts };
   };
-  
+
   const { fills, conflicts } = getFillsAndConflicts();
-  
+
   if (references.length === 0) {
     return null;
   }
-  
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -166,7 +165,7 @@ export function EnrichmentPanel({
               // Find lookup result for this reference
               const result = data?.lookup_results?.find((r) => r.reference === ref);
               const statusStyle = result ? STATUS_STYLES[result.status] || STATUS_STYLES.error : null;
-              
+
               return (
                 <TooltipProvider key={i}>
                   <Tooltip>
@@ -215,7 +214,7 @@ export function EnrichmentPanel({
             })}
           </div>
         </div>
-        
+
         {/* Enrich button */}
         {!data && (
           <Button
@@ -237,14 +236,14 @@ export function EnrichmentPanel({
             )}
           </Button>
         )}
-        
+
         {/* Error */}
         {error && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-600">
             {error.message}
           </div>
         )}
-        
+
         {/* Results */}
         {data && (
           <div className="space-y-4">
@@ -261,9 +260,9 @@ export function EnrichmentPanel({
                 </span>
               )}
             </div>
-            
+
             {/* Suggestions list */}
-            {Object.keys(data.suggestions).length > 0 ? (
+            {data?.suggestions && Object.keys(data.suggestions).length > 0 ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm">Available Fields</Label>
@@ -276,13 +275,13 @@ export function EnrichmentPanel({
                     Select All Fills
                   </Button>
                 </div>
-                
+
                 <div className="border rounded-lg divide-y">
                   {Object.entries(data.suggestions).map(([field, suggestion]) => {
                     const currentValue = currentData[field as keyof CoinPreviewData];
                     const isFill = !currentValue;
                     const isConflict = currentValue && currentValue !== suggestion.value;
-                    
+
                     return (
                       <div
                         key={field}
@@ -295,7 +294,7 @@ export function EnrichmentPanel({
                           id={field}
                           checked={selectedFields.has(field)}
                           onCheckedChange={() => handleToggleField(field)}
-                          disabled={isConflict && !selectedFields.has(field)}
+                          disabled={!!(isConflict && !selectedFields.has(field))}
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -313,19 +312,19 @@ export function EnrichmentPanel({
                               </Badge>
                             )}
                           </div>
-                          
+
                           <div className="mt-1 text-sm">
                             <span className="text-green-600 font-medium">
                               {String(suggestion.value)}
                             </span>
                           </div>
-                          
+
                           {isConflict && (
                             <div className="mt-1 text-xs text-muted-foreground">
                               Current: <span className="line-through">{String(currentValue)}</span>
                             </div>
                           )}
-                          
+
                           <div className="mt-1 text-xs text-muted-foreground">
                             Source: {suggestion.source}
                             {suggestion.confidence < 1 && (
@@ -345,7 +344,7 @@ export function EnrichmentPanel({
                 No enrichment data found for these references
               </div>
             )}
-            
+
             {/* Apply button */}
             {selectedFields.size > 0 && (
               <div className="flex gap-2">
@@ -358,7 +357,7 @@ export function EnrichmentPanel({
                 </Button>
               </div>
             )}
-            
+
             {/* Reset */}
             <Button variant="ghost" size="sm" onClick={reset} className="w-full">
               Look Up Again

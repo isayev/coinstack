@@ -20,7 +20,6 @@ import {
   CheckCircle2,
   Loader2,
   ArrowLeft,
-  Sparkles,
   Upload,
   XCircle,
   ArrowRight,

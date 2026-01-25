@@ -48,6 +48,10 @@ coinstack.log
 uploads/*
 !uploads/.gitkeep
 
+# Backups
+backups/
+*.backup*
+
 # OS
 .DS_Store
 Thumbs.db

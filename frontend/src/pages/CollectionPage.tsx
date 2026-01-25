@@ -1,317 +1,35 @@
-/**
- * CollectionPage - Main coin collection view
- * 
- * Features:
- * - Grid view with hover-interactive cards
- * - Table view with sortable columns
- * - Sidebar with stats, filters, and alerts
- * - 5 columns optimal for desktop
- * 
- * @module pages/CollectionPage
- */
-
-import { useState } from "react";
-import { useCoins } from "@/hooks/useCoins";
-import { CoinCard } from "@/components/coins/CoinCard";
-import { CoinTable } from "@/components/coins/CoinTable";
-import { ColumnConfig } from "@/components/coins/ColumnConfig";
-import { CollectionSidebar } from "@/components/coins/CollectionSidebar";
-import { Pagination } from "@/components/ui/Pagination";
-import { useUIStore } from "@/stores/uiStore";
-import { useFilterStore, SortField, PerPageOption } from "@/stores/filterStore";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Grid3x3, LayoutGrid, ArrowUp, ArrowDown,
-  Calendar, User, Coins, CircleDot, Award, DollarSign, Clock, Scale, Sparkles, List, Settings2
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
-// ============================================================================
-// SORT OPTIONS
-// ============================================================================
-
-const SORT_OPTIONS: { value: SortField; label: string; icon: React.ReactNode }[] = [
-  { value: "year", label: "Year", icon: <Calendar className="w-3.5 h-3.5" /> },
-  { value: "name", label: "Ruler", icon: <User className="w-3.5 h-3.5" /> },
-  { value: "category", label: "Category", icon: <Grid3x3 className="w-3.5 h-3.5" /> },
-  { value: "denomination", label: "Denomination", icon: <Coins className="w-3.5 h-3.5" /> },
-  { value: "metal", label: "Metal", icon: <CircleDot className="w-3.5 h-3.5" /> },
-  { value: "weight", label: "Weight", icon: <Scale className="w-3.5 h-3.5" /> },
-  { value: "grade", label: "Grade", icon: <Award className="w-3.5 h-3.5" /> },
-  { value: "rarity", label: "Rarity", icon: <Sparkles className="w-3.5 h-3.5" /> },
-  { value: "price", label: "Cost", icon: <DollarSign className="w-3.5 h-3.5" /> },
-  { value: "acquired", label: "Acquired", icon: <Clock className="w-3.5 h-3.5" /> },
-  { value: "created", label: "Added", icon: <Clock className="w-3.5 h-3.5" /> },
-];
-
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
+import { CoinList } from "@/features/collection/CoinList"
+import { CoinFilters } from "@/features/collection/CoinFilters"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export function CollectionPage() {
-  const { data, isLoading, error } = useCoins();
-  const { viewMode, setViewMode } = useUIStore();
-  const { sortBy, sortDir, setSort, toggleSortDir, getActiveFilterCount, page, perPage, setPage, setPerPage } = useFilterStore();
-  const navigate = useNavigate();
-  
-  // State for table view
-  const [selectedCoinIds, setSelectedCoinIds] = useState<Set<number>>(new Set());
-  const [showColumnConfig, setShowColumnConfig] = useState(false);
-
-  const activeFilters = getActiveFilterCount();
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        <CollectionSidebar totalCoins={0} />
-        <div 
-          className="flex-1 flex items-center justify-center"
-          style={{ background: 'var(--bg-base)' }}
-        >
-          <div className="flex flex-col items-center gap-3">
-            <div 
-              className="w-10 h-10 border-2 border-t-transparent rounded-full animate-spin"
-              style={{ borderColor: 'var(--metal-au)', borderTopColor: 'transparent' }}
-            />
-            <span style={{ color: 'var(--text-secondary)' }}>Loading collection...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        <CollectionSidebar totalCoins={0} />
-        <div 
-          className="flex-1 flex items-center justify-center p-6"
-          style={{ background: 'var(--bg-base)' }}
-        >
-          <div 
-            className="px-4 py-3 rounded-lg"
-            style={{ background: 'rgba(255, 69, 58, 0.15)', color: '#FF453A' }}
-          >
-            Error loading coins: {error.message}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const currentSortOption = SORT_OPTIONS.find(o => o.value === sortBy);
+  const navigate = useNavigate()
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* Sidebar */}
-      <CollectionSidebar totalCoins={data?.total || 0} />
-      
-      {/* Main content */}
-      <div 
-        className="flex-1 overflow-auto scrollbar-thin"
-        style={{ background: 'var(--bg-base)' }}
-      >
-        {/* Header bar */}
-        <div 
-          className="sticky top-0 z-10 backdrop-blur px-4 py-3"
-          style={{ 
-            background: 'var(--bg-base)/95',
-            borderBottom: '1px solid var(--border-subtle)'
-          }}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Left: Title and count */}
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                Collection
-              </h1>
-              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <span className="tabular-nums font-medium">{data?.total || 0}</span>
-                <span>{data?.total === 1 ? "coin" : "coins"}</span>
-                {activeFilters > 0 && (
-                  <Badge 
-                    className="text-[10px] h-5 px-1.5"
-                    style={{ 
-                      background: 'var(--metal-au-subtle)', 
-                      color: 'var(--metal-au-text)',
-                      border: '1px solid var(--metal-au-border)'
-                    }}
-                  >
-                    {activeFilters} filter{activeFilters > 1 ? "s" : ""}
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            {/* Right: Controls */}
-            <div className="flex items-center gap-2">
-              {/* Sort control */}
-              <div className="flex items-center gap-1.5">
-                <Select value={sortBy} onValueChange={(v) => setSort(v as SortField)}>
-                  <SelectTrigger 
-                    className="w-[130px] h-8 text-xs"
-                    style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      {currentSortOption?.icon}
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}>
-                    {SORT_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-xs">
-                        <div className="flex items-center gap-2">
-                          {option.icon}
-                          <span>{option.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-                  onClick={toggleSortDir}
-                  title={sortDir === "asc" ? "Oldest first" : "Newest first"}
-                >
-                  {sortDir === "asc" ? (
-                    <ArrowUp className="w-3.5 h-3.5" />
-                  ) : (
-                    <ArrowDown className="w-3.5 h-3.5" />
-                  )}
-                </Button>
-              </div>
-              
-              {/* Divider */}
-              <div className="w-px h-5" style={{ background: 'var(--border-subtle)' }} />
-              
-              {/* View mode toggle */}
-              <div 
-                className="flex items-center rounded-md p-0.5"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
-              >
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  style={viewMode === "grid" ? { background: 'var(--metal-au)', color: 'var(--bg-base)' } : {}}
-                  onClick={() => setViewMode("grid")}
-                  title="Grid view"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant={viewMode === "table" ? "default" : "ghost"}
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  style={viewMode === "table" ? { background: 'var(--metal-au)', color: 'var(--bg-base)' } : {}}
-                  onClick={() => setViewMode("table")}
-                  title="Table view"
-                >
-                  <List className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              
-              {/* Column config toggle (only in table view) */}
-              {viewMode === "table" && (
-                <>
-                  <div className="w-px h-5" style={{ background: 'var(--border-subtle)' }} />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    style={showColumnConfig ? { background: 'var(--metal-au-subtle)', color: 'var(--metal-au)' } : {}}
-                    onClick={() => setShowColumnConfig(!showColumnConfig)}
-                    title="Configure columns"
-                  >
-                    <Settings2 className="w-3.5 h-3.5" />
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
+    <div className="flex flex-col h-full bg-background">
+      {/* Header */}
+      <div className="border-b bg-card px-6 py-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Collection</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your numismatic portfolio
+          </p>
         </div>
+        <Button onClick={() => navigate("/coins/new")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Coin
+        </Button>
+      </div>
 
-        {/* Content */}
-        <div className="p-4">
-          {/* Column config (only in table view) */}
-          {viewMode === "table" && showColumnConfig && (
-            <ColumnConfig className="mb-4" />
-          )}
-          
-          {/* Grid View - 5 columns optimal */}
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-4">
-              {data?.items.map((coin) => (
-                <CoinCard key={coin.id} coin={coin} />
-              ))}
-            </div>
-          ) : (
-            /* Table View - Redesigned */
-            <CoinTable 
-              coins={data?.items || []} 
-              selectedIds={selectedCoinIds}
-              onSelectionChange={setSelectedCoinIds}
-            />
-          )}
-
-          {/* Pagination */}
-          {data && data.items.length > 0 && (
-            <Pagination
-              currentPage={page}
-              totalPages={data.pages}
-              totalItems={data.total}
-              perPage={perPage}
-              onPageChange={setPage}
-              onPerPageChange={setPerPage}
-              className="mt-4"
-            />
-          )}
-
-          {/* Empty State */}
-          {data && data.items.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                style={{ background: 'var(--bg-card)' }}
-              >
-                <Coins className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
-              </div>
-              <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                No coins found
-              </h3>
-              <p className="text-sm max-w-xs" style={{ color: 'var(--text-secondary)' }}>
-                {activeFilters > 0 
-                  ? "Try adjusting your filters to see more results."
-                  : "Add your first coin to start building your collection."}
-              </p>
-              {activeFilters === 0 && (
-                <Button 
-                  className="mt-4" 
-                  onClick={() => navigate("/coins/new")}
-                  style={{ background: 'var(--metal-au)', color: 'var(--bg-base)' }}
-                >
-                  Add Your First Coin
-                </Button>
-              )}
-            </div>
-          )}
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        <CoinFilters />
+        <div className="flex-1 overflow-auto p-6">
+          <CoinList />
         </div>
       </div>
     </div>
-  );
+  )
 }

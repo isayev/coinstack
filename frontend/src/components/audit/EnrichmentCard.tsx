@@ -82,7 +82,7 @@ export function EnrichmentCard({
   const downloadImagesMutation = useDownloadCoinImages();
 
   const handleApply = async () => {
-    await applyMutation.mutateAsync(enrichment.id);
+    await applyMutation.mutateAsync({ id: enrichment.id });
     onResolved?.();
   };
 

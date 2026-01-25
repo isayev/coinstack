@@ -704,8 +704,8 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             {yearDistribution.length > 0 ? (
               <div className="mt-3">
                 <div className="flex items-end gap-0.5 h-12">
-                  {yearDistribution.map((bucket, idx) => {
-                    const maxCount = Math.max(...yearDistribution.map(b => b.count));
+                  {yearDistribution.map((bucket: any, idx: number) => {
+                    const maxCount = Math.max(...yearDistribution.map((b: any) => b.count));
                     const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
                     const isBc = bucket.start < 0;
                     
@@ -728,8 +728,8 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
                   })}
                 </div>
                 <div className="flex justify-between mt-1 text-[9px]" style={{ color: 'var(--text-tertiary)' }}>
-                  <span>{yearDistribution[0]?.label.split('-')[0] || ''}</span>
-                  <span>{yearDistribution[yearDistribution.length - 1]?.label.split(' ')[0].split('-')[1] || ''} AD</span>
+                  <span>{(yearDistribution[0] as any)?.label.split('-')[0] || ''}</span>
+                  <span>{(yearDistribution[yearDistribution.length - 1] as any)?.label.split(' ')[0].split('-')[1] || ''} AD</span>
                 </div>
                 <p className="text-[10px] text-center mt-1" style={{ color: 'var(--text-tertiary)' }}>
                   Click bar to filter by period

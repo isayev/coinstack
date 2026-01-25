@@ -76,8 +76,8 @@ export function BatchImportPanel({
   const handleSelectAllSuccessful = () => {
     if (data?.items) {
       const successful = data.items
-        .filter((item) => item.success && !item.preview?.similar_coins?.length)
-        .map((item) => item.url);
+        .filter((item: any) => item.success && !item.preview?.similar_coins?.length)
+        .map((item: any) => item.url);
       setSelectedItems(new Set(successful));
     }
   };
@@ -87,10 +87,10 @@ export function BatchImportPanel({
     setSelectedItems(new Set());
   };
   
-  const successfulItems = data?.items.filter((item) => item.success) || [];
-  const failedItems = data?.items.filter((item) => !item.success) || [];
+  const successfulItems = data?.items.filter((item: any) => item.success) || [];
+  const failedItems = data?.items.filter((item: any) => !item.success) || [];
   const duplicateItems = data?.items.filter(
-    (item) => item.success && (item.preview?.similar_coins?.length ?? 0) > 0
+    (item: any) => item.success && (item.preview?.similar_coins?.length ?? 0) > 0
   ) || [];
   
   return (
@@ -195,7 +195,7 @@ export function BatchImportPanel({
             
             {/* Results grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
-              {data.items.map((item) => {
+              {data.items.map((item: any) => {
                 const sourceConfig = item.source_type
                   ? SOURCE_CONFIG[item.source_type]
                   : null;
@@ -316,7 +316,7 @@ export function BatchImportPanel({
               {selectedItems.size > 0 && onBatchImport && (
                 <Button
                   onClick={() => {
-                    const selected = data.items.filter((item) =>
+                    const selected = data.items.filter((item: any) =>
                       selectedItems.has(item.url) && item.success
                     );
                     onBatchImport(selected);

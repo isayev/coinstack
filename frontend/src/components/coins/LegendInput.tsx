@@ -11,6 +11,7 @@ interface LegendInputProps {
   expandedValue?: string;
   onChange: (value: string) => void;
   onExpandedChange?: (value: string) => void;
+  side: "obverse" | "reverse";
   placeholder?: string;
   label?: string;
   className?: string;
@@ -21,6 +22,7 @@ export function LegendInput({
   expandedValue,
   onChange,
   onExpandedChange,
+  side,
   placeholder = "Enter legend...",
   label,
   className,
@@ -36,8 +38,8 @@ export function LegendInput({
     
     try {
       const result = await expandMutation.mutateAsync({
-        legend: value,
-        use_llm_fallback: true,
+        text: value,
+        side: side,
       });
       
       setLocalExpansion(result.expanded);
@@ -107,9 +109,6 @@ export function LegendInput({
               >
                 {Math.round(expandMutation.data.confidence * 100)}% confidence
               </Badge>
-              <Badge variant="secondary" className="text-xs">
-                {expandMutation.data.method}
-              </Badge>
             </div>
             <Button
               type="button"
@@ -138,13 +137,6 @@ export function LegendInput({
             >
               {localExpansion}
             </p>
-          )}
-          
-          {/* Unknown terms warning */}
-          {expandMutation.data.unknown_terms.length > 0 && (
-            <div className="text-xs text-muted-foreground">
-              Unknown terms: {expandMutation.data.unknown_terms.join(", ")}
-            </div>
           )}
           
           {/* Action buttons */}

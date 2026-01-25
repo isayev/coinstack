@@ -12,20 +12,16 @@ dependencies = [
     "alembic>=1.13.0",
     "python-multipart>=0.0.9",
     "openpyxl>=3.1.0",
-    "anthropic>=0.34.0",
-    "python-dateutil>=2.9.0",
     "httpx>=0.27.0",
     "beautifulsoup4>=4.12.0",
-    "lxml>=5.0.0",
-    "imagehash>=4.3.0",
-    "Pillow>=10.0.0",
+    "playwright>=1.41.0",
+    "playwright-stealth>=1.0.6",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.23.0",
-    "httpx>=0.27.0",
     "ruff>=0.6.0",
     "mypy>=1.11.0",
 ]
@@ -34,11 +30,17 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.ruff]
-line-length = 100
-target-version = "py312"
-
-[tool.mypy]
-python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = [
+    "tests",
+]
+markers = [
+    "unit: Fast tests that verify logic in isolation (no DB, no I/O)",
+    "integration: Slow tests that verify infrastructure/DB interactions",
+    "asyncio: mark a test as an asyncio test",
+]
+pythonpath = [
+    "src"
+]

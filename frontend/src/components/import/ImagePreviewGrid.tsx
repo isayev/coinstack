@@ -9,7 +9,7 @@
  * - Remove/reorder capability
  */
 import { useState } from "react";
-import { Image as ImageIcon, Star, Trash2, GripVertical, ExternalLink } from "lucide-react";
+import { Image as ImageIcon, Star, Trash2, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ export function ImagePreviewGrid({
   editable = true,
 }: ImagePreviewGridProps) {
   const [loadErrors, setLoadErrors] = useState<Set<string>>(new Set());
-  
+
   if (images.length === 0) {
     return (
       <Card>
@@ -42,32 +42,32 @@ export function ImagePreviewGrid({
       </Card>
     );
   }
-  
+
   const handleSetPrimary = (index: number) => {
     if (!onImagesChange || !editable) return;
-    
+
     // Move selected image to front
     const newImages = [...images];
     const [selected] = newImages.splice(index, 1);
     newImages.unshift(selected);
     onImagesChange(newImages);
   };
-  
+
   const handleRemove = (index: number) => {
     if (!onImagesChange || !editable) return;
-    
+
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
   };
-  
+
   const handleImageError = (url: string) => {
     setLoadErrors((prev) => new Set([...prev, url]));
   };
-  
+
   const getSourceBadge = (source: string) => {
     const config = SOURCE_CONFIG[source];
     if (!config) return null;
-    
+
     return (
       <Badge
         variant="outline"
@@ -82,7 +82,7 @@ export function ImagePreviewGrid({
       </Badge>
     );
   };
-  
+
   const getTypeBadge = (type: string) => {
     const labels: Record<string, string> = {
       obverse: "Obv",
@@ -92,10 +92,10 @@ export function ImagePreviewGrid({
       detail: "Detail",
       combined: "Combined",
     };
-    
+
     return labels[type] || type;
   };
-  
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -109,7 +109,7 @@ export function ImagePreviewGrid({
           {images.map((image, index) => {
             const hasError = loadErrors.has(image.url);
             const isPrimary = index === 0;
-            
+
             return (
               <div
                 key={image.url}
@@ -132,7 +132,7 @@ export function ImagePreviewGrid({
                     <ImageIcon className="h-8 w-8 text-muted-foreground" />
                   </div>
                 )}
-                
+
                 {/* Overlay badges */}
                 <div className="absolute top-1 left-1 flex flex-col gap-1">
                   {isPrimary && (
@@ -145,12 +145,12 @@ export function ImagePreviewGrid({
                     {getTypeBadge(image.image_type)}
                   </Badge>
                 </div>
-                
+
                 {/* Source badge */}
                 <div className="absolute bottom-1 left-1">
                   {getSourceBadge(image.source)}
                 </div>
-                
+
                 {/* Hover actions */}
                 {editable && (
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
