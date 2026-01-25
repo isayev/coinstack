@@ -134,6 +134,11 @@ coinstack/
 
 ## Critical Rules (MUST FOLLOW)
 
+### Documentation Protocol (MANDATORY)
+1. **BEFORE changes**: Consult relevant guides in `docs/ai-guide/`
+2. **AFTER changes**: Update guides to reflect modifications
+3. Documentation is the source of truth - keep it accurate
+
 ### Ports (MANDATORY)
 - **Backend: Port 8000** (FastAPI)
 - **Frontend: Port 3000** (Vite)
