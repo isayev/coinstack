@@ -9,10 +9,10 @@ export function Header() {
   const { setCommandPaletteOpen } = useUIStore();
   
   return (
-    <header 
-      className="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-base)]/80"
-      style={{ 
-        background: 'var(--bg-surface)',
+    <header
+      className="sticky top-0 z-50 w-full backdrop-blur"
+      style={{
+        background: 'var(--bg-elevated)',
         borderBottom: '1px solid var(--border-subtle)'
       }}
     >
@@ -58,12 +58,12 @@ export function Header() {
           </Button>
           
           {/* Add Coin button */}
-          <Button 
+          <Button
             onClick={() => navigate("/coins/new")}
             className="gap-2"
-            style={{ 
+            style={{
               background: 'var(--metal-au)',
-              color: 'var(--bg-base)'
+              color: '#000'
             }}
           >
             <Plus className="w-4 h-4" />

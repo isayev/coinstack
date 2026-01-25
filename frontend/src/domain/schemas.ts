@@ -45,9 +45,35 @@ export const DimensionsSchema = z.object({
 
 export const AttributionSchema = z.object({
   issuer: z.string().min(1).nullable().optional(),
+  issuer_id: z.number().nullable().optional(),
   mint: z.string().nullable().optional(),
+  mint_id: z.number().nullable().optional(),
   year_start: z.coerce.number().nullable().optional(),
   year_end: z.coerce.number().nullable().optional(),
+})
+
+export const SeriesSlotSchema = z.object({
+  id: z.number(),
+  series_id: z.number(),
+  slot_number: z.number(),
+  name: z.string(),
+  status: z.string(),
+  coin_id: z.number().nullable().optional(),
+})
+
+export const SeriesSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable().optional(),
+  series_type: z.string(),
+  category: z.string().nullable().optional(),
+  target_count: z.number().nullable().optional(),
+  is_complete: z.boolean(),
+  completion_date: z.string().nullable().optional(),
+  canonical_vocab_id: z.number().nullable().optional(),  // V3: Link to canonical series definition
+  slots: z.array(SeriesSlotSchema).optional(),
+  coin_count: z.number().optional(),  // Computed field
 })
 
 export const GradingDetailsSchema = z.object({
@@ -142,6 +168,32 @@ export const BaseCoinSchema = z.object({
 })
 
 // Schema for the Nested Domain Entity (used by Forms and UI components)
+// Design schema for legends and descriptions
+export const DesignSchema = z.object({
+  obverse_legend: z.string().nullable().optional(),
+  obverse_description: z.string().nullable().optional(),
+  reverse_legend: z.string().nullable().optional(),
+  reverse_description: z.string().nullable().optional(),
+  exergue: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const CatalogReferenceSchema = z.object({
+  id: z.number().optional(),
+  catalog: z.string(),
+  number: z.string(),
+  volume: z.string().nullable().optional(),
+  is_primary: z.boolean().optional(),
+  plate_coin: z.boolean().optional(),
+  position: z.string().nullable().optional(),
+  variant_notes: z.string().nullable().optional(),
+  page: z.string().nullable().optional(),
+  plate: z.string().nullable().optional(),
+  note_number: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+}).nullable().optional();
+
+export type CatalogReference = z.infer<typeof CatalogReferenceSchema>;
+
 export const DomainCoinSchema = z.object({
   id: z.number().nullable(),
   created_at: z.string().optional(),
@@ -171,6 +223,10 @@ export const DomainCoinSchema = z.object({
 
   mint_name: z.string().nullable().optional(),
 
+  // Design object (nested legends and descriptions from backend)
+  design: DesignSchema,
+
+  // For backwards compatibility, also allow flat fields
   obverse_legend: z.string().nullable().optional(),
   obverse_description: z.string().nullable().optional(),
   reverse_legend: z.string().nullable().optional(),
@@ -179,6 +235,12 @@ export const DomainCoinSchema = z.object({
 
   images: z.array(ImageSchema).default([]).optional(),
   tags: z.array(z.string()).optional(),
+  references: z.array(CatalogReferenceSchema).optional(),
+  provenance: z.array(z.any()).optional(),
+
+  // Future features (not yet in backend)
+  market_value: z.number().nullable().optional(),
+  rarity: z.enum(['c', 's', 'r1', 'r2', 'r3', 'u']).nullable().optional(),
 })
 
 // Export CoinSchema as the Domain structure since backend V2 returns this nested format
@@ -190,6 +252,7 @@ export const CoinSchema = DomainCoinSchema;
 export type Metal = z.infer<typeof MetalSchema>
 export type Category = z.infer<typeof CategorySchema>
 export type GradingState = z.infer<typeof GradingStateSchema>
+export type Rarity = 'c' | 's' | 'r1' | 'r2' | 'r3' | 'u';
 export type GradeService = z.infer<typeof GradeServiceSchema>
 export type Dimensions = z.infer<typeof DimensionsSchema>
 export type Attribution = z.infer<typeof AttributionSchema>
@@ -197,6 +260,8 @@ export type GradingDetails = z.infer<typeof GradingDetailsSchema>
 export type AcquisitionDetails = z.infer<typeof AcquisitionDetailsSchema>
 export type Image = z.infer<typeof ImageSchema>
 export type Coin = z.infer<typeof CoinSchema>
+export type Series = z.infer<typeof SeriesSchema>
+export type SeriesSlot = z.infer<typeof SeriesSlotSchema>
 
 // --- Legend Expansion Types ---
 export interface LegendExpansionRequest {

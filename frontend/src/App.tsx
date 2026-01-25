@@ -10,11 +10,15 @@ import { CoinDetailPage } from "@/pages/CoinDetailPage";
 import { AddCoinPage } from "@/pages/AddCoinPage";
 import { EditCoinPage } from "@/pages/EditCoinPage";
 import { ImportPage } from "@/pages/ImportPage";
-import { StatsPage } from "@/pages/StatsPage";
+import { StatsPageV3 } from "@/pages/StatsPageV3";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { BulkEnrichPage } from "@/pages/BulkEnrichPage";
 import { AuctionsPage } from "@/pages/AuctionsPage";
 import AuditPage from "@/pages/AuditPage";
+import { SeriesDashboard } from "@/pages/SeriesDashboard";
+import { CreateSeriesPage } from "@/pages/CreateSeriesPage";
+import { SeriesDetailPage } from "@/pages/SeriesDetailPage";
+import { ReviewQueuePage } from "@/pages/ReviewQueuePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,11 +41,15 @@ function App() {
               <Route path="/coins/:id" element={<CoinDetailPage />} />
               <Route path="/coins/:id/edit" element={<EditCoinPage />} />
               <Route path="/import" element={<ImportPage />} />
-              <Route path="/stats" element={<StatsPage />} />
+              <Route path="/stats" element={<StatsPageV3 />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/bulk-enrich" element={<BulkEnrichPage />} />
               <Route path="/auctions" element={<AuctionsPage />} />
               <Route path="/audit" element={<AuditPage />} />
+              <Route path="/series" element={<SeriesDashboard />} />
+              <Route path="/series/new" element={<CreateSeriesPage />} />
+              <Route path="/series/:id" element={<SeriesDetailPage />} />
+              <Route path="/review" element={<ReviewQueuePage />} />
             </Routes>
           </AppShell>
         </BrowserRouter>

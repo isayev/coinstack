@@ -1,5 +1,5 @@
 import api from './api'
-import { Coin, CoinSchema } from '@/domain/schemas'
+import { Coin, CoinSchema, SeriesSchema } from '@/domain/schemas'
 import { z } from 'zod'
 
 const PaginatedCoinsSchema = z.object({
@@ -10,7 +10,13 @@ const PaginatedCoinsSchema = z.object({
   pages: z.number()
 })
 
+const SeriesListSchema = z.object({
+  items: z.array(SeriesSchema),
+  total: z.number()
+})
+
 export type PaginatedCoinsResponse = z.infer<typeof PaginatedCoinsSchema>
+export type SeriesListResponse = z.infer<typeof SeriesListSchema>
 
 export const DiscrepancySchema = z.object({
   field: z.string(),
@@ -68,6 +74,29 @@ export const v2 = {
     await api.delete(`/api/v2/coins/${id}`)
   },
 
+  // Series
+  getSeries: async (): Promise<SeriesListResponse> => {
+    const response = await api.get('/api/series')
+    return SeriesListSchema.parse(response.data)
+  },
+
+  getSeriesDetail: async (id: number): Promise<z.infer<typeof SeriesSchema>> => {
+    const response = await api.get(`/api/series/${id}`)
+    return SeriesSchema.parse(response.data)
+  },
+
+  createSeries: async (data: any): Promise<z.infer<typeof SeriesSchema>> => {
+    const response = await api.post('/api/series', data)
+    return SeriesSchema.parse(response.data)
+  },
+
+  addCoinToSeries: async (seriesId: number, coinId: number, slotId?: number): Promise<any> => {
+    const response = await api.post(`/api/series/${seriesId}/coins/${coinId}`, null, {
+      params: { slot_id: slotId }
+    })
+    return response.data
+  },
+
   // Audit
   auditCoin: async (id: number): Promise<AuditResult> => {
     const response = await api.get(`/api/v2/audit/${id}`)
@@ -94,7 +123,9 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
     diameter_mm: coin.dimensions.diameter_mm,
     die_axis: coin.dimensions.die_axis,
     issuer: coin.attribution.issuer,
+    issuer_id: coin.attribution.issuer_id,
     mint: coin.attribution.mint,
+    mint_id: coin.attribution.mint_id,
     year_start: coin.attribution.year_start,
     year_end: coin.attribution.year_end,
     grading_state: coin.grading.grading_state,

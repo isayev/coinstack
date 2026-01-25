@@ -1,9 +1,16 @@
 /**
- * CoinStack Design System - Color Constants
- * 
+ * CoinStack Design System V3.0 - Color Constants
+ *
  * Centralized color configuration for the entire application.
  * All colors are derived from CSS variables defined in index.css
- * 
+ *
+ * V3.0 Spec Updates (2026-01-25):
+ * - Updated to match DESIGN_OVERHAUL_V2.md specification
+ * - Grade colors use temperature metaphor (cold blue → hot red)
+ * - Rarity colors use gemstone metaphor (Quartz → Diamond)
+ * - Category colors are historically accurate (Tyrian purple, etc.)
+ * - Metal colors are chemically derived
+ *
  * @module design-system/colors
  */
 

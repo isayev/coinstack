@@ -5,14 +5,18 @@ import { useFilterStore } from "@/stores/filterStore";
 import { useTheme } from "@/components/theme-provider";
 import { 
   Database, Download, FileSpreadsheet, Trash2, 
-  Sun, Moon, Monitor, HardDrive, Info
+  Sun, Moon, Monitor, HardDrive, Info, RefreshCw, Library
 } from "lucide-react";
 import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function SettingsPage() {
   const { data: dbInfo, isLoading } = useDatabaseInfo();
   const { theme, setTheme } = useTheme();
   const resetFilters = useFilterStore((s) => s.reset);
+  const [isSyncing, setIsSyncing] = useState<string | null>(null);
 
   const handleBackup = () => {
     downloadBackup();
@@ -35,12 +39,61 @@ export function SettingsPage() {
     toast.success("Cache cleared successfully");
   };
 
+  const handleSyncVocab = async (type: 'issuers' | 'mints') => {
+    setIsSyncing(type);
+    try {
+      await api.post(`/api/vocab/sync/nomisma/${type}`);
+      toast.success(`Nomisma ${type} sync started in background`);
+    } catch (error: any) {
+      toast.error(`Failed to start sync: ${error.message}`);
+    } finally {
+      setIsSyncing(null);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-muted-foreground">Manage your collection and preferences</p>
       </div>
+
+      {/* Vocabulary Sync */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Library className="w-5 h-5" />
+            Vocabulary Management
+          </CardTitle>
+          <CardDescription>Synchronize authoritative data from Nomisma.org</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              onClick={() => handleSyncVocab('issuers')} 
+              disabled={!!isSyncing}
+              variant="outline"
+              className="flex-1"
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", isSyncing === 'issuers' && "animate-spin")} />
+              Sync Issuers
+            </Button>
+            <Button 
+              onClick={() => handleSyncVocab('mints')} 
+              disabled={!!isSyncing}
+              variant="outline"
+              className="flex-1"
+            >
+              <RefreshCw className={cn("w-4 h-4 mr-2", isSyncing === 'mints' && "animate-spin")} />
+              Sync Mints
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            This updates the local database with the latest rulers and mints from the Nomisma Linked Open Data cloud.
+            The process runs in the background on the server.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Database Info */}
       <Card>

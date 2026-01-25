@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { DomainCoinSchema, Category, Metal, GradingState, GradeService, Coin } from "@/domain/schemas"
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { VocabAutocomplete } from "./VocabAutocomplete";
 
 // The form values follow the V2 nested structure
 const CreateCoinSchema = DomainCoinSchema.omit({ id: true });
@@ -26,6 +27,7 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { /* errors */ },
   } = useForm<CoinFormData>({
     resolver: zodResolver(CreateCoinSchema),
@@ -39,7 +41,9 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
       },
       attribution: {
         issuer: coin?.attribution.issuer || "",
+        issuer_id: coin?.attribution.issuer_id || null,
         mint: coin?.attribution.mint || "",
+        mint_id: coin?.attribution.mint_id || null,
         year_start: coin?.attribution.year_start || null,
         year_end: coin?.attribution.year_end || null,
       },
@@ -66,6 +70,7 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
   const metal = watch("metal");
   const gradingState = watch("grading.grading_state");
   const gradeService = watch("grading.service");
+  const attribution = watch("attribution");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -98,11 +103,43 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Issuer / Authority *</label>
-                <Input {...register("attribution.issuer")} placeholder="e.g. Augustus" />
+                <Controller
+                  control={control}
+                  name="attribution.issuer_id"
+                  render={({ field }) => (
+                    <VocabAutocomplete
+                      vocabType="issuer"
+                      value={field.value ?? undefined}
+                      displayValue={attribution.issuer ?? undefined}
+                      onChange={(id, display) => {
+                        field.onChange(id)
+                        setValue("attribution.issuer", display)
+                      }}
+                      dateContext={{
+                        start: attribution.year_start ?? undefined,
+                        end: attribution.year_end ?? undefined
+                      }}
+                    />
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Mint</label>
-                <Input {...register("attribution.mint")} placeholder="e.g. Rome" />
+                <Controller
+                  control={control}
+                  name="attribution.mint_id"
+                  render={({ field }) => (
+                    <VocabAutocomplete
+                      vocabType="mint"
+                      value={field.value ?? undefined}
+                      displayValue={attribution.mint ?? undefined}
+                      onChange={(id, display) => {
+                        field.onChange(id)
+                        setValue("attribution.mint", display)
+                      }}
+                    />
+                  )}
+                />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">

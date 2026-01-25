@@ -33,22 +33,54 @@ export function EditCoinPage() {
   })
 
   if (isLoading) {
-    return <div className="p-6"><Skeleton className="h-[600px] w-full" /></div>
+    return (
+      <div
+        className="p-6"
+        style={{ background: 'var(--bg-app)' }}
+      >
+        <Skeleton className="h-[600px] w-full" />
+      </div>
+    )
   }
 
   if (!coin) {
-    return <div>Coin not found</div>
+    return (
+      <div
+        className="flex items-center justify-center h-full"
+        style={{ background: 'var(--bg-app)' }}
+      >
+        <div
+          className="text-xl font-bold"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          Coin not found
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-3xl">
+    <div
+      className="container mx-auto p-6 max-w-3xl"
+      style={{ background: 'var(--bg-app)' }}
+    >
       <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Edit Coin</h1>
-          <p className="text-muted-foreground">{coin.attribution.issuer} - {coin.grading.grade}</p>
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Edit Coin
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            {coin.attribution.issuer} - {coin.grading.grade}
+          </p>
         </div>
       </div>
 

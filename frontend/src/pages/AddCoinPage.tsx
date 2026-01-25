@@ -69,21 +69,41 @@ export function AddCoinPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-3xl space-y-8">
+    <div
+      className="container mx-auto p-6 max-w-3xl space-y-8"
+      style={{ background: 'var(--bg-app)' }}
+    >
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Add New Coin</h1>
-          <p className="text-muted-foreground">Import from URL or enter manually</p>
+          <h1
+            className="text-2xl font-bold"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Add New Coin
+          </h1>
+          <p
+            className="text-sm"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Import from URL or enter manually
+          </p>
         </div>
       </div>
 
       <ScraperForm onScrapeSuccess={setScrapedData} />
 
       {scrapedData && (
-        <div className="bg-primary/10 text-primary px-4 py-3 rounded-md text-sm mb-4">
+        <div
+          className="px-4 py-3 rounded-md text-sm mb-4 border"
+          style={{
+            background: 'var(--bg-card)',
+            borderColor: 'var(--border-accent)',
+            color: 'var(--text-primary)'
+          }}
+        >
           Loaded data from <strong>{scrapedData.source}</strong> for lot <strong>{scrapedData.lot_id}</strong>.
           Please review and fill in missing fields.
         </div>

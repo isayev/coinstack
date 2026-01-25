@@ -12,21 +12,34 @@
        Dark theme optimized for numismatic collection management
        ═══════════════════════════════════════════════════════════════ */
     
-    /* Base surfaces */
-    --bg-base: #0a0a0b;
-    --bg-surface: #121214;
-    --bg-card: #1a1a1d;
-    --bg-elevated: #222225;
-    
-    /* Text hierarchy */
-    --text-primary: #f5f5f7;
-    --text-secondary: #a1a1a6;
-    --text-tertiary: #6e6e73;
-    
-    /* Borders */
-    --border-subtle: #2c2c2e;
-    --border-default: #3a3a3c;
-    
+    /* Base surfaces (V3.0 Spec - Navy-charcoal tones) */
+    --bg-app: #050814;           /* Deep navy-charcoal (main canvas) */
+    --bg-elevated: #0B1020;      /* Cards one level up */
+    --bg-card: #0F1526;          /* Individual cards */
+    --bg-hover: #1A1F35;         /* Hover state */
+
+    /* Legacy aliases for compatibility */
+    --bg-base: #050814;
+    --bg-surface: #0B1020;
+
+    /* Text hierarchy (V3.0 Spec) */
+    --text-primary: #F5F5F7;     /* Headers, primary content */
+    --text-secondary: #D1D5DB;   /* Body text, labels */
+    --text-muted: #9CA3AF;       /* Subtle info, timestamps */
+    --text-ghost: #6B7280;       /* Disabled, placeholders */
+
+    /* Legacy alias */
+    --text-tertiary: #6B7280;
+
+    /* Borders (V3.0 Spec) */
+    --border-subtle: rgba(148, 163, 184, 0.18);
+    --border-strong: rgba(148, 163, 184, 0.40);
+    --border-glow: rgba(148, 163, 184, 0.10);
+
+    /* Legacy alias */
+    --border-default: rgba(148, 163, 184, 0.40);
+    --border-emphasis: rgba(148, 163, 184, 0.60);
+
     /* Shadcn compatibility mapping */
     --background: 0 0% 4%;
     --foreground: 240 5% 96%;
@@ -119,122 +132,226 @@
     --metal-pb-border: rgba(107, 107, 122, 0.40);
     --metal-pb-text: #858594;
     
+    /* Metal name aliases (full names -> same as abbreviations) */
+    --metal-gold: #FFD700;
+    --metal-gold-subtle: rgba(255, 215, 0, 0.15);
+    --metal-gold-border: rgba(255, 215, 0, 0.40);
+    --metal-gold-text: #FFDF4D;
+    
+    --metal-silver: #C0C0C0;
+    --metal-silver-subtle: rgba(192, 192, 192, 0.15);
+    --metal-silver-border: rgba(192, 192, 192, 0.40);
+    --metal-silver-text: #D8D8D8;
+    
+    --metal-bronze: #CD7F32;
+    --metal-bronze-subtle: rgba(205, 127, 50, 0.15);
+    --metal-bronze-border: rgba(205, 127, 50, 0.40);
+    --metal-bronze-text: #DDA15E;
+    
+    --metal-electrum: #E8D882;
+    --metal-electrum-subtle: rgba(232, 216, 130, 0.15);
+    --metal-electrum-border: rgba(232, 216, 130, 0.40);
+    --metal-electrum-text: #F0E29A;
+    
+    --metal-billon: #9A9A8E;
+    --metal-billon-subtle: rgba(154, 154, 142, 0.15);
+    --metal-billon-border: rgba(154, 154, 142, 0.40);
+    --metal-billon-text: #B0B0A6;
+    
+    --metal-orichalcum: #C9A227;
+    --metal-orichalcum-subtle: rgba(201, 162, 39, 0.15);
+    --metal-orichalcum-border: rgba(201, 162, 39, 0.40);
+    --metal-orichalcum-text: #DBB842;
+    
+    --metal-brass: #B5A642;
+    --metal-brass-subtle: rgba(181, 166, 66, 0.15);
+    --metal-brass-border: rgba(181, 166, 66, 0.40);
+    --metal-brass-text: #C9BC5E;
+    
+    --metal-lead: #6B6B7A;
+    --metal-lead-subtle: rgba(107, 107, 122, 0.15);
+    --metal-lead-border: rgba(107, 107, 122, 0.40);
+    --metal-lead-text: #858594;
+    
     /* ═══════════════════════════════════════════════════════════════
-       RARITY — Gemstone-Inspired (C→S→R1→R2→R3→U)
+       RARITY — Gemstone-Inspired (C→S→R1→R2→R3→U) - V3.0 SPEC
        ═══════════════════════════════════════════════════════════════ */
-    
-    /* Common (C) — Quartz */
-    --rarity-c: #8E8E93;
-    --rarity-c-bg: rgba(142, 142, 147, 0.15);
-    
-    /* Scarce (S) — Amethyst */
-    --rarity-s: #AF52DE;
-    --rarity-s-bg: rgba(175, 82, 222, 0.15);
-    
-    /* Rare (R1) — Sapphire */
-    --rarity-r1: #5E5CE6;
-    --rarity-r1-bg: rgba(94, 92, 230, 0.15);
-    
-    /* Very Rare (R2) — Emerald */
-    --rarity-r2: #30D158;
-    --rarity-r2-bg: rgba(48, 209, 88, 0.15);
-    
-    /* Extremely Rare (R3) — Ruby */
-    --rarity-r3: #FF375F;
-    --rarity-r3-bg: rgba(255, 55, 95, 0.15);
-    
-    /* Unique (U) — Diamond */
+
+    /* Common (C) — Quartz (neutral, abundant) */
+    --rarity-c: #D1D5DB;
+    --rarity-c-bg: rgba(209, 213, 219, 0.15);
+
+    /* Scarce (S) — Amethyst (first tier interesting) */
+    --rarity-s: #8B5CF6;
+    --rarity-s-bg: rgba(139, 92, 246, 0.15);
+
+    /* Rare (R1) — Sapphire (genuinely uncommon) - CYAN not blue! */
+    --rarity-r1: #06B6D4;
+    --rarity-r1-bg: rgba(6, 182, 212, 0.15);
+
+    /* Very Rare (R2) — Emerald (significant scarcity) */
+    --rarity-r2: #10B981;
+    --rarity-r2-bg: rgba(16, 185, 129, 0.15);
+
+    /* Extremely Rare (R3) — Ruby (exceptional) */
+    --rarity-r3: #EF4444;
+    --rarity-r3-bg: rgba(239, 68, 68, 0.15);
+
+    /* Unique (U) — Diamond (one-of-a-kind) */
     --rarity-u: #FFFFFF;
     --rarity-u-bg: rgba(255, 255, 255, 0.1);
     
     /* ═══════════════════════════════════════════════════════════════
-       GRADES — Temperature Scale (Cold → Hot)
+       GRADES — Temperature Scale (Cold → Hot) - V3.0 SPEC
        ═══════════════════════════════════════════════════════════════ */
-    
-    /* Poor/Fair (1-2) — Freezing blue */
-    --grade-poor: #5AC8FA;
-    --grade-poor-bg: rgba(90, 200, 250, 0.15);
-    
-    /* Good/Very Good (3-4) — Cold teal */
+
+    /* Poor/Fair/AG (1-2) — ❄️ Freezing blue */
+    --grade-poor: #3B82F6;
+    --grade-poor-bg: rgba(59, 130, 246, 0.15);
+
+    /* Good/Very Good (3-4) — 🧊 Cold teal */
     --grade-good: #64D2FF;
     --grade-good-bg: rgba(100, 210, 255, 0.15);
-    
-    /* Fine/Very Fine (5-6) — Neutral/warm green */
-    --grade-fine: #30D158;
-    --grade-fine-bg: rgba(48, 209, 88, 0.15);
-    
-    /* Extremely Fine (7) — Warm yellow */
+
+    /* Fine/Very Fine (5-6) — 🌡️ Neutral green */
+    --grade-fine: #34C759;
+    --grade-fine-bg: rgba(52, 199, 89, 0.15);
+
+    /* Extremely Fine/XF (7) — ☀️ Warm yellow */
     --grade-ef: #FFD60A;
     --grade-ef-bg: rgba(255, 214, 10, 0.15);
-    
-    /* About Uncirculated (8) — Hot orange */
+
+    /* About Uncirculated (8) — 🔥 Hot orange */
     --grade-au: #FF9F0A;
     --grade-au-bg: rgba(255, 159, 10, 0.15);
-    
-    /* Mint State/FDC (9-10) — Fire red */
+
+    /* Mint State/FDC (9-10) — 🔥 Fire red */
     --grade-ms: #FF6B6B;
     --grade-ms-bg: rgba(255, 107, 107, 0.15);
-    
+
     /* Unknown/Ungraded — Neutral muted */
     --grade-unknown: #6e6e73;
     --grade-unknown-bg: rgba(110, 110, 115, 0.15);
     
-    /* Certification services */
+    /* Grade abbreviation aliases for badge colors */
+    --grade-fr: #3B82F6;    /* Fair = Poor */
+    --grade-ag: #3B82F6;    /* About Good = Poor */
+    --grade-g: #64D2FF;     /* Good */
+    --grade-vg: #64D2FF;    /* Very Good */
+    --grade-f: #34C759;     /* Fine */
+    --grade-vf: #34C759;    /* Very Fine */
+    --grade-xf: #FFD60A;    /* Extremely Fine */
+    --grade-ef: #FFD60A;    /* Extremely Fine (alt) */
+    /* --grade-au already defined */
+    /* --grade-ms already defined */
+
+    /* Certification services (brand colors) */
+    --cert-ngc: #1A73E8;
+    --cert-pcgs: #2E7D32;
+    --cert-anacs: #9C27B0;
+    
+    /* Legacy aliases */
     --grade-ngc: #1A73E8;
     --grade-ngc-bg: rgba(26, 115, 232, 0.15);
     --grade-pcgs: #2E7D32;
     --grade-pcgs-bg: rgba(46, 125, 50, 0.15);
     
     /* ═══════════════════════════════════════════════════════════════
-       CATEGORIES — Era-Appropriate, Historically Informed
+       CATEGORIES — Era-Appropriate, Historically Informed - V3.0 SPEC
        ═══════════════════════════════════════════════════════════════ */
-    
-    /* Republic (509-27 BC) — Terracotta/Roman brick red */
-    --category-republic: #C0392B;
-    --category-republic-subtle: rgba(192, 57, 43, 0.15);
-    
-    /* Imperial (27 BC - 284 AD) — Tyrian purple */
-    --category-imperial: #9B59B6;
-    --category-imperial-subtle: rgba(155, 89, 182, 0.15);
-    
+
+    /* Republic (509-27 BCE) — Terracotta/Roman brick red */
+    --cat-republic: #DC2626;
+    --cat-republic-subtle: rgba(220, 38, 38, 0.15);
+
+    /* Imperial (27 BCE - 284 CE) — Tyrian purple (Emperor's color) */
+    --cat-imperial: #7C3AED;
+    --cat-imperial-subtle: rgba(124, 58, 237, 0.15);
+
     /* Provincial (Greek Imperial) — Aegean blue */
-    --category-provincial: #3498DB;
-    --category-provincial-subtle: rgba(52, 152, 219, 0.15);
-    
-    /* Late Roman/Dominate (284-491 AD) — Byzantine gold */
+    --cat-provincial: #2563EB;
+    --cat-provincial-subtle: rgba(37, 99, 235, 0.15);
+
+    /* Late Roman/Dominate (284-491 CE) — Byzantine gold */
+    --cat-late: #D4AF37;
+    --cat-late-subtle: rgba(212, 175, 55, 0.15);
+
+    /* Greek (pre-Roman) — Olive (Mediterranean) */
+    --cat-greek: #16A34A;
+    --cat-greek-subtle: rgba(22, 163, 74, 0.15);
+
+    /* Celtic — Forest green (Northern Europe) */
+    --cat-celtic: #27AE60;
+    --cat-celtic-subtle: rgba(39, 174, 96, 0.15);
+
+    /* Judaean — Desert sand/stone */
+    --cat-judaea: #C2956E;
+    --cat-judaea-subtle: rgba(194, 149, 110, 0.15);
+
+    /* Eastern (Parthian/Sasanian) — Persian turquoise */
+    --cat-eastern: #17A589;
+    --cat-eastern-subtle: rgba(23, 165, 137, 0.15);
+
+    /* Byzantine (491+ CE) — Imperial crimson */
+    --cat-byzantine: #922B21;
+    --cat-byzantine-subtle: rgba(146, 43, 33, 0.15);
+
+    /* Other/Unknown — Neutral gray */
+    --cat-other: #6e6e73;
+    --cat-other-subtle: rgba(110, 110, 115, 0.15);
+
+    /* Legacy aliases for backward compatibility */
+    --category-republic: #DC2626;
+    --category-republic-subtle: rgba(220, 38, 38, 0.15);
+    --category-imperial: #7C3AED;
+    --category-imperial-subtle: rgba(124, 58, 237, 0.15);
+    --category-provincial: #2563EB;
+    --category-provincial-subtle: rgba(37, 99, 235, 0.15);
     --category-late: #D4AF37;
     --category-late-subtle: rgba(212, 175, 55, 0.15);
-    
-    /* Greek (pre-Roman) — Olive (Mediterranean) */
-    --category-greek: #7D8C4E;
-    --category-greek-subtle: rgba(125, 140, 78, 0.15);
-    
-    /* Celtic — Forest green (Northern Europe) */
+    --category-greek: #16A34A;
+    --category-greek-subtle: rgba(22, 163, 74, 0.15);
     --category-celtic: #27AE60;
     --category-celtic-subtle: rgba(39, 174, 96, 0.15);
-    
-    /* Judaean — Desert sand/stone */
     --category-judaea: #C2956E;
     --category-judaea-subtle: rgba(194, 149, 110, 0.15);
-    
-    /* Eastern (Parthian/Sasanian) — Persian turquoise */
     --category-eastern: #17A589;
     --category-eastern-subtle: rgba(23, 165, 137, 0.15);
-    
-    /* Byzantine (491+ AD) — Imperial crimson */
     --category-byzantine: #922B21;
     --category-byzantine-subtle: rgba(146, 43, 33, 0.15);
-    
-    /* Other/Unknown — Neutral gray */
     --category-other: #6e6e73;
     --category-other-subtle: rgba(110, 110, 115, 0.15);
     
     /* ═══════════════════════════════════════════════════════════════
-       PRICE TRENDS
+       PERFORMANCE COLORS - V3.0 SPEC (Profit/Loss Indicators)
        ═══════════════════════════════════════════════════════════════ */
-    
-    --price-up: #30D158;
-    --price-down: #FF453A;
+
+    --perf-positive: #10B981;     /* Green - profit */
+    --perf-negative: #EF4444;     /* Red - loss */
+    --perf-neutral: #9CA3AF;      /* Gray - no change */
+
+    /* Legacy price trend aliases */
+    --price-up: #10B981;
+    --price-down: #EF4444;
+
+    /* ═══════════════════════════════════════════════════════════════
+       CERTIFICATION SERVICES — Brand Colors
+       ═══════════════════════════════════════════════════════════════ */
+
+    --cert-ngc: #003366;            /* NGC navy blue */
+    --cert-ngc-subtle: rgba(0, 51, 102, 0.15);
+    --cert-pcgs: #00529B;           /* PCGS blue */
+    --cert-pcgs-subtle: rgba(0, 82, 155, 0.15);
+    --cert-anacs: #8B0000;          /* ANACS dark red */
+    --cert-anacs-subtle: rgba(139, 0, 0, 0.15);
+
+    /* ═══════════════════════════════════════════════════════════════
+       HEALTH INDICATORS — Data Completeness
+       ═══════════════════════════════════════════════════════════════ */
+
+    --health-good: #22C55E;         /* Green - complete */
+    --health-warning: #EAB308;      /* Yellow - partial */
+    --health-poor: #EF4444;         /* Red - missing */
     
     /* ═══════════════════════════════════════════════════════════════
        UNKNOWN/MISSING DATA — Consistent neutral styling

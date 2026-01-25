@@ -1,14 +1,15 @@
 import { NavLink } from "react-router-dom";
 import { useUIStore } from "@/stores/uiStore";
 import { cn } from "@/lib/utils";
-import { 
-  BarChart3, Upload, Settings, 
-  ChevronLeft, ChevronRight, Sparkles, Library, Gavel, ClipboardCheck
+import {
+  BarChart3, Upload, Settings,
+  ChevronLeft, ChevronRight, Sparkles, Library, Gavel, ClipboardCheck, LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { to: "/", icon: Library, label: "Collection" },
+  { to: "/series", icon: LayoutGrid, label: "Series" },
   { to: "/auctions", icon: Gavel, label: "Auctions" },
   { to: "/audit", icon: ClipboardCheck, label: "Audit" },
   { to: "/stats", icon: BarChart3, label: "Statistics" },
@@ -16,18 +17,17 @@ const navItems = [
   { to: "/bulk-enrich", icon: Sparkles, label: "Enrich" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
-
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar } = useUIStore();
   
   return (
-    <aside 
+    <aside
       className={cn(
         "fixed left-0 top-14 bottom-0 z-40 transition-all duration-200 flex flex-col",
         sidebarOpen ? "w-48" : "w-14"
       )}
-      style={{ 
-        background: 'var(--bg-surface)',
+      style={{
+        background: 'var(--bg-elevated)',
         borderRight: '1px solid var(--border-subtle)'
       }}
     >
@@ -39,9 +39,9 @@ export function Sidebar() {
             to={to}
             className={({ isActive }) => cn(
               "flex items-center gap-3 px-2.5 py-2 rounded-md transition-all relative",
-              isActive 
-                ? "font-medium" 
-                : "hover:bg-[var(--bg-elevated)]"
+              isActive
+                ? "font-medium"
+                : "hover:bg-[var(--bg-hover)]"
             )}
             style={({ isActive }) => ({
               color: isActive ? 'var(--metal-au)' : 'var(--text-secondary)',

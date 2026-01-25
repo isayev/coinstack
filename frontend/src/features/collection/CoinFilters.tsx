@@ -48,10 +48,30 @@ export function CoinFilters() {
     const unwrapValue = (val: string) => (val === "all" ? null : val)
 
     return (
-        <div className="flex flex-col h-full bg-card border-r w-80">
-            <div className="p-4 border-b flex items-center justify-between">
-                <h2 className="font-semibold">Filters</h2>
-                <Button variant="ghost" size="sm" onClick={reset} className="h-8 px-2 text-muted-foreground">
+        <div
+            className="flex flex-col h-full border-r w-80"
+            style={{
+                background: 'var(--bg-elevated)',
+                borderColor: 'var(--border-subtle)'
+            }}
+        >
+            <div
+                className="p-4 border-b flex items-center justify-between"
+                style={{ borderColor: 'var(--border-subtle)' }}
+            >
+                <h2
+                    className="font-semibold"
+                    style={{ color: 'var(--text-primary)' }}
+                >
+                    Filters
+                </h2>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={reset}
+                    className="h-8 px-2"
+                    style={{ color: 'var(--text-muted)' }}
+                >
                     Reset
                     <X className="ml-2 h-3 w-3" />
                 </Button>
@@ -62,7 +82,12 @@ export function CoinFilters() {
 
                     {/* Classification */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Classification</h3>
+                        <h3
+                            className="text-sm font-medium uppercase tracking-wider"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            Classification
+                        </h3>
 
                         <div className="space-y-2">
                             <Label>Category</Label>
@@ -85,18 +110,22 @@ export function CoinFilters() {
                             <Label>Metal</Label>
                             <div className="flex flex-wrap gap-2">
                                 {[
-                                    { id: 'gold', label: 'Gold', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
-                                    { id: 'silver', label: 'Silver', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20' },
-                                    { id: 'bronze', label: 'Bronze', color: 'bg-orange-700/10 text-orange-700 border-orange-700/20' },
-                                    { id: 'copper', label: 'Copper', color: 'bg-orange-800/10 text-orange-800 border-orange-800/20' }
+                                    { id: 'gold', label: 'Gold', color: '#F59E0B' },
+                                    { id: 'silver', label: 'Silver', color: '#94A3B8' },
+                                    { id: 'bronze', label: 'Bronze', color: '#F97316' },
+                                    { id: 'copper', label: 'Copper', color: '#EA580C' }
                                 ].map((m) => (
                                     <Badge
                                         key={m.id}
                                         variant="outline"
-                                        className={`cursor-pointer transition-colors ${metal === m.id
-                                                ? m.color + ' ring-1 ring-offset-1'
-                                                : 'hover:bg-muted text-muted-foreground'
-                                            }`}
+                                        className="cursor-pointer transition-colors"
+                                        style={metal === m.id ? {
+                                            background: `${m.color}20`,
+                                            color: m.color,
+                                            borderColor: m.color
+                                        } : {
+                                            color: 'var(--text-muted)'
+                                        }}
                                         onClick={() => setMetal(metal === m.id ? null : m.id)}
                                     >
                                         {m.label}
@@ -119,7 +148,12 @@ export function CoinFilters() {
 
                     {/* Attribution */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Attribution</h3>
+                        <h3
+                            className="text-sm font-medium uppercase tracking-wider"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            Attribution
+                        </h3>
 
                         <div className="space-y-2">
                             <Label>Ruler / Issuer</Label>
@@ -148,7 +182,7 @@ export function CoinFilters() {
                                     value={mint_year_gte || ""}
                                     onChange={(e) => setMintYearGte(e.target.value ? parseInt(e.target.value) : null)}
                                 />
-                                <span className="text-muted-foreground">-</span>
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
                                 <Input
                                     type="number"
                                     placeholder="To"
@@ -163,7 +197,12 @@ export function CoinFilters() {
 
                     {/* Grading & Value */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Details</h3>
+                        <h3
+                            className="text-sm font-medium uppercase tracking-wider"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            Details
+                        </h3>
 
                         <div className="space-y-2">
                             <Label>Grade</Label>
@@ -204,7 +243,7 @@ export function CoinFilters() {
                                     value={priceRange[0] > 0 ? priceRange[0] : ""}
                                     onChange={(e) => setPriceRange([e.target.value ? parseInt(e.target.value) : 0, priceRange[1]])}
                                 />
-                                <span className="text-muted-foreground">-</span>
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
                                 <Input
                                     type="number"
                                     placeholder="Max"
