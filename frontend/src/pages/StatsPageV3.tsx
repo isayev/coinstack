@@ -10,12 +10,10 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   Area,
   AreaChart,
 } from "recharts"
-import { Coins, DollarSign, TrendingUp, Award, Layers, Scale } from "lucide-react"
+import { Coins, TrendingUp, Award, Layers } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // V3.0 Design System Colors
@@ -143,8 +141,6 @@ export function StatsPageV3() {
   gradeDistribution.forEach(g => {
     g.count = gradeMap[g.grade] || 0
   })
-
-  const totalWeight = stats.by_metal.reduce((sum, m) => sum + (m.total_weight || 0), 0)
 
   // Mock sparkline data (in production, this would come from API)
   const valueSparklineData = [

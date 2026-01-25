@@ -61,10 +61,12 @@ export function MetalBadge({
     cssVar: 'ae',
   };
 
+  // Size classes - lg meets 44px touch target for mobile accessibility
+  // Use sm/md only in desktop contexts
   const sizeClasses = {
-    sm: 'min-w-[28px] h-[22px] text-[10px] px-1.5',
-    md: 'min-w-[36px] h-[28px] text-xs px-2',
-    lg: 'min-w-[44px] h-[36px] text-sm px-3',
+    sm: 'min-w-[28px] h-[22px] text-[10px] px-1.5',  // Desktop only
+    md: 'min-w-[36px] h-[28px] text-xs px-2',        // Desktop only
+    lg: 'min-w-[44px] h-[44px] text-sm px-3',        // Mobile-safe touch target
   };
 
   return (
@@ -77,7 +79,7 @@ export function MetalBadge({
         'inline-flex items-center justify-center gap-1 rounded font-bold font-mono',
         'transition-all duration-200',
         sizeClasses[size],
-        interactive && 'cursor-pointer hover:scale-105',
+        interactive && 'cursor-pointer hover:scale-105 metal-badge-glow',
         active && 'ring-2 ring-offset-1 ring-offset-[var(--bg-card)]',
         className
       )}
@@ -85,8 +87,9 @@ export function MetalBadge({
         background: `var(--metal-${config.cssVar}-subtle)`,
         color: `var(--metal-${config.cssVar}-text)`,
         border: `1px solid var(--metal-${config.cssVar}-border)`,
-        ringColor: active ? `var(--metal-${config.cssVar})` : undefined,
-      }}
+        '--tw-ring-color': active ? `var(--metal-${config.cssVar})` : undefined,
+        '--metal-glow-color': `var(--metal-${config.cssVar})`,
+      } as React.CSSProperties}
       title={config.label}
     >
       <span>{config.symbol}</span>

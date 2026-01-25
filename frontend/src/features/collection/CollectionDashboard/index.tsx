@@ -13,7 +13,7 @@
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCollectionStats } from "@/hooks/useCollectionStats";
 import { useFilterStore } from "@/stores/filterStore";
 
@@ -33,8 +33,24 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
   const navigate = useNavigate();
   const [advancedOpen, setAdvancedOpen] = useState(false);
   
-  // Get filter state
-  const { category, metal, setCategory, setMetal, reset } = useFilterStore();
+  // Get filter state - include grade and issuing_authority for selectable widgets
+  const { 
+    category, 
+    metal, 
+    grade,
+    issuing_authority,
+    mint_year_gte,
+    mint_year_lte,
+    priceRange,
+    setCategory, 
+    setMetal, 
+    setGrade,
+    setIssuingAuthority,
+    setMintYearGte,
+    setMintYearLte,
+    setPriceRange,
+    reset 
+  } = useFilterStore();
   
   // Fetch stats
   const { data: stats, isLoading } = useCollectionStats();
@@ -57,8 +73,27 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
   };
 
   const handleRulerClick = (ruler: string) => {
-    // Navigate to collection with ruler filter
-    navigate(`/?issuer=${encodeURIComponent(ruler)}`);
+    // Toggle ruler filter
+    if (issuing_authority === ruler) {
+      setIssuingAuthority(null);
+    } else {
+      setIssuingAuthority(ruler);
+    }
+  };
+
+  const handleGradeClick = (g: string) => {
+    // Toggle grade filter
+    if (grade === g.toLowerCase()) {
+      setGrade(null);
+    } else {
+      setGrade(g.toLowerCase());
+    }
+  };
+
+  const handleCertClick = (service: string) => {
+    // TODO: Implement grading_service filter when filterStore supports it
+    // For now, this is a no-op placeholder
+    void service;
   };
 
   const handleRunAudit = () => {
@@ -69,7 +104,25 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
     navigate('/bulk-enrich');
   };
 
-  // Loading skeleton
+  // Prepare metal data for badges (memoized) - MUST be before any early returns
+  const metalData = useMemo(() => 
+    stats?.by_metal?.map(m => ({ metal: m.metal, count: m.count })) ?? [],
+    [stats?.by_metal]
+  );
+
+  // Prepare grade data for spectrum (memoized)
+  const gradeData = useMemo(() => 
+    stats?.by_grade?.map(g => ({ grade: g.grade, count: g.count })) ?? [],
+    [stats?.by_grade]
+  );
+
+  // Prepare certification data (memoized)
+  const certData = useMemo(() => 
+    stats?.by_certification?.map(c => ({ service: c.service, count: c.count })) ?? [],
+    [stats?.by_certification]
+  );
+
+  // Loading skeleton - after all hooks
   if (isLoading || !stats) {
     return (
       <div className={cn("space-y-4 p-4", className)}>
@@ -83,24 +136,6 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
       </div>
     );
   }
-
-  // Prepare metal data for badges
-  const metalData = stats.by_metal.map(m => ({
-    metal: m.metal,
-    count: m.count,
-  }));
-
-  // Prepare grade data for spectrum
-  const gradeData = stats.by_grade.map(g => ({
-    grade: g.grade,
-    count: g.count,
-  }));
-
-  // Prepare certification data
-  const certData = stats.by_certification.map(c => ({
-    service: c.service,
-    count: c.count,
-  }));
 
   return (
     <div 
@@ -165,6 +200,8 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
         </h3>
         <GradeSpectrum
           grades={gradeData}
+          activeGrades={grade ? [grade] : []}
+          onGradeClick={handleGradeClick}
           showCounts
         />
       </div>
@@ -178,6 +215,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
           reignStart: r.reign_start,
         }))}
         onRulerClick={handleRulerClick}
+        activeRuler={issuing_authority}
         maxVisible={6}
       />
 
@@ -206,6 +244,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
         <CertificationSummary
           certifications={certData}
           totalCoins={stats.total_coins}
+          onServiceClick={handleCertClick}
         />
       </div>
 
@@ -235,32 +274,52 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
         </button>
         
         {advancedOpen && (
-          <div className="p-4 pt-0 space-y-4">
+          <div className="p-4 pt-2 space-y-4">
+            {/* Reset button - at TOP for quick access */}
+            <button
+              onClick={() => reset()}
+              className="w-full h-8 text-sm font-medium rounded border transition-colors hover:bg-[var(--bg-hover)]"
+              style={{
+                borderColor: 'var(--border-subtle)',
+                color: 'var(--text-muted)',
+              }}
+            >
+              Reset All Filters
+            </button>
+
             {/* Year Range */}
             <div>
               <label 
                 className="block text-xs font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Year Range
+                Year Range (negative for BC)
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   type="number"
                   placeholder="From"
-                  className="flex-1 h-8 px-2 text-sm rounded border"
+                  value={mint_year_gte ?? ''}
+                  onChange={(e) => setMintYearGte(e.target.value ? Number(e.target.value) : null)}
+                  className="h-8 px-2 text-sm rounded border"
                   style={{
+                    width: '70px',
+                    minWidth: 0,
                     background: 'var(--bg-elevated)',
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-primary)',
                   }}
                 />
-                <span style={{ color: 'var(--text-ghost)' }}>—</span>
+                <span style={{ color: 'var(--text-ghost)', flexShrink: 0 }}>—</span>
                 <input
                   type="number"
                   placeholder="To"
-                  className="flex-1 h-8 px-2 text-sm rounded border"
+                  value={mint_year_lte ?? ''}
+                  onChange={(e) => setMintYearLte(e.target.value ? Number(e.target.value) : null)}
+                  className="h-8 px-2 text-sm rounded border"
                   style={{
+                    width: '70px',
+                    minWidth: 0,
                     background: 'var(--bg-elevated)',
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-primary)',
@@ -275,25 +334,39 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
                 className="block text-xs font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Price Range
+                Price Paid ($)
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   type="number"
-                  placeholder="Min $"
-                  className="flex-1 h-8 px-2 text-sm rounded border"
+                  placeholder="Min"
+                  value={priceRange[0] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value ? Number(e.target.value) : 0;
+                    setPriceRange([val, priceRange[1]]);
+                  }}
+                  className="h-8 px-2 text-sm rounded border"
                   style={{
+                    width: '70px',
+                    minWidth: 0,
                     background: 'var(--bg-elevated)',
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-primary)',
                   }}
                 />
-                <span style={{ color: 'var(--text-ghost)' }}>—</span>
+                <span style={{ color: 'var(--text-ghost)', flexShrink: 0 }}>—</span>
                 <input
                   type="number"
-                  placeholder="Max $"
-                  className="flex-1 h-8 px-2 text-sm rounded border"
+                  placeholder="Max"
+                  value={priceRange[1] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value ? Number(e.target.value) : 0;
+                    setPriceRange([priceRange[0], val]);
+                  }}
+                  className="h-8 px-2 text-sm rounded border"
                   style={{
+                    width: '70px',
+                    minWidth: 0,
                     background: 'var(--bg-elevated)',
                     borderColor: 'var(--border-subtle)',
                     color: 'var(--text-primary)',
@@ -301,18 +374,6 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
                 />
               </div>
             </div>
-
-            {/* Reset button */}
-            <button
-              onClick={() => reset()}
-              className="w-full h-8 text-sm font-medium rounded border transition-colors hover:bg-[var(--bg-hover)]"
-              style={{
-                borderColor: 'var(--border-subtle)',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Reset All Filters
-            </button>
           </div>
         )}
       </div>

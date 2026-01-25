@@ -238,6 +238,10 @@ export const DomainCoinSchema = z.object({
   references: z.array(CatalogReferenceSchema).optional(),
   provenance: z.array(z.any()).optional(),
 
+  // Collection management
+  storage_location: z.string().nullable().optional(),
+  personal_notes: z.string().nullable().optional(),
+
   // Future features (not yet in backend)
   market_value: z.number().nullable().optional(),
   rarity: z.enum(['c', 's', 'r1', 'r2', 'r3', 'u']).nullable().optional(),

@@ -29,7 +29,7 @@
  * - Column visibility toggle (future)
  */
 
-import { Coins, ExternalLink } from 'lucide-react';
+import { Coins } from 'lucide-react';
 import { Coin } from '@/domain/schemas';
 import { parseCategory } from '@/components/design-system/colors';
 import { formatYear } from '@/lib/formatters';

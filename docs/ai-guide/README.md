@@ -34,8 +34,10 @@ Then load the relevant guide based on your task:
 | **Backend** |
 | [03-BACKEND-MODULES.md](03-BACKEND-MODULES.md) | Domain/Application/Infrastructure layers | Backend development |
 | [04-DOMAIN-ENTITIES.md](04-DOMAIN-ENTITIES.md) | Entities, value objects, domain services | Working with domain logic |
-| **Frontend** |
-| [04-FRONTEND-MODULES.md](04-FRONTEND-MODULES.md) | React components, hooks, stores | Frontend development |
+| **Frontend & Design** |
+| [04-FRONTEND-MODULES.md](04-FRONTEND-MODULES.md) | React architecture, hooks, stores | Frontend architecture |
+| [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) | **Design tokens, colors, typography** | UI styling, theming |
+| [11-FRONTEND-COMPONENTS.md](11-FRONTEND-COMPONENTS.md) | Component specs, patterns, usage | Building UI components |
 | **Data & API** |
 | [05-DATA-MODEL.md](05-DATA-MODEL.md) | Database schema, ORM models | Data layer changes |
 | [07-API-REFERENCE.md](07-API-REFERENCE.md) | API endpoints, request/response | API integration |

@@ -1,5 +1,5 @@
-/* Import Inter font for body text */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* Import fonts for body text and numismatic legends */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Cinzel:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -396,6 +396,25 @@
   :root {
     color-scheme: dark;
   }
+  
+  /* Focus-visible styles for accessibility */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex="0"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--cat-imperial);
+    outline-offset: 2px;
+  }
+  
+  /* Remove default focus ring when not using keyboard */
+  button:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  [role="button"]:focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
 @layer components {
@@ -447,6 +466,11 @@
     background: var(--metal-ae-subtle);
     color: var(--metal-ae-text);
     border: 1px solid var(--metal-ae-border);
+  }
+  
+  /* Metal Badge Hover Glow Effect */
+  .metal-badge-glow:hover {
+    box-shadow: 0 2px 8px var(--metal-glow-color, rgba(255, 215, 0, 0.3));
   }
   .metal-badge-bi {
     background: var(--metal-bi-subtle);

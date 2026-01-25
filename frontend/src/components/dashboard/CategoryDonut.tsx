@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, TooltipProps } from "recharts";
 import { cn } from "@/lib/utils";
 
 interface CategoryData {
@@ -17,24 +17,46 @@ interface CategoryData {
   color?: string;
 }
 
-// Category colors - actual hex values for Recharts compatibility
+// Category colors - hex values matching CSS design system tokens
+// Must be hex for Recharts compatibility (CSS variables don't work)
 const CATEGORY_COLORS: Record<string, string> = {
-  imperial: '#C9A227',      // Gold
-  republic: '#8B4513',      // Brown
-  provincial: '#6B8E23',    // Olive
-  greek: '#4682B4',         // Steel blue
-  byzantine: '#9370DB',     // Medium purple
-  celtic: '#228B22',        // Forest green
-  judaean: '#B8860B',       // Dark goldenrod
+  // Standard names (matching --cat-* CSS variables)
+  imperial: '#7C3AED',      // Tyrian purple (--cat-imperial)
+  republic: '#DC2626',      // Terracotta red (--cat-republic)
+  provincial: '#2563EB',    // Aegean blue (--cat-provincial)
+  greek: '#16A34A',         // Olive green (--cat-greek)
+  byzantine: '#922B21',     // Crimson (--cat-byzantine)
+  celtic: '#228B22',        // Forest green (--cat-celtic)
+  judaean: '#B8860B',       // Dark goldenrod (--cat-judaean)
   judaea: '#B8860B',        // Dark goldenrod
-  eastern: '#CD853F',       // Peru
-  late: '#708090',          // Slate gray
+  eastern: '#CD853F',       // Peru (--cat-eastern)
+  late: '#708090',          // Slate gray (--cat-late)
   other: '#696969',         // Dim gray
+  
+  // Full names with prefixes (normalized - no underscores/spaces)
+  romanimperial: '#7C3AED',
+  romanrepublic: '#DC2626',
+  romanprovincial: '#2563EB',
+  ancientgreek: '#16A34A',
+  byzantineempire: '#922B21',
 };
 
 function getCategoryColor(category: string): string {
+  // Normalize: lowercase, remove underscores/spaces/hyphens, handle "roman_" prefix
   const normalized = category.toLowerCase().replace(/[_\s-]/g, '');
-  return CATEGORY_COLORS[normalized] || CATEGORY_COLORS.other;
+  
+  // Direct match
+  if (CATEGORY_COLORS[normalized]) {
+    return CATEGORY_COLORS[normalized];
+  }
+  
+  // Try removing "roman" prefix for shorter match
+  const withoutRoman = normalized.replace(/^roman/, '');
+  if (CATEGORY_COLORS[withoutRoman]) {
+    return CATEGORY_COLORS[withoutRoman];
+  }
+  
+  return CATEGORY_COLORS.other;
 }
 
 interface CategoryDonutProps {
@@ -60,10 +82,10 @@ export function CategoryDonut({
     }));
   }, [data]);
 
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  // Custom tooltip with proper TypeScript types
+  const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
-      const item = payload[0].payload;
+      const item = payload[0].payload as CategoryData & { color: string };
       const pct = totalCoins > 0 ? ((item.count / totalCoins) * 100).toFixed(1) : 0;
       return (
         <div
@@ -154,7 +176,7 @@ export function CategoryDonut({
 
       {/* Quick Filter Buttons */}
       <div className="flex flex-wrap gap-1.5 mt-4">
-        {chartData.slice(0, 4).map(({ category, count, color }) => (
+        {chartData.slice(0, 4).map(({ category, color }) => (
           <button
             key={category}
             onClick={() => onCategoryClick?.(category)}
@@ -165,8 +187,8 @@ export function CategoryDonut({
             style={{
               background: activeCategory === category ? color : `${color}30`,
               color: activeCategory === category ? '#fff' : color,
-              ringColor: color,
-            }}
+              '--tw-ring-color': color,
+            } as React.CSSProperties}
           >
             {category.replace('_', ' ')}
           </button>

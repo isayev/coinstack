@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { v2 } from "@/api/v2"
-import { Series } from "@/domain/schemas"
 
 export function useSeries() {
   return useQuery({

@@ -203,8 +203,7 @@ export function CoinTableRowV3({
         <div className="w-[56px] flex items-center justify-center">
           <GradeBadge
             grade={coin.grading.grade ?? '?'}
-            service={coin.grading.service === 'none' ? null : coin.grading.service}
-            size="xs"
+            size="sm"
           />
         </div>
 

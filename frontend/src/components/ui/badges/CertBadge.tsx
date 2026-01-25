@@ -76,10 +76,11 @@ export function CertBadge({
   
   const hasVerifyUrl = config.verifyUrl && certNumber;
 
+  // Size classes - lg meets 44px touch target for mobile accessibility
   const sizeClasses = {
-    sm: 'h-[22px] text-[10px] px-1.5 gap-0.5',
-    md: 'h-[28px] text-xs px-2 gap-1',
-    lg: 'h-[36px] text-sm px-3 gap-1.5',
+    sm: 'h-[22px] text-[10px] px-1.5 gap-0.5',  // Desktop only
+    md: 'h-[28px] text-xs px-2 gap-1',          // Desktop only
+    lg: 'h-[44px] text-sm px-3 gap-1.5',        // Mobile-safe touch target
   };
 
   const handleClick = (e: React.MouseEvent) => {

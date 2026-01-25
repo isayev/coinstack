@@ -285,10 +285,10 @@ export function CoinDetailV3({ coin }: CoinDetailV3Props) {
         </DataCard>
 
         {/* 3. References Card */}
-        {(coin as any).references && (coin as any).references.length > 0 && (
+        {coin.references && coin.references.length > 0 && (
           <DataCard categoryType={categoryType} title="References">
             <div className="space-y-2">
-              {coin.references.map((ref: any, idx: number) => (
+              {coin.references?.map((ref: any, idx: number) => (
                 <div
                   key={idx}
                   className="flex items-start justify-between py-2 border-b last:border-0"

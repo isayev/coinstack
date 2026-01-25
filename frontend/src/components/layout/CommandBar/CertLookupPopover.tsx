@@ -6,7 +6,7 @@
  */
 
 import { useState, ReactNode } from "react";
-import { Loader2, ExternalLink, Search } from "lucide-react";
+import { Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,7 +110,6 @@ export function CertLookupPopover({ children }: CertLookupPopoverProps) {
                     background: service === "NGC" ? "var(--cert-ngc)" : "var(--bg-elevated)",
                     color: service === "NGC" ? "#fff" : "var(--text-muted)",
                     borderColor: service === "NGC" ? "var(--cert-ngc)" : "var(--border-subtle)",
-                    ringColor: "var(--cert-ngc)"
                   }}
                 >
                   NGC
@@ -127,7 +126,6 @@ export function CertLookupPopover({ children }: CertLookupPopoverProps) {
                     background: service === "PCGS" ? "var(--cert-pcgs)" : "var(--bg-elevated)",
                     color: service === "PCGS" ? "#fff" : "var(--text-muted)",
                     borderColor: service === "PCGS" ? "var(--cert-pcgs)" : "var(--border-subtle)",
-                    ringColor: "var(--cert-pcgs)"
                   }}
                 >
                   PCGS

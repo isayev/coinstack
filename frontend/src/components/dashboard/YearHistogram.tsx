@@ -85,7 +85,7 @@ export function YearHistogram({
   showBrush = true,
   className,
 }: YearHistogramProps) {
-  const [brushRange, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
+  const [, setBrushRange] = useState<{ startIndex: number; endIndex: number } | null>(null);
 
   // Sort data by year and fill gaps
   const chartData = useMemo(() => {

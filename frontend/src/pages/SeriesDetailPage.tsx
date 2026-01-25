@@ -22,7 +22,7 @@ export function SeriesDetailPage() {
   const { data: coinsData } = useCoins()
   const addCoinMutation = useAddCoinToSeries()
   
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
+  const [, setSelectedSlot] = useState<number | null>(null)
   
   if (isLoading) return <div className="container py-6">Loading series details...</div>
   if (!series) return <div className="container py-6">Series not found</div>
@@ -102,7 +102,9 @@ export function SeriesDetailPage() {
                           variant="ghost"
                           className="justify-start text-left h-auto p-3"
                           onClick={() => {
-                            addCoinMutation.mutate({ seriesId, coinId: coin.id, slotId: slot.id })
+                            if (coin.id !== null) {
+                              addCoinMutation.mutate({ seriesId, coinId: coin.id, slotId: slot.id })
+                            }
                           }}
                         >
                           <div className="flex flex-col">

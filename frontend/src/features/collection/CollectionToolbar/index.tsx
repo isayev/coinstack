@@ -11,13 +11,11 @@
 import { cn } from "@/lib/utils";
 import { 
   X, 
-  ArrowUpDown, 
   ArrowUp, 
   ArrowDown,
   LayoutGrid, 
   List, 
   Grid3X3,
-  SlidersHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,13 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // ============================================================================
 // Active Filters Component
@@ -52,6 +43,61 @@ interface ActiveFiltersProps {
   className?: string;
 }
 
+/**
+ * Get semantic color for filter chip based on filter type and value
+ */
+function getFilterChipColor(field: string, value: string): { bg: string; text: string } {
+  // Category filters use category colors
+  if (field === 'category') {
+    const categoryColors: Record<string, string> = {
+      'roman_imperial': 'var(--cat-imperial)',
+      'imperial': 'var(--cat-imperial)',
+      'roman_republic': 'var(--cat-republic)',
+      'republic': 'var(--cat-republic)',
+      'roman_provincial': 'var(--cat-provincial)',
+      'provincial': 'var(--cat-provincial)',
+      'greek': 'var(--cat-greek)',
+      'byzantine': 'var(--cat-byzantine)',
+      'celtic': 'var(--cat-celtic)',
+      'judaean': 'var(--cat-judaean)',
+    };
+    const color = categoryColors[value.toLowerCase()] || 'var(--cat-imperial)';
+    return { bg: color, text: '#fff' };
+  }
+  
+  // Metal filters use metal colors
+  if (field === 'metal') {
+    return { 
+      bg: `var(--metal-${value.toLowerCase()})`, 
+      text: value.toLowerCase() === 'gold' || value.toLowerCase() === 'au' ? '#000' : '#fff' 
+    };
+  }
+  
+  // Grade filters use grade colors
+  if (field === 'grade') {
+    const prefix = value.replace(/[0-9\s]/g, '').toUpperCase();
+    const gradeColors: Record<string, string> = {
+      'MS': 'var(--grade-ms)',
+      'AU': 'var(--grade-au)',
+      'XF': 'var(--grade-xf)',
+      'EF': 'var(--grade-xf)',
+      'VF': 'var(--grade-vf)',
+      'F': 'var(--grade-f)',
+      'VG': 'var(--grade-vg)',
+      'G': 'var(--grade-g)',
+    };
+    return { bg: gradeColors[prefix] || 'var(--grade-vf)', text: '#fff' };
+  }
+  
+  // Certification filters
+  if (field === 'grading_service' || field === 'certification') {
+    return { bg: `var(--cert-${value.toLowerCase()})`, text: '#fff' };
+  }
+  
+  // Default: subtle neutral chip
+  return { bg: 'var(--bg-elevated)', text: 'var(--text-primary)' };
+}
+
 export function ActiveFilters({
   filters,
   onRemove,
@@ -68,24 +114,27 @@ export function ActiveFilters({
       >
         Active:
       </span>
-      {filters.map(({ field, value, label }) => (
-        <button
-          key={`${field}-${value}`}
-          onClick={() => onRemove(field)}
-          className={cn(
-            "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-            "transition-all hover:brightness-110"
-          )}
-          style={{
-            background: 'var(--cat-imperial)',
-            color: '#fff',
-          }}
-          title={`Remove ${label} filter`}
-        >
-          <span>{label}</span>
-          <X className="w-3 h-3" />
-        </button>
-      ))}
+      {filters.map(({ field, value, label }) => {
+        const chipColor = getFilterChipColor(field, value);
+        return (
+          <button
+            key={`${field}-${value}`}
+            onClick={() => onRemove(field)}
+            className={cn(
+              "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+              "transition-all hover:brightness-110"
+            )}
+            style={{
+              background: chipColor.bg,
+              color: chipColor.text,
+            }}
+            title={`Remove ${label} filter`}
+          >
+            <span>{label}</span>
+            <X className="w-3 h-3" />
+          </button>
+        );
+      })}
       {filters.length > 1 && (
         <button
           onClick={onClearAll}

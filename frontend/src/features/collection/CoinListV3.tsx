@@ -15,18 +15,12 @@ import { v2 } from '@/api/v2';
 import { CoinCardV3, CoinCardV3Skeleton } from '@/components/coins/CoinCardV3';
 import { CoinTableRowV3, CoinTableHeaderV3 } from '@/components/coins/CoinTableRowV3';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, LayoutGrid, List, ArrowUp, ArrowDown } from 'lucide-react';
+import { AlertCircle, LayoutGrid, List } from 'lucide-react';
+import { SortControl } from '@/components/ui/SortControl';
 import { useUIStore } from '@/stores/uiStore';
-import { useFilterStore } from '@/stores/filterStore';
+import { useFilterStore, SortField } from '@/stores/filterStore';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/Pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -65,19 +59,24 @@ export function CoinListV3() {
 
   // Sorting handler for table
   const handleSort = (column: string) => {
-    // Map column names to API sort keys
-    const sortMap: Record<string, string> = {
+    // Map column names to API sort keys (only valid SortField values)
+    const sortMap: Record<string, SortField> = {
       ruler: 'name',
-      reference: 'reference',
       denomination: 'denomination',
-      mint: 'mint',
       date: 'year',
       grade: 'grade',
       rarity: 'rarity',
       value: 'value',
+      metal: 'metal',
+      category: 'category',
+      price: 'price',
+      acquired: 'acquired',
+      created: 'created',
+      weight: 'weight',
     };
 
-    const newSortBy = sortMap[column] || column;
+    const newSortBy = sortMap[column];
+    if (!newSortBy) return; // Ignore unsortable columns like reference, mint
 
     // Toggle direction if clicking same column
     if (sortBy === newSortBy) {
@@ -186,33 +185,16 @@ export function CoinListV3() {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex justify-between items-center">
-        {/* Left: Sort Controls */}
-        <div className="flex items-center gap-2">
-          <Select value={sortBy} onValueChange={(v: any) => setSort(v)}>
-            <SelectTrigger className="w-[180px] h-9 text-sm">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="created">Date Added</SelectItem>
-              <SelectItem value="year">Mint Year</SelectItem>
-              <SelectItem value="price">Price Paid</SelectItem>
-              <SelectItem value="grade">Grade</SelectItem>
-              <SelectItem value="name">Ruler / Issuer</SelectItem>
-              <SelectItem value="value">Est. Value</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-9 p-0"
-            onClick={toggleSortDir}
-            title={sortDir === 'asc' ? 'Ascending' : 'Descending'}
-          >
-            {sortDir === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-          </Button>
+      {/* Toolbar - Modern 2026 Design */}
+      <div className="flex justify-between items-center gap-4">
+        {/* Left: Modern Sort Control */}
+        <div className="flex items-center gap-3">
+          <SortControl
+            sortBy={sortBy}
+            sortDir={sortDir as 'asc' | 'desc'}
+            onSortChange={(v) => setSort(v as any)}
+            onDirectionToggle={toggleSortDir}
+          />
 
           {/* Selection indicator */}
           {selectedIds.length > 0 && (
@@ -229,7 +211,10 @@ export function CoinListV3() {
         </div>
 
         {/* Right: View Switcher */}
-        <div className="flex bg-muted rounded-lg p-1">
+        <div 
+          className="flex rounded-lg p-1"
+          style={{ background: 'var(--bg-elevated)' }}
+        >
           <Button
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="sm"
@@ -280,9 +265,7 @@ export function CoinListV3() {
                 ? 'ruler'
                 : sortBy === 'year'
                   ? 'date'
-                  : sortBy === 'reference'
-                    ? 'reference'
-                    : sortBy
+                  : sortBy
             }
             sortDirection={sortDir as 'asc' | 'desc'}
             onSort={handleSort}

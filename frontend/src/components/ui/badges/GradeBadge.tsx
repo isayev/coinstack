@@ -98,10 +98,11 @@ export function GradeBadge({
   const numericValue = score ?? parsed.numeric;
   const displayGrade = parsed.base;
 
+  // Size classes - lg meets 44px touch target for mobile accessibility
   const sizeClasses = {
-    sm: 'min-w-[32px] h-[22px] text-[10px] px-1.5 gap-0.5',
-    md: 'min-w-[40px] h-[28px] text-xs px-2 gap-1',
-    lg: 'min-w-[52px] h-[36px] text-sm px-3 gap-1.5',
+    sm: 'min-w-[32px] h-[22px] text-[10px] px-1.5 gap-0.5',  // Desktop only
+    md: 'min-w-[40px] h-[28px] text-xs px-2 gap-1',          // Desktop only
+    lg: 'min-w-[52px] h-[44px] text-sm px-3 gap-1.5',        // Mobile-safe touch target
   };
 
   return (
@@ -122,8 +123,8 @@ export function GradeBadge({
         background: `var(--grade-${config.cssVar}-bg)`,
         color: `var(--grade-${config.cssVar})`,
         border: `1px solid var(--grade-${config.cssVar})`,
-        ringColor: active ? `var(--grade-${config.cssVar})` : undefined,
-      }}
+        '--tw-ring-color': active ? `var(--grade-${config.cssVar})` : undefined,
+      } as React.CSSProperties}
       title={config.label}
     >
       <span>{displayGrade}</span>

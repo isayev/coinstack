@@ -109,7 +109,7 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
                   render={({ field }) => (
                     <VocabAutocomplete
                       vocabType="issuer"
-                      value={field.value ?? undefined}
+                      value={field.value ?? null}
                       displayValue={attribution.issuer ?? undefined}
                       onChange={(id, display) => {
                         field.onChange(id)
@@ -131,7 +131,7 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
                   render={({ field }) => (
                     <VocabAutocomplete
                       vocabType="mint"
-                      value={field.value ?? undefined}
+                      value={field.value ?? null}
                       displayValue={attribution.mint ?? undefined}
                       onChange={(id, display) => {
                         field.onChange(id)

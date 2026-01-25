@@ -17,7 +17,7 @@ import { Calendar, TrendingUp, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CollectionPage() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, _setSidebarCollapsed] = useState(false);
 
   // Fetch stats for dashboard
   const { data: stats } = useCollectionStats();

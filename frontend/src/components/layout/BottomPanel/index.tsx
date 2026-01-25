@@ -7,7 +7,7 @@
  * - Resizable height (drag handle)
  */
 
-import { useState, ReactNode } from "react";
+import { useState, useRef, useEffect, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown, Calendar, TrendingUp, MapPin, GripHorizontal } from "lucide-react";
 
@@ -42,28 +42,69 @@ export function BottomPanel({
   const [height, setHeight] = useState(defaultHeight);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Handle resize drag
+  // Ref to track event listeners for cleanup on unmount
+  const listenersRef = useRef<{
+    move?: (e: MouseEvent | TouchEvent) => void;
+    end?: () => void;
+  }>({});
+
+  // Cleanup event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (listenersRef.current.move) {
+        document.removeEventListener('mousemove', listenersRef.current.move as (e: MouseEvent) => void);
+        document.removeEventListener('touchmove', listenersRef.current.move as (e: TouchEvent) => void);
+      }
+      if (listenersRef.current.end) {
+        document.removeEventListener('mouseup', listenersRef.current.end);
+        document.removeEventListener('touchend', listenersRef.current.end);
+      }
+    };
+  }, []);
+
+  // Handle resize drag (mouse)
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsDragging(true);
+    startDrag(e.clientY);
+  };
 
-    const startY = e.clientY;
+  // Handle resize drag (touch)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    startDrag(touch.clientY);
+  };
+
+  // Shared drag logic
+  const startDrag = (startY: number) => {
+    setIsDragging(true);
     const startHeight = height;
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const deltaY = startY - moveEvent.clientY;
+    const handleMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientY = 'touches' in moveEvent 
+        ? moveEvent.touches[0].clientY 
+        : moveEvent.clientY;
+      const deltaY = startY - clientY;
       const newHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + deltaY));
       setHeight(newHeight);
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       setIsDragging(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+      listenersRef.current = {};
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Store refs for cleanup
+    listenersRef.current = { move: handleMove, end: handleEnd };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove);
+    document.addEventListener('touchend', handleEnd);
   };
 
   const activeTabContent = tabs.find(t => t.id === activeTab)?.content;
@@ -80,13 +121,16 @@ export function BottomPanel({
         borderColor: 'var(--border-subtle)',
       }}
     >
-      {/* Header with tabs and toggle */}
+      {/* Header with tabs and toggle - aligned heights */}
       <div
-        className="flex items-center justify-between px-4 h-10"
-        style={{ borderBottom: isOpen ? '1px solid var(--border-subtle)' : 'none' }}
+        className="flex items-center justify-between px-4"
+        style={{ 
+          height: '40px',
+          borderBottom: isOpen ? '1px solid var(--border-subtle)' : 'none' 
+        }}
       >
         {/* Tabs */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 h-full">
           {tabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -95,7 +139,7 @@ export function BottomPanel({
                 if (!isOpen) setIsOpen(true);
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors",
+                "flex items-center gap-1.5 px-3 h-8 text-xs font-medium rounded transition-colors",
                 activeTab === id && isOpen
                   ? "bg-[var(--bg-hover)]"
                   : "hover:bg-[var(--bg-hover)]"
@@ -112,10 +156,10 @@ export function BottomPanel({
           ))}
         </div>
 
-        {/* Toggle button */}
+        {/* Toggle button - same height as tabs */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-1.5 rounded hover:bg-[var(--bg-hover)] transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded hover:bg-[var(--bg-hover)] transition-colors"
           style={{ color: 'var(--text-muted)' }}
           title={isOpen ? 'Collapse panel' : 'Expand panel'}
         >
@@ -130,13 +174,14 @@ export function BottomPanel({
       {/* Content */}
       {isOpen && (
         <>
-          {/* Resize handle */}
+          {/* Resize handle - supports both mouse and touch */}
           <div
             className={cn(
-              "h-1 cursor-ns-resize flex items-center justify-center transition-colors",
+              "h-2 cursor-ns-resize flex items-center justify-center transition-colors touch-none",
               isDragging ? "bg-[var(--cat-imperial)]" : "hover:bg-[var(--bg-hover)]"
             )}
             onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
           >
             <GripHorizontal 
               className="w-6 h-3" 

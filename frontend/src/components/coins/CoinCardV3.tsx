@@ -3,13 +3,339 @@
  * Now with responsive layout for mobile, tablet, and desktop
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { Coins } from 'lucide-react';
 import { Coin } from '@/domain/schemas';
-// RarityIndicator removed - rarity shown elsewhere
 import { parseCategory } from '@/components/design-system/colors';
+import { RarityIndicator } from '@/components/design-system/RarityIndicator';
 import { formatYear } from '@/lib/formatters';
 import { useUIStore } from '@/stores/uiStore';
+
+// ============================================================================
+// Constants (moved outside component to prevent recreation)
+// ============================================================================
+
+const GRADE_COLORS: Record<string, string> = {
+  'MS': 'var(--grade-ms)',
+  'AU': 'var(--grade-au)',
+  'XF': 'var(--grade-xf)',
+  'EF': 'var(--grade-xf)',
+  'VF': 'var(--grade-vf)',
+  'F': 'var(--grade-f)',
+  'VG': 'var(--grade-vg)',
+  'G': 'var(--grade-g)',
+  'AG': 'var(--grade-ag)',
+  'FR': 'var(--grade-fr)',
+  'P': 'var(--grade-fr)',
+  'CHOICE': 'var(--grade-au)',
+};
+
+function getGradeColor(grade: string | null | undefined): string {
+  if (!grade) return 'var(--text-secondary)';
+  const prefix = grade.toString().replace(/[0-9\s]/g, '').toUpperCase();
+  return GRADE_COLORS[prefix] || 'var(--text-secondary)';
+}
+
+// ============================================================================
+// CoinContent - Extracted component (memoized to prevent recreation)
+// ============================================================================
+
+interface CoinContentProps {
+  coin: Coin;
+  displayYear: string;
+  reference: string | null;
+  currentValue: number | null | undefined;
+  paidPrice: number | null | undefined;
+  performance: number | null;
+  isMobile: boolean;
+  compact?: boolean;
+}
+
+const CoinContent = memo(function CoinContent({
+  coin,
+  displayYear,
+  reference,
+  currentValue,
+  paidPrice,
+  performance,
+  isMobile,
+  compact = false,
+}: CoinContentProps) {
+  return (
+    <>
+      {/* Ruler Name - Design spec: 17px */}
+      <h3
+        style={{
+          fontSize: compact ? '15px' : '17px',
+          fontWeight: 700,
+          lineHeight: 1.2,
+          color: 'var(--text-primary)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+        title={coin.attribution.issuer || undefined}
+      >
+        {coin.attribution.issuer || 'Unknown Ruler'}
+      </h3>
+
+      {/* Denomination, Mint, Date - Design spec: 13px */}
+      <div
+        style={{
+          fontSize: compact ? '12px' : '13px',
+          lineHeight: 1.3,
+          color: 'var(--text-secondary)',
+          fontWeight: 500,
+        }}
+      >
+        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{coin.denomination || 'Unknown'}</span>
+        {' · '}
+        {coin.attribution.mint || 'Uncertain'}
+        {' · '}
+        {displayYear}
+      </div>
+
+      {/* Legends Section - Compact */}
+      <div
+        style={{
+          marginTop: '4px',
+          paddingTop: '4px',
+          borderTop: '1px solid var(--border-subtle)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+          flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Obverse Legend */}
+        {coin.design?.obverse_legend && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+            title={`Obverse: ${coin.design.obverse_legend}`}
+          >
+            <div
+              style={{
+                fontSize: '8px',
+                fontWeight: 800,
+                color: 'var(--text-ghost)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                flexShrink: 0,
+                width: '24px',
+                opacity: 0.6,
+              }}
+            >
+              OBV
+            </div>
+            <span
+              style={{
+                fontSize: compact ? '10px' : '11px',
+                lineHeight: 1.4,
+                color: 'var(--text-primary)',
+                fontFamily: coin.category.includes('greek')
+                  ? '"EB Garamond", Georgia, "Times New Roman", serif'
+                  : '"Cinzel", "EB Garamond", Georgia, serif',
+                fontWeight: 500,
+                letterSpacing: coin.category.includes('greek') ? '0.3px' : '1px',
+                fontStyle: coin.category.includes('greek') ? 'italic' : 'normal',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                opacity: 0.85,
+              }}
+            >
+              {coin.design.obverse_legend}
+            </span>
+          </div>
+        )}
+
+        {/* Reverse Legend */}
+        {coin.design?.reverse_legend && (
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+              overflow: 'hidden',
+            }}
+            title={`Reverse: ${coin.design.reverse_legend}`}
+          >
+            <div
+              style={{
+                fontSize: '8px',
+                fontWeight: 800,
+                color: 'var(--text-ghost)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.8px',
+                flexShrink: 0,
+                width: '24px',
+                opacity: 0.6,
+              }}
+            >
+              REV
+            </div>
+            <span
+              style={{
+                fontSize: compact ? '10px' : '11px',
+                lineHeight: 1.4,
+                color: 'var(--text-primary)',
+                fontFamily: coin.category.includes('greek')
+                  ? '"EB Garamond", Georgia, "Times New Roman", serif'
+                  : '"Cinzel", "EB Garamond", Georgia, serif',
+                fontWeight: 500,
+                letterSpacing: coin.category.includes('greek') ? '0.3px' : '1px',
+                fontStyle: coin.category.includes('greek') ? 'italic' : 'normal',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                opacity: 0.85,
+              }}
+            >
+              {coin.design.reverse_legend}
+            </span>
+          </div>
+        )}
+
+        {/* Catalog Reference - Always shown if available */}
+        {reference && (
+          <div
+            style={{
+              fontSize: '9px',
+              fontFamily: 'monospace',
+              color: 'var(--text-muted)',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+            }}
+          >
+            {reference}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Section: Price Left, Badges Right */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '8px',
+        paddingTop: '6px',
+        borderTop: '1px solid var(--border-subtle)',
+        marginTop: 'auto',
+      }}>
+        {/* Left: Current Value */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          {currentValue && (
+            <div
+              style={{
+                fontSize: compact ? '14px' : '16px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+              }}
+            >
+              {new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: coin.acquisition?.currency || 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(currentValue)}
+            </div>
+          )}
+
+          {/* Performance */}
+          {paidPrice && performance !== null && (
+            <div
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: performance > 0
+                  ? 'var(--perf-positive)'
+                  : performance < 0
+                    ? 'var(--perf-negative)'
+                    : 'var(--text-muted)',
+              }}
+            >
+              {performance > 0 ? '↑' : performance < 0 ? '↓' : ''}{Math.abs(performance).toFixed(0)}%
+            </div>
+          )}
+        </div>
+
+        {/* Right: Compact Badges - Certification, Grade, Metal */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px',
+          flexShrink: 0,
+        }}>
+          {/* Certification Service Badge */}
+          {coin.grading.service && coin.grading.service !== 'none' && (
+            <div
+              style={{
+                fontSize: '8px',
+                fontWeight: 700,
+                padding: '2px 5px',
+                borderRadius: '2px',
+                color: '#fff',
+                background: `var(--cert-${coin.grading.service.toLowerCase()})`,
+                textTransform: 'uppercase',
+              }}
+            >
+              {coin.grading.service}
+            </div>
+          )}
+
+          {/* Grade Badge */}
+          {coin.grading.grade && (
+            <div
+              style={{
+                fontSize: '8px',
+                fontWeight: 700,
+                padding: '2px 5px',
+                borderRadius: '2px',
+                border: `1px solid ${getGradeColor(coin.grading.grade)}`,
+                color: getGradeColor(coin.grading.grade),
+              }}
+            >
+              {coin.grading.grade}
+            </div>
+          )}
+
+          {/* Metal Badge */}
+          {coin.metal && (
+            <div
+              style={{
+                fontSize: '8px',
+                fontWeight: 700,
+                padding: '2px 5px',
+                borderRadius: '2px',
+                color: `var(--metal-${coin.metal.toLowerCase()})`,
+                background: `var(--metal-${coin.metal.toLowerCase()}-subtle)`,
+                textTransform: 'uppercase',
+              }}
+            >
+              {coin.metal}
+            </div>
+          )}
+
+          {/* Rarity Dot */}
+          {coin.rarity && (
+            <RarityIndicator rarity={coin.rarity} variant="dot" />
+          )}
+        </div>
+      </div>
+    </>
+  );
+});
+
+// ============================================================================
+// Main Component
+// ============================================================================
 
 export interface CoinCardV3Props {
   coin: Coin;
@@ -59,319 +385,27 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
       : null;
   }, [coin.references]);
 
-  // Shared content component for both mobile and desktop layouts
-  const CoinContent = ({ compact = false }: { compact?: boolean }) => (
-    <>
-      {/* Ruler Name */}
-      <h3
-        style={{
-          fontSize: compact ? '16px' : '18px',
-          fontWeight: 700,
-          lineHeight: 1.2,
-          color: 'var(--text-primary)',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-        title={coin.attribution.issuer || undefined}
-      >
-        {coin.attribution.issuer || 'Unknown Ruler'}
-      </h3>
-
-      {/* Denomination, Mint, Date */}
-      <div
-        style={{
-          fontSize: compact ? '11px' : '12px',
-          lineHeight: 1.3,
-          color: 'var(--text-secondary)',
-          fontWeight: 500,
-        }}
-      >
-        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{coin.denomination || 'Unknown'}</span>
-        {' · '}
-        {coin.attribution.mint || 'Uncertain'}
-        {' · '}
-        {displayYear}
-      </div>
-
-      {/* Legends Section - Classical Typography */}
-      <div
-        style={{
-          marginTop: '6px',
-          paddingTop: '8px',
-          paddingBottom: '4px',
-          borderTop: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '5px',
-          minHeight: isMobile ? '36px' : '42px',
-        }}
-      >
-        {/* Obverse Legend */}
-        {coin.design?.obverse_legend ? (
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              overflow: 'hidden',
-            }}
-            title={`Obverse: ${coin.design.obverse_legend}`}
-          >
-            <div
-              style={{
-                fontSize: '8px',
-                fontWeight: 800,
-                color: 'var(--text-ghost)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                flexShrink: 0,
-                width: '24px',
-                opacity: 0.6,
-              }}
-            >
-              OBV
-            </div>
-            <span
-              style={{
-                fontSize: compact ? '10px' : '11px',
-                lineHeight: 1.4,
-                color: 'var(--text-primary)',
-                fontFamily: coin.category.includes('greek')
-                  ? '"EB Garamond", Georgia, "Times New Roman", serif'
-                  : '"Cinzel", "EB Garamond", Georgia, serif',
-                fontWeight: coin.category.includes('greek') ? 500 : 500,
-                letterSpacing: coin.category.includes('greek') ? '0.3px' : '1px',
-                fontStyle: coin.category.includes('greek') ? 'italic' : 'normal',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                opacity: 0.85,
-              }}
-            >
-              {coin.design.obverse_legend}
-            </span>
-          </div>
-        ) : reference ? (
-          <div
-            style={{
-              fontSize: '10px',
-              fontFamily: 'monospace',
-              color: 'var(--text-muted)',
-              fontWeight: 600,
-              letterSpacing: '0.5px',
-            }}
-          >
-            {reference}
-          </div>
-        ) : null}
-
-        {/* Reverse Legend */}
-        {coin.design?.reverse_legend && (
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              overflow: 'hidden',
-            }}
-            title={`Reverse: ${coin.design.reverse_legend}`}
-          >
-            <div
-              style={{
-                fontSize: '8px',
-                fontWeight: 800,
-                color: 'var(--text-ghost)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.8px',
-                flexShrink: 0,
-                width: '24px',
-                opacity: 0.6,
-              }}
-            >
-              REV
-            </div>
-            <span
-              style={{
-                fontSize: compact ? '10px' : '11px',
-                lineHeight: 1.4,
-                color: 'var(--text-primary)',
-                fontFamily: coin.category.includes('greek')
-                  ? '"EB Garamond", Georgia, "Times New Roman", serif'
-                  : '"Cinzel", "EB Garamond", Georgia, serif',
-                fontWeight: coin.category.includes('greek') ? 500 : 500,
-                letterSpacing: coin.category.includes('greek') ? '0.3px' : '1px',
-                fontStyle: coin.category.includes('greek') ? 'italic' : 'normal',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                opacity: 0.85,
-              }}
-            >
-              {coin.design.reverse_legend}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }} />
-
-      {/* Bottom Section: Price Left, Badges Right */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px',
-        paddingTop: '8px',
-        borderTop: '1px solid var(--border-subtle)',
-        flexWrap: isMobile ? 'wrap' : 'nowrap',
-      }}>
-        {/* Left: Current Value */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-          {currentValue && (
-            <div
-              style={{
-                fontSize: compact ? '16px' : '18px',
-                fontWeight: 800,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.5px',
-              }}
-            >
-              {new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: coin.acquisition?.currency || 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              }).format(currentValue)}
-            </div>
-          )}
-
-          {/* Performance */}
-          {paidPrice && performance !== null && (
-            <div
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: '4px',
-                border: `1px solid ${performance > 0 ? 'var(--perf-positive)' : performance < 0 ? 'var(--perf-negative)' : 'var(--border-subtle)'}`,
-                color: performance > 0
-                  ? 'var(--perf-positive)'
-                  : performance < 0
-                    ? 'var(--perf-negative)'
-                    : 'var(--text-muted)',
-              }}
-            >
-              {performance > 0 ? '▲' : performance < 0 ? '▼' : '●'}{' '}
-              {Math.abs(performance).toFixed(1)}%
-            </div>
-          )}
-        </div>
-
-        {/* Right: Uniform Badges Row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
-        }}>
-          {/* Metal Badge - filled background with metal color */}
-          {coin.metal && (() => {
-            const metalKey = coin.metal.toLowerCase();
-            return (
-              <div
-                style={{
-                  fontSize: '9px',
-                  fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: '3px',
-                  border: `1px solid var(--metal-${metalKey})`,
-                  color: `var(--metal-${metalKey})`,
-                  background: `var(--metal-${metalKey}-subtle)`,
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {coin.metal}
-              </div>
-            );
-          })()}
-
-          {/* Grade Badge - ONLY grade (F, VF, XF, etc.) with grade color */}
-          {coin.grading.grade && (() => {
-            const gradeColors: Record<string, string> = {
-              'MS': 'var(--grade-ms)',
-              'AU': 'var(--grade-au)',
-              'XF': 'var(--grade-xf)',
-              'EF': 'var(--grade-xf)',
-              'VF': 'var(--grade-vf)',
-              'F': 'var(--grade-f)',
-              'VG': 'var(--grade-vg)',
-              'G': 'var(--grade-g)',
-              'AG': 'var(--grade-ag)',
-              'FR': 'var(--grade-fr)',
-              'P': 'var(--grade-fr)',
-              'CHOICE': 'var(--grade-au)',
-            };
-            // Extract just the grade prefix (remove numbers)
-            const gradeStr = coin.grading.grade?.toString() || '';
-            const gradePrefix = gradeStr.replace(/[0-9\s]/g, '').toUpperCase();
-            const gradeColor = gradeColors[gradePrefix] || 'var(--text-secondary)';
-            
-            return (
-              <div
-                style={{
-                  fontSize: '9px',
-                  fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: '3px',
-                  border: `1px solid ${gradeColor}`,
-                  color: gradeColor,
-                  background: 'transparent',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-              >
-                {coin.grading.grade}
-              </div>
-            );
-          })()}
-
-          {/* Certification Service Badge - NGC/PCGS with service color */}
-          {coin.grading.service && coin.grading.service !== 'none' && (
-            <div
-              style={{
-                fontSize: '9px',
-                fontWeight: 700,
-                padding: '3px 8px',
-                borderRadius: '3px',
-                border: `1px solid var(--cert-${coin.grading.service.toLowerCase()})`,
-                color: '#fff',
-                background: `var(--cert-${coin.grading.service.toLowerCase()})`,
-                height: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                textTransform: 'lowercase',
-              }}
-            >
-              {coin.grading.service.toLowerCase()}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+  // Create a render helper that uses the extracted CoinContent component
+  const renderCoinContent = (compact = false) => (
+    <CoinContent
+      coin={coin}
+      displayYear={displayYear}
+      reference={reference}
+      currentValue={currentValue}
+      paidPrice={paidPrice}
+      performance={performance}
+      isMobile={isMobile}
+      compact={compact}
+    />
   );
 
   // Responsive dimensions - cards fill their grid cell with min-width
+  // Balanced sizing: 160px square images, 170px card height
   const cardWidth = '100%';
-  const cardMinWidth = isMobile ? 'auto' : '420px'; // Minimum width for readability
-  const cardHeight = isMobile ? 'auto' : '180px';
-  const imageWidth = isMobile ? '100%' : '180px'; // Square image
-  const imageHeight = isMobile ? '200px' : '180px';
+  const cardMinWidth = isMobile ? 'auto' : '360px'; // Slightly smaller min-width
+  const cardHeight = isMobile ? 'auto' : '170px';
+  const imageWidth = isMobile ? '100%' : '160px'; // Square image
+  const imageHeight = isMobile ? '180px' : '160px';
 
   return (
     <div
@@ -402,7 +436,7 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
         }
       }}
     >
-      {/* Category Bar */}
+      {/* Category Bar - 4px left accent */}
       <div
         style={{
           position: 'absolute',
@@ -411,6 +445,8 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
           bottom: 0,
           width: '4px',
           background: `var(--cat-${categoryType})`,
+          borderRadius: '8px 0 0 8px',
+          zIndex: 1,
         }}
       />
 
@@ -577,7 +613,7 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
 
           {/* Content Section - Mobile */}
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-            <CoinContent />
+            {renderCoinContent()}
           </div>
         </div>
       ) : (
@@ -750,10 +786,10 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
               </div>
               </td>
 
-              {/* Content Column - MODERN DESIGN */}
+              {/* Content Column - Clean Design */}
               <td
                 style={{
-                  padding: screenSize === 'tablet' ? '12px 12px 12px 16px' : '16px 16px 16px 20px',
+                  padding: screenSize === 'tablet' ? '10px 10px 10px 14px' : '12px 14px 12px 16px',
                   verticalAlign: 'top',
                 }}
               >
@@ -765,7 +801,7 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
                   gap: screenSize === 'tablet' ? '4px' : '6px',
                 }}
               >
-                <CoinContent compact={screenSize === 'tablet'} />
+                {renderCoinContent(screenSize === 'tablet')}
               </div>
               </td>
             </tr>

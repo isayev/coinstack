@@ -26,7 +26,7 @@ interface HealthCategory {
   name: string;
   complete: number;
   total: number;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 }
 
 interface CollectionHealthWidgetProps {
