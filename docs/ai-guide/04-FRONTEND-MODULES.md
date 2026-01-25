@@ -1,6 +1,10 @@
 # Frontend Modules Reference (V2)
 
-This document describes the frontend architecture, component patterns, state management, and API integration for CoinStack V2.
+> This document describes the frontend architecture, component patterns, state management, and API integration for CoinStack V2.
+>
+> **Related Guides**:
+> - [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) - Design tokens, colors, component specs (v3.1)
+> - [11-FRONTEND-COMPONENTS.md](11-FRONTEND-COMPONENTS.md) - Detailed component reference
 
 ---
 
@@ -104,28 +108,47 @@ const queryClient = new QueryClient({
 
 Global styles with CSS custom properties for design tokens.
 
-**Design Tokens**:
+> **Complete Design Tokens**: See [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) for full token reference.
+
+**Key Token Categories**:
 ```css
 :root {
+  /* Backgrounds (Navy-charcoal theme) */
+  --bg-app: #050814;
+  --bg-elevated: #0B1020;
+  --bg-card: #0F1526;
+  --bg-hover: #1A1F35;
+
+  /* Text hierarchy */
+  --text-primary: #F5F5F7;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  --text-ghost: #6B7280;
+
+  /* Categories (Historical colors) */
+  --cat-republic: #DC2626;
+  --cat-imperial: #7C3AED;
+  --cat-provincial: #2563EB;
+  --cat-greek: #16A34A;
+
   /* Metals */
-  --metal-gold: #ffd700;
-  --metal-silver: #c0c0c0;
-  --metal-bronze: #cd7f32;
+  --metal-au: #FFD700;
+  --metal-ag: #C0C0C0;
+  --metal-ae: #8B7355;
 
-  /* Categories */
-  --category-greek: #2563eb;
-  --category-imperial: #7c3aed;
-  --category-republic: #dc2626;
-  --category-provincial: #059669;
-  --category-byzantine: #d97706;
+  /* Grades (Temperature scale) */
+  --grade-poor: #3B82F6;
+  --grade-vf: #F59E0B;
+  --grade-ms: #DC2626;
 
-  /* Rarities */
-  --rarity-common: #6b7280;
-  --rarity-scarce: #22c55e;
-  --rarity-rare: #3b82f6;
-  --rarity-very-rare: #a855f7;
-  --rarity-extremely-rare: #ef4444;
-  --rarity-unique: #fbbf24;
+  /* Certifications */
+  --cert-ngc: #1A73E8;
+  --cert-pcgs: #2E7D32;
+
+  /* Rarity (Gemstone scale) */
+  --rarity-common: #D1D5DB;
+  --rarity-r1: #06B6D4;
+  --rarity-unique: #EF4444;
 }
 ```
 
@@ -1620,6 +1643,24 @@ describe('useCoins', () => {
 
 ---
 
+## Design System v3.1 (January 2026)
+
+The frontend uses Design System v3.1 with specific component specifications:
+
+- **Card dimensions**: 360×170px (desktop), responsive mobile
+- **Images**: 160×160px square with 3D flip
+- **Badge order**: [Certification] [Grade] [Metal] [Rarity●]
+- **Badge font**: 8px with 2px 5px padding
+
+For complete design token reference, see **[10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md)**.
+For detailed component implementations, see **[11-FRONTEND-COMPONENTS.md](11-FRONTEND-COMPONENTS.md)**.
+
+---
+
 **Previous**: [03-BACKEND-MODULES.md](03-BACKEND-MODULES.md) - Backend reference
 **Next**: [05-DATA-MODEL.md](05-DATA-MODEL.md) - Database schema
-**Related**: [06-DATA-FLOWS.md](06-DATA-FLOWS.md) - Sequence diagrams, [07-API-REFERENCE.md](07-API-REFERENCE.md) - API endpoints
+**Related**: 
+- [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) - Design tokens and specs
+- [11-FRONTEND-COMPONENTS.md](11-FRONTEND-COMPONENTS.md) - Component details
+- [06-DATA-FLOWS.md](06-DATA-FLOWS.md) - Sequence diagrams
+- [07-API-REFERENCE.md](07-API-REFERENCE.md) - API endpoints

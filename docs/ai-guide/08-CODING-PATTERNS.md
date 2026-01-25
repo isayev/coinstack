@@ -748,6 +748,9 @@ def get_by_id(self, coin_id: int) -> Optional[Coin]:
 
 ## TypeScript/Frontend Conventions
 
+> **Design System**: See [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) for colors, tokens, and component specs.
+> **Components**: See [11-FRONTEND-COMPONENTS.md](11-FRONTEND-COMPONENTS.md) for detailed component reference.
+
 ### File Organization
 
 ```
@@ -756,16 +759,26 @@ src/
 │   └── CollectionPage.tsx
 ├── components/
 │   ├── ui/                    # shadcn/ui components
+│   │   └── badges/            # MetalBadge, GradeBadge
 │   ├── layout/                # AppShell, Header, Sidebar
-│   └── coins/                 # Feature-specific
+│   ├── coins/                 # CoinCardV3, CoinForm
+│   ├── dashboard/             # Dashboard widgets
+│   └── design-system/         # Design primitives
+├── features/
+│   └── collection/            # Collection-specific components
+│       ├── CoinListV3.tsx
+│       ├── CollectionDashboard/
+│       └── CollectionToolbar/
 ├── api/                       # API client + hooks
 │   ├── client.ts              # Axios instance
 │   └── v2.ts                  # TanStack Query hooks
 ├── stores/                    # Zustand stores
-│   └── uiStore.ts
+│   ├── uiStore.ts             # UI state
+│   └── filterStore.ts         # Filters + pagination
 ├── domain/                    # TypeScript types (mirror backend)
-│   └── schemas.ts
+│   └── schemas.ts             # Zod schemas
 └── hooks/                     # Custom React hooks
+    ├── useCoins.ts
     └── useSeries.ts
 ```
 
