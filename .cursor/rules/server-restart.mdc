@@ -10,7 +10,7 @@ Before starting new servers, always kill existing processes:
 
 ```powershell
 # Check what's running on dev ports
-netstat -ano | findstr ":8001 :3000 :3001 :3002 :3003"
+netstat -ano | findstr ":8000 :3000"
 
 # Kill processes by PID (replace with actual PIDs found)
 Stop-Process -Id <pid1>,<pid2>,... -Force -ErrorAction SilentlyContinue
@@ -18,12 +18,12 @@ Stop-Process -Id <pid1>,<pid2>,... -Force -ErrorAction SilentlyContinue
 
 ### 2. Start Only ONE Instance of Each
 
-- **Backend**: Port 8001 only
+- **Backend**: Port 8000 only
 - **Frontend**: Port 3000 only (use `--port 3000` flag)
 
 ```powershell
 # Backend (from backend/ directory)
-python -m uvicorn app.main:app --port 8001
+python -m uvicorn app.main:app --port 8000
 
 # Frontend (from frontend/ directory)  
 npm run dev -- --port 3000
@@ -32,12 +32,12 @@ npm run dev -- --port 3000
 ### 3. Verify Clean State
 
 After starting, verify only expected ports are in use:
-- 8001: Backend API
+- 8000: Backend API
 - 3000: Frontend dev server
 
 ## Why This Matters
 
-- Multiple frontend instances cause confusion about which is active
-- Port conflicts lead to incremented ports (3001, 3002, etc.)
+- Multiple instances cause confusion about which is active
+- Port conflicts prevent proper startup
 - Stale processes can serve outdated code
 - Memory and resource waste from zombie processes

@@ -1,0 +1,46 @@
+---
+description: Check and update developer guide when modifying functionality
+alwaysApply: true
+---
+
+# Developer Guide Protocol
+
+Before modifying or checking functionality, always consult the developer guide at `docs/ai-guide/`.
+
+## Before Making Changes
+
+1. **Read relevant guide sections** in `docs/ai-guide/`:
+   - `01-OVERVIEW.md` - Project overview
+   - `02-ARCHITECTURE.md` - System architecture
+   - `03-BACKEND-MODULES.md` - Backend module details
+   - `04-FRONTEND-MODULES.md` - Frontend module details
+   - `05-DATA-MODEL.md` - Database schema and domain entities
+   - `06-DATA-FLOWS.md` - How data moves through the system
+   - `07-API-REFERENCE.md` - API endpoints documentation
+   - `08-CODING-PATTERNS.md` - Patterns and conventions
+   - `09-TASK-RECIPES.md` - Common task implementations
+
+2. **Understand existing behavior** before modifying
+
+## After Making Changes
+
+If functionality was modified, **update the relevant guide section**:
+
+- Added new API endpoint → Update `07-API-REFERENCE.md`
+- Changed data model/schema → Update `05-DATA-MODEL.md`
+- Added new module/service → Update `03-BACKEND-MODULES.md` or `04-FRONTEND-MODULES.md`
+- Changed data flow → Update `06-DATA-FLOWS.md`
+- Added new pattern → Update `08-CODING-PATTERNS.md`
+
+## Example
+
+```
+✅ CORRECT WORKFLOW:
+1. Read docs/ai-guide/05-DATA-MODEL.md
+2. Add storage_location column to Coin entity
+3. Update docs/ai-guide/05-DATA-MODEL.md with new field
+
+❌ INCORRECT:
+1. Add storage_location column
+2. (forget to update documentation)
+```

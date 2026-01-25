@@ -20,7 +20,7 @@ Before ANY database schema change or migration:
 
 # Windows PowerShell:
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-Copy-Item "backend\coinstack.db" "backend\backups\coinstack_$timestamp.db"
+Copy-Item "backend\coinstack_v2.db" "backend\backups\coinstack_$timestamp.db"
 
 # Or create backups directory if it doesn't exist:
 New-Item -ItemType Directory -Force -Path "backend\backups"
@@ -54,7 +54,7 @@ After any schema modification:
 If migration fails or data is corrupted:
 ```powershell
 # Restore from most recent backup
-Copy-Item "backend\backups\coinstack_LATEST.db" "backend\coinstack.db" -Force
+Copy-Item "backend\backups\coinstack_LATEST.db" "backend\coinstack_v2.db" -Force
 ```
 
 ## When This Rule Applies
@@ -68,5 +68,5 @@ Copy-Item "backend\backups\coinstack_LATEST.db" "backend\coinstack.db" -Force
 
 ## Database Location
 
-- Production DB: `backend/coinstack.db`
+- Production DB: `backend/coinstack_v2.db`
 - Backups: `backend/backups/`
