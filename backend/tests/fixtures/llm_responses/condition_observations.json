@@ -1,0 +1,89 @@
+{
+  "moderate_wear": {
+    "input": {
+      "hints": {"denomination": "Denarius", "metal": "silver"}
+    },
+    "output": {
+      "wear_observations": "High points of portrait show moderate wear with hair curls still visible. Legend letters remain sharp except for partial softness at 3 o'clock position. Reverse figure retains good detail on drapery folds.",
+      "surface_notes": "Even gray cabinet toning. No porosity detected. Light hairlines visible under magnification, consistent with past gentle cleaning.",
+      "strike_quality": "Well-centered on both sides. Strike appears strong with no weakness on legend or devices.",
+      "notable_features": [
+        "Small banker's mark on reverse field",
+        "Minor die crack from 2 o'clock toward portrait"
+      ],
+      "concerns": [],
+      "recommendation": "Professional grading recommended for sale/insurance",
+      "confidence": 0.82,
+      "reasoning": [
+        "Clear observation of wear patterns",
+        "Surface characteristics well-documented"
+      ]
+    }
+  },
+  "well_preserved": {
+    "input": {
+      "hints": {"denomination": "Aureus", "metal": "gold"}
+    },
+    "output": {
+      "wear_observations": "Minimal high-point wear observed. Portrait details including individual hair strands remain crisp. All legend letters fully formed with sharp edges. Reverse shows complete detail on all devices.",
+      "surface_notes": "Original luster visible in protected areas. No cleaning evidence detected. Minor contact marks in right field consistent with ancient handling.",
+      "strike_quality": "Exceptionally well-struck. Full centering on both dies. Die state appears early with no signs of die wear.",
+      "notable_features": [
+        "Original mint luster partially retained",
+        "Possible die variety - check references"
+      ],
+      "concerns": [],
+      "recommendation": "Professional grading recommended for sale/insurance",
+      "confidence": 0.88,
+      "reasoning": [
+        "High-quality preservation evident",
+        "Surfaces appear original"
+      ]
+    }
+  },
+  "heavily_circulated": {
+    "input": {
+      "hints": {"denomination": "Sestertius", "metal": "bronze"}
+    },
+    "output": {
+      "wear_observations": "Significant wear across all high points. Portrait outline visible but fine details lost. Legend letters worn smooth in several areas with approximately 40% readable. Reverse type identifiable but worn flat on raised portions.",
+      "surface_notes": "Dark green patina with areas of light brown. Moderate porosity across surfaces consistent with burial environment. No active corrosion detected.",
+      "strike_quality": "Original strike appears to have been slightly off-center. Some weakness evident on reverse legend independent of wear.",
+      "notable_features": [
+        "Test cut on edge at 6 o'clock"
+      ],
+      "concerns": [
+        "Area near nose appears smoother than surrounding - examine under magnification for tooling",
+        "Edge smoothing may indicate past cleaning"
+      ],
+      "recommendation": "Professional grading recommended for sale/insurance",
+      "confidence": 0.75,
+      "reasoning": [
+        "Heavy circulation wear documented",
+        "Some concerns noted for review"
+      ]
+    }
+  },
+  "problematic_surfaces": {
+    "input": {
+      "hints": {}
+    },
+    "output": {
+      "wear_observations": "Moderate wear on high points. Portrait recognizable with major features visible.",
+      "surface_notes": "Evidence of past harsh cleaning - surfaces appear stripped with loss of original patina. Retoning present but uneven. Some pitting visible on obverse field.",
+      "strike_quality": "Appears well-struck originally, though cleaning has affected surface texture.",
+      "notable_features": [],
+      "concerns": [
+        "Harsh cleaning evident - significantly impacts collectibility",
+        "Possible scratches from cleaning visible under magnification",
+        "Unnatural surface texture"
+      ],
+      "recommendation": "Professional grading recommended for sale/insurance",
+      "confidence": 0.7,
+      "reasoning": [
+        "Cleaning issues documented",
+        "Lower confidence due to altered surfaces"
+      ]
+    }
+  }
+}

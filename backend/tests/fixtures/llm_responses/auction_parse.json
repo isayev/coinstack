@@ -1,0 +1,38 @@
+{
+  "success_heritage": {
+    "input": {
+      "description": "Trajan. AD 98-117. AR Denarius (19mm, 3.15 g, 6h). Rome mint. Struck AD 103-111. IMP TRAIANO AVG GER DAC P M TR P, laureate bust right, slight drapery on far shoulder / COS V P P S P Q R OPTIMO PRINC, Victory standing left, holding wreath and palm. RIC II 118; RSC 76.",
+      "hints": {"auction_house": "Heritage"}
+    },
+    "output": {
+      "content": "{\"issuer\": \"Trajan\", \"denomination\": \"Denarius\", \"metal\": \"silver\", \"mint\": \"Rome\", \"year_start\": 103, \"year_end\": 111, \"weight_g\": 3.15, \"diameter_mm\": 19, \"obverse_legend\": \"IMP TRAIANO AVG GER DAC P M TR P\", \"obverse_description\": \"laureate bust right, slight drapery on far shoulder\", \"reverse_legend\": \"COS V P P S P Q R OPTIMO PRINC\", \"reverse_description\": \"Victory standing left, holding wreath and palm\", \"references\": [\"RIC II 118\", \"RSC 76\"], \"grade\": null, \"confidence\": 0.95, \"reasoning\": [\"Clear structured Heritage description\", \"All fields extractable\"]}",
+      "confidence": 0.95,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_cng": {
+    "input": {
+      "description": "HADRIAN. 117-138 AD. AR Denarius (18mm, 2.97g). Rome mint. Struck 119-122 AD. Laureate bust right / Felicitas standing left, holding caduceus and cornucopia. RIC II 120. Near VF, toned.",
+      "hints": {"auction_house": "CNG"}
+    },
+    "output": {
+      "content": "{\"issuer\": \"Hadrian\", \"denomination\": \"Denarius\", \"metal\": \"silver\", \"mint\": \"Rome\", \"year_start\": 119, \"year_end\": 122, \"weight_g\": 2.97, \"diameter_mm\": 18, \"obverse_legend\": null, \"obverse_description\": \"Laureate bust right\", \"reverse_legend\": null, \"reverse_description\": \"Felicitas standing left, holding caduceus and cornucopia\", \"references\": [\"RIC II 120\"], \"grade\": \"Near VF\", \"confidence\": 0.88, \"reasoning\": [\"Partial legend info\", \"Grade mentioned\"]}",
+      "confidence": 0.88,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_republican": {
+    "input": {
+      "description": "L. Aemilius Lepidus Paullus. 62 BC. AR Denarius (3.90 g). Rome mint. Veiled head of Concordia right / TER above, PAVLLVS on left, Trophy; on right, three captives. Crawford 415/1. Toned VF.",
+      "hints": {}
+    },
+    "output": {
+      "content": "{\"issuer\": \"L. Aemilius Lepidus Paullus\", \"denomination\": \"Denarius\", \"metal\": \"silver\", \"mint\": \"Rome\", \"year_start\": -62, \"year_end\": -62, \"weight_g\": 3.90, \"diameter_mm\": null, \"obverse_legend\": null, \"obverse_description\": \"Veiled head of Concordia right\", \"reverse_legend\": \"TER PAVLLVS\", \"reverse_description\": \"Trophy; on right, three captives\", \"references\": [\"Crawford 415/1\"], \"grade\": \"Toned VF\", \"confidence\": 0.90, \"reasoning\": [\"Republican coin with moneyer\", \"BC date correctly identified\"]}",
+      "confidence": 0.90,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  }
+}

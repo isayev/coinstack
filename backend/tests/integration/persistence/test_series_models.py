@@ -2,7 +2,8 @@ import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from src.infrastructure.persistence.models import Base
-from src.infrastructure.persistence.models_series import SeriesModel, SeriesSlotModel
+from src.infrastructure.persistence.orm import CoinModel
+from src.infrastructure.persistence.models_series import SeriesModel, SeriesSlotModel, SeriesMembershipModel
 
 @pytest.fixture
 def db_session():

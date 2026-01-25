@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from unittest.mock import MagicMock, patch
 from src.infrastructure.web.routers.series import router
-from src.infrastructure.persistence.database import get_db
+from src.infrastructure.web.dependencies import get_db
 
 mock_session = MagicMock()
 def override_get_db():
@@ -63,3 +63,22 @@ def test_add_slot():
         
         assert response.status_code == 201
         assert response.json()["name"] == "Slot 1"
+
+def test_add_coin_to_series():
+    with patch("src.infrastructure.web.routers.series.SeriesService") as MockService:
+        instance = MockService.return_value
+        instance.add_coin_to_series.return_value = MagicMock(
+            id=1, series_id=1, coin_id=1, slot_id=None
+        )
+        
+        response = client.post("/api/series/1/coins/1")
+        assert response.status_code == 201
+        assert response.json()["coin_id"] == 1
+
+def test_remove_coin_from_series():
+    with patch("src.infrastructure.web.routers.series.SeriesService") as MockService:
+        instance = MockService.return_value
+        instance.remove_coin_from_series.return_value = True
+        
+        response = client.delete("/api/series/1/coins/1")
+        assert response.status_code == 204

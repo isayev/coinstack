@@ -1,0 +1,46 @@
+{
+  "success_basic": {
+    "input": {
+      "abbreviation": "IMP CAESAR AVG"
+    },
+    "output": {
+      "content": "Imperator Caesar Augustus",
+      "confidence": 0.95,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_complex": {
+    "input": {
+      "abbreviation": "IMP CAES NERVA TRAIAN AVG GERM P M TR P COS II P P"
+    },
+    "output": {
+      "content": "Imperator Caesar Nerva Traianus Augustus Germanicus Pontifex Maximus Tribunicia Potestate Consul II Pater Patriae",
+      "confidence": 0.92,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_reverse": {
+    "input": {
+      "abbreviation": "S C"
+    },
+    "output": {
+      "content": "Senatus Consulto",
+      "confidence": 0.99,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_victory_titles": {
+    "input": {
+      "abbreviation": "IMP CAES M AVR ANTONINVS AVG GERM SARM"
+    },
+    "output": {
+      "content": "Imperator Caesar Marcus Aurelius Antoninus Augustus Germanicus Sarmaticus",
+      "confidence": 0.90,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  }
+}

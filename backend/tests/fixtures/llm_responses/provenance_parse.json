@@ -1,0 +1,35 @@
+{
+  "success_chain": {
+    "input": {
+      "description": "Ex. Harlan J. Berk Ltd., Buy or Bid Sale 215, 2022, lot 178. Previously ex. Freeman & Sear Manhattan Sale III, 2008, lot 89; ex. Münzen und Medaillen AG 72, 1987, lot 456."
+    },
+    "output": {
+      "content": "{\"provenance_chain\": [{\"source\": \"Harlan J. Berk Ltd.\", \"source_type\": \"auction\", \"year\": 2022, \"sale\": \"Buy or Bid Sale 215\", \"lot\": \"178\"}, {\"source\": \"Freeman & Sear\", \"source_type\": \"auction\", \"year\": 2008, \"sale\": \"Manhattan Sale III\", \"lot\": \"89\"}, {\"source\": \"Münzen und Medaillen AG\", \"source_type\": \"auction\", \"year\": 1987, \"sale\": \"72\", \"lot\": \"456\"}], \"earliest_known\": 1987, \"confidence\": 0.95, \"reasoning\": [\"Clear auction chain with dates and lot numbers\"]}",
+      "confidence": 0.95,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_collection": {
+    "input": {
+      "description": "Ex Hunt Collection. From the estate of Nelson Bunker Hunt."
+    },
+    "output": {
+      "content": "{\"provenance_chain\": [{\"source\": \"Hunt Collection\", \"source_type\": \"collection\", \"year\": null, \"sale\": null, \"lot\": null}], \"earliest_known\": null, \"confidence\": 0.88, \"reasoning\": [\"Named collection provenance without specific date\"]}",
+      "confidence": 0.88,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_simple": {
+    "input": {
+      "description": "CNG Auction 100, lot 234"
+    },
+    "output": {
+      "content": "{\"provenance_chain\": [{\"source\": \"Classical Numismatic Group\", \"source_type\": \"auction\", \"year\": null, \"sale\": \"Auction 100\", \"lot\": \"234\"}], \"earliest_known\": null, \"confidence\": 0.92, \"reasoning\": [\"CNG = Classical Numismatic Group\"]}",
+      "confidence": 0.92,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  }
+}

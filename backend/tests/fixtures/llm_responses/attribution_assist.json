@@ -1,0 +1,94 @@
+{
+  "success_caracalla": {
+    "input": {
+      "known_info": {
+        "obverse_legend": "IMP C M AVR ANTONINVS AVG",
+        "reverse_description": "Minerva standing left",
+        "weight_g": 3.1,
+        "diameter_mm": 19
+      }
+    },
+    "output": {
+      "suggestions": [
+        {
+          "attribution": "Caracalla, Denarius, Rome mint, 213 AD",
+          "reference": "RIC IV 223",
+          "confidence": 0.85,
+          "reasoning": [
+            "Legend matches Caracalla's imperial title",
+            "Minerva reverse common for his denarii",
+            "Weight/diameter consistent with denarius"
+          ]
+        },
+        {
+          "attribution": "Caracalla, Denarius, Rome mint, 215 AD",
+          "reference": "RIC IV 264",
+          "confidence": 0.72,
+          "reasoning": [
+            "Similar type from later in reign",
+            "Different reverse legend would distinguish"
+          ]
+        }
+      ],
+      "questions_to_resolve": [
+        "What is the reverse legend?",
+        "Is Minerva holding spear or olive branch?"
+      ],
+      "confidence": 0.85
+    }
+  },
+  "ambiguous_imp_caes": {
+    "input": {
+      "known_info": {
+        "obverse_legend": "IMP CAES",
+        "metal": "silver"
+      }
+    },
+    "output": {
+      "suggestions": [
+        {
+          "attribution": "Augustus, Denarius",
+          "reference": "Uncertain",
+          "confidence": 0.3,
+          "reasoning": [
+            "IMP CAES alone is too common to attribute"
+          ]
+        }
+      ],
+      "questions_to_resolve": [
+        "What is the full obverse legend?",
+        "Any reverse information available?",
+        "What is the weight?"
+      ],
+      "confidence": 0.3
+    }
+  },
+  "weight_based_identification": {
+    "input": {
+      "known_info": {
+        "weight_g": 7.2,
+        "metal": "gold",
+        "obverse_legend": "NERO CAESAR AVG"
+      }
+    },
+    "output": {
+      "suggestions": [
+        {
+          "attribution": "Nero, Aureus, Rome mint, 64-68 AD",
+          "reference": "RIC I 45-65 (various)",
+          "confidence": 0.9,
+          "reasoning": [
+            "Weight consistent with aureus standard (7.0-8.0g)",
+            "Legend is Nero's typical imperial form",
+            "Gold with this legend is definitively Nero"
+          ]
+        }
+      ],
+      "questions_to_resolve": [
+        "What is the reverse type?",
+        "Specific date would narrow to exact RIC number"
+      ],
+      "confidence": 0.9
+    }
+  }
+}

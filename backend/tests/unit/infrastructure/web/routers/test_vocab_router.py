@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from unittest.mock import MagicMock, patch, AsyncMock
 from sqlalchemy.orm import Session
 from src.infrastructure.web.routers.vocab import router
-from src.infrastructure.persistence.database import get_db
+from src.infrastructure.web.dependencies import get_db
 
 # Mock DB Dependency
 mock_session = MagicMock()
@@ -82,6 +82,6 @@ def test_sync_trigger():
         # But run_sync is a background task, TestClient doesn't execute it automatically unless we wait or invoke.
         # However, the endpoint just adds it.
         
-        response = client.post("/api/vocab/sync/nomisma")
+        response = client.post("/api/vocab/sync/nomisma/issuers")
         assert response.status_code == 202
         assert response.json()["status"] == "started"

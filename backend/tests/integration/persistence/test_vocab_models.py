@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session, declarative_base
 # However, the goal is to test the *actual* model definition.
 
 from src.infrastructure.persistence.models import Base
-from src.infrastructure.persistence.models_vocab import IssuerModel, MintModel
+from src.infrastructure.persistence.orm import CoinModel
+from src.infrastructure.persistence.models_vocab import IssuerModel, MintModel, IssuerAliasModel
 
 @pytest.fixture
 def db_session():

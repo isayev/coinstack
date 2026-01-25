@@ -1,0 +1,79 @@
+{
+  "ric_simple": {
+    "input": {"reference": "RIC II 207"},
+    "output": {
+      "raw_reference": "RIC II 207",
+      "catalog_system": "RIC",
+      "volume": "II",
+      "number": "207",
+      "issuer": "Vespasian to Hadrian (69-138 AD)",
+      "mint": null,
+      "alternatives": [],
+      "confidence": 0.95,
+      "reasoning": ["Standard RIC format recognized"]
+    }
+  },
+  "ric_with_part": {
+    "input": {"reference": "RIC IV.1 223"},
+    "output": {
+      "raw_reference": "RIC IV.1 223",
+      "catalog_system": "RIC",
+      "volume": "IV.1",
+      "number": "223",
+      "issuer": "Pertinax to Geta (193-212 AD)",
+      "mint": null,
+      "alternatives": [],
+      "confidence": 0.95,
+      "reasoning": ["RIC volume IV part 1 identified"]
+    }
+  },
+  "crawford_rrc": {
+    "input": {"reference": "Crawford 443/1"},
+    "output": {
+      "raw_reference": "Crawford 443/1",
+      "catalog_system": "Crawford",
+      "volume": null,
+      "number": "443/1",
+      "issuer": "Roman Republic (L. Hostilius Saserna)",
+      "mint": "Rome",
+      "alternatives": ["RRC 443/1"],
+      "confidence": 0.92,
+      "reasoning": [
+        "Crawford number recognized",
+        "48 BC moneyer identified from number"
+      ]
+    }
+  },
+  "combined_reference": {
+    "input": {"reference": "RIC II 207 = RSC 253"},
+    "output": {
+      "raw_reference": "RIC II 207 = RSC 253",
+      "catalog_system": "RIC",
+      "volume": "II",
+      "number": "207",
+      "issuer": "Trajan (98-117 AD)",
+      "mint": "Rome",
+      "alternatives": ["RSC 253", "Sear 3129"],
+      "confidence": 0.9,
+      "reasoning": [
+        "Primary reference is RIC",
+        "RSC cross-reference provided",
+        "Sear equivalent added"
+      ]
+    }
+  },
+  "sear_greek": {
+    "input": {"reference": "Sear 2705"},
+    "output": {
+      "raw_reference": "Sear 2705",
+      "catalog_system": "Sear",
+      "volume": null,
+      "number": "2705",
+      "issuer": "Athens",
+      "mint": "Athens",
+      "alternatives": [],
+      "confidence": 0.88,
+      "reasoning": ["Sear Greek Coins reference"]
+    }
+  }
+}

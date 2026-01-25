@@ -1,0 +1,61 @@
+{
+  "success_trajan": {
+    "input": {
+      "hints": {"ruler": "Trajan", "denomination": "Denarius"}
+    },
+    "output": {
+      "obverse_legend": "IMP TRAIANO AVG GER DAC P M TR P",
+      "obverse_legend_expanded": "Imperator Traiano Augustus Germanicus Dacicus Pontifex Maximus Tribunicia Potestate",
+      "reverse_legend": "COS V P P S P Q R OPTIMO PRINC",
+      "reverse_legend_expanded": "Consul V Pater Patriae Senatus Populusque Romanus Optimo Principi",
+      "exergue": null,
+      "uncertain_portions": [],
+      "confidence": 0.92,
+      "reasoning": [
+        "Clear legend visible",
+        "Standard Trajan titulature confirmed"
+      ]
+    }
+  },
+  "partial_worn": {
+    "input": {
+      "hints": {"category": "imperial"}
+    },
+    "output": {
+      "obverse_legend": "IMP CAES [...] AVG P M TR P",
+      "obverse_legend_expanded": "Imperator Caesar [name unclear] Augustus Pontifex Maximus Tribunicia Potestate",
+      "reverse_legend": "[...]VS AVGVSTI",
+      "reverse_legend_expanded": "[...] Augusti",
+      "exergue": "R",
+      "uncertain_portions": [
+        "Central portion of obverse legend worn",
+        "Beginning of reverse legend illegible"
+      ],
+      "confidence": 0.6,
+      "reasoning": [
+        "Wear prevents full reading",
+        "Exergue mint mark R = Rome clearly visible"
+      ]
+    }
+  },
+  "republican_coin": {
+    "input": {
+      "hints": {"category": "republic"}
+    },
+    "output": {
+      "obverse_legend": "ROMA",
+      "obverse_legend_expanded": "Roma",
+      "reverse_legend": "L·PLAE[TOR]·CEST",
+      "reverse_legend_expanded": "Lucius Plaetorius Cestianus",
+      "exergue": null,
+      "uncertain_portions": [
+        "Middle letters of reverse legend partially worn"
+      ],
+      "confidence": 0.78,
+      "reasoning": [
+        "Republican moneyer format identified",
+        "ROMA on obverse typical for denarii"
+      ]
+    }
+  }
+}

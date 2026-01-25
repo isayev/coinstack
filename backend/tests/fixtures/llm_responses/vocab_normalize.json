@@ -1,0 +1,67 @@
+{
+  "success_augustus": {
+    "input": {
+      "raw_text": "IMP CAES AVG",
+      "vocab_type": "issuer",
+      "context": {"category": "roman_imperial"}
+    },
+    "output": {
+      "content": "{\"canonical_name\": \"Augustus\", \"confidence\": 0.92, \"reasoning\": [\"IMP CAES AVG matches Augustus imperial titulature\", \"Most common for early imperial period\"]}",
+      "confidence": 0.92,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_trajan": {
+    "input": {
+      "raw_text": "TRAIANVS",
+      "vocab_type": "issuer",
+      "context": {}
+    },
+    "output": {
+      "content": "{\"canonical_name\": \"Trajan\", \"confidence\": 0.98, \"reasoning\": [\"Direct match to Trajan (Latin: Traianus)\"]}",
+      "confidence": 0.98,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_rome_mint": {
+    "input": {
+      "raw_text": "Roma",
+      "vocab_type": "mint",
+      "context": {}
+    },
+    "output": {
+      "content": "{\"canonical_name\": \"Rome\", \"confidence\": 0.99, \"reasoning\": [\"Roma is Latin for Rome mint\"]}",
+      "confidence": 0.99,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "ambiguous_imp_caes": {
+    "input": {
+      "raw_text": "IMP CAES",
+      "vocab_type": "issuer",
+      "context": {}
+    },
+    "output": {
+      "content": "{\"canonical_name\": \"\", \"confidence\": 0.3, \"reasoning\": [\"IMP CAES alone is ambiguous - used by many emperors\", \"Need more context or full legend\"]}",
+      "confidence": 0.3,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  },
+  "success_denarius": {
+    "input": {
+      "raw_text": "AR denarius",
+      "vocab_type": "denomination",
+      "context": {}
+    },
+    "output": {
+      "content": "{\"canonical_name\": \"Denarius\", \"confidence\": 0.95, \"reasoning\": [\"AR denarius = silver denarius\", \"Standard Roman silver denomination\"]}",
+      "confidence": 0.95,
+      "model_used": "mock",
+      "cost_usd": 0.0
+    }
+  }
+}
