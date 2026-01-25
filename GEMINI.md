@@ -18,7 +18,7 @@
 - **Prohibited:** NO `Co-authored-by` trailers. NO mention of AI assistance in commit messages.
 
 ### 🔴 Database Safety
-- **File:** `backend/coinstack.db` (SQLite).
+- **File:** `backend/coinstack_v2.db` (SQLite).
 - **Rule:** timestamped backup to `backend/backups/` REQUIRED before any schema change/migration.
 - **Retention:** Keep rolling 5 backups.
 
