@@ -260,7 +260,7 @@ coinstack/
 │   │           └── trust_config.py
 │   │
 │   └── data/
-│       └── coinstack.db         # SQLite database
+│       └── coinstack_v2.db      # SQLite database
 │
 └── frontend/
     └── src/
