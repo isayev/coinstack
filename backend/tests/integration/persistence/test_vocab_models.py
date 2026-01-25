@@ -45,3 +45,29 @@ def test_mint_model_persistence(db_session):
 
     result = db_session.scalar(select(MintModel).where(MintModel.nomisma_id == "rome"))
     assert result.canonical_name == "Roma"
+
+def test_issuer_alias_persistence(db_session):
+    from src.infrastructure.persistence.models_vocab import IssuerAliasModel
+    
+    # Create issuer first
+    issuer = IssuerModel(
+        canonical_name="Hadrian",
+        nomisma_id="hadrian",
+        issuer_type="emperor"
+    )
+    db_session.add(issuer)
+    db_session.commit()
+
+    # Add alias
+    alias = IssuerAliasModel(
+        issuer_id=issuer.id,
+        alias="Hadrianus",
+        normalized_form="hadrianus"
+    )
+    db_session.add(alias)
+    db_session.commit()
+
+    # Verify relationship
+    loaded_issuer = db_session.scalar(select(IssuerModel).where(IssuerModel.canonical_name == "Hadrian"))
+    assert len(loaded_issuer.aliases) == 1
+    assert loaded_issuer.aliases[0].alias == "Hadrianus"

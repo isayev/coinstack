@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-from src.infrastructure.web.routers import v2, audit_v2, scrape_v2
+from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab
 from src.infrastructure.persistence.database import init_db
 from src.infrastructure.config import get_settings
 
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(v2.router)
     app.include_router(audit_v2.router)
     app.include_router(scrape_v2.router)
+    app.include_router(vocab.router)
     
     return app
 
