@@ -1,0 +1,379 @@
+# =============================================================================
+# CoinStack LLM Configuration
+# =============================================================================
+# Model routing for P0+P1 capabilities (MVP)
+# Profiles: development, production, offline
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# GLOBAL SETTINGS
+# -----------------------------------------------------------------------------
+settings:
+  # Active profile: development | production | offline
+  active_profile: ${LLM_PROFILE:-development}
+  
+  # Request settings
+  default_timeout: 60
+  max_retries: 3
+  retry_delay: 1.0
+  
+  # Cost tracking
+  track_costs: true
+  cost_log_path: "data/llm_costs.sqlite"
+  monthly_budget_usd: 5.00
+  budget_alert_threshold: 0.8  # Alert at 80% of budget
+  
+  # Caching
+  cache_enabled: true
+  cache_backend: "sqlite"
+  cache_path: "data/llm_cache.sqlite"
+  cache_ttl_hours: 168  # 7 days for deterministic ops
+  
+  # Rate limiting
+  rate_limit:
+    enrichments_per_coin: 3
+    window_minutes: 5
+
+# -----------------------------------------------------------------------------
+# MODEL PROVIDERS
+# -----------------------------------------------------------------------------
+providers:
+  anthropic:
+    api_key: ${ANTHROPIC_API_KEY}
+  
+  google:
+    api_key: ${GOOGLE_API_KEY}
+  
+  openrouter:
+    api_base: "https://openrouter.ai/api/v1"
+    api_key: ${OPENROUTER_API_KEY}
+    headers:
+      HTTP-Referer: "https://coinstack.local"
+      X-Title: "CoinStack Numismatic Library"
+  
+  ollama:
+    api_base: ${OLLAMA_HOST:-http://localhost:11434}
+
+# -----------------------------------------------------------------------------
+# MODEL DEFINITIONS
+# -----------------------------------------------------------------------------
+models:
+  # === FRONTIER MODELS ===
+  
+  claude-sonnet:
+    provider: anthropic
+    model_id: claude-sonnet-4-5-20250929
+    cost_per_1k_input: 0.003
+    cost_per_1k_output: 0.015
+    max_tokens: 8192
+    supports_vision: false
+    supports_json_mode: true
+    
+  claude-haiku:
+    provider: anthropic
+    model_id: claude-haiku-4-5-20251001
+    cost_per_1k_input: 0.0008
+    cost_per_1k_output: 0.004
+    max_tokens: 8192
+    supports_vision: false
+    supports_json_mode: true
+  
+  gemini-2.5-pro:
+    provider: google
+    model_id: gemini-2.5-pro
+    cost_per_1k_input: 0.00125
+    cost_per_1k_output: 0.005
+    max_tokens: 8192
+    supports_vision: true
+    supports_json_mode: true
+    
+  gemini-2.5-flash:
+    provider: google
+    model_id: gemini-2.5-flash
+    cost_per_1k_input: 0.000075
+    cost_per_1k_output: 0.0003
+    max_tokens: 8192
+    supports_vision: true
+    supports_json_mode: true
+  
+  k2:
+    provider: openrouter
+    model_id: openrouter/k2
+    cost_per_1k_input: 0.0001
+    cost_per_1k_output: 0.0003
+    max_tokens: 4096
+    supports_vision: false
+    supports_json_mode: true
+    
+  deepseek-v3:
+    provider: openrouter
+    model_id: deepseek/deepseek-chat
+    cost_per_1k_input: 0.00014
+    cost_per_1k_output: 0.00028
+    max_tokens: 8192
+    supports_vision: false
+    supports_json_mode: true
+  
+  # === LOCAL MODELS (Ollama) ===
+  
+  ollama-llama3.2:
+    provider: ollama
+    model_id: llama3.2:latest
+    cost_per_1k_input: 0.0
+    cost_per_1k_output: 0.0
+    max_tokens: 4096
+    supports_vision: false
+    supports_json_mode: true
+    local: true
+    
+  ollama-phi3:
+    provider: ollama
+    model_id: phi3:latest
+    cost_per_1k_input: 0.0
+    cost_per_1k_output: 0.0
+    max_tokens: 4096
+    supports_vision: false
+    supports_json_mode: true
+    local: true
+    
+  ollama-llama3.2-vision:
+    provider: ollama
+    model_id: llama3.2-vision:latest
+    cost_per_1k_input: 0.0
+    cost_per_1k_output: 0.0
+    max_tokens: 4096
+    supports_vision: true
+    supports_json_mode: false
+    local: true
+
+# -----------------------------------------------------------------------------
+# CAPABILITY ROUTING
+# -----------------------------------------------------------------------------
+capabilities:
+  # P0: MVP Capabilities (Phase 1A)
+  
+  vocab_normalize:
+    description: "Normalize raw numismatic text to canonical vocabulary terms"
+    requires_json: true
+    cacheable: true
+    profiles:
+      production:
+        primary: k2
+        fallback: [deepseek-v3, claude-haiku]
+      development:
+        primary: ollama-phi3
+        fallback: [ollama-llama3.2, k2]
+      offline:
+        primary: ollama-phi3
+        fallback: []
+    parameters:
+      temperature: 0.1
+      max_tokens: 100
+  
+  legend_expand:
+    description: "Expand abbreviated Latin legends to full form"
+    requires_json: false
+    cacheable: true
+    profiles:
+      production:
+        primary: k2
+        fallback: [claude-haiku]
+      development:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+      offline:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+    parameters:
+      temperature: 0.2
+      max_tokens: 200
+  
+  auction_parse:
+    description: "Extract structured coin data from auction descriptions"
+    requires_json: true
+    cacheable: true
+    profiles:
+      production:
+        primary: claude-haiku
+        fallback: [k2, deepseek-v3]
+      development:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+      offline:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+    parameters:
+      temperature: 0.2
+      max_tokens: 800
+  
+  provenance_parse:
+    description: "Extract provenance chain from descriptions"
+    requires_json: true
+    cacheable: true
+    profiles:
+      production:
+        primary: claude-haiku
+        fallback: [k2]
+      development:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+      offline:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+    parameters:
+      temperature: 0.2
+      max_tokens: 500
+  
+  # P1: Core Capabilities (Phase 1B)
+  
+  image_identify:
+    description: "Identify coin from obverse/reverse images"
+    requires_json: true
+    requires_vision: true
+    cacheable: true
+    profiles:
+      production:
+        primary: gemini-2.5-pro
+        fallback: [gemini-2.5-flash]
+      development:
+        primary: ollama-llama3.2-vision
+        fallback: [gemini-2.5-flash]
+      offline:
+        primary: ollama-llama3.2-vision
+        fallback: []
+    parameters:
+      temperature: 0.3
+      max_tokens: 500
+  
+  reference_validate:
+    description: "Validate and cross-reference catalog numbers"
+    requires_json: true
+    cacheable: true
+    profiles:
+      production:
+        primary: claude-haiku
+        fallback: [k2]
+      development:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+      offline:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+    parameters:
+      temperature: 0.1
+      max_tokens: 300
+  
+  context_generate:
+    description: "Generate historical context and narrative for a coin"
+    requires_json: false
+    cacheable: false
+    streaming: true
+    profiles:
+      production:
+        primary: claude-sonnet
+        fallback: [deepseek-v3, gemini-2.5-pro]
+      development:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+      offline:
+        primary: ollama-llama3.2
+        fallback: [ollama-phi3]
+    parameters:
+      temperature: 0.7
+      max_tokens: 1000
+  
+  # P2: Advanced Capabilities (Phase 2)
+  
+  attribution_assist:
+    description: "Suggest attribution from partial coin info"
+    requires_json: true
+    cacheable: false  # Each query is unique
+    profiles:
+      production:
+        primary: claude-sonnet
+        fallback: [deepseek-v3]
+      development:
+        primary: ollama-llama3.2
+        fallback: []
+      offline:
+        primary: ollama-llama3.2
+        fallback: []
+    parameters:
+      temperature: 0.4
+      max_tokens: 800
+  
+  legend_transcribe:
+    description: "OCR-like legend transcription from images"
+    requires_json: true
+    requires_vision: true
+    cacheable: true  # Same image = same legends
+    profiles:
+      production:
+        primary: gemini-2.5-pro
+        fallback: [gemini-2.5-flash]
+      development:
+        primary: ollama-llama3.2-vision
+        fallback: [gemini-2.5-flash]
+      offline:
+        primary: ollama-llama3.2-vision
+        fallback: []
+    parameters:
+      temperature: 0.2
+      max_tokens: 500
+  
+  catalog_parse:
+    description: "Parse catalog reference strings"
+    requires_json: true
+    cacheable: true  # Deterministic parsing
+    profiles:
+      production:
+        primary: k2
+        fallback: [claude-haiku]
+      development:
+        primary: ollama-phi3
+        fallback: [ollama-llama3.2]
+      offline:
+        primary: ollama-phi3
+        fallback: []
+    parameters:
+      temperature: 0.1
+      max_tokens: 300
+  
+  condition_observations:
+    description: "Describe wear and surface conditions (NOT grades)"
+    requires_json: true
+    requires_vision: true
+    cacheable: false  # Different lighting/angle = different observations
+    profiles:
+      production:
+        primary: gemini-2.5-pro
+        fallback: [gemini-2.5-flash]
+      development:
+        primary: ollama-llama3.2-vision
+        fallback: [gemini-2.5-flash]
+      offline:
+        primary: ollama-llama3.2-vision
+        fallback: []
+    parameters:
+      temperature: 0.3
+      max_tokens: 700
+
+# -----------------------------------------------------------------------------
+# PROFILE SETTINGS
+# -----------------------------------------------------------------------------
+profile_settings:
+  production:
+    prefer_quality: true
+    allow_local_fallback: false
+    log_level: "INFO"
+    
+  development:
+    prefer_quality: false
+    prefer_local: true
+    allow_frontier_fallback: true
+    log_level: "DEBUG"
+    
+  offline:
+    prefer_local: true
+    allow_frontier_fallback: false
+    log_level: "DEBUG"
