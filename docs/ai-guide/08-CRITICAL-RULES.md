@@ -499,23 +499,74 @@ coins = sorted(coins, key=lambda c: c.mint_year_start or 9999)
 - Enables chronological sorting
 - Simplifies date range queries
 
+## Documentation Requirements (MANDATORY)
+
+### BEFORE Making Changes
+
+**MUST consult relevant guides in `docs/ai-guide/`**:
+
+| Change Type | Read First |
+|-------------|------------|
+| Backend logic | `03-BACKEND-MODULES.md`, `08-CODING-PATTERNS.md` |
+| Domain entities | `04-DOMAIN-ENTITIES.md`, `05-DATA-MODEL.md` |
+| Frontend components | `11-FRONTEND-COMPONENTS.md`, `10-DESIGN-SYSTEM.md` |
+| UI/Design | `10-DESIGN-SYSTEM.md` |
+| API endpoints | `07-API-REFERENCE.md` |
+| Database schema | `05-DATA-MODEL.md` |
+
+### AFTER Making Changes
+
+**MUST update documentation to reflect changes**:
+
+| Change Made | Update This Guide |
+|-------------|-------------------|
+| New/modified API endpoint | `07-API-REFERENCE.md` |
+| New database field | `05-DATA-MODEL.md` |
+| New backend module | `03-BACKEND-MODULES.md` |
+| New domain entity | `04-DOMAIN-ENTITIES.md` |
+| New/modified component | `11-FRONTEND-COMPONENTS.md` |
+| Design token change | `10-DESIGN-SYSTEM.md` |
+| New hook or store | `04-FRONTEND-MODULES.md` |
+| Data flow change | `06-DATA-FLOWS.md` |
+| New pattern | `08-CODING-PATTERNS.md` |
+
+**Why This Matters**:
+- Documentation is the source of truth for the codebase
+- Outdated docs lead to inconsistent implementations
+- AI assistants rely on accurate docs for context
+- New contributors need accurate reference
+
+---
+
 ## Validation Summary Checklist
 
 Before committing code, verify:
 
+### Ports & Configuration
 - [ ] Backend on port 8000, frontend on port 3000
 - [ ] Git author is `isayev <olexandr@olexandrisayev.com>`
 - [ ] No Co-authored-by trailers or AI mentions
+
+### Database
 - [ ] Database backup created before schema changes
-- [ ] Rich scrapers used (not legacy)
 - [ ] Repositories use `flush()` not `commit()`
+- [ ] Repository methods use `selectinload()` for relationships
+
+### Architecture
 - [ ] Use cases depend on interfaces (Protocol), not concrete classes
 - [ ] ORM models use `Mapped[T]` and `mapped_column()` syntax
-- [ ] Repository methods use `selectinload()` for relationships
-- [ ] Backend tests marked with `@pytest.mark.unit` or `@pytest.mark.integration`
+- [ ] Rich scrapers used (not legacy)
+
+### Code Style
 - [ ] Backend imports use `src.` prefix
 - [ ] Frontend imports use `@/` alias
 - [ ] BC years stored as negative integers
+- [ ] Backend tests marked with `@pytest.mark.unit` or `@pytest.mark.integration`
+
+### Documentation (MANDATORY)
+- [ ] Consulted relevant `docs/ai-guide/` before changes
+- [ ] Updated relevant guides after making changes
+- [ ] Documentation reflects current implementation
 
 ---
 
