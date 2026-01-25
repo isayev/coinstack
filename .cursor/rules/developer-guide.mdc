@@ -1,46 +1,171 @@
 ---
-description: Check and update developer guide when modifying functionality
+description: MANDATORY - Consult and update developer guide when modifying functionality
 alwaysApply: true
 ---
 
-# Developer Guide Protocol
+# Developer Guide Protocol (STRICT ENFORCEMENT)
 
-Before modifying or checking functionality, always consult the developer guide at `docs/ai-guide/`.
+**MANDATORY**: The `docs/ai-guide/` documentation MUST be consulted before changes and updated after changes. These documents are the authoritative source of truth for the codebase.
 
-## Before Making Changes
+---
 
-1. **Read relevant guide sections** in `docs/ai-guide/`:
-   - `01-OVERVIEW.md` - Project overview
-   - `02-ARCHITECTURE.md` - System architecture
-   - `03-BACKEND-MODULES.md` - Backend module details
-   - `04-FRONTEND-MODULES.md` - Frontend module details
-   - `05-DATA-MODEL.md` - Database schema and domain entities
-   - `06-DATA-FLOWS.md` - How data moves through the system
-   - `07-API-REFERENCE.md` - API endpoints documentation
-   - `08-CODING-PATTERNS.md` - Patterns and conventions
-   - `09-TASK-RECIPES.md` - Common task implementations
+## BEFORE Making ANY Changes (REQUIRED)
 
-2. **Understand existing behavior** before modifying
+### Step 1: Identify Relevant Guides
 
-## After Making Changes
+| Change Type | MUST Read First |
+|-------------|-----------------|
+| **Backend logic** | `03-BACKEND-MODULES.md`, `08-CODING-PATTERNS.md` |
+| **Domain entities** | `04-DOMAIN-ENTITIES.md`, `05-DATA-MODEL.md` |
+| **Frontend components** | `04-FRONTEND-MODULES.md`, `11-FRONTEND-COMPONENTS.md` |
+| **UI/Design changes** | `10-DESIGN-SYSTEM.md`, `11-FRONTEND-COMPONENTS.md` |
+| **API endpoints** | `07-API-REFERENCE.md`, `06-DATA-FLOWS.md` |
+| **Database schema** | `05-DATA-MODEL.md`, `09-TASK-RECIPES.md` |
+| **New feature** | `09-TASK-RECIPES.md` + relevant module guide |
 
-If functionality was modified, **update the relevant guide section**:
+### Step 2: Understand Existing Behavior
 
-- Added new API endpoint → Update `07-API-REFERENCE.md`
-- Changed data model/schema → Update `05-DATA-MODEL.md`
-- Added new module/service → Update `03-BACKEND-MODULES.md` or `04-FRONTEND-MODULES.md`
-- Changed data flow → Update `06-DATA-FLOWS.md`
-- Added new pattern → Update `08-CODING-PATTERNS.md`
+- Read the relevant sections completely
+- Identify existing patterns and conventions
+- Note any constraints or requirements
+- Check for related components/modules
 
-## Example
+---
+
+## AFTER Making Changes (REQUIRED)
+
+### Step 1: Identify What Changed
+
+Ask yourself:
+- Did I add/modify an API endpoint?
+- Did I change the data model or schema?
+- Did I add/modify a component?
+- Did I change design tokens or UI patterns?
+- Did I add/modify a service or use case?
+- Did I change data flow or state management?
+
+### Step 2: Update Documentation
+
+**If you changed it, you MUST document it:**
+
+| Change Made | Update This Guide |
+|-------------|-------------------|
+| New API endpoint | `07-API-REFERENCE.md` |
+| Modified API response | `07-API-REFERENCE.md` |
+| New database field | `05-DATA-MODEL.md` |
+| Schema migration | `05-DATA-MODEL.md`, `09-TASK-RECIPES.md` |
+| New backend module | `03-BACKEND-MODULES.md` |
+| New domain entity | `04-DOMAIN-ENTITIES.md` |
+| New frontend component | `11-FRONTEND-COMPONENTS.md` |
+| Component behavior change | `11-FRONTEND-COMPONENTS.md` |
+| New design token | `10-DESIGN-SYSTEM.md` |
+| UI pattern change | `10-DESIGN-SYSTEM.md` |
+| New hook or store | `04-FRONTEND-MODULES.md` |
+| Data flow change | `06-DATA-FLOWS.md` |
+| New coding pattern | `08-CODING-PATTERNS.md` |
+
+---
+
+## Complete Guide Index
 
 ```
-✅ CORRECT WORKFLOW:
-1. Read docs/ai-guide/05-DATA-MODEL.md
-2. Add storage_location column to Coin entity
-3. Update docs/ai-guide/05-DATA-MODEL.md with new field
-
-❌ INCORRECT:
-1. Add storage_location column
-2. (forget to update documentation)
+docs/ai-guide/
+├── README.md                    # Navigation and quick start
+├── 01-OVERVIEW.md               # Project context, domain terms
+├── 02-CLEAN-ARCHITECTURE.md     # V2 architecture principles
+├── 03-BACKEND-MODULES.md        # Backend layers and modules
+├── 04-DOMAIN-ENTITIES.md        # Entities, value objects
+├── 04-FRONTEND-MODULES.md       # Frontend architecture
+├── 05-DATA-MODEL.md             # Database schema, ORM
+├── 06-DATA-FLOWS.md             # Request flows, state
+├── 06-FILE-LOCATIONS.md         # File reference
+├── 07-API-REFERENCE.md          # API endpoints
+├── 08-CODING-PATTERNS.md        # Code conventions
+├── 08-CRITICAL-RULES.md         # Mandatory requirements
+├── 09-TASK-RECIPES.md           # Step-by-step guides
+├── 10-DESIGN-SYSTEM.md          # Design tokens, colors, specs
+└── 11-FRONTEND-COMPONENTS.md    # Component reference
 ```
+
+---
+
+## Examples
+
+### ✅ CORRECT Workflow
+
+```
+1. Task: Add "provenance_notes" field to Coin
+
+2. BEFORE - Read guides:
+   - docs/ai-guide/05-DATA-MODEL.md (understand current schema)
+   - docs/ai-guide/04-DOMAIN-ENTITIES.md (domain entity structure)
+   - docs/ai-guide/09-TASK-RECIPES.md (recipe for adding fields)
+
+3. IMPLEMENT - Make changes:
+   - Add field to domain entity
+   - Add field to ORM model
+   - Update repository mapping
+   - Add to API schema
+   - Add to frontend form
+
+4. AFTER - Update guides:
+   - Update 05-DATA-MODEL.md with new field
+   - Update 07-API-REFERENCE.md if API changed
+   - Update 11-FRONTEND-COMPONENTS.md if form changed
+```
+
+### ✅ CORRECT Workflow (UI Change)
+
+```
+1. Task: Change coin card dimensions
+
+2. BEFORE - Read guides:
+   - docs/ai-guide/10-DESIGN-SYSTEM.md (current specs)
+   - docs/ai-guide/11-FRONTEND-COMPONENTS.md (component details)
+
+3. IMPLEMENT - Make changes:
+   - Update CoinCardV3.tsx dimensions
+   - Verify responsive behavior
+
+4. AFTER - Update guides:
+   - Update 10-DESIGN-SYSTEM.md with new dimensions
+   - Update 11-FRONTEND-COMPONENTS.md if props/behavior changed
+```
+
+### ❌ INCORRECT Workflow
+
+```
+1. Add new API endpoint
+2. (skip reading existing patterns)
+3. (skip updating 07-API-REFERENCE.md)
+4. Code works but documentation is now outdated!
+```
+
+---
+
+## Enforcement
+
+**This rule is MANDATORY. Violations include:**
+
+- Making changes without consulting relevant guides
+- Implementing patterns that contradict documented conventions
+- Adding functionality without updating documentation
+- Leaving documentation outdated after changes
+
+**The AI assistant MUST:**
+
+1. State which guides were consulted before making changes
+2. List which guides need updating after changes are complete
+3. Actually update the guides with accurate information
+4. Ensure documentation reflects current implementation
+
+---
+
+## Related Design Specs
+
+For UI/frontend work, also consult:
+
+- `design/CoinStack Design System v3.0.md` - Master design specification
+- `design/CoinStack Frontpage + Grid Design.md` - Grid layout specs
+- `design/CoinStack Individual Coin Page Design.md` - Detail page specs
+- `design/CoinStack Statistics Dashboard Design.md` - Dashboard specs
