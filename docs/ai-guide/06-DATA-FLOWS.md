@@ -1,6 +1,46 @@
-# Data Flows
+# Data Flows (V2 Clean Architecture)
 
-## Coin CRUD Flow
+> This document shows request flows and state management using V2 Clean Architecture patterns.
+>
+> **Key Pattern**: Router → Use Case → Repository (Interface) → Domain Entity
+
+---
+
+## V2 Architecture Flow
+
+All backend flows follow Clean Architecture:
+
+```
+┌─────────┐     ┌──────────┐     ┌────────────┐     ┌────────────┐
+│ Router  │ --> │ Use Case │ --> │ Repository │ --> │   Domain   │
+│ (Web)   │     │ (App)    │     │ Interface  │     │   Entity   │
+└─────────┘     └──────────┘     └────────────┘     └────────────┘
+    │                 │                 │                   │
+    │                 │                 ↓                   │
+    │                 │          ┌────────────┐            │
+    │                 │          │ ORM Model  │            │
+    │                 │          │(Infra)     │            │
+    │                 │          └────────────┘            │
+    │                 │                 │                   │
+    │                 │                 ↓                   │
+    │                 │            ┌────────┐              │
+    │                 └───────────>│   DB   │<─────────────┘
+    │                              └────────┘
+    │
+    ↓
+get_db() manages transactions automatically
+```
+
+**Critical Rules**:
+- Domain entities have NO database dependencies
+- Use cases depend on repository interfaces (Protocols)
+- Repositories convert between ORM models and domain entities
+- Repositories use `flush()` NOT `commit()`
+- `get_db()` dependency handles transaction commit/rollback
+
+---
+
+## Coin CRUD Flow (V2)
 
 ### Create Coin
 
@@ -8,24 +48,39 @@
 sequenceDiagram
     participant UI as AddCoinPage
     participant Hook as useCreateCoin
-    participant API as POST /api/coins
-    participant Router as coins.py
-    participant CRUD as crud/coin.py
+    participant API as POST /api/v2/coins
+    participant Router as v2.py router
+    participant UseCase as CreateCoinUseCase
+    participant Repo as ICoinRepository
+    participant RepoImpl as SqlAlchemyCoinRepository
+    participant Domain as Coin entity
+    participant ORM as CoinModel
     participant DB as SQLite
 
     UI->>Hook: Submit form data
     Hook->>API: POST with CoinCreate
     API->>Router: Validate Pydantic schema
-    Router->>CRUD: create_coin(db, coin_data)
-    CRUD->>DB: INSERT INTO coins
-    DB-->>CRUD: New coin row
-    CRUD->>DB: INSERT references, images, tags
-    DB-->>CRUD: Related rows
-    CRUD-->>Router: Coin object
-    Router-->>API: CoinDetail response
+    Router->>UseCase: execute(dto)
+    UseCase->>Domain: Create Coin entity
+    Domain->>Domain: validate()
+    Domain-->>UseCase: Validated Coin
+    UseCase->>Repo: save(coin)
+    Note over Repo: Protocol interface
+    Repo->>RepoImpl: Concrete implementation
+    RepoImpl->>RepoImpl: _to_orm(coin)
+    RepoImpl->>ORM: CoinModel instance
+    RepoImpl->>DB: merge() + flush()
+    Note over RepoImpl,DB: flush() NOT commit()
+    DB-->>RepoImpl: ORM with ID
+    RepoImpl->>RepoImpl: _to_domain(orm_coin)
+    RepoImpl-->>UseCase: Domain Coin
+    UseCase-->>Router: Coin entity
+    Router->>Router: Convert to CoinResponse
+    Router-->>API: CoinResponse (Pydantic)
     API-->>Hook: Response data
-    Hook->>Hook: Invalidate queries
-    Hook-->>UI: Success, navigate to detail
+    Hook->>Hook: invalidateQueries(['coins'])
+    Hook-->>UI: Success, navigate
+    Note over Router,DB: get_db() commits automatically
 ```
 
 ### Update Coin
@@ -34,283 +89,289 @@ sequenceDiagram
 sequenceDiagram
     participant UI as EditCoinPage
     participant Hook as useUpdateCoin
-    participant API as PUT /api/coins/{id}
-    participant Router as coins.py
-    participant CRUD as crud/coin.py
+    participant API as PUT /api/v2/coins/{id}
+    participant Router as v2.py router
+    participant UseCase as UpdateCoinUseCase
+    participant Repo as ICoinRepository
+    participant Domain as Coin entity
     participant DB as SQLite
 
     UI->>Hook: Submit changes
-    Hook->>API: PUT with CoinUpdate
+    Hook->>API: PUT with UpdateCoinRequest
     API->>Router: Validate partial update
-    Router->>CRUD: update_coin(db, id, data)
-    CRUD->>DB: SELECT coin
-    DB-->>CRUD: Existing coin
-    CRUD->>CRUD: Merge changes
-    CRUD->>DB: UPDATE coins SET...
-    CRUD->>DB: Update/insert relations
-    DB-->>CRUD: Updated rows
-    CRUD-->>Router: Updated Coin
-    Router-->>API: CoinDetail response
+    Router->>UseCase: execute(coin_id, updates)
+    UseCase->>Repo: get_by_id(coin_id)
+    Note over Repo: Protocol interface
+    Repo->>DB: SELECT with selectinload()
+    DB-->>Repo: ORM model
+    Repo->>Repo: _to_domain(orm_coin)
+    Repo-->>UseCase: Domain Coin entity
+    UseCase->>Domain: Apply updates
+    Domain->>Domain: validate()
+    Domain-->>UseCase: Updated Coin
+    UseCase->>Repo: save(coin)
+    Repo->>DB: merge() + flush()
+    DB-->>Repo: Updated ORM
+    Repo-->>UseCase: Domain Coin
+    UseCase-->>Router: Coin entity
+    Router-->>API: CoinResponse
     API-->>Hook: Response
-    Hook->>Hook: Invalidate coin + list
+    Hook->>Hook: invalidateQueries(['coins', coin_id])
     Hook-->>UI: Success
 ```
 
-### List Coins with Filters
+### List Coins with Filters (V2)
 
 ```mermaid
 sequenceDiagram
     participant UI as CollectionPage
-    participant Store as filterStore
-    participant Hook as useCoins
-    participant API as GET /api/coins
-    participant Router as coins.py
-    participant CRUD as crud/coin.py
+    participant FilterStore as filterStore (Zustand)
+    participant Hook as useCoins (TanStack Query)
+    participant API as GET /api/v2/coins
+    participant Router as v2.py router
+    participant Repo as ICoinRepository
+    participant Domain as Coin entity
     participant DB as SQLite
 
-    UI->>Store: Update filter
-    Store->>Store: Persist to localStorage
-    Store-->>UI: New filter state
+    UI->>FilterStore: setFilter("metal", "silver")
+    FilterStore->>FilterStore: Persist to localStorage
+    FilterStore-->>UI: New filter state
     UI->>Hook: Trigger refetch
-    Hook->>Store: Get filter params
-    Store-->>Hook: toParams()
+    Hook->>FilterStore: Get filter params
+    FilterStore-->>Hook: toParams()
     Hook->>API: GET with query params
     API->>Router: Parse filter params
-    Router->>CRUD: get_coins(db, filters, sort, page)
-    CRUD->>DB: SELECT with WHERE clauses
-    DB-->>CRUD: Coin rows + count
-    CRUD-->>Router: Paginated result
-    Router-->>API: PaginatedCoins
+    Router->>Repo: get_all(skip, limit, filters)
+    Note over Repo: Protocol interface
+    Repo->>DB: SELECT with WHERE + selectinload()
+    Note over DB: Eager load images, references
+    DB-->>Repo: List of ORM models
+    Repo->>Repo: [_to_domain(orm) for orm in orms]
+    Repo-->>Router: List[Coin] entities
+    Router->>Router: Convert to List[CoinResponse]
+    Router-->>API: Paginated response
     API-->>Hook: Response
-    Hook->>Hook: Cache result
+    Hook->>Hook: Cache with queryKey
     Hook-->>UI: Render coin list
 ```
 
 ---
 
-## Import Flow
+## Vocabulary Flow (V3)
 
-### Import from URL
+### Normalize Text to Vocabulary Term
 
 ```mermaid
 sequenceDiagram
-    participant UI as ImportPage
-    participant Hook as useImportFromURL
-    participant API as POST /api/import/url
-    participant Router as import_export.py
-    participant Orch as AuctionOrchestrator
-    participant Scraper as HeritageScraper
-    participant Parser as ReferenceParser
-    participant Dup as DuplicateDetector
+    participant UI as CoinForm
+    participant Hook as useNormalizeVocab
+    participant API as POST /api/v2/vocab/normalize
+    participant Router as vocab.py router
+    participant Service as VocabSyncService
+    participant Repo as SqlAlchemyVocabRepository
+    participant FTS as FTS5 search
+    participant Domain as VocabTerm entity
     participant DB as SQLite
 
-    UI->>Hook: Submit auction URL
-    Hook->>API: POST { url }
-    API->>Router: Handle request
-    Router->>Orch: scrape(url)
-    Orch->>Orch: Find matching scraper
-    Orch->>Scraper: scrape(url)
-    Scraper->>Scraper: Fetch page HTML
-    Scraper->>Scraper: Parse lot data
-    Scraper-->>Orch: LotData
-    Orch-->>Router: Parsed data
-    Router->>Parser: Parse reference_text
-    Parser-->>Router: Parsed references
-    Router->>Dup: Check duplicates
-    Dup->>DB: Query similar coins
-    DB-->>Dup: Matches
-    Dup-->>Router: Potential duplicates
-    Router-->>API: ImportPreview response
-    API-->>Hook: Preview data
-    Hook-->>UI: Show preview + duplicates
-    
-    Note over UI: User confirms import
-    
-    UI->>Hook: Confirm import
-    Hook->>API: POST /api/import/confirm
-    API->>Router: Create coin
-    Router->>DB: INSERT coin + relations
-    DB-->>Router: New coin
-    Router-->>API: CoinDetail
-    API-->>Hook: Success
-    Hook-->>UI: Navigate to new coin
+    UI->>Hook: User types "Augustus"
+    Hook->>API: POST { raw: "Augustus", vocab_type: "issuer" }
+    API->>Router: Normalize request
+    Router->>Service: normalize(raw, vocab_type, context)
+
+    Service->>Repo: search_exact(raw)
+    Repo->>DB: SELECT WHERE canonical_name = 'Augustus'
+
+    alt Exact match found
+        DB-->>Repo: VocabTermModel
+        Repo->>Domain: _to_domain(orm)
+        Domain-->>Service: VocabTerm entity
+        Service-->>Router: {method: "exact", confidence: 1.0}
+    else No exact match
+        Service->>FTS: Full-text search
+        FTS->>DB: SELECT FROM vocab_terms_fts
+        DB-->>Service: FTS results
+        Service->>Service: Rank by similarity
+        Service-->>Router: {method: "fts", confidence: 0.85}
+    end
+
+    Router-->>API: NormalizeResponse
+    API-->>Hook: Response with term + confidence
+    Hook-->>UI: Show suggestion or review queue
 ```
 
-### Excel Import
+### Bulk Normalize Coins
 
 ```mermaid
 sequenceDiagram
-    participant UI as ImportPage
-    participant Hook as useImportExcel
-    participant API as POST /api/import/excel
-    participant Router as import_export.py
-    participant Importer as ExcelImporter
-    participant Norm as Normalizer
+    participant UI as VocabDashboard
+    participant Hook as useBulkNormalize
+    participant API as POST /api/v2/vocab/bulk-normalize
+    participant Router as vocab.py router
+    participant Service as VocabSyncService
+    participant Repo as SqlAlchemyVocabRepository
+    participant CoinRepo as ICoinRepository
     participant DB as SQLite
 
-    UI->>Hook: Upload Excel file
-    Hook->>API: POST multipart/form-data
-    API->>Router: Receive file
-    Router->>Importer: parse_file(file)
-    Importer->>Importer: Read Excel/CSV
-    loop For each row
-        Importer->>Norm: normalize_fields(row)
-        Norm->>Norm: Map column names
-        Norm->>Norm: Parse dates, numbers
-        Norm->>Norm: Map enums
-        Norm-->>Importer: Normalized row
-    end
-    Importer-->>Router: List of CoinCreate
-    Router-->>API: Preview response
-    API-->>Hook: Preview data
-    Hook-->>UI: Show preview table
-    
-    Note over UI: User confirms
-    
-    UI->>Hook: Confirm batch import
-    Hook->>API: POST /api/import/batch
+    UI->>Hook: Click "Normalize All"
+    Hook->>API: POST { coin_ids, vocab_types }
+    API->>Router: Start bulk task
+
     loop For each coin
-        API->>DB: INSERT coin
+        Router->>CoinRepo: get_by_id(coin_id)
+        CoinRepo-->>Router: Coin entity
+
+        loop For each vocab_type
+            Router->>Service: normalize(raw_value, vocab_type)
+            Service->>Repo: search + rank
+            Repo-->>Service: VocabTerm or None
+
+            alt High confidence (> 0.9)
+                Service->>DB: INSERT coin_vocab_assignments (status='assigned')
+            else Low confidence
+                Service->>DB: INSERT coin_vocab_assignments (status='pending_review')
+            end
+        end
     end
-    API-->>Hook: Import results
-    Hook-->>UI: Show success/errors
+
+    Router-->>API: Bulk result summary
+    API-->>Hook: Response
+    Hook->>Hook: invalidateQueries(['vocab-queue'])
+    Hook-->>UI: Show results + review queue link
 ```
 
 ---
 
-## Audit Flow
+## Series Flow (V2)
 
-### Start Audit
-
-```mermaid
-sequenceDiagram
-    participant UI as AuditPage
-    participant Hook as useStartAudit
-    participant API as POST /api/audit/start
-    participant Router as audit.py
-    participant Service as AuditService
-    participant Comp as NumismaticComparator
-    participant DB as SQLite
-
-    UI->>Hook: Click Start Audit
-    Hook->>API: POST { coin_ids? }
-    API->>Router: Start audit
-    Router->>Service: run_audit(db, coin_ids)
-    Service->>DB: Create AuditRun
-    DB-->>Service: audit_run_id
-    Service->>DB: Get coins to audit
-    DB-->>Service: Coins list
-    
-    loop For each coin
-        Service->>DB: Get linked auction_data
-        DB-->>Service: Auction records
-        loop For each auction record
-            Service->>Comp: compare(coin, auction)
-            Comp->>Comp: Compare fields
-            Comp-->>Service: List of differences
-            loop For each difference
-                Service->>DB: Create DiscrepancyRecord
-            end
-        end
-        Service->>Service: Find missing fields
-        loop For each missing field with data
-            Service->>DB: Create EnrichmentRecord
-        end
-    end
-    
-    Service->>DB: Update AuditRun status
-    Service-->>Router: AuditRun result
-    Router-->>API: AuditRunSchema
-    API-->>Hook: Response
-    Hook->>Hook: Invalidate audit queries
-    Hook-->>UI: Show results
-```
-
-### Resolve Discrepancy
+### Create Series with Slots
 
 ```mermaid
 sequenceDiagram
-    participant UI as DiscrepancyCard
-    participant Hook as useResolveDiscrepancy
-    participant API as POST /api/audit/discrepancies/{id}/resolve
-    participant Router as audit.py
-    participant CRUD as crud/audit.py
+    participant UI as CreateSeriesPage
+    participant Hook as useCreateSeries
+    participant API as POST /api/v2/series
+    participant Router as series.py router
+    participant Service as SeriesService
+    participant Domain as Series entity
+    participant ORM as SeriesModel
     participant DB as SQLite
 
-    UI->>Hook: Click Accept/Reject
-    Hook->>API: POST { status, note? }
-    API->>Router: Resolve discrepancy
-    
-    alt status == accepted
-        Router->>DB: Get discrepancy
-        DB-->>Router: Discrepancy record
-        Router->>DB: Update coin field
-        Router->>DB: Create FieldHistory
+    UI->>Hook: Submit series data
+    Hook->>API: POST { name, series_type, target_count, slots }
+    API->>Router: Validate SeriesCreate
+    Router->>Service: create_series(data)
+    Service->>Domain: Series entity
+    Service->>ORM: SeriesModel
+    Service->>DB: INSERT series
+    DB-->>Service: series_id
+
+    loop For each slot
+        Service->>ORM: SeriesSlotModel
+        Service->>DB: INSERT series_slots
     end
-    
-    Router->>CRUD: resolve_discrepancy(db, id, status)
-    CRUD->>DB: UPDATE discrepancies SET status
-    DB-->>CRUD: Updated record
-    CRUD-->>Router: DiscrepancyRecord
+
+    DB-->>Service: Series with slots
+    Service-->>Router: SeriesResponse
     Router-->>API: Response
     API-->>Hook: Success
-    Hook->>Hook: Invalidate queries
+    Hook->>Hook: invalidateQueries(['series'])
+    Hook-->>UI: Navigate to series detail
+```
+
+### Add Coin to Series
+
+```mermaid
+sequenceDiagram
+    participant UI as SeriesDetailPage
+    participant Hook as useAddCoinToSeries
+    participant API as POST /api/v2/series/{id}/memberships
+    participant Router as series.py router
+    participant Service as SeriesService
+    participant ORM as SeriesMembershipModel
+    participant DB as SQLite
+
+    UI->>Hook: Drag coin to slot
+    Hook->>API: POST { coin_id, slot_id }
+    API->>Router: Create membership
+    Router->>Service: add_membership(series_id, coin_id, slot_id)
+    Service->>DB: Check existing membership
+
+    alt Coin already in series
+        Service-->>Router: Error: duplicate
+    else New assignment
+        Service->>ORM: SeriesMembershipModel
+        Service->>DB: INSERT series_memberships
+        Service->>DB: UPDATE series_slots status='filled'
+        DB-->>Service: Membership
+        Service-->>Router: MembershipResponse
+    end
+
+    Router-->>API: Response
+    API-->>Hook: Success or error
+    Hook->>Hook: invalidateQueries(['series', series_id])
     Hook-->>UI: Update UI
 ```
 
-### Auto-Merge
+---
+
+## Audit Flow (V2)
+
+### Run Audit with Strategies
 
 ```mermaid
 sequenceDiagram
-    participant UI as AuditPage
-    participant Hook as useAutoMerge
-    participant API as POST /api/audit/auto-merge
-    participant Router as audit.py
-    participant Service as AutoMergeService
-    participant Trust as TrustConfig
+    participant UI as CoinDetailPage
+    participant Hook as useAuditCoin
+    participant API as POST /api/v2/coins/{id}/audit
+    participant Router as audit_v2.py router
+    participant Engine as AuditEngine
+    participant Strat1 as AttributionStrategy
+    participant Strat2 as PhysicsStrategy
+    participant Repo as ICoinRepository
+    participant Domain as Coin entity
     participant DB as SQLite
 
-    UI->>Hook: Click Auto-Merge
-    Hook->>API: POST { coin_id? }
-    API->>Router: Run auto-merge
-    Router->>Service: auto_merge(db, coin_id)
-    Service->>DB: Get pending enrichments
-    DB-->>Service: Enrichment list
-    
-    loop For each enrichment
-        Service->>Trust: Get threshold for field
-        Trust-->>Service: Threshold value
-        alt confidence >= threshold
-            Service->>DB: Update coin field
-            Service->>DB: Create FieldHistory
-            Service->>DB: Update enrichment status = applied
-        else confidence < threshold
-            Service->>Service: Skip enrichment
-        end
-    end
-    
-    Service-->>Router: Merge results
-    Router-->>API: List of applied changes
+    UI->>Hook: Click "Run Audit"
+    Hook->>API: POST /api/v2/coins/{id}/audit
+    API->>Router: Start audit
+    Router->>Repo: get_by_id(coin_id)
+    Repo->>DB: SELECT with selectinload(auction_data)
+    DB-->>Repo: ORM with relationships
+    Repo-->>Router: Domain Coin entity
+    Router->>Engine: audit(coin, auction_data)
+
+    Engine->>Strat1: execute(coin, auction_data)
+    Strat1->>Strat1: Compare issuer, mint
+    Strat1-->>Engine: List[AuditResult]
+
+    Engine->>Strat2: execute(coin, auction_data)
+    Strat2->>Strat2: Compare weight, diameter
+    Strat2-->>Engine: List[AuditResult]
+
+    Engine->>Engine: Aggregate results
+    Engine-->>Router: AuditSummary
+    Router-->>API: AuditResponse
     API-->>Hook: Response
-    Hook->>Hook: Invalidate all queries
-    Hook-->>UI: Show results
+    Hook-->>UI: Show discrepancies + enrichments
 ```
 
 ---
 
-## Scraping Flow
+## Scraper Flow (V2)
 
-### Single URL Scrape
+### Scrape Auction Lot (Playwright)
 
 ```mermaid
 sequenceDiagram
-    participant UI as ScrapeDialog
+    participant UI as ScraperDialog
     participant Hook as useScrapeURL
-    participant API as POST /api/scrape/url
-    participant Router as scrape.py
-    participant Orch as AuctionOrchestrator
-    participant Scraper as Scraper
-    participant Browser as BrowserScraper
+    participant API as POST /api/v2/scrape?url={url}
+    participant Router as scrape_v2.py router
+    participant Orch as ScraperOrchestrator
+    participant Scraper as HeritageScraper
+    participant Browser as Playwright
+    participant Domain as AuctionLot entity
+    participant Repo as IAuctionDataRepository
     participant DB as SQLite
 
     UI->>Hook: Submit URL
@@ -318,231 +379,381 @@ sequenceDiagram
     API->>Router: Handle scrape
     Router->>Orch: scrape(url)
     Orch->>Orch: Detect auction house
-    Orch->>Scraper: can_handle(url)?
-    Scraper-->>Orch: true
-    
-    alt Needs browser
-        Orch->>Browser: scrape(url)
-        Browser->>Browser: Launch Playwright
-        Browser->>Browser: Navigate to URL
-        Browser->>Browser: Wait for content
-        Browser->>Browser: Extract HTML
-        Browser-->>Orch: HTML content
-        Orch->>Scraper: parse(html)
-    else Direct scrape
-        Orch->>Scraper: scrape(url)
-        Scraper->>Scraper: HTTP request
-        Scraper->>Scraper: Parse response
-    end
-    
-    Scraper-->>Orch: LotData
-    Orch-->>Router: Scraped data
-    Router->>DB: upsert_auction(data)
-    DB-->>Router: AuctionData
-    Router-->>API: AuctionDataSchema
+    Orch->>Scraper: create_scraper(house)
+
+    Scraper->>Browser: Launch browser
+    Browser->>Browser: page.goto(url)
+    Browser->>Browser: Wait for selectors
+    Browser->>Browser: Extract data
+    Browser-->>Scraper: HTML + extracted data
+    Scraper->>Scraper: Parse lot data
+    Scraper->>Domain: AuctionLot entity
+    Scraper-->>Orch: AuctionLot
+    Orch-->>Router: AuctionLot entity
+
+    Router->>Repo: save(auction_lot)
+    Repo->>DB: INSERT OR REPLACE auction_data_v2
+    DB-->>Repo: ORM model
+    Repo-->>Router: Domain AuctionLot
+    Router-->>API: AuctionLotResponse
     API-->>Hook: Response
-    Hook-->>UI: Show result
+    Hook-->>UI: Show scraped data
 ```
 
-### Batch Scrape (Background Job)
+---
+
+## Frontend State Flow (V2)
+
+### TanStack Query + Zustand Pattern
 
 ```mermaid
 sequenceDiagram
-    participant UI as BatchScrapePanel
-    participant Hook as useBatchScrape
-    participant API as POST /api/scrape/batch
-    participant Router as scrape.py
-    participant Job as BackgroundJob
-    participant Orch as AuctionOrchestrator
-    participant DB as SQLite
+    participant User
+    participant Filter as CoinFilters component
+    participant Store as filterStore (Zustand)
+    participant Storage as localStorage
+    participant Hook as useCoins (TanStack Query)
+    participant Cache as QueryClient
+    participant API as Backend
 
-    UI->>Hook: Submit URL list
-    Hook->>API: POST { urls }
-    API->>Router: Start batch
-    Router->>Job: Create job
-    Router->>DB: Save job record
-    Router-->>API: { job_id }
-    API-->>Hook: Job started
-    Hook-->>UI: Show progress
+    User->>Filter: Select metal = "silver"
+    Filter->>Store: setFilter("metal", "silver")
+    Store->>Store: Update state
+    Store->>Storage: Persist to localStorage
+    Store-->>Filter: New state
+    Filter-->>User: UI update
 
-    Note over Job: Background execution
-    
-    loop For each URL
-        Job->>Orch: scrape(url)
-        Orch-->>Job: LotData or error
-        Job->>DB: Save result
-        Job->>DB: Update progress
+    Note over Hook: Query key changes → refetch
+
+    Hook->>Store: Get filter state
+    Store-->>Hook: { metal: "silver" }
+    Hook->>Hook: queryKey = ['coins', { metal: 'silver' }]
+    Hook->>Cache: Check cache for key
+
+    alt Cache miss or stale
+        Cache-->>Hook: No valid cache
+        Hook->>API: GET /api/v2/coins?metal=silver
+        API-->>Hook: Response
+        Hook->>Cache: Store in cache
+    else Cache hit
+        Cache-->>Hook: Cached data
     end
-    Job->>DB: Mark job complete
 
-    loop Polling
-        UI->>Hook: Check status
-        Hook->>API: GET /api/scrape/jobs/{id}
-        API->>DB: Get job status
-        DB-->>API: Job record
-        API-->>Hook: Status response
-        Hook-->>UI: Update progress
+    Hook-->>User: Render filtered coins
+```
+
+### Query Invalidation on Mutation
+
+```mermaid
+sequenceDiagram
+    participant Mutation as useCreateCoin (mutation)
+    participant API as Backend
+    participant Cache as QueryClient
+    participant Query1 as useCoins (query)
+    participant Query2 as useStats (query)
+
+    Mutation->>API: POST /api/v2/coins
+    API-->>Mutation: Success { id: 123 }
+
+    Mutation->>Cache: invalidateQueries({ queryKey: ['coins'] })
+    Mutation->>Cache: invalidateQueries({ queryKey: ['collection-stats'] })
+
+    par Automatic refetch
+        Cache->>Query1: Mark stale
+        Query1->>API: GET /api/v2/coins
+        API-->>Query1: Updated list
+        Query1->>Cache: Update cache
+        and
+        Cache->>Query2: Mark stale
+        Query2->>API: GET /api/v2/stats
+        API-->>Query2: Updated stats
+        Query2->>Cache: Update cache
     end
 ```
 
 ---
 
-## Catalog Enrichment Flow
+## Import Flow (V2)
+
+### Excel Import with Use Case
+
+```mermaid
+sequenceDiagram
+    participant UI as ImportPage
+    participant Hook as useImportExcel
+    participant API as POST /api/v2/import/excel
+    participant Router as import_router.py
+    participant UseCase as ImportCollectionUseCase
+    participant Importer as ExcelImporter
+    participant Normalizer as VocabNormalizer
+    participant Repo as ICoinRepository
+    participant Domain as Coin entity
+    participant DB as SQLite
+
+    UI->>Hook: Upload Excel file
+    Hook->>API: POST multipart/form-data
+    API->>Router: Receive file
+    Router->>UseCase: execute(file)
+    UseCase->>Importer: parse(file)
+
+    loop For each row
+        Importer->>Importer: Map columns
+        Importer->>Normalizer: normalize_fields(row)
+        Normalizer->>Normalizer: Parse dates, enums
+        Normalizer-->>Importer: Normalized data
+        Importer->>Domain: Create Coin entity
+        Domain->>Domain: validate()
+        Domain-->>Importer: Validated Coin
+    end
+
+    Importer-->>UseCase: List[Coin] entities
+
+    loop For each coin
+        UseCase->>Repo: save(coin)
+        Repo->>DB: INSERT coins_v2
+    end
+
+    UseCase-->>Router: Import summary
+    Router-->>API: { created: 50, errors: [] }
+    API-->>Hook: Response
+    Hook->>Hook: invalidateQueries(['coins', 'stats'])
+    Hook-->>UI: Show results
+```
+
+---
+
+## LLM Enrichment Flow (V2)
+
+### Generate Description with LLM
 
 ```mermaid
 sequenceDiagram
     participant UI as CoinDetailPage
-    participant Hook as useEnrichFromCatalog
-    participant API as POST /api/catalog/enrich/{id}
-    participant Router as catalog.py
-    participant Reg as CatalogRegistry
-    participant Cat as OCREService
-    participant Diff as DiffEnricher
+    participant Hook as useGenerateDescription
+    participant API as POST /api/v2/llm/generate-description
+    participant Router as llm.py router
+    participant Service as LLMService
+    participant LLM as Gemini API
+    participant Repo as ICoinRepository
+    participant Domain as Coin entity
     participant DB as SQLite
 
-    UI->>Hook: Click Enrich
-    Hook->>API: POST to enrich endpoint
-    API->>Router: Enrich coin
-    Router->>DB: Get coin with references
-    DB-->>Router: Coin data
-    Router->>Router: Extract reference system
-    Router->>Reg: get_service("RIC")
-    Reg-->>Router: OCREService
-    Router->>Cat: lookup("RIC I 207")
-    Cat->>Cat: Call OCRE API
-    Cat-->>Router: CatalogResult
-    Router->>Diff: compute_diff(coin, catalog_data)
-    Diff->>Diff: Compare fields
-    Diff-->>Router: List of differences
-    
-    loop For each enrichable field
-        Router->>DB: Create EnrichmentRecord
-    end
-    
-    Router-->>API: EnrichmentPreview
+    UI->>Hook: Click "Generate Description"
+    Hook->>API: POST { coin_id, include_context: true }
+    API->>Router: Generate request
+    Router->>Repo: get_by_id(coin_id)
+    Repo->>DB: SELECT with relationships
+    DB-->>Repo: ORM model
+    Repo-->>Router: Domain Coin entity
+
+    Router->>Service: generate_description(coin)
+    Service->>Service: Build prompt with context
+    Service->>LLM: API call with prompt
+    LLM-->>Service: Generated text
+    Service->>Service: Post-process output
+    Service-->>Router: Description text
+
+    Router->>Repo: Update coin description
+    Repo->>DB: UPDATE coins_v2
+    DB-->>Repo: Updated ORM
+    Repo-->>Router: Updated Coin entity
+    Router-->>API: { description: "..." }
     API-->>Hook: Response
-    Hook-->>UI: Show suggestions
+    Hook->>Hook: invalidateQueries(['coins', coin_id])
+    Hook-->>UI: Show new description
 ```
 
 ---
 
-## Frontend State Flow
+## Transaction Management (V2)
 
-### Filter State Management
+### Automatic Transaction Handling
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Filter as CoinFilters
-    participant Store as filterStore
-    participant Storage as localStorage
-    participant Hook as useCoins
-    participant Cache as QueryCache
+    participant Router as FastAPI router
+    participant Dep as get_db() dependency
+    participant Session as SQLAlchemy Session
+    participant UseCase as Use Case
+    participant Repo as Repository
+    participant DB as SQLite
 
-    User->>Filter: Select metal = silver
-    Filter->>Store: setFilter("metal", "silver")
-    Store->>Store: Update state
-    Store->>Storage: Persist state
-    Store-->>Filter: New state
-    Filter-->>User: UI update
-    
-    Note over Hook: Automatic refetch
-    
-    Hook->>Store: Read filter state
-    Store-->>Hook: toParams()
-    Hook->>Hook: queryKey changed
-    Hook->>Cache: Check cache
-    
-    alt Cache miss
-        Cache-->>Hook: No cached data
-        Hook->>Hook: Fetch from API
-    else Cache hit
-        Cache-->>Hook: Cached data
+    Router->>Dep: Request database session
+    Dep->>Session: SessionLocal()
+    Dep-->>Router: Provide session
+
+    Router->>UseCase: execute(...)
+    UseCase->>Repo: save(entity)
+    Note over Repo: Uses session.merge()
+    Repo->>Session: merge(orm_model)
+    Repo->>Session: flush()
+    Note over Session: flush() gets ID, doesn't commit
+    Session->>DB: INSERT/UPDATE
+    DB-->>Session: Row with ID
+    Session-->>Repo: ORM with ID
+    Repo-->>UseCase: Domain entity with ID
+    UseCase-->>Router: Result
+
+    alt Success
+        Router-->>Dep: Return (success)
+        Dep->>Session: commit()
+        Note over Session,DB: All changes committed
+        Session->>DB: COMMIT
+    else Exception
+        Router-->>Dep: Raise exception
+        Dep->>Session: rollback()
+        Note over Session,DB: All changes rolled back
+        Session->>DB: ROLLBACK
     end
-    
-    Hook-->>User: Render results
-```
 
-### Query Invalidation
-
-```mermaid
-sequenceDiagram
-    participant Mutation as useCreateCoin
-    participant API as Backend
-    participant Cache as QueryClient
-    participant Query1 as useCoins
-    participant Query2 as useStats
-
-    Mutation->>API: POST new coin
-    API-->>Mutation: Success
-    Mutation->>Cache: invalidateQueries(["coins"])
-    Mutation->>Cache: invalidateQueries(["collection-stats"])
-    
-    par Refetch queries
-        Cache->>Query1: Trigger refetch
-        Query1->>API: GET /api/coins
-        API-->>Query1: Updated list
-        and
-        Cache->>Query2: Trigger refetch
-        Query2->>API: GET /api/stats
-        API-->>Query2: Updated stats
-    end
+    Dep->>Session: close()
 ```
 
 ---
 
-## Authentication Flow
+## Error Handling Flow (V2)
 
-> **Note**: CoinStack is single-user, no authentication required.
-
-All endpoints are open. CORS is configured for localhost development.
-
----
-
-## Error Handling Flow
-
-### Backend Error
+### Backend Validation Error
 
 ```mermaid
 sequenceDiagram
-    participant UI as Component
-    participant Hook as useMutation
+    participant UI as CoinForm
+    participant Hook as useCreateCoin
     participant API as Axios
-    participant Backend as FastAPI
-    participant Handler as Exception Handler
+    participant Router as FastAPI router
+    participant Pydantic as Pydantic validator
+    participant Handler as Exception handler
 
-    UI->>Hook: Trigger mutation
-    Hook->>API: Request
-    API->>Backend: HTTP request
-    Backend->>Backend: Process
-    Backend->>Handler: Exception raised
+    UI->>Hook: Submit invalid data
+    Hook->>API: POST /api/v2/coins
+    API->>Router: Request
+    Router->>Pydantic: Validate CreateCoinRequest
+    Pydantic->>Pydantic: Check types, constraints
+    Pydantic-->>Router: ValidationError
+    Router->>Handler: Handle validation error
     Handler->>Handler: Format error response
-    Handler-->>API: HTTP 4xx/5xx
-    API->>API: Interceptor catches
+    Handler-->>API: HTTP 422 Unprocessable Entity
     API-->>Hook: Error object
     Hook-->>UI: Error state
-    UI->>UI: Show toast notification
+    UI->>UI: Show field errors in form
 ```
 
-### Frontend Validation Error
+### Domain Validation Error
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Form as CoinForm
-    participant Zod as Zod Schema
-    participant Hook as useForm
+    participant Router as FastAPI router
+    participant UseCase as CreateCoinUseCase
+    participant Domain as Coin entity
+    participant Handler as Exception handler
 
-    User->>Form: Submit invalid data
-    Form->>Hook: handleSubmit()
-    Hook->>Zod: validate(data)
-    Zod-->>Hook: Validation errors
-    Hook-->>Form: errors object
-    Form->>Form: Display field errors
-    Form-->>User: Show error messages
+    Router->>UseCase: execute(dto)
+    UseCase->>Domain: Create Coin(...)
+    Domain->>Domain: validate()
+    Domain->>Domain: Check business rules
+
+    alt Validation fails
+        Domain-->>UseCase: Raise ValueError
+        UseCase-->>Router: Propagate exception
+        Router->>Handler: Handle domain error
+        Handler-->>Router: HTTP 400 Bad Request
+    else Validation passes
+        Domain-->>UseCase: Valid Coin
+        UseCase->>UseCase: Continue...
+    end
 ```
 
 ---
 
-**Previous:** [05-DATA-MODEL.md](05-DATA-MODEL.md) - Database schema  
+## Performance Optimization
+
+### N+1 Prevention with Eager Loading
+
+```mermaid
+sequenceDiagram
+    participant Repo as SqlAlchemyCoinRepository
+    participant DB as SQLite
+    participant ORM as SQLAlchemy
+
+    Note over Repo: ✅ CORRECT - Eager loading
+
+    Repo->>ORM: query(CoinModel).options(selectinload(CoinModel.images))
+    ORM->>DB: SELECT * FROM coins_v2 WHERE ...
+    DB-->>ORM: Coin rows
+    ORM->>DB: SELECT * FROM coin_images_v2 WHERE coin_id IN (...)
+    DB-->>ORM: All images for coins
+    ORM-->>Repo: Coins with images loaded
+
+    Note over Repo,DB: Total: 2 queries (O(1))
+```
+
+**Wrong Pattern (causes N+1)**:
+
+```mermaid
+sequenceDiagram
+    participant Repo as Repository (lazy loading)
+    participant DB as SQLite
+
+    Note over Repo: ❌ WRONG - Lazy loading
+
+    Repo->>DB: SELECT * FROM coins_v2
+    DB-->>Repo: 10 coins
+
+    loop For each coin
+        Repo->>DB: SELECT * FROM coin_images_v2 WHERE coin_id = ?
+        DB-->>Repo: Images for this coin
+    end
+
+    Note over Repo,DB: Total: 1 + 10 = 11 queries (O(n))
+```
+
+---
+
+## Key V2 Patterns Summary
+
+### Clean Architecture Flow
+1. **Router** validates Pydantic schemas
+2. **Use Case** orchestrates domain logic via interfaces
+3. **Repository** (Protocol) defines contract
+4. **Repository Impl** converts ORM ↔ Domain
+5. **Domain Entity** contains business logic
+6. **get_db()** manages transactions
+
+### State Management
+- **TanStack Query**: Server state (coins, series, vocab)
+- **Zustand**: Client state (UI, filters)
+- **localStorage**: Filter persistence
+
+### Transaction Safety
+- Repositories use `flush()` NOT `commit()`
+- `get_db()` commits on success, rolls back on error
+- Multiple repository calls = one transaction
+
+### N+1 Prevention
+- Always use `selectinload()` for relationships
+- Repository methods eager load by default
+
+---
+
+## Critical Rules
+
+### Port Configuration (MANDATORY)
+- Backend: Port 8000
+- Frontend: Port 3000
+- Never increment ports
+
+### Database Safety (MANDATORY)
+- Backup required before schema changes
+- Format: `coinstack_YYYYMMDD_HHMMSS.db`
+
+### Architecture Rules (MANDATORY)
+- Domain entities have NO dependencies
+- Use cases depend on interfaces (Protocols)
+- Repositories use `flush()` NOT `commit()`
+- Always use `selectinload()` for relationships
+- `get_db()` manages transactions automatically
+
+---
+
+**Previous:** [05-DATA-MODEL.md](05-DATA-MODEL.md) - Database schema
 **Next:** [07-API-REFERENCE.md](07-API-REFERENCE.md) - API endpoints

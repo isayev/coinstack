@@ -1,8 +1,59 @@
 # Data Model Reference
 
-> **Authoritative Source:** For the complete, detailed database schema with all 72 coin columns, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
-> 
-> This document provides a quick reference. The backend SCHEMA.md contains full column specifications, constraints, indexes, and migration notes.
+> **Complete Schema:** For the full 72-column schema with all constraints, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
+>
+> This document provides V2 Clean Architecture data layer reference with ORM models and query patterns.
+
+---
+
+## Architecture Overview
+
+### Domain Entities vs ORM Models
+
+**CRITICAL**: V2 Clean Architecture strictly separates domain entities from ORM models.
+
+```
+Domain Layer (src/domain/)
+  ├── coin.py          # Coin dataclass (NO database dependencies)
+  ├── auction.py       # AuctionLot dataclass
+  ├── series.py        # Series dataclass
+  └── vocab.py         # VocabTerm dataclass
+
+Infrastructure Layer (src/infrastructure/persistence/)
+  ├── orm.py           # CoinModel, CoinImageModel, AuctionDataModel (SQLAlchemy)
+  ├── models_vocab.py  # VocabTermModel, CoinVocabAssignmentModel
+  └── models_series.py # SeriesModel, SeriesSlotModel, SeriesMembershipModel
+```
+
+**Domain Entities**:
+- Pure Python dataclasses (no SQLAlchemy imports)
+- Business logic and validation
+- Used by use cases and domain services
+- Example: `Coin`, `AuctionLot`, `Series`, `VocabTerm`
+
+**ORM Models**:
+- SQLAlchemy models with `Mapped[T]` syntax
+- Database persistence layer
+- Converted to/from domain entities by repositories
+- Example: `CoinModel`, `AuctionDataModel`, `SeriesModel`
+
+**Repository Pattern**:
+```python
+# Repository converts between ORM and domain
+class SqlAlchemyCoinRepository:
+    def get_by_id(self, coin_id: int) -> Optional[Coin]:
+        orm_coin = self.session.query(CoinModel).options(
+            selectinload(CoinModel.images)  # Eager load
+        ).filter(CoinModel.id == coin_id).first()
+
+        return self._to_domain(orm_coin)  # ORM → Domain
+
+    def save(self, coin: Coin) -> Coin:
+        orm_coin = self._to_orm(coin)  # Domain → ORM
+        merged = self.session.merge(orm_coin)
+        self.session.flush()  # NOT commit()
+        return self._to_domain(merged)
+```
 
 ---
 
@@ -10,631 +61,840 @@
 
 ```mermaid
 erDiagram
-    Coin ||--o| Mint : "struck at"
-    Coin ||--o{ CoinReference : "has"
-    Coin ||--o{ CoinImage : "has"
-    Coin ||--o{ ProvenanceEvent : "has"
-    Coin ||--o{ CoinTag : "has"
-    Coin ||--o{ Countermark : "has"
-    Coin ||--o{ AuctionData : "linked to"
-    Coin ||--o{ DiscrepancyRecord : "has"
-    Coin ||--o{ EnrichmentRecord : "has"
-    Coin ||--o{ FieldHistory : "has"
-    
-    CoinReference }o--o| ReferenceType : "of type"
-    
-    AuditRun ||--o{ DiscrepancyRecord : "creates"
-    AuditRun ||--o{ EnrichmentRecord : "creates"
-    
-    AuctionData ||--o{ DiscrepancyRecord : "source of"
-    
-    Coin {
+    CoinModel ||--o{ CoinImageModel : "has"
+    CoinModel ||--o{ CoinReferenceModel : "has"
+    CoinModel ||--o{ ProvenanceEventModel : "has"
+    CoinModel ||--o| AuctionDataModel : "linked to"
+    CoinModel ||--o{ SeriesMembershipModel : "member of"
+    CoinModel }o--o| VocabTermModel : "issuer"
+    CoinModel }o--o| VocabTermModel : "mint"
+    CoinModel }o--o| VocabTermModel : "denomination"
+    CoinModel }o--o| VocabTermModel : "dynasty"
+
+    SeriesModel ||--o{ SeriesSlotModel : "has"
+    SeriesModel ||--o{ SeriesMembershipModel : "has"
+    SeriesModel }o--o| VocabTermModel : "canonical definition"
+
+    SeriesSlotModel ||--o{ SeriesMembershipModel : "filled by"
+
+    VocabTermModel ||--o{ CoinVocabAssignmentModel : "assigned to"
+
+    CoinModel {
         int id PK
-        datetime created_at
-        datetime updated_at
         string category
-        string denomination
         string metal
-        string issuing_authority
-        string portrait_subject
-        int reign_start
-        int reign_end
         decimal weight_g
         decimal diameter_mm
-        int die_axis
-        string obverse_legend
-        string reverse_legend
+        string issuer
+        int issuer_id
+        int issuer_term_id FK_vocab
+        string mint
+        int mint_id
+        int mint_term_id FK_vocab
+        string grading_state
         string grade
-        string grade_service
-        date acquisition_date
-        decimal acquisition_price
-        string rarity
-        int mint_id FK
     }
-    
-    Mint {
-        int id PK
-        string name
-        string ancient_name
-        string modern_name
-        string region
-    }
-    
-    CoinReference {
+
+    CoinImageModel {
         int id PK
         int coin_id FK
-        int reference_type_id FK
-        string system
-        string volume
-        string number
-        json lookup_data
-    }
-    
-    CoinImage {
-        int id PK
-        int coin_id FK
+        string url
         string image_type
-        string file_path
-        string phash
         bool is_primary
     }
-    
-    AuctionData {
+
+    AuctionDataModel {
         int id PK
         int coin_id FK
-        string auction_house
-        string lot_number
-        date auction_date
-        decimal hammer_price
-        decimal total_price
         string url
+        string source
+        decimal hammer_price
+        string issuer
+        string mint
     }
-    
-    AuditRun {
+
+    VocabTermModel {
         int id PK
-        datetime started_at
-        datetime completed_at
-        int coins_audited
-        int discrepancies_found
-        string status
+        string vocab_type
+        string canonical_name
+        string nomisma_uri
+        string term_metadata JSON
     }
-    
-    DiscrepancyRecord {
+
+    CoinVocabAssignmentModel {
         int id PK
-        int audit_run_id FK
         int coin_id FK
-        int auction_data_id FK
+        int vocab_term_id FK
         string field_name
-        string coin_value
-        string auction_value
-        string status
-    }
-    
-    EnrichmentRecord {
-        int id PK
-        int audit_run_id FK
-        int coin_id FK
-        string field_name
-        string suggested_value
+        string raw_value
         float confidence
+        string method
         string status
+    }
+
+    SeriesModel {
+        int id PK
+        string name
+        string slug
+        string series_type
+        int target_count
+        bool is_complete
+        int canonical_vocab_id FK
+    }
+
+    SeriesSlotModel {
+        int id PK
+        int series_id FK
+        int slot_number
+        string name
+        string status
+        int priority
+    }
+
+    SeriesMembershipModel {
+        int id PK
+        int series_id FK
+        int coin_id FK
+        int slot_id FK
     }
 ```
 
 ---
 
-## Core Tables
+## Core Tables (V2)
 
-### `coins`
+### `coins_v2` (CoinModel)
 
-The central table storing all coin records.
+Central coin entity using SQLAlchemy 2.0 `Mapped[T]` syntax.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key, auto-increment |
-| `created_at` | DATETIME | No | Record creation timestamp |
-| `updated_at` | DATETIME | No | Last update timestamp |
-| **Classification** |
-| `category` | VARCHAR | No | Enum: republic, imperial, provincial, byzantine, greek, other |
-| `denomination` | VARCHAR | Yes | Coin type (Denarius, Aureus, etc.) |
-| `metal` | VARCHAR | Yes | Enum: gold, silver, billon, bronze, orichalcum, copper |
-| `series` | VARCHAR | Yes | Coin series/issue |
-| **Attribution** |
-| `issuing_authority` | VARCHAR | Yes | Who issued the coin (ruler name) |
-| `portrait_subject` | VARCHAR | Yes | Person depicted (may differ from issuer) |
-| `status` | VARCHAR | Yes | Title (Augustus, Caesar, etc.) |
-| `mint_id` | INTEGER | Yes | FK to `mints` table |
-| **Chronology** |
-| `reign_start` | INTEGER | Yes | Start of reign (negative for BC) |
-| `reign_end` | INTEGER | Yes | End of reign |
-| `mint_year_start` | INTEGER | Yes | Earliest mint date |
-| `mint_year_end` | INTEGER | Yes | Latest mint date |
-| `dating_certainty` | VARCHAR | Yes | Enum: certain, probable, possible, unknown |
-| **Physical** |
-| `weight_g` | DECIMAL(6,3) | Yes | Weight in grams |
-| `diameter_mm` | DECIMAL(5,2) | Yes | Diameter in millimeters |
-| `die_axis` | INTEGER | Yes | Die orientation (1-12 clock hours) |
-| **Design** |
-| `obverse_legend` | TEXT | Yes | Text on front |
-| `obverse_description` | TEXT | Yes | Description of obverse |
-| `reverse_legend` | TEXT | Yes | Text on back |
-| `reverse_description` | TEXT | Yes | Description of reverse |
-| `exergue` | VARCHAR | Yes | Text in exergue area |
-| **Grading** |
-| `grade_service` | VARCHAR | Yes | Enum: ngc, pcgs, self, dealer |
-| `grade` | VARCHAR | Yes | Grade string (VF, EF, AU, MS65, etc.) |
-| `certification_number` | VARCHAR | Yes | Grading service cert number |
-| `holder_type` | VARCHAR | Yes | Enum: slab, flip, envelope, raw |
-| **Acquisition** |
-| `acquisition_date` | DATE | Yes | Purchase date |
-| `acquisition_price` | DECIMAL(12,2) | Yes | Purchase price |
-| `acquisition_currency` | VARCHAR | Yes | Currency code (default: USD) |
-| `acquisition_source` | VARCHAR | Yes | Where purchased |
-| `acquisition_url` | VARCHAR | Yes | Purchase URL |
-| **Collection** |
-| `storage_location` | VARCHAR | Yes | Physical storage location |
-| `current_value` | DECIMAL(12,2) | Yes | Estimated current value |
-| `rarity` | VARCHAR | Yes | Enum: common, scarce, rare, very_rare, extremely_rare, unique |
-| `historical_significance` | TEXT | Yes | Historical notes |
-| `personal_notes` | TEXT | Yes | Personal notes |
+**ORM Model** (`src/infrastructure/persistence/orm.py`):
 
-**Indexes:**
-- Primary key on `id`
-- Index on `category`
-- Index on `sub_category`
-- Index on `denomination`
-- Index on `metal`
-- Index on `issuing_authority`
-- Index on `portrait_subject`
-- Index on `mint_id`
+```python
+from typing import Optional, List
+from decimal import Decimal
+from datetime import date, datetime
+from sqlalchemy import Integer, String, Numeric, Date, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from src.infrastructure.persistence.models import Base
 
-**Constraints:**
-- `ck_die_axis_range`: `die_axis IS NULL OR (die_axis >= 0 AND die_axis <= 12)`
+class CoinModel(Base):
+    __tablename__ = "coins_v2"
 
-### Additional Coin Fields (Full Schema)
+    # Primary Key
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
-The `coins` table has **72 columns total**. Additional fields not shown above:
+    # Classification (indexed for filtering)
+    category: Mapped[str] = mapped_column(String, index=True)
+    metal: Mapped[str] = mapped_column(String, index=True)
 
-| Group | Fields |
-|-------|--------|
-| Sub-classification | `sub_category` |
-| Chronology | `is_circa`, `dating_notes` |
-| Physical | `diameter_min_mm`, `thickness_mm`, `orientation`, `is_test_cut` |
-| Design | `obverse_legend_expanded`, `obverse_symbols`, `reverse_legend_expanded`, `reverse_symbols` |
-| Mint | `officina`, `script` |
-| Grading | `strike_quality`, `surface_quality`, `surface_issues` (JSON), `eye_appeal`, `toning_description`, `style_notes` |
-| Valuation | `estimate_low`, `estimate_high`, `estimate_date`, `estimated_value_usd`, `insured_value` |
-| Storage | `for_sale`, `asking_price` |
-| Research | `rarity_notes`, `die_match_notes`, `provenance_notes` |
-| Die Study | `die_study_obverse_id` (self-ref), `die_study_reverse_id` (self-ref), `die_study_group` |
-| LLM | `llm_enriched` (JSON), `llm_enriched_at` |
-| Auto-Merge | `field_sources` (JSON) |
+    # Physical Dimensions (required)
+    weight_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    diameter_mm: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    die_axis: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-> See [`backend/SCHEMA.md`](../../backend/SCHEMA.md) for complete column definitions.
+    # Attribution
+    issuer: Mapped[str] = mapped_column(String)
+    issuer_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("issuers.id"), nullable=True
+    )
+    issuer_term_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("vocab_terms.id"), nullable=True
+    )
 
----
+    mint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    mint_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("mints.id"), nullable=True
+    )
+    mint_term_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("vocab_terms.id"), nullable=True
+    )
 
-### `mints`
+    year_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    year_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
-Mint locations where coins were struck.
+    # Grading
+    grading_state: Mapped[str] = mapped_column(String, index=True)
+    grade: Mapped[str] = mapped_column(String)
+    grade_service: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    certification_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `name` | VARCHAR | No | Common name (Rome, Lugdunum) |
-| `ancient_name` | VARCHAR | Yes | Ancient name |
-| `modern_name` | VARCHAR | Yes | Modern city name |
-| `region` | VARCHAR | Yes | Region/province |
-| `country` | VARCHAR | Yes | Modern country |
-| `latitude` | FLOAT | Yes | Geographic latitude |
-| `longitude` | FLOAT | Yes | Geographic longitude |
+    # Acquisition (optional)
+    acquisition_price: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
+    acquisition_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
+    acquisition_source: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    acquisition_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
----
+    # Design
+    obverse_legend: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    obverse_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_legend: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exergue: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-### `coin_references`
+    # Collection Management
+    storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    personal_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-Catalog reference citations for coins.
+    # Relationships (eager load with selectinload)
+    images: Mapped[List["CoinImageModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
+    auction_data: Mapped[Optional["AuctionDataModel"]] = relationship(
+        back_populates="coin",
+        uselist=False
+    )
+    references: Mapped[List["CoinReferenceModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
+    provenance_events: Mapped[List["ProvenanceEventModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `reference_type_id` | INTEGER | Yes | FK to `reference_types` |
-| `system` | VARCHAR | No | Catalog system (RIC, Crawford, RPC) |
-| `volume` | VARCHAR | Yes | Volume number (I, II, VII) |
-| `number` | VARCHAR | No | Reference number (207, 335/1) |
-| `page` | VARCHAR | Yes | Page reference |
-| `plate` | VARCHAR | Yes | Plate reference |
-| `variation` | VARCHAR | Yes | Sub-variation (a, b, c) |
-| `note` | VARCHAR | Yes | Additional notes |
-| `lookup_attempted` | BOOLEAN | No | Whether API lookup was tried |
-| `lookup_success` | BOOLEAN | No | Whether lookup succeeded |
-| `lookup_data` | JSON | Yes | Data from catalog API |
+    # V3 Vocab relationships
+    issuer_vocab: Mapped[Optional["VocabTermModel"]] = relationship(
+        "src.infrastructure.persistence.models_vocab.VocabTermModel",
+        foreign_keys=[issuer_term_id]
+    )
+    mint_vocab: Mapped[Optional["VocabTermModel"]] = relationship(
+        "src.infrastructure.persistence.models_vocab.VocabTermModel",
+        foreign_keys=[mint_term_id]
+    )
+```
 
----
+**Domain Entity** (`src/domain/coin.py`):
 
-### `reference_types` (19 columns)
+```python
+from dataclasses import dataclass
+from typing import Optional, List
+from decimal import Decimal
+from datetime import date
 
-Catalog type records - single source of truth for reference data.
+@dataclass
+class Coin:
+    """Coin aggregate root - NO database dependencies."""
+    id: Optional[int]
+    category: str
+    metal: str
+    weight_g: Decimal
+    diameter_mm: Decimal
+    die_axis: Optional[int]
+    issuer: str
+    mint: Optional[str]
+    year_start: Optional[int]
+    year_end: Optional[int]
+    grading_state: str
+    grade: str
+    grade_service: Optional[str]
+    certification_number: Optional[str]
+    acquisition_price: Optional[Decimal]
+    acquisition_date: Optional[date]
+    acquisition_source: Optional[str]
+    acquisition_url: Optional[str]
+    obverse_legend: Optional[str]
+    obverse_description: Optional[str]
+    reverse_legend: Optional[str]
+    reverse_description: Optional[str]
+    exergue: Optional[str]
+    storage_location: Optional[str]
+    personal_notes: Optional[str]
+    images: List["CoinImage"] = None
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | Yes | Creation timestamp |
-| `updated_at` | DATETIME | Yes | Update timestamp |
-| `system` | VARCHAR(20) | No | Catalog system (ric, crawford, rpc) |
-| `local_ref` | VARCHAR(100) | No | Display reference (RIC I 207) |
-| `local_ref_normalized` | VARCHAR(100) | No | Normalized key (ric.1.207) |
-| `volume` | VARCHAR(20) | Yes | Volume (I, II, 1) |
-| `number` | VARCHAR(50) | Yes | Number (207, 335/1c) |
-| `edition` | VARCHAR(10) | Yes | Edition (2 for RIC I(2)) |
-| `external_id` | VARCHAR(100) | Yes | OCRE/CRRO ID |
-| `external_url` | VARCHAR(500) | Yes | Full catalog URL |
-| `lookup_status` | VARCHAR(20) | Yes | pending, success, not_found |
-| `lookup_confidence` | NUMERIC(3,2) | Yes | Match confidence (0.00-1.00) |
-| `last_lookup` | DATETIME | Yes | Last lookup timestamp |
-| `payload` | JSON | Yes | Cached catalog data |
-| `citation` | TEXT | Yes | Generated citation |
+    def validate(self) -> List[str]:
+        """Domain validation logic."""
+        errors = []
+        if self.weight_g and self.weight_g <= 0:
+            errors.append("Weight must be positive")
+        if self.diameter_mm and self.diameter_mm <= 0:
+            errors.append("Diameter must be positive")
+        if self.die_axis and not (0 <= self.die_axis <= 12):
+            errors.append("Die axis must be 0-12")
+        return errors
+```
 
-**Constraints:**
-- `uq_ref_type`: UNIQUE(system, local_ref_normalized)
-
----
-
-### `reference_match_attempts`
-
-Audit log for catalog matching attempts.
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `reference_type_id` | INTEGER | Yes | FK to reference_types |
-| `timestamp` | DATETIME | Yes | Attempt timestamp |
-| `query_sent` | TEXT | Yes | Query sent to API |
-| `context_used` | JSON | Yes | Coin context (ruler, mint) |
-| `result_status` | VARCHAR(20) | Yes | success, not_found, error |
-| `confidence` | NUMERIC(3,2) | Yes | Match confidence |
-| `candidates_returned` | INTEGER | Yes | Number of candidates |
+**Key Differences**:
+- **Domain**: Pure dataclass, business logic, no SQLAlchemy
+- **ORM**: SQLAlchemy `Mapped[T]`, relationships, database mapping
 
 ---
 
-### `coin_images`
+### `coin_images_v2` (CoinImageModel)
 
-Images associated with coins.
+**ORM Model**:
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `image_type` | VARCHAR | No | Enum: obverse, reverse, combined, detail |
-| `file_path` | VARCHAR | No | Path to image file |
-| `original_filename` | VARCHAR | Yes | Original upload filename |
-| `mime_type` | VARCHAR | Yes | MIME type |
-| `phash` | VARCHAR | Yes | Perceptual hash for deduplication |
-| `sort_order` | INTEGER | No | Display order |
-| `is_primary` | BOOLEAN | No | Primary image flag |
+```python
+class CoinImageModel(Base):
+    __tablename__ = "coin_images_v2"
 
----
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id"))
+    url: Mapped[str] = mapped_column(String)
+    image_type: Mapped[str] = mapped_column(String)  # obverse, reverse
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
 
-### `provenance_events` (20 columns)
+    # Relationship
+    coin: Mapped["CoinModel"] = relationship(back_populates="images")
+```
 
-Tracks ownership history and auction appearances.
+**Domain Entity**:
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `event_type` | ENUM | No | ProvenanceType enum |
-| `event_date` | DATE | Yes | Event date |
-| `auction_house` | VARCHAR(100) | Yes | Auction house name |
-| `sale_series` | VARCHAR(50) | Yes | Sale series (Triton) |
-| `sale_number` | VARCHAR(20) | Yes | Sale number (XXIV) |
-| `lot_number` | VARCHAR(20) | Yes | Lot number |
-| `catalog_reference` | VARCHAR(200) | Yes | Full citation |
-| `hammer_price` | NUMERIC(10,2) | Yes | Hammer price |
-| `buyers_premium_pct` | NUMERIC(4,2) | Yes | Buyer's premium % |
-| `total_price` | NUMERIC(10,2) | Yes | Total with premium |
-| `currency` | VARCHAR(3) | Yes | Currency code |
-| `dealer_name` | VARCHAR(100) | Yes | Dealer name |
-| `collection_name` | VARCHAR(100) | Yes | Named collection |
-| `url` | VARCHAR(500) | Yes | URL to listing |
-| `receipt_available` | BOOLEAN | Yes | Has receipt |
-| `notes` | TEXT | Yes | Additional notes |
-| `sort_order` | INTEGER | Yes | Display order |
-| `auction_data_id` | INTEGER | Yes | FK to auction_data |
+```python
+@dataclass
+class CoinImage:
+    """Coin image value object."""
+    id: Optional[int]
+    coin_id: int
+    url: str
+    image_type: str  # obverse, reverse, combined
+    is_primary: bool
+```
 
 ---
 
-### `coin_tags`
+### `auction_data_v2` (AuctionDataModel)
 
-Custom tags for coins.
+**ORM Model**:
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `tag` | VARCHAR | No | Tag text |
+```python
+class AuctionDataModel(Base):
+    __tablename__ = "auction_data_v2"
 
----
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("coins_v2.id"), nullable=True
+    )
 
-### `countermarks`
+    # URL is unique key
+    url: Mapped[str] = mapped_column(String, unique=True, index=True)
+    source: Mapped[str] = mapped_column(String)  # Heritage, CNG
+    sale_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    lot_number: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-Countermark stamps on coins.
+    # Financials
+    hammer_price: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
+    estimate_low: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
+    estimate_high: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
+    currency: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `countermark_type` | VARCHAR | Yes | Type (validation, military, etc.) |
-| `description` | TEXT | Yes | Countermark description |
-| `placement` | VARCHAR | Yes | obverse/reverse |
-| `condition` | VARCHAR | Yes | clear/partial/worn |
+    # Attribution
+    issuer: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    mint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    year_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    year_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
----
+    # Physical
+    weight_g: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 3), nullable=True
+    )
+    diameter_mm: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(10, 2), nullable=True
+    )
 
-## Auction Tables
+    # Descriptions
+    title: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    grade: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-### `auction_data` (74 columns)
+    # Images (JSON string)
+    primary_image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    additional_images: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
-Comprehensive auction record data for enrichment and price comparison.
+    # Metadata
+    scraped_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
-> **Full schema:** See [`backend/SCHEMA.md`](../../backend/SCHEMA.md) for all 74 columns.
+    # Relationship
+    coin: Mapped[Optional["CoinModel"]] = relationship(back_populates="auction_data")
+```
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | Yes | Creation timestamp |
-| `updated_at` | DATETIME | Yes | Update timestamp |
-| `coin_id` | INTEGER | Yes | FK to `coins` (nullable for unlinked) |
-| **Auction Identity** |
-| `auction_house` | VARCHAR(100) | No | House name |
-| `sale_name` | VARCHAR(200) | Yes | Sale name |
-| `lot_number` | VARCHAR(50) | Yes | Lot number |
-| `source_lot_id` | VARCHAR(50) | Yes | External lot ID |
-| `auction_date` | DATE | Yes | Auction date |
-| `url` | VARCHAR(500) | No | Listing URL (unique) |
-| **Pricing** |
-| `estimate_low` | NUMERIC(10,2) | Yes | Low estimate |
-| `estimate_high` | NUMERIC(10,2) | Yes | High estimate |
-| `hammer_price` | NUMERIC(10,2) | Yes | Hammer price |
-| `total_price` | NUMERIC(10,2) | Yes | Total with premium |
-| `buyers_premium_pct` | NUMERIC(4,2) | Yes | Premium % |
-| `currency` | VARCHAR(3) | Yes | Currency code |
-| `sold` | BOOLEAN | Yes | Sold flag |
-| `bids` | INTEGER | Yes | Bid count |
-| **Classification** |
-| `ruler` | VARCHAR(200) | Yes | Ruler name |
-| `denomination` | VARCHAR(100) | Yes | Denomination |
-| `metal` | VARCHAR(20) | Yes | Metal |
-| `mint` | VARCHAR(100) | Yes | Mint |
-| **Physical** |
-| `weight_g` | NUMERIC(6,3) | Yes | Weight |
-| `diameter_mm` | NUMERIC(5,2) | Yes | Diameter |
-| `die_axis` | INTEGER | Yes | Die axis (hours) |
-| **Descriptions** |
-| `title` | VARCHAR(1000) | Yes | Full title |
-| `description` | TEXT | Yes | Full description |
-| `obverse_description` | TEXT | Yes | Obverse |
-| `reverse_description` | TEXT | Yes | Reverse |
-| **Grading** |
-| `grade` | VARCHAR(50) | Yes | Grade |
-| `grade_service` | VARCHAR(20) | Yes | Service |
-| `certification_number` | VARCHAR(50) | Yes | Cert number |
-| **References** |
-| `catalog_references` | JSON | Yes | Parsed refs |
-| `primary_reference` | VARCHAR(100) | Yes | Primary ref |
-| `reference_type_id` | INTEGER | Yes | FK to reference_types |
-| **Photos** |
-| `photos` | JSON | Yes | Photo URLs |
-| `primary_photo_url` | VARCHAR(500) | Yes | Main photo |
-| **Metadata** |
-| `scraped_at` | DATETIME | Yes | Scrape timestamp |
-| `raw_data` | JSON | Yes | Raw response |
+**Domain Entity**:
 
-**Additional Fields:** eBay seller info, provenance, legends, campaign tracking (see full schema)
-
-**Constraints:**
-- `url` is UNIQUE
-
-**Indexes:**
-- `ix_auction_data_auction_house`
-- `ix_auction_data_source_lot_id`
-- `ix_auction_data_auction_date`
-- `ix_auction_data_url`
-- `ix_auction_data_reference_type_id`
+```python
+@dataclass
+class AuctionLot:
+    """Auction lot data from scrapers."""
+    id: Optional[int]
+    url: str
+    source: str
+    sale_name: Optional[str]
+    lot_number: Optional[str]
+    hammer_price: Optional[Decimal]
+    estimate_low: Optional[Decimal]
+    estimate_high: Optional[Decimal]
+    currency: Optional[str]
+    issuer: Optional[str]
+    mint: Optional[str]
+    year_start: Optional[int]
+    year_end: Optional[int]
+    weight_g: Optional[Decimal]
+    diameter_mm: Optional[Decimal]
+    title: Optional[str]
+    description: Optional[str]
+    grade: Optional[str]
+    primary_image_url: Optional[str]
+    additional_images: List[str] = None
+    scraped_at: Optional[date] = None
+```
 
 ---
 
-### `price_history` (13 columns)
+## Vocabulary Tables (V3)
 
-Price trends aggregated by reference type.
+### `vocab_terms` (VocabTermModel)
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | Yes | Creation timestamp |
-| `reference_type_id` | INTEGER | No | FK to reference_types |
-| `period_date` | DATE | No | Period start date |
-| `period_type` | VARCHAR(20) | Yes | Period type |
-| `min_price` | NUMERIC(10,2) | Yes | Minimum price |
-| `max_price` | NUMERIC(10,2) | Yes | Maximum price |
-| `median_price` | NUMERIC(10,2) | Yes | Median price |
-| `mean_price` | NUMERIC(10,2) | Yes | Mean price |
-| `comp_count` | INTEGER | Yes | Total sales |
-| `sold_count` | INTEGER | Yes | Sold count |
-| `passed_count` | INTEGER | Yes | Unsold count |
-| `median_price_vf_adj` | NUMERIC(10,2) | Yes | VF-adjusted median |
+Unified controlled vocabulary system (`src/infrastructure/persistence/models_vocab.py`).
 
-**Constraints:**
-- `uq_price_history_period`: UNIQUE(reference_type_id, period_date, period_type)
+**ORM Model**:
 
----
+```python
+class VocabTermModel(Base):
+    """
+    Unified vocabulary term.
 
-## Audit Tables
+    Stores all vocabulary types (issuer, mint, denomination, dynasty, canonical_series)
+    in a single table with type discrimination via vocab_type column.
+    """
+    __tablename__ = "vocab_terms"
 
-### `audit_runs` (16 columns)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    vocab_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    canonical_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    nomisma_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    term_metadata: Mapped[Optional[str]] = mapped_column(
+        "metadata", Text, nullable=True
+    )  # JSON string
+    created_at: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+```
 
-Tracks audit execution sessions.
+**Domain Entity**:
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `started_at` | DATETIME | No | Start time |
-| `completed_at` | DATETIME | Yes | Completion time |
-| `scope` | VARCHAR(20) | No | Scope (single, all, selected) |
-| `coin_ids` | JSON | Yes | Target coin IDs |
-| `total_coins` | INTEGER | Yes | Total to audit |
-| `coins_audited` | INTEGER | Yes | Audited count |
-| `coins_with_issues` | INTEGER | Yes | Issues found |
-| `discrepancies_found` | INTEGER | Yes | Discrepancy count |
-| `enrichments_found` | INTEGER | Yes | Enrichment count |
-| `images_downloaded` | INTEGER | Yes | Images downloaded |
-| `auto_accepted` | INTEGER | Yes | Auto-accepted |
-| `auto_applied` | INTEGER | Yes | Auto-applied |
-| `status` | VARCHAR(20) | No | Status |
-| `error_message` | TEXT | Yes | Error message |
-| `config_snapshot` | JSON | Yes | Config at runtime |
+```python
+@dataclass
+class VocabTerm:
+    """Controlled vocabulary term."""
+    id: Optional[int]
+    vocab_type: str  # issuer, mint, denomination, dynasty
+    canonical_name: str
+    nomisma_uri: Optional[str]
+    metadata: Optional[dict]  # Type-specific data
+    created_at: Optional[str]
+```
 
----
-
-### `discrepancy_records` (20 columns)
-
-Records data conflicts between coins and auction data.
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | No | Creation time |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `auction_data_id` | INTEGER | Yes | FK to `auction_data` |
-| `audit_run_id` | INTEGER | Yes | FK to `audit_runs` |
-| `field_name` | VARCHAR(50) | No | Field being compared |
-| `current_value` | TEXT | Yes | Current value |
-| `auction_value` | TEXT | Yes | Auction value |
-| `similarity` | FLOAT | Yes | Similarity score |
-| `difference_type` | VARCHAR(30) | Yes | Difference type |
-| `comparison_notes` | TEXT | Yes | Comparison notes |
-| `normalized_current` | TEXT | Yes | Normalized current |
-| `normalized_auction` | TEXT | Yes | Normalized auction |
-| `source_house` | VARCHAR(50) | No | Source house |
-| `trust_level` | VARCHAR(20) | No | Trust level |
-| `auto_acceptable` | BOOLEAN | Yes | Auto-accept flag |
-| `status` | VARCHAR(20) | No | Resolution status |
-| `resolved_at` | DATETIME | Yes | Resolution time |
-| `resolution` | VARCHAR(20) | Yes | Resolution action |
-| `resolution_notes` | TEXT | Yes | Resolution notes |
-
-**Indexes:**
-- `ix_discrepancy_status_trust` (status, trust_level)
-- `ix_discrepancy_coin_status` (coin_id, status)
+**Vocab Types**:
+- `issuer`: Issuing authorities (Augustus, Tiberius, etc.)
+- `mint`: Mint locations (Rome, Lugdunum, etc.)
+- `denomination`: Coin types (Denarius, Aureus, etc.)
+- `dynasty`: Dynasties (Julio-Claudian, Flavian, etc.)
+- `canonical_series`: Standard series definitions (RIC types)
 
 ---
 
-### `enrichment_records` (15 columns)
+### `coin_vocab_assignments` (CoinVocabAssignmentModel)
 
-Tracks suggested field updates from auction data.
+Audit trail for vocabulary assignments.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | No | Creation time |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `auction_data_id` | INTEGER | Yes | FK to `auction_data` |
-| `audit_run_id` | INTEGER | Yes | FK to `audit_runs` |
-| `field_name` | VARCHAR(50) | No | Field to enrich |
-| `suggested_value` | TEXT | No | Suggested value |
-| `source_house` | VARCHAR(50) | No | Source house |
-| `trust_level` | VARCHAR(20) | No | Trust level |
-| `confidence` | FLOAT | Yes | Confidence score |
-| `auto_applicable` | BOOLEAN | Yes | Auto-apply flag |
-| `status` | VARCHAR(20) | No | Status |
-| `applied_at` | DATETIME | Yes | Application time |
-| `applied` | BOOLEAN | Yes | Applied flag |
-| `rejection_reason` | TEXT | Yes | Rejection reason |
+**ORM Model**:
 
-**Indexes:**
-- `ix_enrichment_status_trust` (status, trust_level)
-- `ix_enrichment_coin_status` (coin_id, status)
+```python
+class CoinVocabAssignmentModel(Base):
+    """
+    Tracks vocabulary term assignments to coins.
 
----
+    Items with status='pending_review' appear in review queue.
+    """
+    __tablename__ = "coin_vocab_assignments"
 
-### `field_history` (17 columns)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    coin_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("coins_v2.id"), nullable=False, index=True
+    )
+    field_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    raw_value: Mapped[str] = mapped_column(Text, nullable=False)
+    vocab_term_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("vocab_terms.id"), nullable=True
+    )
+    confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # Method: 'exact', 'fts', 'nomisma', 'llm', 'manual'
+    status: Mapped[str] = mapped_column(String(20), default="assigned", index=True)
+    # Status: 'assigned', 'pending_review', 'approved', 'rejected'
+    assigned_at: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    reviewed_at: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-Audit trail for field changes with rollback support.
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `field_name` | VARCHAR(50) | No | Changed field |
-| `old_value` | JSON | Yes | Previous value |
-| `new_value` | JSON | Yes | New value |
-| `old_source` | VARCHAR(50) | Yes | Previous source |
-| `new_source` | VARCHAR(50) | Yes | New source |
-| `old_source_id` | VARCHAR(100) | Yes | Previous source ID |
-| `new_source_id` | VARCHAR(100) | Yes | New source ID |
-| `change_type` | VARCHAR(20) | No | Type (auto_fill, manual) |
-| `changed_at` | DATETIME | No | Change timestamp |
-| `changed_by` | VARCHAR(100) | Yes | Who made change |
-| `batch_id` | VARCHAR(36) | Yes | Batch UUID |
-| `conflict_type` | VARCHAR(50) | Yes | Conflict type |
-| `trust_old` | INTEGER | Yes | Old trust level |
-| `trust_new` | INTEGER | Yes | New trust level |
-| `reason` | VARCHAR(500) | Yes | Change reason |
-
-**Indexes:**
-- `ix_field_history_batch_coin` (batch_id, coin_id)
-- `ix_field_history_coin_field` (coin_id, field_name)
+    vocab_term: Mapped[Optional["VocabTermModel"]] = relationship("VocabTermModel")
+```
 
 ---
 
-### `image_auction_sources`
+### `vocab_cache` (VocabCacheModel)
 
-Tracks which auctions an image appeared in.
+Simple key-value cache for vocabulary operations.
 
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `created_at` | DATETIME | No | Creation time |
-| `image_id` | INTEGER | No | FK to coin_images |
-| `auction_data_id` | INTEGER | No | FK to auction_data |
-| `source_url` | VARCHAR(500) | No | Original URL |
-| `source_house` | VARCHAR(50) | Yes | Source house |
-| `fetched_at` | DATETIME | Yes | Fetch timestamp |
+**ORM Model**:
 
----
+```python
+class VocabCacheModel(Base):
+    """
+    Cache for search results (1hr TTL) and API responses (1yr TTL).
+    """
+    __tablename__ = "vocab_cache"
 
-### `import_records` (13 columns)
-
-Tracks provenance of imported coins.
-
-| Column | Type | Nullable | Description |
-|--------|------|----------|-------------|
-| `id` | INTEGER | No | Primary key |
-| `coin_id` | INTEGER | No | FK to `coins` |
-| `source_type` | VARCHAR(50) | No | Source type |
-| `source_id` | VARCHAR(100) | Yes | Source identifier |
-| `source_url` | VARCHAR(500) | Yes | Source URL |
-| `imported_at` | DATETIME | No | Import timestamp |
-| `raw_data` | JSON | Yes | Original data |
-| `import_method` | VARCHAR(50) | Yes | Import method |
-| `imported_by` | VARCHAR(100) | Yes | Importer |
-| `file_name` | VARCHAR(255) | Yes | Source file |
-| `file_row` | INTEGER | Yes | Source row |
-| `enriched_at` | DATETIME | Yes | Enrichment time |
-| `enrichment_source` | VARCHAR(50) | Yes | Enrichment source |
-
-**Constraints:**
-- `uq_import_source`: UNIQUE(source_type, source_id)
-
-**Indexes:**
-- `ix_import_source_lookup` (source_type, source_id)
+    cache_key: Mapped[str] = mapped_column(String(200), primary_key=True)
+    data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string
+    expires_at: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+```
 
 ---
 
-## Enum Values Quick Reference
+## Series Tables
 
-> **Full enum definitions:** See [`backend/SCHEMA.md`](../../backend/SCHEMA.md) for complete enum values.
+### `series` (SeriesModel)
+
+Series/collection management (`src/infrastructure/persistence/models_series.py`).
+
+**ORM Model**:
+
+```python
+class SeriesModel(Base):
+    __tablename__ = "series"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    series_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Types: ruler, type, catalog, custom
+    category: Mapped[Optional[str]] = mapped_column(String(50))
+
+    target_count: Mapped[Optional[int]] = mapped_column(Integer)
+    is_complete: Mapped[bool] = mapped_column(Boolean, default=False)
+    completion_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Link to canonical definition in vocab_terms
+    canonical_vocab_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("vocab_terms.id"), nullable=True
+    )
+
+    # Relationships
+    slots: Mapped[List["SeriesSlotModel"]] = relationship(
+        back_populates="series",
+        cascade="all, delete-orphan"
+    )
+    memberships: Mapped[List["SeriesMembershipModel"]] = relationship(
+        back_populates="series",
+        cascade="all, delete-orphan"
+    )
+    canonical_definition: Mapped[Optional["VocabTermModel"]] = relationship(
+        "src.infrastructure.persistence.models_vocab.VocabTermModel"
+    )
+```
+
+**Domain Entity**:
+
+```python
+@dataclass
+class Series:
+    """Series/collection grouping."""
+    id: Optional[int]
+    name: str
+    slug: str
+    description: Optional[str]
+    series_type: str
+    category: Optional[str]
+    target_count: Optional[int]
+    is_complete: bool
+    completion_date: Optional[datetime]
+    created_at: datetime
+    canonical_vocab_id: Optional[int]
+    slots: List["SeriesSlot"] = None
+    memberships: List["SeriesMembership"] = None
+```
+
+---
+
+### `series_slots` (SeriesSlotModel)
+
+Predefined slots within a series.
+
+**ORM Model**:
+
+```python
+class SeriesSlotModel(Base):
+    __tablename__ = "series_slots"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_id: Mapped[int] = mapped_column(
+        ForeignKey("series.id", ondelete='CASCADE'), nullable=False
+    )
+    slot_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+
+    status: Mapped[str] = mapped_column(String(20), default="empty", index=True)
+    # Status: empty, filled, duplicate
+
+    priority: Mapped[int] = mapped_column(Integer, default=5)
+
+    series: Mapped["SeriesModel"] = relationship(back_populates="slots")
+    memberships: Mapped[List["SeriesMembershipModel"]] = relationship(
+        back_populates="slot",
+        cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        CheckConstraint('slot_number > 0', name='check_slot_number'),
+        UniqueConstraint('series_id', 'slot_number', name='uq_series_slot_number'),
+    )
+```
+
+---
+
+### `series_memberships` (SeriesMembershipModel)
+
+Links coins to series and slots.
+
+**ORM Model**:
+
+```python
+class SeriesMembershipModel(Base):
+    __tablename__ = "series_memberships"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_id: Mapped[int] = mapped_column(
+        ForeignKey("series.id", ondelete='CASCADE'), nullable=False
+    )
+    coin_id: Mapped[int] = mapped_column(
+        ForeignKey("coins_v2.id", ondelete='CASCADE'), nullable=False
+    )
+    slot_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("series_slots.id", ondelete='SET NULL')
+    )
+
+    assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    series: Mapped["SeriesModel"] = relationship(back_populates="memberships")
+    slot: Mapped[Optional["SeriesSlotModel"]] = relationship(back_populates="memberships")
+```
+
+---
+
+## SQLAlchemy 2.0 Patterns
+
+### ORM Syntax (MANDATORY)
+
+**Rule**: Always use `Mapped[T]` + `mapped_column()` syntax.
+
+```python
+# ✅ CORRECT (SQLAlchemy 2.0)
+class CoinModel(Base):
+    __tablename__ = "coins_v2"
+
+    # Required field (non-nullable)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    category: Mapped[str] = mapped_column(String, index=True)
+    weight_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+
+    # Optional field (nullable)
+    mint: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    acquisition_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    # One-to-Many relationship
+    images: Mapped[List["CoinImageModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
+
+    # Many-to-One relationship
+    issuer_vocab: Mapped[Optional["VocabTermModel"]] = relationship(
+        "VocabTermModel",
+        foreign_keys=[issuer_term_id]
+    )
+
+# ❌ WRONG (Old Column syntax)
+class CoinModel(Base):
+    __tablename__ = "coins_v2"
+
+    id = Column(Integer, primary_key=True)  # ❌ NO type hints
+    category = Column(String, index=True)    # ❌ Missing Mapped[T]
+    mint = Column(String, nullable=True)     # ❌ Not Optional[str]
+```
+
+**Why this matters**:
+- Type safety and IDE autocomplete
+- mypy compatibility
+- Modern SQLAlchemy 2.0 best practices
+- Consistency with V2 codebase
+
+---
+
+### Query Patterns (Prevent N+1)
+
+**Rule**: Always use `selectinload()` for relationships.
+
+```python
+from sqlalchemy.orm import selectinload
+
+# ✅ CORRECT (Eager loading)
+def get_coin_with_images(coin_id: int) -> Optional[Coin]:
+    orm_coin = self.session.query(CoinModel).options(
+        selectinload(CoinModel.images),        # Eager load images
+        selectinload(CoinModel.references)     # Eager load references
+    ).filter(CoinModel.id == coin_id).first()
+
+    return self._to_domain(orm_coin)
+
+# ❌ WRONG (Lazy loading causes N+1)
+def get_coin_with_images(coin_id: int) -> Optional[Coin]:
+    orm_coin = self.session.query(CoinModel).filter(
+        CoinModel.id == coin_id
+    ).first()  # ❌ Images not loaded
+
+    # Accessing orm_coin.images triggers N queries
+    return self._to_domain(orm_coin)
+```
+
+**Why this matters**:
+- **Without eager loading**: 1 query for coin + N queries for images = O(n)
+- **With eager loading**: 1 query for coin + 1 query for all images = O(1)
+- Performance: 10-100x faster with large collections
+
+---
+
+### Transaction Management
+
+**Rule**: Repositories use `flush()`, never `commit()`.
+
+```python
+# ✅ CORRECT (Repository uses flush)
+class SqlAlchemyCoinRepository:
+    def save(self, coin: Coin) -> Coin:
+        orm_coin = self._to_orm(coin)
+        merged = self.session.merge(orm_coin)
+        self.session.flush()  # ✅ Get ID, but don't commit
+        return self._to_domain(merged)
+
+# get_db() dependency handles commit automatically
+def get_db() -> Generator[Session, None, None]:
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()  # Auto-commit on success
+    except Exception:
+        db.rollback()  # Auto-rollback on error
+        raise
+    finally:
+        db.close()
+
+# ❌ WRONG (Repository commits)
+class SqlAlchemyCoinRepository:
+    def save(self, coin: Coin) -> Coin:
+        orm_coin = self._to_orm(coin)
+        merged = self.session.merge(orm_coin)
+        self.session.commit()  # ❌ Breaks transaction boundaries
+        return self._to_domain(merged)
+```
+
+**Why this matters**:
+- Multiple repository calls in one request = one transaction
+- Exceptions automatically roll back ALL changes
+- Clean separation: repositories handle data, dependency handles transactions
+
+---
+
+## Common Query Patterns
+
+### Get Coin with Relationships
+
+```python
+from sqlalchemy.orm import selectinload
+
+stmt = (
+    self.session.query(CoinModel)
+    .options(
+        selectinload(CoinModel.images),
+        selectinload(CoinModel.references),
+        selectinload(CoinModel.provenance_events),
+        selectinload(CoinModel.issuer_vocab),
+        selectinload(CoinModel.mint_vocab)
+    )
+    .filter(CoinModel.id == coin_id)
+)
+orm_coin = stmt.first()
+```
+
+### Filter Coins by Multiple Criteria
+
+```python
+stmt = self.session.query(CoinModel).options(
+    selectinload(CoinModel.images)  # Always eager load
+)
+
+if category:
+    stmt = stmt.filter(CoinModel.category == category)
+if metal:
+    stmt = stmt.filter(CoinModel.metal == metal)
+if issuer:
+    stmt = stmt.filter(CoinModel.issuer.ilike(f"%{issuer}%"))
+if year_start:
+    stmt = stmt.filter(CoinModel.year_end >= year_start)
+if year_end:
+    stmt = stmt.filter(CoinModel.year_start <= year_end)
+
+stmt = stmt.order_by(CoinModel.year_start.desc())
+stmt = stmt.offset(skip).limit(limit)
+
+coins = stmt.all()
+```
+
+### Search Vocabulary Terms
+
+```python
+from sqlalchemy import or_
+
+stmt = (
+    self.session.query(VocabTermModel)
+    .filter(VocabTermModel.vocab_type == vocab_type)
+    .filter(
+        or_(
+            VocabTermModel.canonical_name.ilike(f"%{query}%"),
+            VocabTermModel.nomisma_uri.ilike(f"%{query}%")
+        )
+    )
+    .limit(10)
+)
+terms = stmt.all()
+```
+
+### Get Series with Coins
+
+```python
+stmt = (
+    self.session.query(SeriesModel)
+    .options(
+        selectinload(SeriesModel.slots),
+        selectinload(SeriesModel.memberships)
+    )
+    .filter(SeriesModel.slug == series_slug)
+)
+series = stmt.first()
+```
+
+---
+
+## Enum Values
+
+> **Full enums:** See [`backend/SCHEMA.md`](../../backend/SCHEMA.md) for complete enum definitions.
 
 ### Category
 ```
@@ -656,194 +916,101 @@ common | scarce | rare | very_rare | extremely_rare | unique
 ngc | pcgs | self | dealer
 ```
 
-### HolderType
-```
-ngc_slab | pcgs_slab | flip | capsule | tray | raw
-```
-
-### DatingCertainty
-```
-exact | narrow | broad | unknown
-```
-
 ### ImageType
 ```
 obverse | reverse | edge | slab | detail | combined | other
 ```
 
-### ProvenanceType
+### SeriesType
 ```
-auction | private_sale | dealer | find | inheritance | gift | collection | exchange
-```
-
-### ReferenceSystem
-```
-ric | crawford | rpc | rsc | bmcre | sear | sydenham | sng | bmc | hn | other
+ruler | type | catalog | custom
 ```
 
-### ReferencePosition
+### SlotStatus
 ```
-obverse | reverse | both
-```
-
-### CountermarkType
-```
-host_validation | value_reduction | military | civic | imperial | other
+empty | filled | duplicate
 ```
 
-### CountermarkCondition
+### VocabType
 ```
-clear | partial | worn | uncertain
-```
-
-### ImportSourceType
-```
-heritage | cng | ebay | biddr | roma | agora | ngc | pcgs | vcoins | ma_shops | file | manual
+issuer | mint | denomination | dynasty | canonical_series
 ```
 
-### DiscrepancyStatus
+### AssignmentMethod
 ```
-pending | accepted | rejected | ignored
-```
-
-### EnrichmentStatus
-```
-pending | applied | rejected
+exact | fts | nomisma | llm | manual
 ```
 
-### DifferenceType
+### AssignmentStatus
 ```
-measurement | grade | reference | text
-```
-
-### Severity
-```
-low | medium | high
+assigned | pending_review | approved | rejected
 ```
 
 ---
 
-## Common Query Patterns
+## Database Configuration
 
-### Get coin with all relationships
+### Import Paths (V2)
 
 ```python
-stmt = (
-    select(Coin)
-    .options(
-        joinedload(Coin.mint),
-        selectinload(Coin.references),
-        selectinload(Coin.images),
-        selectinload(Coin.provenance_events),
-        selectinload(Coin.tags),
-    )
-    .where(Coin.id == coin_id)
-)
-coin = db.execute(stmt).scalar_one_or_none()
+# ✅ CORRECT (V2 imports)
+from src.infrastructure.persistence.database import get_db, init_db
+from src.infrastructure.persistence.orm import CoinModel, CoinImageModel
+from src.infrastructure.persistence.models_vocab import VocabTermModel
+from src.infrastructure.persistence.models_series import SeriesModel
+
+# ❌ WRONG (V1 imports)
+from app.database import get_db  # ❌ V1 path
+from app.models import Coin        # ❌ V1 path
 ```
 
-### Filter coins by multiple criteria
+### Database URL
 
 ```python
-stmt = select(Coin)
+DATABASE_URL = "sqlite:///./coinstack_v2.db"
 
-if category:
-    stmt = stmt.where(Coin.category == category)
-if metal:
-    stmt = stmt.where(Coin.metal == metal)
-if ruler:
-    stmt = stmt.where(Coin.issuing_authority.ilike(f"%{ruler}%"))
-if year_start:
-    stmt = stmt.where(Coin.reign_end >= year_start)
-if year_end:
-    stmt = stmt.where(Coin.reign_start <= year_end)
-
-stmt = stmt.order_by(getattr(Coin, sort_by).desc())
-stmt = stmt.offset(skip).limit(limit)
-
-coins = db.execute(stmt).scalars().all()
-```
-
-### Get auction comparables
-
-```python
-stmt = (
-    select(AuctionData)
-    .where(AuctionData.ruler.ilike(f"%{coin.issuing_authority}%"))
-    .where(AuctionData.denomination == coin.denomination)
-    .where(AuctionData.coin_id != coin.id)
-    .order_by(AuctionData.auction_date.desc())
-    .limit(10)
-)
-comparables = db.execute(stmt).scalars().all()
-```
-
-### Get pending discrepancies for coin
-
-```python
-stmt = (
-    select(DiscrepancyRecord)
-    .where(DiscrepancyRecord.coin_id == coin_id)
-    .where(DiscrepancyRecord.status == "pending")
-    .order_by(DiscrepancyRecord.severity.desc())
-)
-discrepancies = db.execute(stmt).scalars().all()
-```
-
----
-
-## SQLAlchemy Notes
-
-### Database Configuration
-
-```python
-# Database URL format
-DATABASE_URL = "sqlite:///./data/coinstack.db"
-
-# Engine configuration
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},  # SQLite-specific
-    echo=False,  # Set True for SQL logging
+    echo=False  # Set True for SQL logging
 )
 ```
-
-### Enum Handling (SQLAlchemy 2.0)
-
-SQLAlchemy 2.0 stores enum **member names** (uppercase), not values:
-- Database stores: `IMPERIAL`, `SILVER`, `OBVERSE_UP`
-- Not the values: `imperial`, `silver`, `obverse_up`
 
 ### Session Management
 
 ```python
-from app.database import get_db
-
 # In FastAPI endpoints
-def my_endpoint(db: Session = Depends(get_db)):
-    coins = db.query(Coin).all()
+from src.infrastructure.persistence.database import get_db
+from sqlalchemy.orm import Session
+
+@router.get("/coins/{coin_id}")
+def get_coin(coin_id: int, db: Session = Depends(get_db)):
+    # Session automatically commits on success, rolls back on error
+    coin = db.query(CoinModel).filter(CoinModel.id == coin_id).first()
+    return coin
 ```
-
-### Migration Notes
-
-**Adding Columns:**
-```python
-conn.execute(text("ALTER TABLE coins ADD COLUMN new_field VARCHAR(100)"))
-```
-
-**Adding Indexes:**
-```python
-conn.execute(text("CREATE INDEX IF NOT EXISTS ix_name ON table (column)"))
-```
-
-**Adding Unique Constraints:**
-```python
-conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS uq_name ON table (col1, col2)"))
-```
-
-> **Note:** SQLite doesn't support DROP COLUMN. Use table recreation for column removal.
 
 ---
 
-**Previous:** [04-FRONTEND-MODULES.md](04-FRONTEND-MODULES.md) - Frontend reference  
+## Critical Rules
+
+### Port Configuration (MANDATORY)
+- Backend: Port 8000
+- Frontend: Port 3000
+- Never increment ports
+
+### Database Safety (MANDATORY)
+- REQUIRED: Timestamped backup to `backend/backups/` BEFORE schema changes
+- Format: `coinstack_YYYYMMDD_HHMMSS.db`
+
+### Architecture Rules (MANDATORY)
+- Domain entities have NO SQLAlchemy imports
+- ORM models use `Mapped[T]` + `mapped_column()` syntax
+- Repositories use `flush()` NOT `commit()`
+- Always use `selectinload()` for relationships
+- Use cases depend on interfaces (Protocols), not implementations
+
+---
+
+**Previous:** [04-FRONTEND-MODULES.md](04-FRONTEND-MODULES.md) - Frontend reference
 **Next:** [06-DATA-FLOWS.md](06-DATA-FLOWS.md) - Data flows and sequences

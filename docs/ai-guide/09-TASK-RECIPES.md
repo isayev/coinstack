@@ -1,912 +1,897 @@
-# Task Recipes
+# Task Recipes (V2 Clean Architecture)
 
-Step-by-step guides for common development tasks.
+Step-by-step guides for common development tasks following Clean Architecture principles.
 
 ---
 
-## Recipe 1: Add a New Field to Coin Model
+## Recipe 1: Add a New Field to Coin Entity
 
 **Goal:** Add `diameter_max_mm` field to support irregular flan coins.
 
-### Step 1: Update SQLAlchemy Model
-
-Edit `backend/app/models/coin.py`:
-
-```python
-class Coin(Base):
-    # ... existing fields ...
-    
-    # Physical measurements
-    weight_g: Mapped[Decimal | None] = mapped_column(Numeric(6, 3))
-    diameter_mm: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
-    diameter_max_mm: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))  # NEW
-    die_axis: Mapped[int | None]
-```
-
-### Step 2: Update Pydantic Schemas
-
-Edit `backend/app/schemas/coin.py`:
-
-```python
-# In CoinBase or appropriate base class
-class CoinBase(BaseModel):
-    # ... existing fields ...
-    diameter_mm: Decimal | None = None
-    diameter_max_mm: Decimal | None = None  # NEW
-
-# Ensure it's in CoinCreate
-class CoinCreate(CoinBase):
-    # ... 
-    diameter_max_mm: Decimal | None = None  # NEW
-
-# Ensure it's in CoinUpdate  
-class CoinUpdate(BaseModel):
-    # ... 
-    diameter_max_mm: Decimal | None = None  # NEW
-
-# Ensure it's in CoinDetail (if not inherited)
-class CoinDetail(CoinBase):
-    # ...
-    diameter_max_mm: Decimal | None = None  # NEW
-```
-
-### Step 3: Create Database Migration
-
-If using Alembic (recommended for production):
+### Step 1: Backup Database (MANDATORY)
 
 ```bash
 cd backend
-alembic revision --autogenerate -m "Add diameter_max_mm to coins"
-alembic upgrade head
+cp coinstack_v2.db backups/coinstack_$(date +%Y%m%d_%H%M%S).db
 ```
 
-Or manually update SQLite (development):
+**Why**: Required before any schema change. See [08-CRITICAL-RULES.md](08-CRITICAL-RULES.md).
+
+### Step 2: Update Domain Entity
+
+Edit `backend/src/domain/coin.py`:
 
 ```python
-# Run once in Python console
-from app.database import engine
-from sqlalchemy import text
+from dataclasses import dataclass
+from typing import Optional
+from decimal import Decimal
 
-with engine.connect() as conn:
-    conn.execute(text("ALTER TABLE coins ADD COLUMN diameter_max_mm DECIMAL(5,2)"))
-    conn.commit()
+@dataclass
+class Coin:
+    """Coin aggregate root."""
+
+    # ... existing fields ...
+
+    # Physical characteristics
+    weight_g: Optional[Decimal]
+    diameter_mm: Optional[Decimal]
+    diameter_max_mm: Optional[Decimal]  # NEW - for irregular flans
+    die_axis: Optional[int]
 ```
 
-### Step 4: Update TypeScript Types
+**Note**: Domain entity has no dependencies on SQLAlchemy or Pydantic.
 
-Edit `frontend/src/types/coin.ts`:
+### Step 3: Update ORM Model
+
+Edit `backend/src/infrastructure/persistence/orm.py`:
+
+```python
+from sqlalchemy import Integer, String, Numeric, Date
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
+from decimal import Decimal
+
+class CoinModel(Base):
+    """ORM model (separate from domain entity)."""
+    __tablename__ = "coins_v2"
+
+    # ... existing fields ...
+
+    # Physical measurements
+    weight_g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    diameter_mm: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    diameter_max_mm: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)  # NEW
+    die_axis: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+```
+
+**Important**: Use SQLAlchemy 2.0 `Mapped[T]` syntax (see [08-CRITICAL-RULES.md](08-CRITICAL-RULES.md)).
+
+### Step 4: Update Repository Mapping
+
+Edit `backend/src/infrastructure/repositories/coin_repository.py`:
+
+```python
+class SqlAlchemyCoinRepository:
+
+    def _to_domain(self, orm_coin: CoinModel) -> Coin:
+        """Convert ORM model to domain entity."""
+        return Coin(
+            id=orm_coin.id,
+            # ... existing fields ...
+            weight_g=orm_coin.weight_g,
+            diameter_mm=orm_coin.diameter_mm,
+            diameter_max_mm=orm_coin.diameter_max_mm,  # NEW
+            die_axis=orm_coin.die_axis,
+        )
+
+    def _to_orm(self, coin: Coin) -> CoinModel:
+        """Convert domain entity to ORM model."""
+        return CoinModel(
+            id=coin.id,
+            # ... existing fields ...
+            weight_g=coin.weight_g,
+            diameter_mm=coin.diameter_mm,
+            diameter_max_mm=coin.diameter_max_mm,  # NEW
+            die_axis=coin.die_axis,
+        )
+```
+
+### Step 5: Run Database Migration
+
+```bash
+cd backend
+
+# Option 1: Using Python directly
+python -c "
+from sqlalchemy import text
+from src.infrastructure.persistence.database import engine
+
+with engine.connect() as conn:
+    conn.execute(text('ALTER TABLE coins_v2 ADD COLUMN diameter_max_mm DECIMAL(10,2)'))
+    conn.commit()
+print('Column added successfully')
+"
+
+# Option 2: Check with SQLite CLI
+sqlite3 coinstack_v2.db "ALTER TABLE coins_v2 ADD COLUMN diameter_max_mm DECIMAL(10,2);"
+sqlite3 coinstack_v2.db "PRAGMA table_info(coins_v2);" | grep diameter_max
+```
+
+### Step 6: Update Frontend TypeScript Types
+
+Edit `frontend/src/domain/schemas.ts`:
 
 ```typescript
-interface CoinDetail extends CoinListItem {
+// Mirror backend domain entity
+export interface Coin {
+  id: number | null
   // ... existing fields ...
+
+  // Physical characteristics
+  weight_g: number | null
   diameter_mm: number | null
   diameter_max_mm: number | null  // NEW
   die_axis: number | null
 }
 ```
 
-### Step 5: Update Form Component
+### Step 7: Update Frontend Form
 
 Edit `frontend/src/components/coins/CoinForm.tsx`:
 
 ```typescript
-// In Physical tab section
-<div className="grid grid-cols-3 gap-4">
+// In Physical characteristics section
+<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
   <div>
-    <Label>Weight (g)</Label>
-    <Input type="number" step="0.001" {...form.register('weight_g')} />
+    <Label htmlFor="weight_g">Weight (g)</Label>
+    <Input
+      id="weight_g"
+      type="number"
+      step="0.01"
+      {...register('weight_g', { valueAsNumber: true })}
+    />
   </div>
+
   <div>
-    <Label>Diameter (mm)</Label>
-    <Input type="number" step="0.1" {...form.register('diameter_mm')} />
+    <Label htmlFor="diameter_mm">Diameter (mm)</Label>
+    <Input
+      id="diameter_mm"
+      type="number"
+      step="0.1"
+      {...register('diameter_mm', { valueAsNumber: true })}
+    />
   </div>
+
   <div>
-    <Label>Max Diameter (mm)</Label>  {/* NEW */}
-    <Input type="number" step="0.1" {...form.register('diameter_max_mm')} />
+    <Label htmlFor="diameter_max_mm">Max Diameter (mm)</Label>  {/* NEW */}
+    <Input
+      id="diameter_max_mm"
+      type="number"
+      step="0.1"
+      {...register('diameter_max_mm', { valueAsNumber: true })}
+    />
+    <p className="text-xs text-muted-foreground mt-1">
+      For irregular flans
+    </p>
   </div>
 </div>
 ```
 
-### Step 6: Update Detail Display
+### Step 8: Update Detail View
 
-Edit `frontend/src/pages/CoinDetailPage.tsx`:
+Edit `frontend/src/features/collection/CoinDetailV3.tsx`:
 
 ```typescript
 // In Physical section
-<div className="grid grid-cols-4 gap-4">
-  <Stat label="Weight" value={coin.weight_g ? `${coin.weight_g}g` : '-'} />
-  <Stat label="Diameter" value={coin.diameter_mm ? `${coin.diameter_mm}mm` : '-'} />
-  <Stat label="Max Diameter" value={coin.diameter_max_mm ? `${coin.diameter_max_mm}mm` : '-'} />  {/* NEW */}
-  <Stat label="Die Axis" value={coin.die_axis ? `${coin.die_axis}h` : '-'} />
-</div>
+<dl className="grid grid-cols-2 gap-4">
+  <div>
+    <dt className="text-sm text-muted-foreground">Weight</dt>
+    <dd className="font-medium">
+      {coin.weight_g ? `${coin.weight_g.toFixed(2)}g` : '—'}
+    </dd>
+  </div>
+
+  <div>
+    <dt className="text-sm text-muted-foreground">Diameter</dt>
+    <dd className="font-medium">
+      {coin.diameter_mm ? `${coin.diameter_mm.toFixed(1)}mm` : '—'}
+      {coin.diameter_max_mm && coin.diameter_max_mm !== coin.diameter_mm && (
+        <span className="text-muted-foreground ml-1">
+          - {coin.diameter_max_mm.toFixed(1)}mm
+        </span>
+      )}
+    </dd>
+  </div>
+
+  <div>
+    <dt className="text-sm text-muted-foreground">Die Axis</dt>
+    <dd className="font-medium">
+      {coin.die_axis ? `${coin.die_axis}h` : '—'}
+    </dd>
+  </div>
+</dl>
 ```
 
-### Step 7: Test
+### Step 9: Test End-to-End
 
-1. Restart backend: `uv run uvicorn app.main:app --reload`
-2. Check Swagger UI: `http://localhost:8000/docs`
-3. Verify field appears in POST/PUT schemas
-4. Create/edit a coin with the new field
-5. Verify it displays in detail view
+1. **Backend**:
+   ```bash
+   cd backend
+   python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+   ```
+
+2. **Check Swagger UI**: http://localhost:8000/docs
+   - Verify `diameter_max_mm` appears in POST `/api/v2/coins` schema
+   - Verify it appears in GET `/api/v2/coins/{id}` response
+
+3. **Frontend**:
+   ```bash
+   cd frontend
+   npm run dev  # Port 3000
+   ```
+
+4. **Manual Test**:
+   - Navigate to "Add Coin"
+   - Fill in physical fields including new "Max Diameter"
+   - Save coin
+   - View coin detail page
+   - Verify max diameter displays correctly
+
+5. **Run Tests**:
+   ```bash
+   # Backend
+   cd backend
+   pytest tests/unit/domain/test_coin_domain.py -v
+
+   # Frontend
+   cd frontend
+   npm run test
+   ```
 
 ---
 
-## Recipe 2: Add a New API Endpoint
+## Recipe 2: Add a New API Endpoint (Clean Architecture)
 
-**Goal:** Add endpoint to get price history for a coin.
+**Goal:** Add endpoint to get price statistics for a coin using Clean Architecture patterns.
 
-### Step 1: Define Schema
+### Step 1: Create Domain Service (if needed)
 
-Create or edit `backend/app/schemas/price.py`:
-
-```python
-from pydantic import BaseModel
-from datetime import date
-from decimal import Decimal
-
-class PriceHistoryItem(BaseModel):
-    auction_date: date
-    hammer_price: Decimal
-    auction_house: str
-    grade: str | None = None
-
-class PriceHistoryResponse(BaseModel):
-    coin_id: int
-    reference: str | None
-    history: list[PriceHistoryItem]
-    avg_price: Decimal | None
-    price_trend: str  # "rising", "stable", "falling"
-```
-
-### Step 2: Add CRUD Function
-
-Edit `backend/app/crud/auction.py`:
-
-```python
-from sqlalchemy import select, func
-from app.models.auction_data import AuctionData
-from app.models.coin import Coin
-
-def get_price_history(db: Session, coin_id: int) -> list[AuctionData]:
-    """Get price history for a coin based on similar auctions."""
-    # Get coin to find reference
-    coin = db.execute(select(Coin).where(Coin.id == coin_id)).scalar_one_or_none()
-    if not coin:
-        return []
-    
-    # Find comparable auctions
-    stmt = (
-        select(AuctionData)
-        .where(AuctionData.ruler.ilike(f"%{coin.issuing_authority}%"))
-        .where(AuctionData.denomination == coin.denomination)
-        .where(AuctionData.hammer_price.isnot(None))
-        .order_by(AuctionData.auction_date.desc())
-        .limit(50)
-    )
-    
-    return list(db.execute(stmt).scalars().all())
-```
-
-### Step 3: Add Service Logic
-
-Create `backend/app/services/price_analyzer.py`:
+Edit `backend/src/domain/services/price_analyzer.py`:
 
 ```python
 from decimal import Decimal
 from statistics import mean
-from app.models.auction_data import AuctionData
+from typing import List, Optional
+from dataclasses import dataclass
+
+@dataclass
+class PriceAnalysis:
+    """Value object for price analysis results."""
+    avg_price: Optional[Decimal]
+    min_price: Optional[Decimal]
+    max_price: Optional[Decimal]
+    price_trend: str  # "rising", "stable", "falling", "unknown"
+    sample_size: int
 
 class PriceAnalyzer:
-    def analyze(self, auctions: list[AuctionData]) -> dict:
-        if not auctions:
-            return {"avg_price": None, "price_trend": "unknown"}
-        
-        prices = [a.hammer_price for a in auctions if a.hammer_price]
+    """Domain service for price analysis (no dependencies)."""
+
+    def analyze(self, prices: List[Decimal]) -> PriceAnalysis:
+        """Analyze price history and return statistics."""
         if not prices:
-            return {"avg_price": None, "price_trend": "unknown"}
-        
-        avg_price = Decimal(str(mean(prices)))
-        
-        # Simple trend analysis
-        if len(prices) >= 3:
+            return PriceAnalysis(
+                avg_price=None,
+                min_price=None,
+                max_price=None,
+                price_trend="unknown",
+                sample_size=0
+            )
+
+        avg = Decimal(str(mean(prices)))
+
+        # Calculate trend
+        trend = "stable"
+        if len(prices) >= 6:
             recent = mean(prices[:3])
             older = mean(prices[-3:])
-            if recent > older * 1.1:
+            if recent > older * Decimal("1.15"):
                 trend = "rising"
-            elif recent < older * 0.9:
+            elif recent < older * Decimal("0.85"):
                 trend = "falling"
-            else:
-                trend = "stable"
-        else:
-            trend = "stable"
-        
-        return {"avg_price": avg_price, "price_trend": trend}
+
+        return PriceAnalysis(
+            avg_price=avg,
+            min_price=min(prices),
+            max_price=max(prices),
+            price_trend=trend,
+            sample_size=len(prices)
+        )
 ```
 
-### Step 4: Add Router Endpoint
+**Note**: Domain service has NO dependencies on infrastructure.
 
-Edit `backend/app/routers/coins.py`:
+### Step 2: Create Use Case
+
+Create `backend/src/application/commands/analyze_coin_price.py`:
 
 ```python
-from app.schemas.price import PriceHistoryResponse, PriceHistoryItem
-from app.crud.auction import get_price_history
-from app.services.price_analyzer import PriceAnalyzer
+from dataclasses import dataclass
+from typing import Optional
+from decimal import Decimal
+from src.domain.repositories import ICoinRepository, IAuctionDataRepository
+from src.domain.services.price_analyzer import PriceAnalyzer, PriceAnalysis
 
-@router.get("/{coin_id}/price-history", response_model=PriceHistoryResponse)
-def get_coin_price_history(coin_id: int, db: Session = Depends(get_db)):
-    """Get price history and trend for a coin."""
-    # Get coin
-    coin = crud_coin.get_coin(db, coin_id)
-    if not coin:
-        raise HTTPException(status_code=404, detail="Coin not found")
-    
-    # Get auction history
-    auctions = get_price_history(db, coin_id)
-    
-    # Analyze prices
-    analyzer = PriceAnalyzer()
-    analysis = analyzer.analyze(auctions)
-    
-    # Build response
-    history = [
-        PriceHistoryItem(
-            auction_date=a.auction_date,
-            hammer_price=a.hammer_price,
-            auction_house=a.auction_house,
-            grade=a.grade,
+@dataclass
+class AnalyzeCoinPriceResult:
+    """DTO for use case output."""
+    coin_id: int
+    analysis: PriceAnalysis
+    comparable_count: int
+
+class AnalyzeCoinPriceUseCase:
+    """Use case: Analyze coin price based on auction history."""
+
+    def __init__(
+        self,
+        coin_repo: ICoinRepository,  # Interface, not implementation
+        auction_repo: IAuctionDataRepository
+    ):
+        self.coin_repo = coin_repo
+        self.auction_repo = auction_repo
+        self.analyzer = PriceAnalyzer()
+
+    def execute(self, coin_id: int) -> AnalyzeCoinPriceResult:
+        """Execute price analysis for coin."""
+        # Get coin (validate it exists)
+        coin = self.coin_repo.get_by_id(coin_id)
+        if not coin:
+            raise ValueError(f"Coin {coin_id} not found")
+
+        # Get comparable auctions
+        comparables = self.auction_repo.get_comparables(
+            coin_id=coin_id,
+            limit=50
         )
-        for a in auctions
-        if a.hammer_price
-    ]
-    
-    # Get primary reference
-    reference = None
-    if coin.references:
-        ref = coin.references[0]
-        reference = f"{ref.system} {ref.volume or ''} {ref.number}".strip()
-    
-    return PriceHistoryResponse(
-        coin_id=coin_id,
-        reference=reference,
-        history=history,
-        avg_price=analysis["avg_price"],
-        price_trend=analysis["price_trend"],
+
+        # Extract prices
+        prices = [
+            lot.price_realized
+            for lot in comparables
+            if lot.price_realized
+        ]
+
+        # Analyze with domain service
+        analysis = self.analyzer.analyze(prices)
+
+        return AnalyzeCoinPriceResult(
+            coin_id=coin_id,
+            analysis=analysis,
+            comparable_count=len(comparables)
+        )
+```
+
+**Note**: Use case depends on repository **interfaces** (Protocols), not implementations.
+
+### Step 3: Add Repository Method (if needed)
+
+Edit `backend/src/infrastructure/repositories/auction_data_repository.py`:
+
+```python
+from sqlalchemy.orm import Session
+from typing import List
+from src.domain.auction import AuctionLot
+from src.domain.repositories import IAuctionDataRepository
+from src.infrastructure.persistence.orm import AuctionDataModel, CoinModel
+
+class SqlAlchemyAuctionDataRepository:
+    """Concrete implementation of auction repository."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_comparables(self, coin_id: int, limit: int = 10) -> List[AuctionLot]:
+        """Get comparable auction lots for a coin."""
+        # Get coin to find matching attributes
+        coin = self.session.query(CoinModel).filter(
+            CoinModel.id == coin_id
+        ).first()
+
+        if not coin:
+            return []
+
+        # Find similar auctions
+        query = self.session.query(AuctionDataModel).filter(
+            AuctionDataModel.category == coin.category,
+            AuctionDataModel.denomination == coin.denomination,
+            AuctionDataModel.issuing_authority.ilike(f"%{coin.issuing_authority}%")
+        ).order_by(
+            AuctionDataModel.sale_date.desc()
+        ).limit(limit)
+
+        orm_lots = query.all()
+        return [self._to_domain(lot) for lot in orm_lots]
+
+    def _to_domain(self, orm_lot: AuctionDataModel) -> AuctionLot:
+        """Convert ORM to domain entity."""
+        return AuctionLot(
+            url=orm_lot.url,
+            auction_house=orm_lot.auction_house,
+            price_realized=orm_lot.price_realized,
+            # ... map all fields
+        )
+```
+
+### Step 4: Add Web Router Endpoint
+
+Edit `backend/src/infrastructure/web/routers/v2.py`:
+
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from src.application.commands.analyze_coin_price import (
+    AnalyzeCoinPriceUseCase,
+    AnalyzeCoinPriceResult
+)
+from src.domain.repositories import ICoinRepository, IAuctionDataRepository
+from src.infrastructure.web.dependencies import (
+    get_coin_repository,
+    get_auction_repository
+)
+
+router = APIRouter()
+
+# Response schema (Pydantic for web layer)
+class PriceAnalysisResponse(BaseModel):
+    coin_id: int
+    avg_price: float | None
+    min_price: float | None
+    max_price: float | None
+    price_trend: str
+    sample_size: int
+    comparable_count: int
+
+@router.get("/coins/{coin_id}/price-analysis", response_model=PriceAnalysisResponse)
+def get_coin_price_analysis(
+    coin_id: int,
+    coin_repo: ICoinRepository = Depends(get_coin_repository),
+    auction_repo: IAuctionDataRepository = Depends(get_auction_repository)
+):
+    """Get price analysis for a coin (thin adapter to use case)."""
+    # Create use case with injected dependencies
+    use_case = AnalyzeCoinPriceUseCase(coin_repo, auction_repo)
+
+    try:
+        # Execute use case
+        result = use_case.execute(coin_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    # Map to web response schema
+    return PriceAnalysisResponse(
+        coin_id=result.coin_id,
+        avg_price=float(result.analysis.avg_price) if result.analysis.avg_price else None,
+        min_price=float(result.analysis.min_price) if result.analysis.min_price else None,
+        max_price=float(result.analysis.max_price) if result.analysis.max_price else None,
+        price_trend=result.analysis.price_trend,
+        sample_size=result.analysis.sample_size,
+        comparable_count=result.comparable_count
     )
 ```
 
+**Note**: Router is a thin adapter. Business logic is in use case.
+
 ### Step 5: Add Frontend Hook
 
-Edit `frontend/src/hooks/useCoins.ts`:
+Edit `frontend/src/api/v2.ts`:
 
 ```typescript
-interface PriceHistoryItem {
-  auction_date: string
-  hammer_price: number
-  auction_house: string
-  grade: string | null
-}
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from './client'
 
-interface PriceHistory {
+export interface PriceAnalysis {
   coin_id: number
-  reference: string | null
-  history: PriceHistoryItem[]
   avg_price: number | null
+  min_price: number | null
+  max_price: number | null
   price_trend: 'rising' | 'stable' | 'falling' | 'unknown'
+  sample_size: number
+  comparable_count: number
 }
 
-export function usePriceHistory(coinId: number) {
+export function usePriceAnalysis(coinId: number) {
   return useQuery({
-    queryKey: ['coin', coinId, 'price-history'],
-    queryFn: async (): Promise<PriceHistory> => {
-      const response = await api.get(`/coins/${coinId}/price-history`)
-      return response.data
+    queryKey: ['coins', coinId, 'price-analysis'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<PriceAnalysis>(
+        `/api/v2/coins/${coinId}/price-analysis`
+      )
+      return data
     },
-    enabled: !!coinId,
+    enabled: coinId > 0,
+    staleTime: 5 * 60 * 1000  // 5 minutes
   })
 }
 ```
 
 ### Step 6: Add UI Component
 
-Create `frontend/src/components/coins/PriceHistory.tsx`:
+Create `frontend/src/components/coins/PriceAnalysisCard.tsx`:
 
 ```typescript
-import { usePriceHistory } from '@/hooks/useCoins'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { usePriceAnalysis } from '@/api/v2'
 
-interface PriceHistoryProps {
+interface Props {
   coinId: number
 }
 
-export function PriceHistory({ coinId }: PriceHistoryProps) {
-  const { data, isLoading } = usePriceHistory(coinId)
-  
-  if (isLoading) return <div>Loading price history...</div>
-  if (!data) return null
-  
+export function PriceAnalysisCard({ coinId }: Props) {
+  const { data: analysis, isLoading } = usePriceAnalysis(coinId)
+
+  if (isLoading) {
+    return <div>Loading price analysis...</div>
+  }
+
+  if (!analysis || analysis.sample_size === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Price Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">No comparable auctions found</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const trendIcon = {
-    rising: '↑',
-    falling: '↓',
-    stable: '→',
-    unknown: '?',
-  }[data.price_trend]
-  
+    rising: <TrendingUp className="w-4 h-4 text-green-500" />,
+    falling: <TrendingDown className="w-4 h-4 text-red-500" />,
+    stable: <Minus className="w-4 h-4 text-yellow-500" />,
+    unknown: <Minus className="w-4 h-4 text-gray-400" />
+  }[analysis.price_trend]
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Price History</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          Price Analysis
+          <Badge variant="outline" className="flex items-center gap-1">
+            {trendIcon}
+            {analysis.price_trend}
+          </Badge>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-4 mb-4">
+        <dl className="grid grid-cols-2 gap-4">
           <div>
-            <span className="text-sm text-muted-foreground">Average</span>
-            <p className="text-lg font-medium">
-              {data.avg_price ? formatCurrency(data.avg_price) : '-'}
-            </p>
+            <dt className="text-sm text-muted-foreground">Average</dt>
+            <dd className="text-lg font-semibold">
+              {analysis.avg_price ? `$${analysis.avg_price.toFixed(2)}` : '—'}
+            </dd>
           </div>
+
           <div>
-            <span className="text-sm text-muted-foreground">Trend</span>
-            <p className="text-lg font-medium">
-              {trendIcon} {data.price_trend}
-            </p>
+            <dt className="text-sm text-muted-foreground">Range</dt>
+            <dd className="text-lg font-semibold">
+              {analysis.min_price && analysis.max_price
+                ? `$${analysis.min_price.toFixed(0)} - $${analysis.max_price.toFixed(0)}`
+                : '—'}
+            </dd>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          {data.history.slice(0, 10).map((item, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span>{item.auction_house}</span>
-              <span>{formatCurrency(item.hammer_price)}</span>
-              <span className="text-muted-foreground">{item.auction_date}</span>
-            </div>
-          ))}
-        </div>
+        </dl>
+
+        <p className="text-xs text-muted-foreground mt-4">
+          Based on {analysis.comparable_count} comparable auction{analysis.comparable_count !== 1 ? 's' : ''}
+        </p>
       </CardContent>
     </Card>
   )
 }
 ```
 
-### Step 7: Integrate into Detail Page
+### Step 7: Test
 
-Edit `frontend/src/pages/CoinDetailPage.tsx`:
+1. **Unit Test Domain Service** (`backend/tests/unit/domain/test_price_analyzer.py`):
+   ```python
+   from decimal import Decimal
+   from src.domain.services.price_analyzer import PriceAnalyzer
 
-```typescript
-import { PriceHistory } from '@/components/coins/PriceHistory'
+   def test_price_analyzer_calculates_average():
+       analyzer = PriceAnalyzer()
+       prices = [Decimal("100"), Decimal("200"), Decimal("300")]
 
-// In the component JSX
-<div className="grid grid-cols-3 gap-6">
-  {/* ... other sections ... */}
-  
-  <div className="col-span-1">
-    <PriceHistory coinId={coin.id} />
-  </div>
-</div>
-```
+       result = analyzer.analyze(prices)
+
+       assert result.avg_price == Decimal("200")
+       assert result.min_price == Decimal("100")
+       assert result.max_price == Decimal("300")
+       assert result.sample_size == 3
+   ```
+
+2. **Unit Test Use Case** (with mock repositories):
+   ```python
+   from unittest.mock import Mock
+   from src.application.commands.analyze_coin_price import AnalyzeCoinPriceUseCase
+
+   def test_analyze_coin_price_use_case():
+       # Mock repositories
+       coin_repo = Mock()
+       auction_repo = Mock()
+
+       # Setup mocks
+       coin_repo.get_by_id.return_value = Mock(id=1)
+       auction_repo.get_comparables.return_value = [
+           Mock(price_realized=Decimal("100")),
+           Mock(price_realized=Decimal("200"))
+       ]
+
+       # Execute use case
+       use_case = AnalyzeCoinPriceUseCase(coin_repo, auction_repo)
+       result = use_case.execute(1)
+
+       assert result.coin_id == 1
+       assert result.analysis.avg_price == Decimal("150")
+   ```
+
+3. **Integration Test Endpoint**:
+   ```bash
+   curl http://localhost:8000/api/v2/coins/1/price-analysis
+   ```
+
+4. **Frontend Manual Test**:
+   - Navigate to coin detail page
+   - Verify price analysis card displays
+   - Check trend indicator (up/down/stable arrows)
 
 ---
 
-## Recipe 3: Create a New Scraper
+## Recipe 3: Add a New Scraper
 
-**Goal:** Add scraper for Roma Numismatics.
+**Goal:** Add scraper for a new auction house following V2 patterns.
 
-### Step 1: Create Scraper File
+### Step 1: Create Scraper Implementation
 
-Create `backend/app/services/scrapers/roma.py`:
+Create `backend/src/infrastructure/scrapers/example/scraper.py`:
 
 ```python
-import httpx
-from bs4 import BeautifulSoup
-from decimal import Decimal
-import re
+from typing import Optional
+from src.domain.auction import AuctionLot
+from src.infrastructure.scrapers.base_playwright import BaseScraper
 
-from app.services.scrapers.base import AuctionScraperBase, LotData
+class ExampleAuctionScraper(BaseScraper):
+    """Scraper for Example Auction House."""
 
-class RomaScraper(AuctionScraperBase):
-    """Scraper for Roma Numismatics (romanumismatics.com)."""
-    
-    DOMAIN = "romanumismatics.com"
-    
     def can_handle(self, url: str) -> bool:
-        """Check if URL is from Roma Numismatics."""
-        return self.DOMAIN in url.lower()
-    
-    async def scrape(self, url: str) -> LotData:
-        """Scrape a Roma Numismatics lot page."""
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, follow_redirects=True)
-            response.raise_for_status()
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Parse lot number from URL or page
-        lot_number = self._extract_lot_number(url, soup)
-        
-        # Parse title
-        title_elem = soup.select_one('.lot-title, h1.title')
-        title = title_elem.get_text(strip=True) if title_elem else None
-        
-        # Parse description
-        desc_elem = soup.select_one('.lot-description, .description')
-        description = desc_elem.get_text(strip=True) if desc_elem else None
-        
-        # Parse estimate
-        estimate_low, estimate_high = self._parse_estimate(soup)
-        
-        # Parse hammer price (if sold)
-        hammer_price = self._parse_hammer(soup)
-        
-        # Parse physical details
-        weight_g, diameter_mm = self._parse_physical(description)
-        
-        # Parse images
-        image_urls = self._parse_images(soup)
-        
-        # Extract ruler from title
-        ruler = self._extract_ruler(title)
-        
-        return LotData(
-            auction_house="Roma Numismatics",
-            sale_name=self._extract_sale_name(soup),
+        """Check if this scraper handles the URL."""
+        return "exampleauctions.com" in url
+
+    async def scrape(self, url: str) -> AuctionLot:
+        """Scrape auction lot from URL."""
+        # Fetch HTML with Playwright
+        html = await self._fetch_html(url)
+
+        # Parse HTML (using BeautifulSoup or custom parser)
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, 'html.parser')
+
+        # Extract data
+        lot_number = soup.select_one('.lot-number').text.strip()
+        title = soup.select_one('h1.title').text.strip()
+        price_text = soup.select_one('.price').text.strip()
+
+        # Clean and convert price
+        price = self._parse_price(price_text)
+
+        # Create domain entity
+        return AuctionLot(
+            url=url,
+            auction_house="Example Auctions",
             lot_number=lot_number,
             title=title,
-            description=description,
-            category=self._detect_category(description),
-            metal=self._detect_metal(description),
-            denomination=self._extract_denomination(title, description),
-            ruler=ruler,
-            weight_g=weight_g,
-            diameter_mm=diameter_mm,
-            estimate_low=estimate_low,
-            estimate_high=estimate_high,
-            hammer_price=hammer_price,
-            reference_text=self._extract_references(description),
-            image_urls=image_urls,
-            url=url,
+            price_realized=price,
+            # ... extract all relevant fields
         )
-    
-    def _extract_lot_number(self, url: str, soup: BeautifulSoup) -> str:
-        # Try URL first
-        match = re.search(r'/lot[/-](\d+)', url, re.I)
-        if match:
-            return match.group(1)
-        
-        # Try page content
-        lot_elem = soup.select_one('.lot-number')
-        if lot_elem:
-            return lot_elem.get_text(strip=True).replace('Lot', '').strip()
-        
-        return "unknown"
-    
-    def _parse_estimate(self, soup: BeautifulSoup) -> tuple[Decimal | None, Decimal | None]:
-        est_elem = soup.select_one('.estimate')
-        if not est_elem:
-            return None, None
-        
-        text = est_elem.get_text()
-        # Match patterns like "£200-300" or "Estimate: $500 - $700"
-        match = re.search(r'[\$£€]?([\d,]+)\s*[-–]\s*[\$£€]?([\d,]+)', text)
-        if match:
-            low = Decimal(match.group(1).replace(',', ''))
-            high = Decimal(match.group(2).replace(',', ''))
-            return low, high
-        return None, None
-    
-    def _parse_hammer(self, soup: BeautifulSoup) -> Decimal | None:
-        hammer_elem = soup.select_one('.hammer-price, .sold-price')
-        if not hammer_elem:
+
+    def _parse_price(self, price_text: str) -> Optional[Decimal]:
+        """Parse price from text like '$1,234.56'."""
+        import re
+        from decimal import Decimal
+
+        # Remove currency symbols and commas
+        cleaned = re.sub(r'[^\d.]', '', price_text)
+        if not cleaned:
             return None
-        
-        text = hammer_elem.get_text()
-        match = re.search(r'[\$£€]?([\d,]+)', text)
-        if match:
-            return Decimal(match.group(1).replace(',', ''))
-        return None
-    
-    def _parse_physical(self, description: str | None) -> tuple[Decimal | None, Decimal | None]:
-        if not description:
-            return None, None
-        
-        weight = None
-        diameter = None
-        
-        # Weight: "3.82g" or "3.82 g"
-        w_match = re.search(r'(\d+\.?\d*)\s*g(?:r|ram)?', description, re.I)
-        if w_match:
-            weight = Decimal(w_match.group(1))
-        
-        # Diameter: "18mm" or "18 mm"
-        d_match = re.search(r'(\d+\.?\d*)\s*mm', description, re.I)
-        if d_match:
-            diameter = Decimal(d_match.group(1))
-        
-        return weight, diameter
-    
-    def _parse_images(self, soup: BeautifulSoup) -> list[str]:
-        images = []
-        for img in soup.select('.lot-image img, .gallery img'):
-            src = img.get('src') or img.get('data-src')
-            if src:
-                if not src.startswith('http'):
-                    src = f"https://romanumismatics.com{src}"
-                images.append(src)
-        return images
-    
-    def _detect_category(self, description: str | None) -> str | None:
-        if not description:
-            return None
-        desc_lower = description.lower()
-        if 'republic' in desc_lower:
-            return 'republic'
-        if 'byzantine' in desc_lower:
-            return 'byzantine'
-        if 'provincial' in desc_lower or 'greek imperial' in desc_lower:
-            return 'provincial'
-        if 'greek' in desc_lower:
-            return 'greek'
-        return 'imperial'  # Default
-    
-    def _detect_metal(self, description: str | None) -> str | None:
-        if not description:
-            return None
-        desc_lower = description.lower()
-        if 'av ' in desc_lower or 'gold' in desc_lower or 'aureus' in desc_lower:
-            return 'gold'
-        if 'ar ' in desc_lower or 'silver' in desc_lower or 'denarius' in desc_lower:
-            return 'silver'
-        if 'ae ' in desc_lower or 'bronze' in desc_lower:
-            return 'bronze'
-        if 'billon' in desc_lower:
-            return 'billon'
-        return None
-    
-    def _extract_ruler(self, title: str | None) -> str | None:
-        if not title:
-            return None
-        # Common pattern: "AUGUSTUS. 27 BC-AD 14. AR Denarius"
-        match = re.match(r'^([A-Z][A-Z\s]+?)\.?\s*\d', title)
-        if match:
-            return match.group(1).strip().title()
-        return None
-    
-    def _extract_denomination(self, title: str | None, desc: str | None) -> str | None:
-        text = f"{title or ''} {desc or ''}".lower()
-        denominations = [
-            'aureus', 'denarius', 'quinarius', 'sestertius',
-            'dupondius', 'as', 'semis', 'quadrans',
-            'antoninianus', 'solidus', 'siliqua', 'follis'
-        ]
-        for denom in denominations:
-            if denom in text:
-                return denom.title()
-        return None
-    
-    def _extract_references(self, description: str | None) -> str | None:
-        if not description:
-            return None
-        # Look for RIC, Crawford, etc.
-        patterns = [
-            r'RIC\s+[IVX]+\s+\d+[a-z]?',
-            r'Crawford\s+\d+/\d+[a-z]?',
-            r'RPC\s+[IVX]+\s+\d+',
-            r'Sear\s+\d+',
-        ]
-        refs = []
-        for pattern in patterns:
-            matches = re.findall(pattern, description, re.I)
-            refs.extend(matches)
-        return '; '.join(refs) if refs else None
-    
-    def _extract_sale_name(self, soup: BeautifulSoup) -> str | None:
-        sale_elem = soup.select_one('.sale-name, .auction-title')
-        if sale_elem:
-            return sale_elem.get_text(strip=True)
-        return None
+
+        return Decimal(cleaned)
 ```
 
 ### Step 2: Register Scraper
 
-Edit `backend/app/services/scrapers/orchestrator.py`:
+Edit `backend/src/infrastructure/web/routers/scrape_v2.py`:
 
 ```python
-from app.services.scrapers.roma import RomaScraper
+from src.infrastructure.scrapers.example.scraper import ExampleAuctionScraper
+from src.domain.services.scraper_orchestrator import ScraperOrchestrator
 
-class AuctionOrchestrator:
-    def __init__(self):
-        self.scrapers = [
-            HeritageScraper(),
-            CNGScraper(),
-            BiddrScraper(),
-            EbayScraper(),
-            RomaScraper(),  # NEW
-        ]
+# Register all scrapers
+scrapers = [
+    HeritageScraper(),
+    CNGScraper(),
+    BiddrScraper(),
+    EBayScraper(),
+    ExampleAuctionScraper(),  # NEW
+]
+
+orchestrator = ScraperOrchestrator(scrapers)
 ```
 
-### Step 3: Test
+### Step 3: Test Scraper
+
+Create `backend/tests/unit/infrastructure/scrapers/test_example_scraper.py`:
 
 ```python
-# In Python console
-import asyncio
-from app.services.scrapers.roma import RomaScraper
+import pytest
+from src.infrastructure.scrapers.example.scraper import ExampleAuctionScraper
 
-scraper = RomaScraper()
-url = "https://romanumismatics.com/auction/lot/12345"
+@pytest.mark.unit
+def test_example_scraper_can_handle():
+    scraper = ExampleAuctionScraper()
 
-result = asyncio.run(scraper.scrape(url))
-print(result)
+    assert scraper.can_handle("https://exampleauctions.com/lot/12345")
+    assert not scraper.can_handle("https://othersite.com/lot/12345")
+
+@pytest.mark.integration
+async def test_example_scraper_live():
+    scraper = ExampleAuctionScraper()
+    url = "https://exampleauctions.com/lot/test-coin"
+
+    lot = await scraper.scrape(url)
+
+    assert lot.url == url
+    assert lot.auction_house == "Example Auctions"
+    assert lot.lot_number is not None
+```
+
+**Run tests**:
+```bash
+pytest tests/unit/infrastructure/scrapers/test_example_scraper.py -v
 ```
 
 ---
 
-## Recipe 4: Add a New Filter
+## Recipe 4: Add Controlled Vocabulary Term
 
-**Goal:** Add "has images" filter to collection view.
+**Goal:** Add new issuing authority to controlled vocabulary.
 
-### Step 1: Update Backend Query
+### Step 1: Create Domain Entity
 
-Edit `backend/app/crud/coin.py`:
-
-```python
-def get_coins(
-    db: Session,
-    # ... existing params ...
-    has_images: bool | None = None,  # NEW
-) -> tuple[list[Coin], int]:
-    stmt = select(Coin)
-    
-    # ... existing filters ...
-    
-    # NEW: Filter by has images
-    if has_images is True:
-        stmt = stmt.where(Coin.images.any())
-    elif has_images is False:
-        stmt = stmt.where(~Coin.images.any())
-    
-    # ... rest of function ...
-```
-
-### Step 2: Update Router
-
-Edit `backend/app/routers/coins.py`:
+Vocabulary is already defined in `src/domain/vocab.py`:
 
 ```python
-@router.get("", response_model=PaginatedCoins)
-def list_coins(
-    # ... existing params ...
-    has_images: bool | None = Query(None, description="Filter by has images"),  # NEW
-    db: Session = Depends(get_db),
-):
-    coins, total = crud_coin.get_coins(
-        db,
-        # ... existing params ...
-        has_images=has_images,  # NEW
-    )
-    # ...
+@dataclass
+class VocabTerm:
+    id: Optional[int]
+    term_type: str  # "issuer", "mint", "ruler"
+    canonical_name: str
+    display_name: Optional[str]
+    variants: List[str] = field(default_factory=list)
+    category: Optional[str]
+    start_year: Optional[int]
+    end_year: Optional[int]
+    coin_count: int = 0
 ```
 
-### Step 3: Update Filter Store
+### Step 2: Use Vocabulary API
 
-Edit `frontend/src/stores/filterStore.ts`:
+**Add via API** (POST to `/api/v2/vocab/issuers`):
 
-```typescript
-interface FilterState {
-  // ... existing fields ...
-  hasImages: boolean | null  // NEW
-  
-  // ... existing methods ...
-}
+```bash
+curl -X POST http://localhost:8000/api/v2/vocab/issuers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "canonical_name": "Trajan",
+    "display_name": "Marcus Ulpius Traianus",
+    "variants": ["Traianus", "M. Ulpius Traianus"],
+    "category": "imperial",
+    "start_year": 98,
+    "end_year": 117
+  }'
+```
 
-const initialState = {
-  // ... existing fields ...
-  hasImages: null,  // NEW
-}
+**Or add programmatically**:
 
-export const useFilterStore = create<FilterState>()(
-  persist(
-    (set, get) => ({
-      ...initialState,
-      
-      toParams: () => {
-        const state = get()
-        const params: Record<string, unknown> = {
-          // ... existing params ...
-        }
-        if (state.hasImages !== null) params.has_images = state.hasImages  // NEW
-        return params
-      },
-      
-      getActiveFilterCount: () => {
-        const state = get()
-        let count = 0
-        // ... existing counts ...
-        if (state.hasImages !== null) count++  // NEW
-        return count
-      },
-    }),
-    { name: 'coinstack-filters' }
-  )
+```python
+from src.domain.vocab import VocabTerm
+from src.infrastructure.repositories.vocab_repository import SqlAlchemyVocabRepository
+from src.infrastructure.persistence.database import SessionLocal
+
+# Create term
+term = VocabTerm(
+    id=None,
+    term_type="issuer",
+    canonical_name="Trajan",
+    display_name="Marcus Ulpius Traianus",
+    variants=["Traianus", "M. Ulpius Traianus"],
+    category="imperial",
+    start_year=98,
+    end_year=117,
+    coin_count=0
 )
+
+# Save via repository
+db = SessionLocal()
+repo = SqlAlchemyVocabRepository(db)
+saved_term = repo.save(term)
+db.commit()
+db.close()
+
+print(f"Created vocabulary term: {saved_term.canonical_name}")
 ```
 
-### Step 4: Update Filter UI
+### Step 3: Use in Autocomplete
 
-Edit `frontend/src/components/coins/CoinFilters.tsx`:
+The frontend `VocabAutocomplete` component automatically uses vocabulary:
 
 ```typescript
-import { useFilterStore } from '@/stores/filterStore'
-import { Select } from '@/components/ui/select'
-
-export function CoinFilters() {
-  const { hasImages, setFilter } = useFilterStore()
-  
-  return (
-    <div className="space-y-4">
-      {/* ... existing filters ... */}
-      
-      {/* NEW: Has Images Filter */}
-      <div>
-        <Label>Images</Label>
-        <Select
-          value={hasImages === null ? '' : hasImages ? 'yes' : 'no'}
-          onValueChange={(v) => 
-            setFilter('hasImages', v === '' ? null : v === 'yes')
-          }
-        >
-          <option value="">Any</option>
-          <option value="yes">Has Images</option>
-          <option value="no">No Images</option>
-        </Select>
-      </div>
-    </div>
-  )
-}
+// frontend/src/components/coins/VocabAutocomplete.tsx
+<VocabAutocomplete
+  termType="issuer"
+  value={issuingAuthority}
+  onChange={setIssuingAuthority}
+  placeholder="Search issuers..."
+/>
 ```
+
+Vocabulary terms are fetched from `/api/v2/vocab/issuers?search={query}`.
 
 ---
 
-## Recipe 5: Add a Design System Component
+## Key Principles (V2)
 
-**Goal:** Create a `CategoryBadge` component.
+### 1. Clean Architecture Flow
 
-### Step 1: Define Colors
-
-Edit `frontend/src/index.css`:
-
-```css
-:root {
-  /* Category colors */
-  --category-republic: 220 14% 35%;    /* Muted steel */
-  --category-imperial: 270 50% 40%;    /* Royal purple */
-  --category-provincial: 160 40% 35%;  /* Antique teal */
-  --category-byzantine: 35 80% 45%;    /* Byzantine gold */
-  --category-greek: 210 60% 40%;       /* Aegean blue */
-  --category-other: 0 0% 50%;          /* Neutral gray */
-}
+```
+User Input (Web)
+    ↓
+Router (thin adapter)
+    ↓
+Use Case (application logic)
+    ↓
+Repository Interface (domain)
+    ↓
+Repository Implementation (infrastructure)
+    ↓
+ORM Model (infrastructure)
+    ↓
+Database
 ```
 
-### Step 2: Create Component
+### 2. Dependency Rule
 
-Create `frontend/src/components/design-system/CategoryBadge.tsx`:
+- Domain depends on NOTHING
+- Application depends on Domain only
+- Infrastructure depends on both
 
-```typescript
-import { Category } from '@/types/coin'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+### 3. Repository Pattern
 
-interface CategoryBadgeProps {
-  category: Category
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
-}
+- Use cases depend on **interfaces** (Protocols)
+- Repositories use `flush()`, not `commit()`
+- Transaction managed by `get_db()` dependency
 
-const categoryConfig: Record<Category, { label: string; className: string }> = {
-  [Category.republic]: {
-    label: 'Republic',
-    className: 'bg-[hsl(var(--category-republic))] text-white',
-  },
-  [Category.imperial]: {
-    label: 'Imperial',
-    className: 'bg-[hsl(var(--category-imperial))] text-white',
-  },
-  [Category.provincial]: {
-    label: 'Provincial',
-    className: 'bg-[hsl(var(--category-provincial))] text-white',
-  },
-  [Category.byzantine]: {
-    label: 'Byzantine',
-    className: 'bg-[hsl(var(--category-byzantine))] text-white',
-  },
-  [Category.greek]: {
-    label: 'Greek',
-    className: 'bg-[hsl(var(--category-greek))] text-white',
-  },
-  [Category.other]: {
-    label: 'Other',
-    className: 'bg-[hsl(var(--category-other))] text-white',
-  },
-}
+### 4. Database Safety
 
-const sizeClasses = {
-  sm: 'text-xs px-1.5 py-0.5',
-  md: 'text-sm px-2 py-0.5',
-  lg: 'text-base px-2.5 py-1',
-}
-
-export function CategoryBadge({ category, size = 'md', className }: CategoryBadgeProps) {
-  const config = categoryConfig[category]
-  
-  return (
-    <Badge
-      className={cn(
-        config.className,
-        sizeClasses[size],
-        'font-medium',
-        className
-      )}
-    >
-      {config.label}
-    </Badge>
-  )
-}
+**ALWAYS backup before schema changes**:
+```bash
+cp backend/coinstack_v2.db backend/backups/coinstack_$(date +%Y%m%d_%H%M%S).db
 ```
 
-### Step 3: Export from Index
-
-Edit `frontend/src/components/design-system/index.ts`:
-
-```typescript
-export { MetalBadge } from './MetalBadge'
-export { GradeBadge } from './GradeBadge'
-export { RarityIndicator } from './RarityIndicator'
-export { CategoryBadge } from './CategoryBadge'  // NEW
-```
-
-### Step 4: Use in Components
-
-```typescript
-import { CategoryBadge } from '@/components/design-system'
-
-// In CoinCard or other component
-<CategoryBadge category={coin.category} size="sm" />
-```
+See [08-CRITICAL-RULES.md](08-CRITICAL-RULES.md) for full requirements.
 
 ---
 
-## Quick Reference: File Modification Checklist
-
-### Adding a Field
-
-- [ ] `models/*.py` - SQLAlchemy model
-- [ ] Database migration (Alembic or manual)
-- [ ] `schemas/*.py` - Pydantic schemas
-- [ ] `types/*.ts` - TypeScript types
-- [ ] `CoinForm.tsx` - Form input
-- [ ] `CoinDetailPage.tsx` - Display
-
-### Adding an Endpoint
-
-- [ ] `schemas/*.py` - Request/response schemas
-- [ ] `crud/*.py` - Database operations
-- [ ] `services/*.py` - Business logic (if needed)
-- [ ] `routers/*.py` - API endpoint
-- [ ] `hooks/*.ts` - TanStack Query hook
-- [ ] Component to consume the hook
-
-### Adding a Scraper
-
-- [ ] `services/scrapers/*.py` - Scraper class
-- [ ] `services/scrapers/orchestrator.py` - Register scraper
-- [ ] Test with sample URLs
-
-### Adding a Filter
-
-- [ ] `crud/*.py` - Query filter logic
-- [ ] `routers/*.py` - Query parameter
-- [ ] `stores/filterStore.ts` - Store state + toParams
-- [ ] `CoinFilters.tsx` - UI control
-
----
-
-**Previous:** [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) - Coding conventions  
-**Back to:** [README.md](README.md) - Index
+**Previous:** [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) - Coding patterns
+**Next:** [06-FILE-LOCATIONS.md](06-FILE-LOCATIONS.md) - File location reference

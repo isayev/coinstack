@@ -1,321 +1,747 @@
-# Coding Patterns and Conventions
+# Coding Patterns and Conventions (V2 Clean Architecture)
+
+## Architecture Principles
+
+### Clean Architecture Layers
+
+```
+┌─────────────────────────────────────────┐
+│  Infrastructure (Framework-specific)   │
+│  - Web routers, ORM, scrapers          │
+└───────────────┬─────────────────────────┘
+                │ depends on
+┌───────────────▼─────────────────────────┐
+│  Application (Use cases)                │
+│  - Business workflows                   │
+└───────────────┬─────────────────────────┘
+                │ depends on
+┌───────────────▼─────────────────────────┐
+│  Domain (Core business logic)           │
+│  - Entities, value objects, services    │
+│  - NO dependencies                      │
+└─────────────────────────────────────────┘
+```
+
+**Dependency Rule**: Dependencies flow INWARD only. Domain has ZERO external dependencies.
+
+---
 
 ## Python/Backend Conventions
 
-### File Organization
+### File Organization (V2)
 
 ```
-app/
-├── models/          # One file per entity or related group
-│   ├── coin.py      # Coin model + related enums
-│   └── audit.py     # Audit-related models grouped
-├── schemas/         # Mirror model structure
-│   └── coin.py      # Pydantic schemas for coin
-├── routers/         # One file per API domain
-│   └── coins.py     # All /api/coins/* endpoints
-├── crud/            # One file per main entity
-│   └── coin.py      # Coin database operations
-└── services/        # Business logic, can have subdirs
-    └── audit/       # Complex feature gets a folder
+src/
+├── domain/                    # Pure business logic
+│   ├── coin.py                # Entities + value objects + enums
+│   ├── auction.py
+│   ├── series.py
+│   ├── vocab.py
+│   ├── repositories.py        # Repository interfaces (Protocols)
+│   ├── services/              # Domain services
+│   │   ├── audit_engine.py
+│   │   └── search_service.py
+│   └── strategies/            # Strategy pattern
+│       └── attribution_strategy.py
+│
+├── application/               # Use cases
+│   └── commands/
+│       ├── create_coin.py     # CreateCoinUseCase
+│       └── enrich_coin.py     # EnrichCoinUseCase
+│
+└── infrastructure/            # External concerns
+    ├── persistence/           # Database layer
+    │   ├── database.py        # SQLAlchemy setup
+    │   ├── orm.py             # ORM models
+    │   ├── models_vocab.py
+    │   └── repositories/      # Concrete implementations
+    │       └── coin_repository.py
+    │
+    ├── scrapers/              # External integrations
+    │   └── heritage/scraper.py
+    │
+    ├── services/              # Infrastructure services
+    │   └── vocab_sync.py
+    │
+    └── web/                   # Web framework
+        ├── main.py            # FastAPI app
+        ├── dependencies.py    # DI setup
+        └── routers/
+            └── v2.py          # HTTP endpoints
 ```
 
 ### Naming Conventions
 
 | Item | Convention | Example |
 |------|------------|---------|
-| Files | snake_case | `coin_reference.py` |
-| Classes | PascalCase | `CoinReference` |
+| Files | snake_case | `coin_repository.py` |
+| Classes | PascalCase | `CoinRepository` |
 | Functions | snake_case | `get_coin_by_id` |
 | Variables | snake_case | `coin_list` |
 | Constants | UPPER_SNAKE | `DEFAULT_PAGE_SIZE` |
 | Enums | PascalCase class, lowercase values | `class Metal(str, Enum): gold = "gold"` |
+| Protocols | I prefix (optional) | `ICoinRepository` or `CoinRepository` |
 
-### Type Hints
+### Import Conventions (V2)
 
-Always use type hints for function signatures:
+**ALWAYS use `src.` prefix for backend imports**:
 
 ```python
-# Good
-def get_coin(db: Session, coin_id: int) -> Coin | None:
-    ...
+# ✅ CORRECT - V2 imports
+from src.domain.coin import Coin
+from src.domain.repositories import ICoinRepository
+from src.infrastructure.persistence.orm import CoinModel
+from src.application.commands.create_coin import CreateCoinUseCase
 
-def get_coins(
-    db: Session,
-    skip: int = 0,
-    limit: int = 20,
-    filters: CoinFilters | None = None,
-) -> tuple[list[Coin], int]:
-    ...
-
-# Bad - missing types
-def get_coin(db, coin_id):
-    ...
+# ❌ WRONG - V1 imports
+from app.models.coin import Coin
+from app.crud.coin import get_coin
 ```
 
-### SQLAlchemy Model Pattern
+---
+
+## Domain Layer Patterns
+
+### Domain Entity Pattern
+
+**Rules**:
+- Pure Python dataclasses
+- NO dependencies on SQLAlchemy, FastAPI, Pydantic
+- Contains business logic and validation
+- Aggregate roots manage consistency
 
 ```python
-from sqlalchemy import String, Integer, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.database import Base
-
-class Coin(Base):
-    __tablename__ = "coins"
-    
-    # Primary key
-    id: Mapped[int] = mapped_column(primary_key=True)
-    
-    # Required field
-    category: Mapped[str] = mapped_column(String(50))
-    
-    # Optional field (nullable)
-    denomination: Mapped[str | None] = mapped_column(String(100))
-    
-    # Foreign key
-    mint_id: Mapped[int | None] = mapped_column(ForeignKey("mints.id"))
-    
-    # Relationships
-    mint: Mapped["Mint"] = relationship(back_populates="coins")
-    references: Mapped[list["CoinReference"]] = relationship(
-        back_populates="coin",
-        cascade="all, delete-orphan"
-    )
-```
-
-### Pydantic Schema Pattern
-
-```python
-from pydantic import BaseModel, Field
+# src/domain/coin.py
+from dataclasses import dataclass, field
+from typing import Optional, List
 from decimal import Decimal
 from datetime import date
+from enum import Enum
 
-# Base with shared fields
-class CoinBase(BaseModel):
-    category: Category
-    denomination: str | None = None
-    metal: Metal | None = None
+# Enums (domain vocabulary)
+class Category(str, Enum):
+    REPUBLIC = "republic"
+    IMPERIAL = "imperial"
+    PROVINCIAL = "provincial"
+    BYZANTINE = "byzantine"
 
-# Create schema - required fields for creation
-class CoinCreate(CoinBase):
-    # Override to make required
-    category: Category = Category.imperial
+class Metal(str, Enum):
+    GOLD = "gold"
+    SILVER = "silver"
+    BRONZE = "bronze"
+    BILLON = "billon"
 
-# Update schema - all fields optional
-class CoinUpdate(BaseModel):
-    category: Category | None = None
-    denomination: str | None = None
-    metal: Metal | None = None
+# Value Object (immutable)
+@dataclass(frozen=True)
+class Dimensions:
+    """Value object for physical measurements."""
+    weight_g: Optional[Decimal]
+    diameter_mm: Optional[Decimal]
+    die_axis: Optional[int]
 
-# Response schema - includes computed fields
-class CoinDetail(CoinBase):
-    id: int
-    created_at: datetime
-    mint: MintSchema | None = None
-    references: list[CoinReferenceSchema] = []
-    
-    model_config = ConfigDict(from_attributes=True)
+    def __post_init__(self):
+        """Validate on construction."""
+        if self.weight_g and self.weight_g <= 0:
+            raise ValueError("Weight must be positive")
+        if self.diameter_mm and self.diameter_mm <= 0:
+            raise ValueError("Diameter must be positive")
+
+# Entity (mutable, has identity)
+@dataclass
+class Coin:
+    """Coin aggregate root - central domain entity."""
+
+    # Identity
+    id: Optional[int]
+
+    # Classification (required)
+    category: str
+    denomination: str
+    metal: str
+
+    # Attribution
+    issuing_authority: Optional[str] = None
+    portrait_subject: Optional[str] = None
+
+    # Physical
+    weight_g: Optional[Decimal] = None
+    diameter_mm: Optional[Decimal] = None
+    die_axis: Optional[int] = None
+
+    # Collections
+    images: List['CoinImage'] = field(default_factory=list)
+    references: List['CoinReference'] = field(default_factory=list)
+
+    # Value Objects
+    dimensions: Optional[Dimensions] = None
+
+    def validate(self) -> List[str]:
+        """Domain validation logic."""
+        errors = []
+
+        if not self.category:
+            errors.append("Category is required")
+
+        if self.weight_g and self.weight_g <= 0:
+            errors.append("Weight must be positive")
+
+        if self.diameter_mm and self.diameter_mm <= 0:
+            errors.append("Diameter must be positive")
+
+        return errors
+
+    def is_imperial(self) -> bool:
+        """Business logic method."""
+        return self.category == Category.IMPERIAL.value
+
+    def is_professionally_graded(self) -> bool:
+        """Check if coin has professional grading."""
+        return hasattr(self, 'grade_service') and self.grade_service in ['ngc', 'pcgs']
 ```
 
-### Router Pattern
+### Repository Interface Pattern (Protocol)
+
+**Rules**:
+- Define in `src/domain/repositories.py`
+- Use `typing.Protocol` for interface definition
+- NO implementation details
 
 ```python
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.schemas.coin import CoinCreate, CoinDetail, PaginatedCoins
-from app.crud import coin as crud_coin
+# src/domain/repositories.py
+from typing import Protocol, Optional, List
+from src.domain.coin import Coin
 
-router = APIRouter(prefix="/api/coins", tags=["coins"])
+class ICoinRepository(Protocol):
+    """Repository interface for coin persistence."""
 
-@router.get("", response_model=PaginatedCoins)
-def list_coins(
-    db: Session = Depends(get_db),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-    category: Category | None = None,
-    metal: Metal | None = None,
-):
-    """List coins with optional filters."""
-    filters = CoinFilters(category=category, metal=metal)
-    coins, total = crud_coin.get_coins(
-        db, skip=(page - 1) * per_page, limit=per_page, filters=filters
-    )
-    return PaginatedCoins(
-        items=coins,
-        total=total,
-        page=page,
-        per_page=per_page,
-        pages=(total + per_page - 1) // per_page,
-    )
+    def get_by_id(self, coin_id: int) -> Optional[Coin]:
+        """Get coin by ID."""
+        ...
 
-@router.get("/{coin_id}", response_model=CoinDetail)
-def get_coin(coin_id: int, db: Session = Depends(get_db)):
-    """Get a single coin by ID."""
-    coin = crud_coin.get_coin(db, coin_id)
-    if not coin:
-        raise HTTPException(status_code=404, detail="Coin not found")
-    return coin
+    def save(self, coin: Coin) -> Coin:
+        """Save coin (create or update)."""
+        ...
 
-@router.post("", response_model=CoinDetail, status_code=201)
-def create_coin(coin: CoinCreate, db: Session = Depends(get_db)):
-    """Create a new coin."""
-    return crud_coin.create_coin(db, coin)
+    def delete(self, coin_id: int) -> None:
+        """Delete coin."""
+        ...
+
+    def get_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        **filters
+    ) -> List[Coin]:
+        """Get filtered coins."""
+        ...
+
+    def count(self, **filters) -> int:
+        """Count coins matching filters."""
+        ...
 ```
 
-### CRUD Pattern
+### Domain Service Pattern
+
+**Rules**:
+- Contains business logic that doesn't fit a single entity
+- NO dependencies on infrastructure
+- Can use other domain services
 
 ```python
-from sqlalchemy import select, func
-from sqlalchemy.orm import Session, selectinload
-from app.models.coin import Coin
-from app.schemas.coin import CoinCreate, CoinUpdate
-
-def get_coin(db: Session, coin_id: int) -> Coin | None:
-    """Get single coin with relationships."""
-    stmt = (
-        select(Coin)
-        .options(
-            selectinload(Coin.mint),
-            selectinload(Coin.references),
-            selectinload(Coin.images),
-        )
-        .where(Coin.id == coin_id)
-    )
-    return db.execute(stmt).scalar_one_or_none()
-
-def get_coins(
-    db: Session,
-    skip: int = 0,
-    limit: int = 20,
-    filters: CoinFilters | None = None,
-) -> tuple[list[Coin], int]:
-    """Get paginated coins with filters."""
-    stmt = select(Coin)
-    
-    if filters:
-        if filters.category:
-            stmt = stmt.where(Coin.category == filters.category)
-        if filters.metal:
-            stmt = stmt.where(Coin.metal == filters.metal)
-    
-    # Count total
-    count_stmt = select(func.count()).select_from(stmt.subquery())
-    total = db.execute(count_stmt).scalar_one()
-    
-    # Apply pagination
-    stmt = stmt.offset(skip).limit(limit)
-    coins = db.execute(stmt).scalars().all()
-    
-    return list(coins), total
-
-def create_coin(db: Session, coin_data: CoinCreate) -> Coin:
-    """Create new coin."""
-    coin = Coin(**coin_data.model_dump(exclude_unset=True))
-    db.add(coin)
-    db.commit()
-    db.refresh(coin)
-    return coin
-
-def update_coin(db: Session, coin_id: int, coin_data: CoinUpdate) -> Coin | None:
-    """Update existing coin."""
-    coin = get_coin(db, coin_id)
-    if not coin:
-        return None
-    
-    update_data = coin_data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(coin, field, value)
-    
-    db.commit()
-    db.refresh(coin)
-    return coin
-```
-
-### Service Pattern
-
-```python
-from abc import ABC, abstractmethod
+# src/domain/services/audit_engine.py
+from typing import List
+from src.domain.coin import Coin
+from src.domain.auction import AuctionLot
 from dataclasses import dataclass
 
 @dataclass
-class CatalogResult:
-    """Result from catalog lookup."""
-    found: bool
-    source: str
-    data: dict | None = None
+class AuditResult:
+    """Value object for audit result."""
+    field: str
+    status: str  # "green", "yellow", "red"
+    message: Optional[str] = None
 
-class CatalogService(ABC):
-    """Abstract base for catalog services."""
-    
-    @abstractmethod
-    async def lookup(self, reference: str) -> CatalogResult | None:
-        """Look up a reference in the catalog."""
-        pass
-    
-    @abstractmethod
-    def can_handle(self, system: str) -> bool:
-        """Check if service handles this reference system."""
-        pass
+class AuditStrategy(Protocol):
+    """Interface for audit strategies."""
+    def check(self, coin: Coin, reference: AuctionLot) -> AuditResult:
+        ...
 
-class OCREService(CatalogService):
-    """OCRE catalog service for RIC references."""
-    
-    BASE_URL = "http://numismatics.org/ocre/"
-    
-    def can_handle(self, system: str) -> bool:
-        return system.upper() == "RIC"
-    
-    async def lookup(self, reference: str) -> CatalogResult | None:
-        # Parse reference
-        parsed = self._parse_reference(reference)
-        if not parsed:
-            return None
-        
-        # Call external API
-        url = f"{self.BASE_URL}id/{parsed['id']}"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            if response.status_code != 200:
-                return CatalogResult(found=False, source="OCRE")
-            
-            data = self._parse_response(response.json())
-            return CatalogResult(found=True, source="OCRE", data=data)
-    
-    def _parse_reference(self, reference: str) -> dict | None:
-        # Implementation...
-        pass
+class AuditEngine:
+    """Domain service for auditing coins (no dependencies)."""
+
+    def __init__(self, strategies: List[AuditStrategy]):
+        self.strategies = strategies
+
+    def audit_coin(self, coin: Coin, reference: AuctionLot) -> List[AuditResult]:
+        """Run all audit strategies."""
+        results = []
+        for strategy in self.strategies:
+            result = strategy.check(coin, reference)
+            results.append(result)
+        return results
 ```
 
-### Error Handling
+---
+
+## Application Layer Patterns
+
+### Use Case Pattern
+
+**Rules**:
+- Orchestrates domain entities and services
+- Depends on repository **interfaces** (Protocols), not implementations
+- Contains application-specific business rules
+- NO framework dependencies (FastAPI, SQLAlchemy)
 
 ```python
-from fastapi import HTTPException
+# src/application/commands/create_coin.py
+from dataclasses import dataclass
+from typing import Optional
+from decimal import Decimal
+from src.domain.coin import Coin
+from src.domain.repositories import ICoinRepository
 
-# In routers - use HTTPException
-@router.get("/{id}")
-def get_item(id: int, db: Session = Depends(get_db)):
-    item = crud.get_item(db, id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
+@dataclass
+class CreateCoinDTO:
+    """Input DTO for use case."""
+    category: str
+    denomination: str
+    metal: str
+    weight_g: Optional[float] = None
+    diameter_mm: Optional[float] = None
+    issuing_authority: Optional[str] = None
 
-# In services - use custom exceptions
-class CatalogLookupError(Exception):
-    """Error looking up catalog reference."""
-    pass
+class CreateCoinUseCase:
+    """Use case: Create new coin in collection."""
 
-class ScraperError(Exception):
-    """Error during scraping."""
-    pass
+    def __init__(self, coin_repo: ICoinRepository):  # Interface, not implementation
+        self.coin_repo = coin_repo
 
-# Catch in router
-@router.post("/scrape")
-def scrape_url(url: str, db: Session = Depends(get_db)):
+    def execute(self, dto: CreateCoinDTO) -> Coin:
+        """Execute use case."""
+        # Build domain entity
+        coin = Coin(
+            id=None,
+            category=dto.category,
+            denomination=dto.denomination,
+            metal=dto.metal,
+            weight_g=Decimal(str(dto.weight_g)) if dto.weight_g else None,
+            diameter_mm=Decimal(str(dto.diameter_mm)) if dto.diameter_mm else None,
+            issuing_authority=dto.issuing_authority
+        )
+
+        # Domain validation
+        errors = coin.validate()
+        if errors:
+            raise ValueError(f"Validation errors: {', '.join(errors)}")
+
+        # Save via repository interface
+        return self.coin_repo.save(coin)
+```
+
+**Testing Use Cases** (with mock repositories):
+
+```python
+# tests/unit/application/test_create_coin.py
+from unittest.mock import Mock
+import pytest
+from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
+
+@pytest.mark.unit
+def test_create_coin_use_case():
+    # Mock repository
+    mock_repo = Mock()
+    mock_repo.save.return_value = Mock(id=1, category="imperial")
+
+    # Create use case with mocked dependency
+    use_case = CreateCoinUseCase(mock_repo)
+
+    # Execute
+    dto = CreateCoinDTO(
+        category="imperial",
+        denomination="Denarius",
+        metal="silver"
+    )
+    result = use_case.execute(dto)
+
+    # Verify
+    assert mock_repo.save.called
+    assert result.id == 1
+```
+
+---
+
+## Infrastructure Layer Patterns
+
+### ORM Model Pattern (V2)
+
+**Rules**:
+- Use SQLAlchemy 2.0 `Mapped[T]` syntax (MANDATORY)
+- Separate from domain entities
+- Located in `src/infrastructure/persistence/`
+
+```python
+# src/infrastructure/persistence/orm.py
+from sqlalchemy import Integer, String, Numeric, Date, Boolean, ForeignKey, Text
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import Optional, List
+from decimal import Decimal
+from datetime import date
+from src.infrastructure.persistence.database import Base
+
+class CoinModel(Base):
+    """ORM model (infrastructure concern, separate from domain)."""
+    __tablename__ = "coins_v2"
+
+    # Use SQLAlchemy 2.0 Mapped[T] syntax
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    # Required fields (non-nullable)
+    category: Mapped[str] = mapped_column(String, index=True)
+    denomination: Mapped[str] = mapped_column(String)
+    metal: Mapped[str] = mapped_column(String, index=True)
+
+    # Optional fields (nullable=True)
+    issuing_authority: Mapped[Optional[str]] = mapped_column(String, index=True, nullable=True)
+    portrait_subject: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Numeric fields
+    weight_g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    diameter_mm: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    die_axis: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Relationships with eager loading support
+    images: Mapped[List["CoinImageModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
+
+    references: Mapped[List["CoinReferenceModel"]] = relationship(
+        back_populates="coin",
+        cascade="all, delete-orphan"
+    )
+
+class CoinImageModel(Base):
+    """ORM model for coin images."""
+    __tablename__ = "coin_images_v2"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id"))
+    image_type: Mapped[str] = mapped_column(String)
+    file_path: Mapped[str] = mapped_column(String)
+
+    coin: Mapped["CoinModel"] = relationship(back_populates="images")
+```
+
+### Repository Implementation Pattern
+
+**Rules**:
+- Implement repository interface from domain
+- Convert between ORM models and domain entities
+- Use `flush()` NOT `commit()` (CRITICAL)
+- Use `selectinload()` for relationships (prevent N+1)
+
+```python
+# src/infrastructure/repositories/coin_repository.py
+from sqlalchemy.orm import Session, selectinload
+from typing import Optional, List
+from src.domain.coin import Coin
+from src.domain.repositories import ICoinRepository
+from src.infrastructure.persistence.orm import CoinModel
+
+class SqlAlchemyCoinRepository:
+    """Concrete implementation of ICoinRepository."""
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_by_id(self, coin_id: int) -> Optional[Coin]:
+        """Get coin by ID with eager loading."""
+        # CRITICAL: Use selectinload() to prevent N+1 queries
+        orm_coin = self.session.query(CoinModel).options(
+            selectinload(CoinModel.images),
+            selectinload(CoinModel.references)
+        ).filter(CoinModel.id == coin_id).first()
+
+        return self._to_domain(orm_coin) if orm_coin else None
+
+    def save(self, coin: Coin) -> Coin:
+        """Save coin (create or update)."""
+        orm_coin = self._to_orm(coin)
+        merged = self.session.merge(orm_coin)
+
+        # CRITICAL: Use flush() NOT commit()
+        # Transaction is managed by get_db() dependency
+        self.session.flush()
+
+        return self._to_domain(merged)
+
+    def delete(self, coin_id: int) -> None:
+        """Delete coin."""
+        orm_coin = self.session.query(CoinModel).filter(
+            CoinModel.id == coin_id
+        ).first()
+
+        if orm_coin:
+            self.session.delete(orm_coin)
+            self.session.flush()  # flush() not commit()
+
+    def get_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        **filters
+    ) -> List[Coin]:
+        """Get filtered coins with eager loading."""
+        query = self.session.query(CoinModel).options(
+            selectinload(CoinModel.images)
+        )
+
+        # Apply filters
+        if filters.get('category'):
+            query = query.filter(CoinModel.category == filters['category'])
+        if filters.get('metal'):
+            query = query.filter(CoinModel.metal == filters['metal'])
+
+        orm_coins = query.offset(skip).limit(limit).all()
+        return [self._to_domain(c) for c in orm_coins]
+
+    def _to_domain(self, orm_coin: CoinModel) -> Coin:
+        """Convert ORM model to domain entity."""
+        return Coin(
+            id=orm_coin.id,
+            category=orm_coin.category,
+            denomination=orm_coin.denomination,
+            metal=orm_coin.metal,
+            weight_g=orm_coin.weight_g,
+            diameter_mm=orm_coin.diameter_mm,
+            die_axis=orm_coin.die_axis,
+            issuing_authority=orm_coin.issuing_authority,
+            portrait_subject=orm_coin.portrait_subject,
+            # Map images, references, etc.
+        )
+
+    def _to_orm(self, coin: Coin) -> CoinModel:
+        """Convert domain entity to ORM model."""
+        return CoinModel(
+            id=coin.id,
+            category=coin.category,
+            denomination=coin.denomination,
+            metal=coin.metal,
+            weight_g=coin.weight_g,
+            diameter_mm=coin.diameter_mm,
+            die_axis=coin.die_axis,
+            issuing_authority=coin.issuing_authority,
+            portrait_subject=coin.portrait_subject,
+        )
+```
+
+### Dependency Injection Pattern
+
+**Rules**:
+- Define in `src/infrastructure/web/dependencies.py`
+- `get_db()` manages transactions automatically
+- Provide concrete implementations of interfaces
+
+```python
+# src/infrastructure/web/dependencies.py
+from sqlalchemy.orm import Session
+from typing import Generator
+from src.domain.repositories import ICoinRepository
+from src.infrastructure.persistence.database import SessionLocal
+from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+
+def get_db() -> Generator[Session, None, None]:
+    """Provides SQLAlchemy session with automatic transaction management."""
+    db = SessionLocal()
     try:
-        result = scraper_service.scrape(url)
-    except ScraperError as e:
+        yield db
+        db.commit()  # Auto-commit on success
+    except Exception:
+        db.rollback()  # Auto-rollback on error
+        raise
+    finally:
+        db.close()
+
+def get_coin_repository(db: Session = Depends(get_db)) -> ICoinRepository:
+    """Provides concrete repository implementation."""
+    return SqlAlchemyCoinRepository(db)
+```
+
+### Web Router Pattern (Thin Adapter)
+
+**Rules**:
+- Router is a THIN adapter to use cases
+- NO business logic in routers
+- Use FastAPI dependencies for injection
+- Pydantic schemas for web layer only
+
+```python
+# src/infrastructure/web/routers/v2.py
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
+from src.domain.repositories import ICoinRepository
+from src.infrastructure.web.dependencies import get_coin_repository
+
+router = APIRouter(prefix="/api/v2", tags=["coins"])
+
+# Pydantic schema for web layer (FastAPI needs this)
+class CoinResponse(BaseModel):
+    id: int
+    category: str
+    denomination: str
+    metal: str
+
+    class Config:
+        from_attributes = True
+
+@router.post("/coins", response_model=CoinResponse, status_code=201)
+def create_coin(
+    dto: CreateCoinDTO,  # Pydantic schema from use case
+    coin_repo: ICoinRepository = Depends(get_coin_repository)  # Injected
+):
+    """Create new coin (thin adapter to use case)."""
+    # Create use case with injected dependency
+    use_case = CreateCoinUseCase(coin_repo)
+
+    try:
+        # Execute use case
+        coin = use_case.execute(dto)
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return result
+
+    # Return domain entity (FastAPI auto-converts with from_attributes)
+    return coin
+
+@router.get("/coins/{coin_id}", response_model=CoinResponse)
+def get_coin(
+    coin_id: int,
+    coin_repo: ICoinRepository = Depends(get_coin_repository)
+):
+    """Get coin by ID (thin adapter)."""
+    coin = coin_repo.get_by_id(coin_id)
+    if not coin:
+        raise HTTPException(status_code=404, detail="Coin not found")
+    return coin
+```
+
+---
+
+## Common Anti-Patterns to Avoid
+
+### ❌ Domain Depending on Infrastructure
+
+```python
+# ❌ WRONG - Domain entity depending on SQLAlchemy
+from sqlalchemy import Column, String
+from sqlalchemy.orm import Mapped
+
+class Coin(Base):  # ❌ Inheriting from ORM Base
+    __tablename__ = "coins"
+    id: Mapped[int] = mapped_column(primary_key=True)  # ❌ SQLAlchemy in domain
+```
+
+```python
+# ✅ CORRECT - Pure domain entity
+from dataclasses import dataclass
+
+@dataclass
+class Coin:  # ✅ No ORM dependencies
+    id: Optional[int]
+    category: str
+```
+
+### ❌ Use Case Depending on Concrete Repository
+
+```python
+# ❌ WRONG - Use case depending on concrete class
+from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+
+class CreateCoinUseCase:
+    def __init__(self, repo: SqlAlchemyCoinRepository):  # ❌ Concrete class
+        self.repo = repo
+```
+
+```python
+# ✅ CORRECT - Use case depending on interface
+from src.domain.repositories import ICoinRepository
+
+class CreateCoinUseCase:
+    def __init__(self, repo: ICoinRepository):  # ✅ Protocol interface
+        self.repo = repo
+```
+
+### ❌ Repository Committing Transactions
+
+```python
+# ❌ WRONG - Repository committing
+def save(self, coin: Coin) -> Coin:
+    orm_coin = self._to_orm(coin)
+    self.session.add(orm_coin)
+    self.session.commit()  # ❌ Repository controls transaction
+    return self._to_domain(orm_coin)
+```
+
+```python
+# ✅ CORRECT - Repository uses flush()
+def save(self, coin: Coin) -> Coin:
+    orm_coin = self._to_orm(coin)
+    merged = self.session.merge(orm_coin)
+    self.session.flush()  # ✅ Get ID, transaction managed by get_db()
+    return self._to_domain(merged)
+```
+
+### ❌ Business Logic in Router
+
+```python
+# ❌ WRONG - Business logic in router
+@router.post("/coins")
+def create_coin(dto: CoinCreate, db: Session = Depends(get_db)):
+    # ❌ Validation in router
+    if dto.weight_g <= 0:
+        raise HTTPException(400, "Invalid weight")
+
+    # ❌ Direct ORM manipulation
+    orm_coin = CoinModel(category=dto.category, ...)
+    db.add(orm_coin)
+    db.commit()
+    return orm_coin
+```
+
+```python
+# ✅ CORRECT - Router delegates to use case
+@router.post("/coins")
+def create_coin(
+    dto: CreateCoinDTO,
+    coin_repo: ICoinRepository = Depends(get_coin_repository)
+):
+    use_case = CreateCoinUseCase(coin_repo)  # ✅ Use case has logic
+    coin = use_case.execute(dto)  # ✅ Validation in domain/use case
+    return coin
+```
+
+### ❌ Lazy Loading (N+1 Queries)
+
+```python
+# ❌ WRONG - Lazy loading causes N+1
+def get_by_id(self, coin_id: int) -> Optional[Coin]:
+    orm_coin = self.session.query(CoinModel).filter(
+        CoinModel.id == coin_id
+    ).first()  # ❌ No eager loading
+    return self._to_domain(orm_coin)  # ❌ Will trigger N queries for images
+```
+
+```python
+# ✅ CORRECT - Eager loading with selectinload()
+from sqlalchemy.orm import selectinload
+
+def get_by_id(self, coin_id: int) -> Optional[Coin]:
+    orm_coin = self.session.query(CoinModel).options(
+        selectinload(CoinModel.images),  # ✅ Eager load in 1 query
+        selectinload(CoinModel.references)
+    ).filter(CoinModel.id == coin_id).first()
+    return self._to_domain(orm_coin)
 ```
 
 ---
@@ -326,63 +752,43 @@ def scrape_url(url: str, db: Session = Depends(get_db)):
 
 ```
 src/
-├── pages/           # One file per route
+├── pages/                     # Route components
 │   └── CollectionPage.tsx
 ├── components/
-│   ├── ui/          # Generic UI components (shadcn)
-│   ├── layout/      # App structure components
-│   └── coins/       # Feature-specific components
-├── hooks/           # One file per data domain
-│   └── useCoins.ts
-├── stores/          # One file per store
-│   └── filterStore.ts
-├── types/           # Type definitions
-│   └── coin.ts
-└── lib/             # Utilities
-    └── utils.ts
+│   ├── ui/                    # shadcn/ui components
+│   ├── layout/                # AppShell, Header, Sidebar
+│   └── coins/                 # Feature-specific
+├── api/                       # API client + hooks
+│   ├── client.ts              # Axios instance
+│   └── v2.ts                  # TanStack Query hooks
+├── stores/                    # Zustand stores
+│   └── uiStore.ts
+├── domain/                    # TypeScript types (mirror backend)
+│   └── schemas.ts
+└── hooks/                     # Custom React hooks
+    └── useSeries.ts
 ```
-
-### Naming Conventions
-
-| Item | Convention | Example |
-|------|------------|---------|
-| Files (components) | PascalCase | `CoinCard.tsx` |
-| Files (hooks) | camelCase with use prefix | `useCoins.ts` |
-| Files (stores) | camelCase with Store suffix | `filterStore.ts` |
-| Components | PascalCase | `CoinCard` |
-| Hooks | camelCase with use prefix | `useCoins` |
-| Stores | camelCase with use prefix | `useFilterStore` |
-| Interfaces | PascalCase, I prefix optional | `CoinDetail` or `ICoinDetail` |
-| Types | PascalCase | `CoinFilters` |
-| Constants | UPPER_SNAKE | `DEFAULT_PAGE_SIZE` |
 
 ### Component Pattern
 
 ```typescript
-import { useState } from 'react'
+// Import using @/ alias
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { MetalBadge } from '@/components/design-system/MetalBadge'
-import { CoinListItem } from '@/types/coin'
+import { Coin } from '@/domain/schemas'
 
 interface CoinCardProps {
-  coin: CoinListItem
+  coin: Coin
   onClick?: () => void
   className?: string
 }
 
 export function CoinCard({ coin, onClick, className }: CoinCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  
   return (
-    <Card 
-      className={cn('cursor-pointer transition-shadow', className)}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <Card className={cn('cursor-pointer', className)} onClick={onClick}>
       <CardHeader>
-        <img 
-          src={coin.primary_image_url || '/placeholder.jpg'} 
+        <img
+          src={coin.image_url || '/placeholder.jpg'}
           alt={coin.denomination || 'Coin'}
           className="w-full h-40 object-cover rounded"
         />
@@ -390,356 +796,226 @@ export function CoinCard({ coin, onClick, className }: CoinCardProps) {
       <CardContent>
         <h3 className="font-medium">{coin.issuing_authority}</h3>
         <p className="text-sm text-muted-foreground">{coin.denomination}</p>
-        <div className="flex gap-2 mt-2">
-          {coin.metal && <MetalBadge metal={coin.metal} />}
-        </div>
+        {coin.metal && <MetalBadge metal={coin.metal} />}
       </CardContent>
     </Card>
   )
 }
 ```
 
-### Hook Pattern (TanStack Query)
+### TanStack Query Hook Pattern
 
 ```typescript
+// src/api/v2.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
-import { CoinDetail, CoinCreate, CoinUpdate, PaginatedCoins } from '@/types/coin'
-import { useFilterStore } from '@/stores/filterStore'
+import { apiClient } from './client'
+import { Coin } from '@/domain/schemas'
 
-// Query keys - use factory pattern
-const coinKeys = {
-  all: ['coins'] as const,
-  lists: () => [...coinKeys.all, 'list'] as const,
-  list: (filters: Record<string, unknown>) => [...coinKeys.lists(), filters] as const,
-  details: () => [...coinKeys.all, 'detail'] as const,
-  detail: (id: number) => [...coinKeys.details(), id] as const,
-}
-
-// List query
-export function useCoins() {
-  const filters = useFilterStore((s) => s.toParams())
-  
+export function useCoins(filters?: {
+  category?: string
+  metal?: string
+}) {
   return useQuery({
-    queryKey: coinKeys.list(filters),
-    queryFn: async (): Promise<PaginatedCoins> => {
-      const response = await api.get('/coins', { params: filters })
-      return response.data
+    queryKey: ['coins', filters],
+    queryFn: async () => {
+      const { data } = await apiClient.get<Coin[]>('/api/v2/coins', {
+        params: filters
+      })
+      return data
     },
+    staleTime: 5 * 60 * 1000  // 5 minutes
   })
 }
 
-// Detail query
-export function useCoin(id: number) {
-  return useQuery({
-    queryKey: coinKeys.detail(id),
-    queryFn: async (): Promise<CoinDetail> => {
-      const response = await api.get(`/coins/${id}`)
-      return response.data
-    },
-    enabled: !!id,
-  })
-}
-
-// Create mutation
 export function useCreateCoin() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: async (data: CoinCreate): Promise<CoinDetail> => {
-      const response = await api.post('/coins', data)
-      return response.data
+    mutationFn: async (coin: Partial<Coin>) => {
+      const { data } = await apiClient.post<Coin>('/api/v2/coins', coin)
+      return data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coinKeys.lists() })
-    },
-  })
-}
-
-// Update mutation
-export function useUpdateCoin() {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: CoinUpdate }): Promise<CoinDetail> => {
-      const response = await api.put(`/coins/${id}`, data)
-      return response.data
-    },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: coinKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: coinKeys.detail(id) })
-    },
-  })
-}
-
-// Delete mutation
-export function useDeleteCoin() {
-  const queryClient = useQueryClient()
-  
-  return useMutation({
-    mutationFn: async (id: number): Promise<void> => {
-      await api.delete(`/coins/${id}`)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: coinKeys.lists() })
-    },
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['coins'] })
+    }
   })
 }
 ```
 
-### Store Pattern (Zustand)
+### Zustand Store Pattern
 
 ```typescript
+// src/stores/uiStore.ts
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Category, Metal, Rarity } from '@/types/coin'
 
-interface FilterState {
-  // State
-  category: Category | null
-  metal: Metal | null
-  rarity: Rarity | null
-  search: string
-  sortBy: string
-  sortDir: 'asc' | 'desc'
-  page: number
-  perPage: number
-  
-  // Actions
-  setFilter: <K extends keyof FilterState>(key: K, value: FilterState[K]) => void
-  setSort: (field: string, dir?: 'asc' | 'desc') => void
-  setPage: (page: number) => void
-  reset: () => void
-  
-  // Computed
-  toParams: () => Record<string, unknown>
-  getActiveFilterCount: () => number
+interface UIState {
+  sidebarOpen: boolean
+  viewMode: 'grid' | 'table'
+  setSidebarOpen: (open: boolean) => void
+  setViewMode: (mode: 'grid' | 'table') => void
 }
 
-const initialState = {
-  category: null,
-  metal: null,
-  rarity: null,
-  search: '',
-  sortBy: 'created_at',
-  sortDir: 'desc' as const,
-  page: 1,
-  perPage: 20,
-}
-
-export const useFilterStore = create<FilterState>()(
+export const useUIStore = create<UIState>()(
   persist(
-    (set, get) => ({
-      ...initialState,
-      
-      setFilter: (key, value) => set({ [key]: value, page: 1 }),
-      
-      setSort: (field, dir) => set((state) => ({
-        sortBy: field,
-        sortDir: dir ?? (state.sortBy === field && state.sortDir === 'asc' ? 'desc' : 'asc'),
-        page: 1,
-      })),
-      
-      setPage: (page) => set({ page }),
-      
-      reset: () => set(initialState),
-      
-      toParams: () => {
-        const state = get()
-        const params: Record<string, unknown> = {
-          page: state.page,
-          per_page: state.perPage,
-          sort_by: state.sortBy,
-          sort_dir: state.sortDir,
-        }
-        if (state.category) params.category = state.category
-        if (state.metal) params.metal = state.metal
-        if (state.rarity) params.rarity = state.rarity
-        if (state.search) params.search = state.search
-        return params
-      },
-      
-      getActiveFilterCount: () => {
-        const state = get()
-        let count = 0
-        if (state.category) count++
-        if (state.metal) count++
-        if (state.rarity) count++
-        if (state.search) count++
-        return count
-      },
+    (set) => ({
+      sidebarOpen: true,
+      viewMode: 'grid',
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setViewMode: (mode) => set({ viewMode: mode })
     }),
-    { name: 'coinstack-filters' }
+    {
+      name: 'ui-storage'  // localStorage key
+    }
   )
 )
 ```
 
-### Type Definitions
-
-```typescript
-// Use enums for fixed values
-export enum Category {
-  republic = 'republic',
-  imperial = 'imperial',
-  provincial = 'provincial',
-  byzantine = 'byzantine',
-  greek = 'greek',
-  other = 'other',
-}
-
-// Use interfaces for object shapes
-export interface CoinListItem {
-  id: number
-  category: Category
-  metal: Metal | null
-  denomination: string | null
-  issuing_authority: string | null
-  grade: string | null
-  acquisition_price: number | null
-  primary_image_url: string | null
-}
-
-// Extend interfaces for detailed responses
-export interface CoinDetail extends CoinListItem {
-  created_at: string
-  updated_at: string
-  obverse_legend: string | null
-  reverse_legend: string | null
-  // ... more fields
-  mint: Mint | null
-  references: CoinReference[]
-  images: CoinImage[]
-}
-
-// Use types for unions and utilities
-export type SortDirection = 'asc' | 'desc'
-export type CoinFilters = Partial<Pick<CoinDetail, 'category' | 'metal' | 'rarity'>>
-```
-
-### Form Pattern
-
-```typescript
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
-
-const coinSchema = z.object({
-  category: z.nativeEnum(Category),
-  denomination: z.string().optional(),
-  metal: z.nativeEnum(Metal).optional(),
-  weight_g: z.coerce.number().positive().optional(),
-  issuing_authority: z.string().min(1, 'Ruler is required'),
-})
-
-type CoinFormData = z.infer<typeof coinSchema>
-
-interface CoinFormProps {
-  defaultValues?: Partial<CoinFormData>
-  onSubmit: (data: CoinFormData) => void
-  isLoading?: boolean
-}
-
-export function CoinForm({ defaultValues, onSubmit, isLoading }: CoinFormProps) {
-  const form = useForm<CoinFormData>({
-    resolver: zodResolver(coinSchema),
-    defaultValues: {
-      category: Category.imperial,
-      ...defaultValues,
-    },
-  })
-  
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label>Category</label>
-        <Select {...form.register('category')}>
-          {Object.values(Category).map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </Select>
-        {form.formState.errors.category && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.category.message}
-          </p>
-        )}
-      </div>
-      
-      <div>
-        <label>Ruler</label>
-        <Input {...form.register('issuing_authority')} />
-        {form.formState.errors.issuing_authority && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.issuing_authority.message}
-          </p>
-        )}
-      </div>
-      
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? 'Saving...' : 'Save'}
-      </Button>
-    </form>
-  )
-}
-```
-
 ---
 
-## Common Patterns
+## Testing Patterns
 
-### Adding a New Field
-
-1. **Model** - Add to SQLAlchemy model
-2. **Migration** - Update database (if using Alembic)
-3. **Schema** - Add to Pydantic schemas (Create, Update, Detail)
-4. **CRUD** - Update if field needs special handling
-5. **Router** - Add filter/sort if needed
-6. **Type** - Add to TypeScript interface
-7. **Form** - Add to form schema and component
-8. **Display** - Add to detail/list views
-
-### Adding a New Endpoint
-
-1. **Schema** - Define request/response Pydantic schemas
-2. **Service** - Implement business logic
-3. **CRUD** - Add database operations if needed
-4. **Router** - Add endpoint function
-5. **Register** - Include router in main.py if new file
-6. **Hook** - Add TanStack Query hook
-7. **UI** - Add component to call the hook
-
-### Error Handling Pattern
+### Backend Unit Tests (Domain)
 
 ```python
-# Backend - Custom exception
-class DuplicateCoinError(Exception):
-    pass
+# tests/unit/domain/test_coin_domain.py
+import pytest
+from decimal import Decimal
+from src.domain.coin import Coin, Dimensions
 
-# Backend - Router handling
-@router.post("")
-def create_coin(coin: CoinCreate, db: Session = Depends(get_db)):
-    try:
-        return crud.create_coin(db, coin)
-    except DuplicateCoinError:
-        raise HTTPException(400, "Duplicate coin detected")
+@pytest.mark.unit
+def test_coin_validation():
+    coin = Coin(
+        id=None,
+        category="imperial",
+        denomination="Denarius",
+        metal="silver",
+        weight_g=Decimal("-1")  # Invalid
+    )
 
-# Frontend - Hook with error handling
-export function useCreateCoin() {
-  return useMutation({
-    mutationFn: createCoin,
-    onError: (error) => {
-      toast.error(error.response?.data?.detail || 'Failed to create coin')
-    },
-    onSuccess: () => {
-      toast.success('Coin created')
-    },
+    errors = coin.validate()
+
+    assert "Weight must be positive" in errors
+
+@pytest.mark.unit
+def test_dimensions_value_object():
+    dims = Dimensions(
+        weight_g=Decimal("3.45"),
+        diameter_mm=Decimal("19.2"),
+        die_axis=6
+    )
+
+    assert dims.weight_g == Decimal("3.45")
+
+    # Value objects are immutable
+    with pytest.raises(AttributeError):
+        dims.weight_g = Decimal("4.0")
+```
+
+### Backend Unit Tests (Use Cases with Mocks)
+
+```python
+# tests/unit/application/test_create_coin.py
+from unittest.mock import Mock
+import pytest
+from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
+
+@pytest.mark.unit
+def test_create_coin_use_case_success():
+    # Mock repository
+    mock_repo = Mock()
+    mock_repo.save.return_value = Mock(id=1, category="imperial")
+
+    use_case = CreateCoinUseCase(mock_repo)
+
+    dto = CreateCoinDTO(
+        category="imperial",
+        denomination="Denarius",
+        metal="silver"
+    )
+
+    result = use_case.execute(dto)
+
+    assert mock_repo.save.called
+    assert result.id == 1
+```
+
+### Backend Integration Tests
+
+```python
+# tests/integration/repositories/test_coin_repository.py
+import pytest
+from src.domain.coin import Coin
+from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+
+@pytest.mark.integration
+def test_coin_repository_save(db_session):
+    repo = SqlAlchemyCoinRepository(db_session)
+
+    coin = Coin(
+        id=None,
+        category="imperial",
+        denomination="Denarius",
+        metal="silver"
+    )
+
+    saved = repo.save(coin)
+
+    assert saved.id is not None
+    assert saved.category == "imperial"
+```
+
+### Frontend Component Tests
+
+```typescript
+// src/components/coins/CoinCard.test.tsx
+import { render, screen } from '@testing-library/react'
+import { CoinCard } from './CoinCard'
+
+describe('CoinCard', () => {
+  it('renders coin information', () => {
+    const coin = {
+      id: 1,
+      category: 'imperial',
+      denomination: 'Denarius',
+      metal: 'silver',
+      issuing_authority: 'Augustus'
+    }
+
+    render(<CoinCard coin={coin} />)
+
+    expect(screen.getByText('Augustus')).toBeInTheDocument()
+    expect(screen.getByText('Denarius')).toBeInTheDocument()
   })
-}
+})
 ```
 
 ---
 
-**Previous:** [07-API-REFERENCE.md](07-API-REFERENCE.md) - API endpoints  
+## Summary: Key Rules to Follow
+
+### Clean Architecture
+1. **Domain has NO dependencies** - pure Python/TypeScript
+2. **Use cases depend on interfaces** - Protocols, not concrete classes
+3. **Routers are thin adapters** - delegate to use cases
+
+### Database
+4. **Repositories use `flush()` not `commit()`** - transactions managed by `get_db()`
+5. **Always use `selectinload()`** - prevent N+1 queries
+6. **Use SQLAlchemy 2.0 `Mapped[T]` syntax** - mandatory for new code
+
+### Testing
+7. **Mark backend tests** - `@pytest.mark.unit` or `@pytest.mark.integration`
+8. **Mock repository interfaces** - test use cases in isolation
+
+### Imports
+9. **Backend uses `src.` prefix** - not `app.`
+10. **Frontend uses `@/` alias** - configured in tsconfig.json
+
+See [08-CRITICAL-RULES.md](08-CRITICAL-RULES.md) for complete mandatory requirements.
+
+---
+
+**Previous:** [07-API-REFERENCE.md](07-API-REFERENCE.md) - API documentation
 **Next:** [09-TASK-RECIPES.md](09-TASK-RECIPES.md) - Step-by-step task guides

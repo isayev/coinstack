@@ -1,131 +1,131 @@
-# API Reference
+# API Reference (V2)
 
-Base URL: `http://localhost:8000/api`
-
-API Documentation: `http://localhost:8000/docs` (Swagger UI)
+> **Interactive Documentation:** For complete, up-to-date API documentation, use Swagger UI at `http://localhost:8000/docs` when the backend is running.
+>
+> This document provides a quick reference for V2 Clean Architecture endpoints.
 
 ---
 
-## Coins API
+## Base Configuration
+
+- **Base URL**: `http://localhost:8000`
+- **API Prefix**: `/api/v2/`
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+**Router Locations** (V2 Clean Architecture):
+- Coins: `src/infrastructure/web/routers/v2.py`
+- Vocabulary: `src/infrastructure/web/routers/vocab.py`
+- Series: `src/infrastructure/web/routers/series.py`
+- Scraper: `src/infrastructure/web/routers/scrape_v2.py`
+- Audit: `src/infrastructure/web/routers/audit_v2.py`
+- LLM: `src/infrastructure/web/routers/llm.py`
+- Provenance: `src/infrastructure/web/routers/provenance.py`
+- Die Study: `src/infrastructure/web/routers/die_study.py`
+
+---
+
+## Coins API (`/api/v2/coins`)
+
+**Router**: `src/infrastructure/web/routers/v2.py`
 
 ### List Coins
 
-```
-GET /api/coins
+```http
+GET /api/v2/coins
 ```
 
-**Query Parameters:**
+**Query Parameters**:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `page` | int | 1 | Page number |
-| `per_page` | int | 20 | Items per page (20, 50, 100, -1 for all) |
-| `sort_by` | string | created_at | Sort field |
-| `sort_dir` | string | desc | Sort direction (asc, desc) |
-| `category` | string | - | Filter by category enum |
-| `metal` | string | - | Filter by metal enum |
-| `rarity` | string | - | Filter by rarity enum |
-| `ruler` | string | - | Search issuing_authority |
+| `skip` | int | 0 | Offset for pagination |
+| `limit` | int | 50 | Max results per page |
+| `category` | string | - | Filter by category (imperial, republic, etc.) |
+| `metal` | string | - | Filter by metal (gold, silver, bronze, etc.) |
+| `issuer` | string | - | Search by issuer name (partial match) |
 | `mint` | string | - | Filter by mint name |
-| `grade_min` | string | - | Minimum grade |
-| `grade_max` | string | - | Maximum grade |
-| `price_min` | number | - | Minimum acquisition price |
-| `price_max` | number | - | Maximum acquisition price |
-| `year_start` | int | - | Minimum reign year |
-| `year_end` | int | - | Maximum reign year |
-| `search` | string | - | Full-text search |
+| `year_start` | int | - | Minimum year |
+| `year_end` | int | - | Maximum year |
+| `sort_by` | string | `id` | Sort field |
+| `sort_order` | string | `asc` | Sort direction (asc, desc) |
 
-**Response:** `PaginatedCoins`
+**Response**: `List[CoinResponse]`
 
 ```json
-{
-  "items": [
-    {
-      "id": 1,
-      "category": "imperial",
-      "metal": "silver",
-      "denomination": "Denarius",
-      "issuing_authority": "Augustus",
+[
+  {
+    "id": 1,
+    "category": "imperial",
+    "metal": "silver",
+    "dimensions": {
+      "weight_g": 3.82,
+      "diameter_mm": 18.0,
+      "die_axis": 6
+    },
+    "attribution": {
+      "issuer": "Augustus",
+      "mint": "Lugdunum",
+      "year_start": -2,
+      "year_end": 4
+    },
+    "grading": {
+      "grading_state": "graded",
       "grade": "VF",
-      "acquisition_price": 450.00,
-      "primary_image_url": "/images/coins/1/obverse.jpg"
-    }
-  ],
-  "total": 110,
-  "page": 1,
-  "per_page": 20,
-  "pages": 6
-}
+      "service": "ngc",
+      "certification_number": "1234567-001"
+    },
+    "images": [
+      {
+        "url": "/images/coins/1/obverse.jpg",
+        "image_type": "obverse",
+        "is_primary": true
+      }
+    ]
+  }
+]
 ```
 
-**Example:**
+**Example**:
 
 ```bash
-curl "http://localhost:8000/api/coins?category=imperial&metal=silver&page=1&per_page=20"
+curl "http://localhost:8000/api/v2/coins?category=imperial&metal=silver&limit=20"
 ```
 
 ---
 
-### Get Coin Detail
+### Get Coin by ID
 
-```
-GET /api/coins/{id}
+```http
+GET /api/v2/coins/{id}
 ```
 
-**Response:** `CoinDetail`
+**Response**: `CoinResponse` (includes all relationships: images, references, provenance)
 
 ```json
 {
   "id": 1,
-  "created_at": "2024-01-15T10:30:00Z",
-  "updated_at": "2024-01-15T10:30:00Z",
   "category": "imperial",
-  "denomination": "Denarius",
   "metal": "silver",
-  "issuing_authority": "Augustus",
-  "portrait_subject": "Augustus",
-  "reign_start": -27,
-  "reign_end": 14,
-  "weight_g": 3.82,
-  "diameter_mm": 18.0,
-  "die_axis": 6,
-  "obverse_legend": "CAESAR AVGVSTVS DIVI F PATER PATRIAE",
-  "obverse_description": "Laureate head right",
-  "reverse_legend": "AVGVSTI F COS DESIG PRINC IVVENT",
-  "reverse_description": "Gaius and Lucius standing",
-  "grade_service": "ngc",
-  "grade": "VF",
-  "certification_number": "1234567-001",
-  "acquisition_date": "2023-06-15",
-  "acquisition_price": 450.00,
-  "acquisition_source": "Heritage Auctions",
-  "rarity": "common",
-  "mint": {
-    "id": 1,
-    "name": "Lugdunum",
-    "ancient_name": "Lugdunum",
-    "modern_name": "Lyon"
+  "dimensions": { ... },
+  "attribution": { ... },
+  "grading": { ... },
+  "acquisition": {
+    "price": 450.00,
+    "currency": "USD",
+    "source": "Heritage Auctions",
+    "date": "2023-06-15",
+    "url": "https://..."
   },
-  "references": [
-    {
-      "id": 1,
-      "system": "RIC",
-      "volume": "I",
-      "number": "207"
-    }
-  ],
-  "images": [
-    {
-      "id": 1,
-      "image_type": "obverse",
-      "file_path": "/images/coins/1/obverse.jpg",
-      "is_primary": true
-    }
-  ],
-  "provenance_events": [],
-  "tags": [],
-  "countermarks": [],
-  "auction_data": []
+  "design": {
+    "obverse_legend": "CAESAR AVGVSTVS DIVI F PATER PATRIAE",
+    "obverse_description": "Laureate head right",
+    "reverse_legend": "AVGVSTI F COS DESIG PRINC IVVENT",
+    "reverse_description": "Gaius and Lucius standing"
+  },
+  "images": [ ... ],
+  "references": [ ... ],
+  "provenance": [ ... ]
 }
 ```
 
@@ -133,256 +133,486 @@ GET /api/coins/{id}
 
 ### Create Coin
 
-```
-POST /api/coins
+```http
+POST /api/v2/coins
 ```
 
-**Request Body:** `CoinCreate`
+**Request Body**: `CreateCoinRequest`
 
 ```json
 {
   "category": "imperial",
-  "denomination": "Denarius",
   "metal": "silver",
-  "issuing_authority": "Augustus",
   "weight_g": 3.82,
-  "grade": "VF"
+  "diameter_mm": 18.0,
+  "issuer": "Augustus",
+  "grading_state": "graded",
+  "grade": "VF",
+  "mint": "Lugdunum",
+  "year_start": -2,
+  "year_end": 4,
+  "die_axis": 6,
+  "grade_service": "ngc",
+  "certification": "1234567-001",
+  "acquisition_price": 450.00,
+  "acquisition_source": "Heritage Auctions",
+  "acquisition_date": "2023-06-15",
+  "storage_location": "SlabBox1",
+  "personal_notes": "Fine patina",
+  "images": [
+    {
+      "url": "/images/coins/1/obverse.jpg",
+      "image_type": "obverse",
+      "is_primary": true
+    }
+  ]
 }
 ```
 
-**Response:** `CoinDetail`
+**Response**: `CoinResponse` (201 Created)
 
 ---
 
 ### Update Coin
 
-```
-PUT /api/coins/{id}
+```http
+PUT /api/v2/coins/{id}
 ```
 
-**Request Body:** `CoinUpdate` (all fields optional)
+**Request Body**: `UpdateCoinRequest` (all fields optional, partial update supported)
 
 ```json
 {
   "grade": "EF",
-  "current_value": 600.00
+  "acquisition_price": 600.00,
+  "personal_notes": "Upgraded from VF to EF after re-examination"
 }
 ```
 
-**Response:** `CoinDetail`
+**Response**: `CoinResponse` (200 OK)
 
 ---
 
 ### Delete Coin
 
-```
-DELETE /api/coins/{id}
+```http
+DELETE /api/v2/coins/{id}
 ```
 
-**Response:** `204 No Content`
+**Response**: `204 No Content`
 
 ---
 
-### Get Coin Navigation
+## Vocabulary API (`/api/v2/vocab`)
 
+**Router**: `src/infrastructure/web/routers/vocab.py`
+
+Unified controlled vocabulary system (V3) for issuers, mints, denominations, and dynasties.
+
+### Search Vocabulary
+
+```http
+GET /api/v2/vocab/search/{vocab_type}?q={query}
 ```
-GET /api/coins/{id}/nav
-```
 
-Get previous and next coin IDs for navigation.
+**Path Parameters**:
+- `vocab_type`: One of `issuer`, `mint`, `denomination`, `dynasty`, `canonical_series`
 
-**Response:**
+**Query Parameters**:
+- `q` (required): Search query
+- `limit`: Max results (default: 10, max: 50)
+
+**Response**: `List[VocabTermResponse]`
 
 ```json
-{
-  "prev_id": 45,
-  "next_id": 47
-}
+[
+  {
+    "id": 1,
+    "vocab_type": "issuer",
+    "canonical_name": "Augustus",
+    "nomisma_uri": "http://nomisma.org/id/augustus",
+    "metadata": {
+      "reign_start": -27,
+      "reign_end": 14,
+      "titles": ["Imperator", "Caesar", "Augustus"]
+    }
+  }
+]
 ```
 
 ---
 
-## Import API
+### Normalize Text to Vocabulary
 
-### Import from URL
-
-```
-POST /api/import/url
+```http
+POST /api/v2/vocab/normalize
 ```
 
-**Request Body:**
+Converts raw text (e.g., "Aug", "AVGVSTVS") to canonical vocabulary term.
+
+**Request Body**: `NormalizeRequest`
 
 ```json
 {
-  "url": "https://coins.ha.com/itm/lot-12345"
-}
-```
-
-**Response:** `ImportPreview`
-
-```json
-{
-  "parsed_data": {
+  "raw": "AVGVSTVS",
+  "vocab_type": "issuer",
+  "context": {
     "category": "imperial",
-    "denomination": "Denarius",
-    "metal": "silver",
-    "issuing_authority": "Augustus",
-    "weight_g": 3.82,
-    "obverse_legend": "CAESAR AVGVSTVS...",
-    "reference_text": "RIC I 207"
+    "year": -2
+  }
+}
+```
+
+**Response**: `NormalizeResponse`
+
+```json
+{
+  "success": true,
+  "term": {
+    "id": 1,
+    "vocab_type": "issuer",
+    "canonical_name": "Augustus",
+    "nomisma_uri": "http://nomisma.org/id/augustus"
   },
-  "confidence": {
-    "denomination": "high",
-    "weight_g": "high",
-    "issuing_authority": "medium"
-  },
-  "potential_duplicates": [
+  "method": "exact",
+  "confidence": 1.0,
+  "needs_review": false,
+  "alternatives": []
+}
+```
+
+**Normalization Methods**:
+- `exact`: Exact match (confidence: 1.0)
+- `fts`: Full-text search match (confidence: 0.7-0.95)
+- `nomisma`: Nomisma API lookup (confidence: 0.8-1.0)
+- `llm`: LLM-assisted (confidence: varies)
+- `manual`: User-assigned (confidence: 1.0)
+
+---
+
+### Sync Vocabulary from External Source
+
+```http
+POST /api/v2/vocab/sync/{vocab_type}
+```
+
+Syncs vocabulary terms from Nomisma.org or other external sources.
+
+**Path Parameters**:
+- `vocab_type`: `issuer`, `mint`, `denomination`, `dynasty`
+
+**Response**: `SyncResponse`
+
+```json
+{
+  "status": "success",
+  "vocab_type": "issuer",
+  "added": 150,
+  "unchanged": 50,
+  "errors": 0
+}
+```
+
+---
+
+### Bulk Normalize Coins
+
+```http
+POST /api/v2/vocab/bulk-normalize
+```
+
+Normalizes vocabulary fields for multiple coins.
+
+**Request Body**: `BulkNormalizeRequest`
+
+```json
+{
+  "coin_ids": [1, 2, 3, 4, 5],
+  "vocab_types": ["issuer", "mint", "denomination"]
+}
+```
+
+**Response**: Background task status
+
+---
+
+### Get Review Queue
+
+```http
+GET /api/v2/vocab/review-queue
+```
+
+Returns vocabulary assignments that need manual review (low confidence or ambiguous).
+
+**Query Parameters**:
+- `limit`: Max items (default: 50)
+- `vocab_type`: Filter by type
+
+**Response**: `List[ReviewQueueItem]`
+
+```json
+[
+  {
+    "id": 1,
+    "coin_id": 23,
+    "field_name": "issuer",
+    "raw_value": "Aug.",
+    "vocab_term_id": 1,
+    "confidence": 0.65,
+    "method": "fts",
+    "suggested_name": "Augustus"
+  }
+]
+```
+
+---
+
+### Approve/Reject Review Item
+
+```http
+POST /api/v2/vocab/review-queue/{item_id}/approve
+POST /api/v2/vocab/review-queue/{item_id}/reject
+```
+
+**Response**: Updated review queue item
+
+---
+
+## Series API (`/api/v2/series`)
+
+**Router**: `src/infrastructure/web/routers/series.py`
+
+Series/collection management system.
+
+### List Series
+
+```http
+GET /api/v2/series
+```
+
+**Response**: `SeriesListResponse`
+
+```json
+{
+  "items": [
     {
-      "id": 23,
-      "issuing_authority": "Augustus",
-      "denomination": "Denarius",
-      "similarity_score": 0.85
+      "id": 1,
+      "name": "Augustus Denarii",
+      "slug": "augustus-denarii",
+      "series_type": "ruler",
+      "target_count": 25,
+      "is_complete": false,
+      "slots": [
+        {
+          "id": 1,
+          "series_id": 1,
+          "slot_number": 1,
+          "name": "RIC I 207",
+          "status": "filled"
+        }
+      ]
     }
   ],
-  "source_url": "https://coins.ha.com/itm/lot-12345"
+  "total": 1
 }
 ```
 
 ---
 
-### NGC Lookup
+### Get Series by ID
 
-```
-POST /api/import/ngc
-```
-
-**Request Body:**
-
-```json
-{
-  "certification_number": "1234567-001"
-}
+```http
+GET /api/v2/series/{series_id}
 ```
 
-**Response:** Similar to URL import preview
+**Response**: `SeriesResponse` (includes slots and memberships)
 
 ---
 
-### Excel/CSV Import
+### Create Series
 
+```http
+POST /api/v2/series
 ```
-POST /api/import/excel
-```
 
-**Request:** `multipart/form-data` with file
-
-**Response:**
+**Request Body**: `SeriesCreate`
 
 ```json
 {
-  "rows_parsed": 50,
-  "preview": [
-    { "category": "imperial", "denomination": "Denarius", ... },
-    ...
-  ],
-  "errors": [
-    { "row": 15, "error": "Invalid metal value: 'gold-plated'" }
-  ]
+  "name": "Twelve Caesars",
+  "series_type": "ruler",
+  "target_count": 12,
+  "description": "Roman emperors from Julius Caesar to Domitian"
+}
+```
+
+**Response**: `SeriesResponse` (201 Created)
+
+**Series Types**:
+- `ruler`: Organized by issuing authority
+- `type`: Organized by coin type/reference
+- `catalog`: Based on catalog series (RIC, Crawford)
+- `custom`: User-defined grouping
+
+---
+
+### Add Coin to Series
+
+```http
+POST /api/v2/series/{series_id}/memberships
+```
+
+**Request Body**:
+
+```json
+{
+  "coin_id": 23,
+  "slot_id": 1
+}
+```
+
+**Response**: `MembershipResponse`
+
+---
+
+### Update Slot Status
+
+```http
+PATCH /api/v2/series/{series_id}/slots/{slot_id}
+```
+
+**Request Body**:
+
+```json
+{
+  "status": "filled"
+}
+```
+
+**Slot Statuses**:
+- `empty`: No coin assigned
+- `filled`: Coin assigned
+- `duplicate`: Multiple coins for this slot
+
+---
+
+### Delete Series
+
+```http
+DELETE /api/v2/series/{series_id}
+```
+
+**Response**: `204 No Content`
+
+---
+
+## Scraper API (`/api/v2/scrape`)
+
+**Router**: `src/infrastructure/web/routers/scrape_v2.py`
+
+Auction house scraper endpoints (Playwright-based).
+
+### Scrape Auction Lot
+
+```http
+POST /api/v2/scrape?url={auction_url}
+```
+
+**Query Parameters**:
+- `url` (required): Auction lot URL
+
+**Supported Auction Houses**:
+- Heritage Auctions (`coins.ha.com`)
+- CNG (`cngcoins.com`)
+- Biddr (`biddr.com`, `sixbid.com`, `coinarchives.com`)
+- eBay (`ebay.com`)
+- Agora Auctions (`agoraauctions.com`)
+
+**Response**: `AuctionLotResponse`
+
+```json
+{
+  "id": 1,
+  "url": "https://coins.ha.com/itm/lot-12345",
+  "source": "Heritage",
+  "sale_name": "Long Beach Expo Auction",
+  "lot_number": "12345",
+  "hammer_price": 425.00,
+  "estimate_low": 350.00,
+  "estimate_high": 500.00,
+  "currency": "USD",
+  "issuer": "Augustus",
+  "mint": "Lugdunum",
+  "year_start": -2,
+  "year_end": 4,
+  "weight_g": 3.82,
+  "diameter_mm": 18.0,
+  "title": "Augustus AR Denarius, Lugdunum Mint",
+  "description": "...",
+  "grade": "VF",
+  "primary_image_url": "https://...",
+  "scraped_at": "2024-01-20T10:30:00Z"
 }
 ```
 
 ---
 
-### Batch Import
+### Link Scraped Data to Coin
 
-```
-POST /api/import/batch
+```http
+POST /api/v2/scrape/link
 ```
 
-**Request Body:**
+**Request Body**:
 
 ```json
 {
-  "coins": [
-    { "category": "imperial", "denomination": "Denarius", ... },
-    { "category": "republic", "denomination": "Quinarius", ... }
-  ]
+  "auction_data_id": 1,
+  "coin_id": 23
 }
 ```
 
-**Response:**
-
-```json
-{
-  "created": 48,
-  "failed": 2,
-  "errors": [
-    { "index": 12, "error": "Duplicate detected" }
-  ]
-}
-```
+Links existing scraped auction data to a coin in the collection.
 
 ---
 
-### Check Duplicates
+## Audit API (`/api/v2/audit`)
 
-```
-POST /api/import/duplicates
+**Router**: `src/infrastructure/web/routers/audit_v2.py`
+
+Audit system for comparing coins against auction data and reference catalogs.
+
+### Run Audit on Coin
+
+```http
+POST /api/v2/coins/{coin_id}/audit
 ```
 
-**Request Body:**
+Runs audit strategies (attribution, physics, dating, grade) on a single coin.
+
+**Response**: `AuditResultResponse`
 
 ```json
 {
-  "issuing_authority": "Augustus",
-  "denomination": "Denarius",
-  "weight_g": 3.82
-}
-```
-
-**Response:**
-
-```json
-{
-  "duplicates": [
+  "coin_id": 23,
+  "status": "completed",
+  "discrepancies": [
     {
-      "id": 23,
-      "similarity_score": 0.92,
-      "matching_fields": ["issuing_authority", "denomination", "weight_g"]
+      "field": "weight_g",
+      "coin_value": "3.82",
+      "reference_value": "3.85",
+      "severity": "low",
+      "status": "pending"
+    }
+  ],
+  "enrichments": [
+    {
+      "field": "obverse_description",
+      "suggested_value": "Laureate head of Augustus right",
+      "confidence": 0.92,
+      "source": "OCRE"
     }
   ]
-}
-```
-
----
-
-## Audit API
-
-### Start Audit
-
-```
-POST /api/audit/start
-```
-
-**Request Body:**
-
-```json
-{
-  "coin_ids": [1, 2, 3]  // Optional, null = all coins
-}
-```
-
-**Response:** `AuditRun`
-
-```json
-{
-  "id": 5,
-  "started_at": "2024-01-20T14:30:00Z",
-  "completed_at": "2024-01-20T14:31:15Z",
-  "coins_audited": 3,
-  "discrepancies_found": 5,
-  "enrichments_suggested": 8,
-  "status": "completed"
 }
 ```
 
@@ -390,480 +620,182 @@ POST /api/audit/start
 
 ### Get Audit Summary
 
-```
-GET /api/audit/summary
+```http
+GET /api/v2/audit/summary
 ```
 
-**Response:**
+**Response**:
 
 ```json
 {
   "pending_discrepancies": 12,
   "pending_enrichments": 25,
-  "auto_merge_candidates": 8,
-  "last_audit": {
-    "id": 5,
-    "started_at": "2024-01-20T14:30:00Z",
-    "coins_audited": 110,
-    "status": "completed"
-  }
+  "last_audit_run": "2024-01-20T14:30:00Z",
+  "coins_audited": 110
 }
 ```
 
 ---
 
-### List Discrepancies
+## LLM API (`/api/v2/llm`)
 
+**Router**: `src/infrastructure/web/routers/llm.py`
+
+LLM-powered enrichment endpoints.
+
+### Expand Legend
+
+```http
+POST /api/v2/llm/expand-legend
 ```
-GET /api/audit/discrepancies
-```
 
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `coin_id` | int | Filter by coin |
-| `status` | string | pending, accepted, rejected, ignored |
-| `severity` | string | low, medium, high |
-| `field_name` | string | Filter by field |
-
-**Response:**
+**Request Body**:
 
 ```json
 {
-  "items": [
-    {
-      "id": 1,
-      "coin_id": 23,
-      "field_name": "weight_g",
-      "coin_value": "3.82",
-      "auction_value": "3.85",
-      "difference_type": "measurement",
-      "severity": "low",
-      "status": "pending"
-    }
-  ],
-  "total": 12
+  "legend": "IMP CAES AVGVSTVS DIVI F"
+}
+```
+
+**Response**:
+
+```json
+{
+  "original": "IMP CAES AVGVSTVS DIVI F",
+  "expanded": "Imperator Caesar Augustus Divi Filius",
+  "translation": "Emperor Caesar Augustus, Son of the Divine"
 }
 ```
 
 ---
 
-### Resolve Discrepancy
+### Generate Description
 
-```
-POST /api/audit/discrepancies/{id}/resolve
+```http
+POST /api/v2/llm/generate-description
 ```
 
-**Request Body:**
+**Request Body**:
 
 ```json
 {
-  "status": "accepted",  // or "rejected", "ignored"
-  "note": "Auction house measurement more accurate"
-}
-```
-
-**Response:** Updated `Discrepancy`
-
----
-
-### List Enrichments
-
-```
-GET /api/audit/enrichments
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `coin_id` | int | Filter by coin |
-| `status` | string | pending, applied, rejected |
-| `source_type` | string | catalog, auction, llm |
-| `min_confidence` | float | Minimum confidence |
-
-**Response:**
-
-```json
-{
-  "items": [
-    {
-      "id": 1,
-      "coin_id": 23,
-      "field_name": "obverse_description",
-      "suggested_value": "Laureate head of Augustus right",
-      "confidence": 0.92,
-      "source_type": "catalog",
-      "status": "pending"
-    }
-  ],
-  "total": 25
-}
-```
-
----
-
-### Apply Enrichment
-
-```
-POST /api/audit/enrichments/{id}/apply
-```
-
-**Response:** Updated `Enrichment`
-
----
-
-### Reject Enrichment
-
-```
-POST /api/audit/enrichments/{id}/reject
-```
-
-**Response:** Updated `Enrichment`
-
----
-
-### Auto-Merge
-
-```
-POST /api/audit/auto-merge
-```
-
-**Request Body:**
-
-```json
-{
-  "coin_id": 23  // Optional, null = all coins
-}
-```
-
-**Response:**
-
-```json
-{
-  "merged": 15,
-  "skipped": 10,
-  "changes": [
-    {
-      "coin_id": 23,
-      "field_name": "obverse_description",
-      "old_value": null,
-      "new_value": "Laureate head right"
-    }
-  ]
-}
-```
-
----
-
-### Rollback Field Change
-
-```
-POST /api/audit/rollback/{history_id}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
   "coin_id": 23,
-  "field_name": "weight_g",
-  "restored_value": "3.82"
+  "include_context": true
 }
 ```
 
+Generates catalog-style description using LLM based on coin data.
+
 ---
 
-## Catalog API
+## Provenance API (`/api/v2/provenance`)
 
-### Lookup Reference
+**Router**: `src/infrastructure/web/routers/provenance.py`
 
+Provenance tracking for ownership history.
+
+### Get Coin Provenance
+
+```http
+GET /api/v2/provenance/coin/{coin_id}
 ```
-GET /api/catalog/lookup
-```
 
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `system` | string | RIC, Crawford, RPC |
-| `volume` | string | Volume number |
-| `number` | string | Reference number |
-
-**Response:**
+**Response**: `List[ProvenanceEventResponse]`
 
 ```json
-{
-  "found": true,
-  "source": "OCRE",
-  "data": {
-    "title": "Denarius of Augustus",
-    "denomination": "Denarius",
-    "metal": "Silver",
-    "authority": "Augustus",
-    "mint": "Lugdunum",
-    "date_range": "2 BC - AD 4",
-    "obverse_legend": "CAESAR AVGVSTVS DIVI F PATER PATRIAE",
-    "obverse_description": "Laureate head, right",
-    "reverse_legend": "AVGVSTI F COS DESIG PRINC IVVENT",
-    "reverse_description": "Gaius and Lucius Caesar standing front",
-    "url": "http://numismatics.org/ocre/id/ric.1(2).aug.207"
+[
+  {
+    "id": 1,
+    "coin_id": 23,
+    "event_type": "auction",
+    "event_date": "2023-06-15",
+    "auction_house": "Heritage Auctions",
+    "sale_series": "Long Beach Expo",
+    "lot_number": "12345",
+    "hammer_price": 425.00,
+    "total_price": 510.00,
+    "currency": "USD",
+    "url": "https://..."
   }
-}
+]
 ```
 
 ---
 
-### Enrich Coin from Catalog
+### Add Provenance Event
 
-```
-POST /api/catalog/enrich/{coin_id}
+```http
+POST /api/v2/provenance/coin/{coin_id}/events
 ```
 
-**Response:**
+**Request Body**:
 
 ```json
 {
-  "enrichments_created": 5,
-  "fields": ["obverse_description", "reverse_description", "mint_year_start", "mint_year_end", "exergue"]
-}
-```
-
----
-
-### Bulk Enrich
-
-```
-POST /api/catalog/bulk-enrich
-```
-
-**Request Body:**
-
-```json
-{
-  "coin_ids": [1, 2, 3, 4, 5]  // Optional, null = all with references
-}
-```
-
-**Response:**
-
-```json
-{
-  "job_id": "abc123",
-  "status": "started",
-  "total_coins": 5
-}
-```
-
----
-
-### Get Job Status
-
-```
-GET /api/catalog/jobs/{job_id}
-```
-
-**Response:**
-
-```json
-{
-  "job_id": "abc123",
-  "status": "running",
-  "progress": 3,
-  "total": 5,
-  "errors": []
-}
-```
-
----
-
-## Scrape API
-
-### Scrape Single URL
-
-```
-POST /api/scrape/url
-```
-
-**Request Body:**
-
-```json
-{
-  "url": "https://coins.ha.com/itm/lot-12345"
-}
-```
-
-**Response:** `AuctionData`
-
-```json
-{
-  "id": 1,
-  "auction_house": "Heritage",
-  "sale_name": "Long Beach Expo",
+  "event_type": "auction",
+  "event_date": "2023-06-15",
+  "auction_house": "Heritage Auctions",
   "lot_number": "12345",
-  "auction_date": "2024-01-15",
-  "title": "Augustus AR Denarius",
-  "description": "...",
   "hammer_price": 425.00,
-  "total_price": 510.00,
-  "currency": "USD",
-  "url": "https://coins.ha.com/itm/lot-12345",
-  "image_urls": ["https://..."],
-  "scraped_at": "2024-01-20T10:30:00Z"
+  "url": "https://..."
 }
 ```
 
+**Event Types**:
+- `auction`: Auction appearance
+- `private_sale`: Private sale
+- `dealer`: Dealer acquisition
+- `collection`: From named collection
+- `find`: Archaeological find
+- `inheritance`: Inherited
+- `gift`: Gift/donation
+- `exchange`: Trade/exchange
+
 ---
 
-### Batch Scrape
+## Die Study API (`/api/v2/die-study`)
 
-```
-POST /api/scrape/batch
+**Router**: `src/infrastructure/web/routers/die_study.py`
+
+Die study and die-linking functionality.
+
+### List Die Links
+
+```http
+GET /api/v2/die-study/links
 ```
 
-**Request Body:**
+**Response**: Groups of coins sharing obverse or reverse dies.
+
+---
+
+### Create Die Link
+
+```http
+POST /api/v2/die-study/links
+```
+
+**Request Body**:
 
 ```json
 {
-  "urls": [
-    "https://coins.ha.com/itm/lot-12345",
-    "https://cngcoins.com/lot/456789"
-  ]
-}
-```
-
-**Response:**
-
-```json
-{
-  "job_id": "batch-123",
-  "status": "started",
-  "total": 2
+  "coin_ids": [1, 2, 3],
+  "die_side": "obverse",
+  "notes": "Same die as RIC I 207"
 }
 ```
 
 ---
 
-### Browser Scrape
-
-```
-POST /api/scrape/browser
-```
-
-For JavaScript-heavy sites requiring browser rendering.
-
-**Request Body:**
-
-```json
-{
-  "url": "https://example.com/auction/lot",
-  "wait_selector": ".lot-details"  // Optional CSS selector to wait for
-}
-```
-
-**Response:** `AuctionData`
-
----
-
-## Auctions API
-
-### List Auctions
-
-```
-GET /api/auctions
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `auction_house` | string | Filter by house |
-| `linked` | bool | Filter linked/unlinked |
-| `date_from` | date | Minimum auction date |
-| `date_to` | date | Maximum auction date |
-| `page` | int | Page number |
-| `per_page` | int | Items per page |
-
-**Response:** Paginated `AuctionData` list
-
----
-
-### Get Comparables
-
-```
-GET /api/auctions/comparables/{coin_id}
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | int | 10 | Max results |
-
-**Response:**
-
-```json
-{
-  "coin_id": 23,
-  "comparables": [
-    {
-      "id": 45,
-      "auction_house": "CNG",
-      "auction_date": "2023-12-01",
-      "hammer_price": 425.00,
-      "grade": "VF",
-      "match_score": 0.88
-    }
-  ]
-}
-```
-
----
-
-### Get Price Statistics
-
-```
-GET /api/auctions/stats
-```
-
-**Query Parameters:**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `reference` | string | Reference (e.g., "RIC I 207") |
-| `ruler` | string | Ruler name |
-| `denomination` | string | Denomination |
-
-**Response:**
-
-```json
-{
-  "total_sales": 45,
-  "avg_hammer": 380.50,
-  "min_hammer": 180.00,
-  "max_hammer": 850.00,
-  "median_hammer": 350.00,
-  "trend": "stable",
-  "price_history": [
-    { "date": "2023-06-01", "price": 350.00, "grade": "VF" },
-    { "date": "2023-09-15", "price": 425.00, "grade": "EF" }
-  ]
-}
-```
-
----
-
-## Stats API
+## Statistics API
 
 ### Collection Statistics
 
-```
-GET /api/stats
+```http
+GET /api/v2/stats
 ```
 
-**Response:**
+**Response**:
 
 ```json
 {
@@ -882,112 +814,30 @@ GET /api/stats
     "gold": 10,
     "billon": 5
   },
-  "top_rulers": [
+  "top_issuers": [
     { "name": "Augustus", "count": 15 },
     { "name": "Trajan", "count": 12 }
   ],
   "recent_acquisitions": [
     { "id": 108, "date": "2024-01-15", "price": 450.00 }
-  ],
-  "price_distribution": {
-    "0-100": 25,
-    "100-250": 35,
-    "250-500": 30,
-    "500-1000": 15,
-    "1000+": 5
-  }
-}
-```
-
----
-
-## Legend API
-
-### Expand Legend
-
-```
-POST /api/legend/expand
-```
-
-**Request Body:**
-
-```json
-{
-  "legend": "IMP CAES AVGVSTVS DIVI F PATER PATRIAE"
-}
-```
-
-**Response:**
-
-```json
-{
-  "original": "IMP CAES AVGVSTVS DIVI F PATER PATRIAE",
-  "expanded": "Imperator Caesar Augustus Divi Filius Pater Patriae",
-  "translation": "Emperor Caesar Augustus, Son of the Divine, Father of the Country",
-  "abbreviations": [
-    { "abbr": "IMP", "expansion": "Imperator" },
-    { "abbr": "CAES", "expansion": "Caesar" },
-    { "abbr": "DIVI F", "expansion": "Divi Filius" },
-    { "abbr": "PATER PATRIAE", "expansion": "Pater Patriae" }
   ]
 }
 ```
 
 ---
 
-## Settings API
+## Common Response Patterns
 
-### Get Database Info
-
-```
-GET /api/settings/database
-```
-
-**Response:**
+### Success Response
 
 ```json
 {
-  "path": "./data/coinstack.db",
-  "size_mb": 15.4,
-  "coin_count": 110,
-  "auction_count": 250,
-  "last_backup": "2024-01-19T10:00:00Z"
+  "status": "success",
+  "data": { ... }
 }
 ```
 
----
-
-### Create Backup
-
-```
-POST /api/settings/backup
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "backup_path": "./backups/coinstack_20240120_103000.db",
-  "size_mb": 15.4
-}
-```
-
----
-
-### Export to CSV
-
-```
-GET /api/settings/export/csv
-```
-
-**Response:** CSV file download
-
----
-
-## Error Responses
-
-All errors follow this format:
+### Error Response
 
 ```json
 {
@@ -997,10 +847,13 @@ All errors follow this format:
 }
 ```
 
-**Common Status Codes:**
+**HTTP Status Codes**:
 
 | Code | Meaning |
 |------|---------|
+| 200 | OK - Successful GET/PUT/PATCH |
+| 201 | Created - Successful POST |
+| 204 | No Content - Successful DELETE |
 | 400 | Bad Request - Invalid input |
 | 404 | Not Found - Resource doesn't exist |
 | 422 | Validation Error - Schema validation failed |
@@ -1008,5 +861,185 @@ All errors follow this format:
 
 ---
 
-**Previous:** [06-DATA-FLOWS.md](06-DATA-FLOWS.md) - Data flows  
+## Query Optimization
+
+### Pagination
+
+All list endpoints support pagination:
+
+```http
+GET /api/v2/coins?skip=0&limit=50
+```
+
+- `skip`: Offset (default: 0)
+- `limit`: Max results (default: 50, max: 100)
+
+### Filtering
+
+Use query parameters for filtering:
+
+```http
+GET /api/v2/coins?category=imperial&metal=silver&year_start=-27&year_end=14
+```
+
+### Sorting
+
+```http
+GET /api/v2/coins?sort_by=acquisition_date&sort_order=desc
+```
+
+---
+
+## Authentication
+
+**Current**: No authentication (single-user desktop app)
+
+**Future**: JWT-based authentication planned for multi-user deployment.
+
+---
+
+## Rate Limiting
+
+**Current**: No rate limiting (single-user desktop app)
+
+**Scraper Endpoints**: Respectful delays built-in (2-5 seconds between requests)
+
+---
+
+## WebSocket Support
+
+**Not Implemented**: Real-time updates via polling or SSE may be added in future.
+
+---
+
+## API Versioning
+
+**Current Version**: V2
+
+- V1 endpoints archived in `backend/v1_archive/`
+- V2 endpoints use Clean Architecture (Domain/Application/Infrastructure)
+- Breaking changes: New major version (V3)
+- Non-breaking changes: Patch updates within V2
+
+---
+
+## Development Tools
+
+### Swagger UI
+
+Interactive API documentation with try-it-out functionality:
+
+```
+http://localhost:8000/docs
+```
+
+### ReDoc
+
+Alternative API documentation with better readability:
+
+```
+http://localhost:8000/redoc
+```
+
+### OpenAPI Schema
+
+Raw OpenAPI 3.0 schema:
+
+```
+http://localhost:8000/openapi.json
+```
+
+---
+
+## Testing API Endpoints
+
+### Using curl
+
+```bash
+# List coins
+curl "http://localhost:8000/api/v2/coins?limit=10"
+
+# Get coin by ID
+curl "http://localhost:8000/api/v2/coins/1"
+
+# Create coin
+curl -X POST "http://localhost:8000/api/v2/coins" \
+  -H "Content-Type: application/json" \
+  -d '{"category":"imperial","metal":"silver","weight_g":3.82,...}'
+
+# Search vocabulary
+curl "http://localhost:8000/api/v2/vocab/search/issuer?q=Augustus"
+
+# Scrape auction lot
+curl -X POST "http://localhost:8000/api/v2/scrape?url=https://coins.ha.com/itm/lot-12345"
+```
+
+### Using Python (requests)
+
+```python
+import requests
+
+# List coins
+response = requests.get("http://localhost:8000/api/v2/coins", params={
+    "category": "imperial",
+    "metal": "silver",
+    "limit": 20
+})
+coins = response.json()
+
+# Create coin
+coin_data = {
+    "category": "imperial",
+    "metal": "silver",
+    "weight_g": 3.82,
+    "diameter_mm": 18.0,
+    "issuer": "Augustus",
+    "grading_state": "graded",
+    "grade": "VF"
+}
+response = requests.post("http://localhost:8000/api/v2/coins", json=coin_data)
+created_coin = response.json()
+```
+
+### Using Frontend API Client
+
+```typescript
+import { apiClient } from '@/api/client'
+
+// List coins
+const coins = await apiClient.get('/api/v2/coins', {
+  params: { category: 'imperial', metal: 'silver' }
+})
+
+// Get coin by ID
+const coin = await apiClient.get('/api/v2/coins/1')
+
+// Create coin
+const newCoin = await apiClient.post('/api/v2/coins', coinData)
+```
+
+---
+
+## Critical Rules
+
+### Port Configuration (MANDATORY)
+- Backend: Port 8000
+- Frontend: Port 3000
+- Never increment ports
+
+### Database Safety (MANDATORY)
+- Backup required before schema changes
+- Format: `coinstack_YYYYMMDD_HHMMSS.db`
+
+### API Design Principles
+- RESTful conventions
+- Clean Architecture (routers → use cases → repositories)
+- Repository interfaces (Protocols)
+- Automatic transaction management via `get_db()` dependency
+- Proper HTTP status codes
+- Comprehensive error messages
+
+---
+
+**Previous:** [06-DATA-FLOWS.md](06-DATA-FLOWS.md) - Data flows
 **Next:** [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) - Coding conventions
