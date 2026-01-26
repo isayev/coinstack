@@ -15,7 +15,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       // Server responded with error
-      throw new Error(error.response.data?.error || "An error occurred");
+      const errorData = error.response.data;
+      // FastAPI returns errors in 'detail' field, but our endpoints use 'error' field
+      const message = errorData?.error || errorData?.detail || error.response.statusText || "An error occurred";
+      throw new Error(message);
     } else if (error.request) {
       // Request made but no response
       throw new Error("Network error. Please check your connection.");

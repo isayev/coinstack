@@ -208,10 +208,11 @@ class SqlAlchemyVocabRepository(IVocabRepository):
         Normalize raw text to a canonical vocabulary term.
         
         Uses a chain of matching strategies:
-        1. Exact match on canonical_name (case-sensitive)
-        2. Case-insensitive exact match
-        3. FTS5 fuzzy match with confidence scoring
-        4. Nomisma reconciliation API (external)
+        1. Exact match on canonical_name (case-sensitive) → confidence 1.0
+        2. Case-insensitive exact match → confidence 0.98
+        3. Alias match (case-insensitive) → confidence 0.97
+        4. FTS5 fuzzy match with confidence scoring → confidence 0.80-0.99
+        5. Nomisma reconciliation API (external) → confidence 0.85
         
         Returns needs_review=True if confidence < 0.92 or no match found.
         """
@@ -280,7 +281,34 @@ class SqlAlchemyVocabRepository(IVocabRepository):
                 raw_input=raw_stripped
             )
         
-        # 3. FTS5 fuzzy match (top results)
+        # 3. Alias match (case-insensitive)
+        result = self.session.execute(
+            text("""
+                SELECT vt.id, vt.canonical_name, vt.nomisma_uri, vt.metadata
+                FROM vocab_terms vt
+                JOIN vocab_aliases va ON vt.id = va.vocab_term_id
+                WHERE LOWER(va.alias_name) = LOWER(:name) AND vt.vocab_type = :vtype
+            """),
+            {"name": raw_stripped, "vtype": vocab_type.value}
+        )
+        row = result.fetchone()
+        if row:
+            term = VocabTerm(
+                id=row[0], 
+                vocab_type=vocab_type, 
+                canonical_name=row[1], 
+                nomisma_uri=row[2], 
+                metadata=json.loads(row[3] or "{}")
+            )
+            return NormalizationResult(
+                success=True, 
+                term=term, 
+                method="alias", 
+                confidence=0.97,  # High confidence for alias match
+                raw_input=raw_stripped
+            )
+        
+        # 5. FTS5 fuzzy match (top results)
         fts_results = self.search(vocab_type, raw_stripped, limit=5)
         if fts_results:
             best = fts_results[0]
@@ -302,7 +330,7 @@ class SqlAlchemyVocabRepository(IVocabRepository):
                     alternatives=fts_results[1:3]  # Include alternatives for review
                 )
         
-        # 4. Nomisma reconciliation API (external)
+        # 6. Nomisma reconciliation API (external)
         nomisma_result = self._reconcile_nomisma(raw_stripped, vocab_type)
         if nomisma_result:
             return NormalizationResult(
@@ -314,7 +342,7 @@ class SqlAlchemyVocabRepository(IVocabRepository):
                 needs_review=True
             )
         
-        # 5. No match found - queue for manual review
+        # 7. No match found - queue for manual review
         return NormalizationResult(
             success=False, 
             method="", 

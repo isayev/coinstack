@@ -9,10 +9,10 @@
  */
 import { useCallback } from "react";
 import {
-  Undo, AlertCircle, Info,
-  Coins, Calendar, Scale, Palette, Award, DollarSign, FileText
+  Undo, AlertCircle, Info, XCircle,
+  Coins, Calendar, Scale, Palette, Award, DollarSign, FileText, BookOpen
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -156,34 +156,46 @@ export function CoinPreviewEditor({
 
   return (
     <Tabs defaultValue="basic" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
-        <TabsTrigger value="basic" className="gap-1">
-          <Coins className="h-3 w-3 hidden sm:inline" />
-          Basic
+      <TabsList className="grid w-full grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-0.5">
+        <TabsTrigger value="basic" className="gap-1 text-xs px-2">
+          <Coins className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Basic</span>
+          <span className="sm:hidden">B</span>
         </TabsTrigger>
-        <TabsTrigger value="dating" className="gap-1">
-          <Calendar className="h-3 w-3 hidden sm:inline" />
-          Dating
+        <TabsTrigger value="dating" className="gap-1 text-xs px-2">
+          <Calendar className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Dating</span>
+          <span className="sm:hidden">D</span>
         </TabsTrigger>
-        <TabsTrigger value="physical" className="gap-1">
-          <Scale className="h-3 w-3 hidden sm:inline" />
-          Physical
+        <TabsTrigger value="physical" className="gap-1 text-xs px-2">
+          <Scale className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Physical</span>
+          <span className="sm:hidden">P</span>
         </TabsTrigger>
-        <TabsTrigger value="design" className="gap-1">
-          <Palette className="h-3 w-3 hidden sm:inline" />
-          Design
+        <TabsTrigger value="design" className="gap-1 text-xs px-2">
+          <Palette className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Design</span>
+          <span className="sm:hidden">D</span>
         </TabsTrigger>
-        <TabsTrigger value="grading" className="gap-1">
-          <Award className="h-3 w-3 hidden sm:inline" />
-          Grading
+        <TabsTrigger value="grading" className="gap-1 text-xs px-2">
+          <Award className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Grading</span>
+          <span className="sm:hidden">G</span>
         </TabsTrigger>
-        <TabsTrigger value="acquisition" className="gap-1">
-          <DollarSign className="h-3 w-3 hidden sm:inline" />
-          Acquisition
+        <TabsTrigger value="acquisition" className="gap-1 text-xs px-2">
+          <DollarSign className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Acquis.</span>
+          <span className="sm:hidden">A</span>
         </TabsTrigger>
-        <TabsTrigger value="notes" className="gap-1">
-          <FileText className="h-3 w-3 hidden sm:inline" />
-          Notes
+        <TabsTrigger value="references" className="gap-1 text-xs px-2">
+          <BookOpen className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Refs</span>
+          <span className="sm:hidden">R</span>
+        </TabsTrigger>
+        <TabsTrigger value="notes" className="gap-1 text-xs px-2">
+          <FileText className="h-3 w-3 hidden lg:inline" />
+          <span className="hidden sm:inline">Notes</span>
+          <span className="sm:hidden">N</span>
         </TabsTrigger>
       </TabsList>
 
@@ -232,14 +244,16 @@ export function CoinPreviewEditor({
                     <SelectValue placeholder="Select metal" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gold">Gold</SelectItem>
-                    <SelectItem value="electrum">Electrum</SelectItem>
-                    <SelectItem value="silver">Silver</SelectItem>
-                    <SelectItem value="billon">Billon</SelectItem>
-                    <SelectItem value="bronze">Bronze</SelectItem>
-                    <SelectItem value="copper">Copper</SelectItem>
-                    <SelectItem value="ae">AE (Generic)</SelectItem>
-                    <SelectItem value="uncertain">Uncertain</SelectItem>
+                    <SelectItem value="gold">Gold (AU)</SelectItem>
+                    <SelectItem value="electrum">Electrum (EL)</SelectItem>
+                    <SelectItem value="silver">Silver (AR)</SelectItem>
+                    <SelectItem value="billon">Billon (BI)</SelectItem>
+                    <SelectItem value="bronze">Bronze (AE)</SelectItem>
+                    <SelectItem value="copper">Copper (CU)</SelectItem>
+                    <SelectItem value="ae">AE (Generic Bronze/Copper)</SelectItem>
+                    <SelectItem value="orichalcum">Orichalcum (Brass)</SelectItem>
+                    <SelectItem value="potin">Potin</SelectItem>
+                    <SelectItem value="lead">Lead (PB)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -477,8 +491,9 @@ export function CoinPreviewEditor({
                   <SelectContent>
                     <SelectItem value="ngc">NGC</SelectItem>
                     <SelectItem value="pcgs">PCGS</SelectItem>
-                    <SelectItem value="self">Self</SelectItem>
-                    <SelectItem value="dealer">Dealer</SelectItem>
+                    <SelectItem value="icg">ICG</SelectItem>
+                    <SelectItem value="anacs">ANACS</SelectItem>
+                    <SelectItem value="none">None / Raw</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -622,6 +637,123 @@ export function CoinPreviewEditor({
         </Card>
       </TabsContent>
 
+      {/* References */}
+      <TabsContent value="references">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Catalog References</CardTitle>
+            <CardDescription className="text-xs">
+              Add catalog references like RIC, RPC, Crawford, Sear, etc.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Reference input */}
+            <div className="space-y-2">
+              <Label>Add Reference</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g., RIC IV.1 289c, Crawford 335/1, Sear 6846"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      const value = input.value.trim();
+                      if (value) {
+                        const currentRefs = data.references || [];
+                        if (!currentRefs.includes(value)) {
+                          updateField('references', [...currentRefs, value]);
+                        }
+                        input.value = '';
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    const value = input.value.trim();
+                    if (value) {
+                      const currentRefs = data.references || [];
+                      if (!currentRefs.includes(value)) {
+                        updateField('references', [...currentRefs, value]);
+                      }
+                      input.value = '';
+                    }
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Press Enter or click Add to add a reference
+              </p>
+            </div>
+
+            {/* Common reference types */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Common Catalogs</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {['RIC', 'RPC', 'Crawford', 'RSC', 'Cohen', 'Sear', 'BMC', 'BMCRE'].map((catalog) => (
+                  <Button
+                    key={catalog}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      const input = document.querySelector('input[placeholder*="RIC"]') as HTMLInputElement;
+                      if (input) {
+                        input.value = `${catalog} `;
+                        input.focus();
+                      }
+                    }}
+                  >
+                    {catalog}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Current references */}
+            {data.references && data.references.length > 0 && (
+              <div className="space-y-2">
+                <Label>Current References ({data.references.length})</Label>
+                <div className="flex flex-wrap gap-2">
+                  {data.references.map((ref, i) => (
+                    <div
+                      key={i}
+                      className="group flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-md text-sm border border-border hover:border-destructive/50 transition-colors"
+                    >
+                      <span className="font-mono">{ref}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newRefs = data.references.filter((_, idx) => idx !== i);
+                          updateField('references', newRefs);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No references message */}
+            {(!data.references || data.references.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No catalog references added yet</p>
+                <p className="text-xs mt-1">Add references to help identify and research this coin</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+
       {/* Notes */}
       <TabsContent value="notes">
         <Card>
@@ -670,23 +802,6 @@ export function CoinPreviewEditor({
               type="textarea"
               placeholder="Your personal notes about this coin..."
             />
-
-            {/* References */}
-            {data.references && data.references.length > 0 && (
-              <div className="space-y-1.5">
-                <Label>Detected References</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {data.references.map((ref, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-muted rounded text-sm"
-                    >
-                      {ref}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       </TabsContent>

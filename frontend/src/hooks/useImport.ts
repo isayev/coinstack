@@ -200,8 +200,19 @@ export interface ImportError {
 export function useUrlImport() {
   return useMutation<ImportPreviewResponse, ImportError, string>({
     mutationFn: async (url: string) => {
-      const { data } = await api.post<ImportPreviewResponse>("/api/v2/import/from-url", { url });
-      return data;
+      try {
+        const { data } = await api.post<ImportPreviewResponse>("/api/v2/import/from-url", { url });
+        return data;
+      } catch (error: any) {
+        // Transform axios error to ImportError format
+        const importError: ImportError = {
+          message: error.message || "Failed to import from URL",
+          code: error.response?.data?.error_code || "unknown",
+          retryAfter: error.response?.data?.retry_after,
+          manualEntrySuggested: error.response?.data?.manual_entry_suggested || false,
+        };
+        throw importError;
+      }
     },
   });
 }

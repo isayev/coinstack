@@ -1,6 +1,6 @@
 # Data Model Reference
 
-> **Complete Schema:** For the full 72-column schema with all constraints, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
+> **Complete Schema:** For the full 64-column schema with all constraints, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
 >
 > This document provides V2 Clean Architecture data layer reference with ORM models and query patterns.
 
@@ -85,14 +85,26 @@ erDiagram
         string metal
         decimal weight_g
         decimal diameter_mm
+        decimal thickness_mm
+        int die_axis
         string issuer
-        int issuer_id
+        int issuer_id FK
         int issuer_term_id FK_vocab
         string mint
-        int mint_id
+        int mint_id FK
         int mint_term_id FK_vocab
+        int year_start
+        int year_end
+        string script
+        int reign_start
+        int reign_end
         string grading_state
         string grade
+        string acquisition_url
+        string provenance_notes
+        string rarity
+        datetime created_at
+        datetime updated_at
     }
 
     CoinImageModel {
@@ -236,6 +248,94 @@ class CoinModel(Base):
     # Collection Management
     storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     personal_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # -------------------------------------------------------------------------
+    # Extended V1 Fields (restored from migration)
+    # -------------------------------------------------------------------------
+    # Script/Language
+    script: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Latin, Greek
+    
+    # Chronology (ruler reign dates - different from mint year)
+    reign_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Year (negative for BC)
+    reign_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    dating_certainty: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # BROAD, NARROW, EXACT
+    is_circa: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    
+    # Provenance
+    provenance_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Auction history
+    
+    # Physical characteristics
+    surface_issues: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # JSON array
+    thickness_mm: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    orientation: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    
+    # Classification
+    series: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sub_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Mint details
+    officina: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Mint workshop
+    
+    # Design symbols
+    obverse_symbols: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_symbols: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Rarity and value
+    rarity: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # common, scarce, rare, etc.
+    rarity_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Condition notes
+    style_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    toning_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    eye_appeal: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # -------------------------------------------------------------------------
+    # Advanced Numismatic Fields (Phase 2 - Comprehensive Cataloging)
+    # -------------------------------------------------------------------------
+    
+    # Iconography and design details (JSON arrays)
+    obverse_iconography: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_iconography: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    control_marks: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Mint marks and control symbols
+    mintmark: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    field_marks: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Die study
+    die_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # early, middle, late
+    die_match_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Republican coinage
+    moneyer: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    
+    # Edge details
+    edge_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)  # plain, reeded, lettered
+    edge_inscription: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Attribution confidence
+    attribution_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    attribution_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Conservation history
+    cleaning_history: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    conservation_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Market value tracking
+    market_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    market_value_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    
+    # LLM-Generated Fields
+    obverse_legend_expanded: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_legend_expanded: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    historical_significance: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    catalog_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    condition_observations: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    llm_enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships (eager load with selectinload)
     images: Mapped[List["CoinImageModel"]] = relationship(
@@ -272,36 +372,87 @@ class CoinModel(Base):
 from dataclasses import dataclass
 from typing import Optional, List
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime
 
 @dataclass
 class Coin:
     """Coin aggregate root - NO database dependencies."""
     id: Optional[int]
+    
+    # Classification
     category: str
     metal: str
+    
+    # Physical Dimensions
     weight_g: Decimal
     diameter_mm: Decimal
+    thickness_mm: Optional[Decimal]
     die_axis: Optional[int]
+    
+    # Attribution
     issuer: str
     mint: Optional[str]
     year_start: Optional[int]
     year_end: Optional[int]
+    
+    # Script/Language
+    script: Optional[str]  # Latin, Greek, etc.
+    
+    # Chronology (ruler reign dates)
+    reign_start: Optional[int]
+    reign_end: Optional[int]
+    dating_certainty: Optional[str]  # BROAD, NARROW, EXACT
+    is_circa: Optional[bool]
+    
+    # Grading
     grading_state: str
     grade: str
     grade_service: Optional[str]
     certification_number: Optional[str]
+    
+    # Acquisition
     acquisition_price: Optional[Decimal]
     acquisition_date: Optional[date]
     acquisition_source: Optional[str]
     acquisition_url: Optional[str]
+    
+    # Design
     obverse_legend: Optional[str]
     obverse_description: Optional[str]
+    obverse_symbols: Optional[str]
     reverse_legend: Optional[str]
     reverse_description: Optional[str]
+    reverse_symbols: Optional[str]
     exergue: Optional[str]
+    
+    # Classification extras
+    series: Optional[str]
+    sub_category: Optional[str]
+    officina: Optional[str]  # Mint workshop
+    orientation: Optional[str]
+    
+    # Provenance & History
+    provenance_notes: Optional[str]  # Auction/collection history
+    
+    # Rarity & Value
+    rarity: Optional[str]  # common, scarce, rare, very_rare, extremely_rare, unique
+    rarity_notes: Optional[str]
+    
+    # Condition notes
+    surface_issues: Optional[str]  # JSON array of issues
+    style_notes: Optional[str]
+    toning_description: Optional[str]
+    eye_appeal: Optional[str]
+    
+    # Storage & Organization
     storage_location: Optional[str]
     personal_notes: Optional[str]
+    
+    # Timestamps
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    
+    # Related Entities
     images: List["CoinImage"] = None
 
     def validate(self) -> List[str]:
@@ -313,6 +464,8 @@ class Coin:
             errors.append("Diameter must be positive")
         if self.die_axis and not (0 <= self.die_axis <= 12):
             errors.append("Die axis must be 0-12")
+        if self.reign_start and self.reign_end and self.reign_start > self.reign_end:
+            errors.append("Reign start must be before reign end")
         return errors
 ```
 
@@ -906,9 +1059,39 @@ greek | celtic | republic | imperial | provincial | judaean | byzantine | migrat
 gold | electrum | silver | billon | potin | orichalcum | bronze | copper | lead | ae | uncertain
 ```
 
+### Script
+```
+Latin | Greek | Greek?
+```
+
+### DateCertainty
+```
+BROAD | NARROW | EXACT
+```
+
+### Orientation
+```
+OBVERSE_UP | REVERSE_UP
+```
+
 ### Rarity
 ```
 common | scarce | rare | very_rare | extremely_rare | unique
+```
+
+### DieState
+```
+early | middle | late | worn
+```
+
+### EdgeType
+```
+plain | reeded | lettered | decorated
+```
+
+### AttributionConfidence
+```
+certain | probable | possible | uncertain
 ```
 
 ### GradeService

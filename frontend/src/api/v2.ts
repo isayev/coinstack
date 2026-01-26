@@ -15,6 +15,25 @@ const SeriesListSchema = z.object({
   total: z.number()
 })
 
+// Schema for creating a new series
+const SeriesCreateSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().optional(),
+  description: z.string().optional(),
+  series_type: z.string(),
+  category: z.string().optional(),
+  target_count: z.number().optional(),
+  canonical_vocab_id: z.number().nullable().optional(),
+})
+
+// Schema for adding coin to series response
+const AddCoinToSeriesResponseSchema = z.object({
+  success: z.boolean(),
+  series_id: z.number(),
+  coin_id: z.number(),
+  slot_id: z.number().nullable().optional(),
+})
+
 export type PaginatedCoinsResponse = z.infer<typeof PaginatedCoinsSchema>
 export type SeriesListResponse = z.infer<typeof SeriesListSchema>
 
@@ -85,16 +104,17 @@ export const v2 = {
     return SeriesSchema.parse(response.data)
   },
 
-  createSeries: async (data: any): Promise<z.infer<typeof SeriesSchema>> => {
-    const response = await api.post('/api/series', data)
+  createSeries: async (data: z.infer<typeof SeriesCreateSchema>): Promise<z.infer<typeof SeriesSchema>> => {
+    const validatedData = SeriesCreateSchema.parse(data)
+    const response = await api.post('/api/series', validatedData)
     return SeriesSchema.parse(response.data)
   },
 
-  addCoinToSeries: async (seriesId: number, coinId: number, slotId?: number): Promise<any> => {
+  addCoinToSeries: async (seriesId: number, coinId: number, slotId?: number): Promise<z.infer<typeof AddCoinToSeriesResponseSchema>> => {
     const response = await api.post(`/api/series/${seriesId}/coins/${coinId}`, null, {
       params: { slot_id: slotId }
     })
-    return response.data
+    return AddCoinToSeriesResponseSchema.parse(response.data)
   },
 
   // Audit

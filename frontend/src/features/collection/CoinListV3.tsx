@@ -19,16 +19,16 @@ import { AlertCircle, LayoutGrid, List } from 'lucide-react';
 import { SortControl } from '@/components/ui/SortControl';
 import { useUIStore } from '@/stores/uiStore';
 import { useFilterStore, SortField } from '@/stores/filterStore';
+import { useSelection } from '@/stores/selectionStore';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/Pagination';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 
 export function CoinListV3() {
   const { viewMode, setViewMode } = useUIStore();
   const { toParams, page, setPage, perPage, setPerPage, sortBy, sortDir, setSort, toggleSortDir } = useFilterStore();
+  const { selectedIds, toggle, selectAll, clear, isSelected } = useSelection();
   const navigate = useNavigate();
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
   // Fetch with filters
   const { data, isLoading, error } = useQuery({
@@ -40,20 +40,19 @@ export function CoinListV3() {
   const coins = data?.items || [];
   const total = data?.total || 0;
   const totalPages = data?.pages || 1;
-  const allSelected = coins.length > 0 && selectedIds.length === coins.length;
+  const allIds = coins.map((coin) => coin.id).filter((id): id is number => id !== null);
+  const allSelected = coins.length > 0 && allIds.every((id) => selectedIds.has(id));
 
   // Selection handlers
   const handleSelect = (coinId: number) => {
-    setSelectedIds((prev) =>
-      prev.includes(coinId) ? prev.filter((id) => id !== coinId) : [...prev, coinId]
-    );
+    toggle(coinId);
   };
 
   const handleSelectAll = () => {
     if (allSelected) {
-      setSelectedIds([]);
+      clear();
     } else {
-      setSelectedIds(coins.map((coin: any) => coin.id));
+      selectAll(allIds);
     }
   };
 
@@ -61,6 +60,7 @@ export function CoinListV3() {
   const handleSort = (column: string) => {
     // Map column names to API sort keys (only valid SortField values)
     const sortMap: Record<string, SortField> = {
+      id: 'id',
       ruler: 'name',
       denomination: 'denomination',
       date: 'year',
@@ -73,10 +73,13 @@ export function CoinListV3() {
       acquired: 'acquired',
       created: 'created',
       weight: 'weight',
+      mint: 'name', // Mint sorting uses name field
+      diameter: 'weight', // Diameter sorting uses weight field (closest available)
+      reference: 'name', // Reference sorting uses name field
     };
 
     const newSortBy = sortMap[column];
-    if (!newSortBy) return; // Ignore unsortable columns like reference, mint
+    if (!newSortBy) return; // Ignore unsortable columns like script, legends, exergue
 
     // Toggle direction if clicking same column
     if (sortBy === newSortBy) {
@@ -191,13 +194,13 @@ export function CoinListV3() {
         <div className="flex items-center gap-3">
           <SortControl
             sortBy={sortBy}
-            sortDir={sortDir as 'asc' | 'desc'}
-            onSortChange={(v) => setSort(v as any)}
+            sortDir={sortDir}
+            onSortChange={(v) => setSort(v as SortField)}
             onDirectionToggle={toggleSortDir}
           />
 
           {/* Selection indicator */}
-          {selectedIds.length > 0 && (
+          {selectedIds.size > 0 && (
             <div
               className="text-sm font-medium px-3 py-1.5 rounded-md"
               style={{
@@ -205,7 +208,7 @@ export function CoinListV3() {
                 color: 'var(--text-secondary)',
               }}
             >
-              {selectedIds.length} selected
+              {selectedIds.size} selected
             </div>
           )}
         </div>
@@ -240,46 +243,51 @@ export function CoinListV3() {
       {viewMode === 'grid' ? (
         /* Grid View - Fewer columns for wider cards */
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5 gap-4">
-          {coins?.map((coin: any) => (
+          {coins?.map((coin, index) => (
             <CoinCardV3
               key={coin.id}
               coin={coin}
               onClick={() => navigate(`/coins/${coin.id}`)}
+              selected={coin.id !== null && isSelected(coin.id)}
+              onSelect={handleSelect}
+              gridIndex={index}
             />
           ))}
         </div>
       ) : (
-        /* Table View - V3.0 Spec: 12-column layout with sticky header */
+        /* Table View - Expanded layout with comprehensive numismatic columns */
         <div
-          className="rounded-lg overflow-hidden border"
+          className="rounded-lg border overflow-x-auto"
           style={{
             borderColor: 'var(--border-subtle)',
             background: 'var(--bg-card)',
           }}
         >
-          <CoinTableHeaderV3
-            allSelected={allSelected}
-            onSelectAll={handleSelectAll}
-            sortColumn={
-              sortBy === 'name'
-                ? 'ruler'
-                : sortBy === 'year'
-                  ? 'date'
-                  : sortBy
-            }
-            sortDirection={sortDir as 'asc' | 'desc'}
-            onSort={handleSort}
-          />
-          <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
-            {coins?.map((coin: any) => (
-              <CoinTableRowV3
-                key={coin.id}
-                coin={coin}
-                selected={selectedIds.includes(coin.id)}
-                onSelect={handleSelect}
-                onClick={() => navigate(`/coins/${coin.id}`)}
-              />
-            ))}
+          <div className="min-w-[1600px]">
+            <CoinTableHeaderV3
+              allSelected={allSelected}
+              onSelectAll={handleSelectAll}
+              sortColumn={
+                sortBy === 'name'
+                  ? 'ruler'
+                  : sortBy === 'year'
+                    ? 'date'
+                    : sortBy
+              }
+              sortDirection={sortDir as 'asc' | 'desc'}
+              onSort={handleSort}
+            />
+            <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+              {coins?.map((coin) => (
+                <CoinTableRowV3
+                  key={coin.id}
+                  coin={coin}
+                  selected={coin.id !== null && isSelected(coin.id)}
+                  onSelect={handleSelect}
+                  onClick={() => navigate(`/coins/${coin.id}`)}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -294,8 +302,8 @@ export function CoinListV3() {
           totalPages={totalPages}
           onPageChange={setPage}
           totalItems={total}
-          perPage={perPage as any}
-          onPerPageChange={(v) => setPerPage(v as any)}
+          perPage={perPage}
+          onPerPageChange={setPerPage}
         />
       </div>
     </div>

@@ -1,7 +1,9 @@
 # Frontend Components Reference - AI Assistant Guide
 
 > Comprehensive guide to CoinStack React components, patterns, and implementation details.
-> **Last Updated**: January 2026 (v3.1)
+> **Last Updated**: January 2026 (v3.4 - Coin Detail Overhaul Complete)
+>
+> **See Also**: [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) for planned enhancements
 
 ---
 
@@ -76,7 +78,14 @@ frontend/src/
 ├── features/                  # Feature-specific components
 │   └── collection/
 │       ├── CoinListV3.tsx     # Grid/table view manager
-│       ├── CoinDetailV3.tsx   # Detail display
+│       ├── CoinDetailV3.tsx   # Detail display orchestrator
+│       ├── CoinDetail/        # Coin detail page components (v3.2)
+│       │   ├── index.tsx      # Exports
+│       │   ├── IdentityHeader.tsx     # Catalog-style header
+│       │   ├── ObverseReversePanel.tsx # Side-by-side panels
+│       │   ├── CoinSidePanel.tsx      # Individual O/R panel
+│       │   ├── ReferencesCard.tsx     # References + external links
+│       │   └── ProvenanceTimeline.tsx # Timeline with gap handling
 │       ├── CollectionDashboard/
 │       │   └── index.tsx      # Left sidebar dashboard
 │       └── CollectionToolbar/
@@ -278,6 +287,314 @@ interface VocabAutocompleteProps {
 - Returns vocab term ID, not string
 - Shows canonical_name in dropdown
 - Allows creating new terms
+
+### 2.5 CoinDetail Components (v3.2)
+
+**Location**: `frontend/src/features/collection/CoinDetail/`
+
+**Purpose**: Scholarly numismatic coin detail page components.
+
+#### IdentityHeader
+
+**File**: `IdentityHeader.tsx`
+
+**Purpose**: Catalog-style header with category bar, ruler, dates, references.
+
+```typescript
+interface IdentityHeaderProps {
+  coin: Coin
+  onEdit: () => void
+  onDelete?: () => void
+}
+```
+
+**Key Features**:
+- 6px category bar (left border) using `var(--cat-${category})`
+- Category label uppercase with category color
+- Ruler name with reign dates
+- Type line: Denomination · Mint · Date
+- References inline (RIC II 118 · RSC 240)
+- Physical specs: 3.42g · 19mm · ↑6h
+
+#### ObverseReversePanel
+
+**File**: `ObverseReversePanel.tsx`
+
+**Purpose**: Side-by-side obverse/reverse display.
+
+```typescript
+interface ObverseReversePanelProps {
+  coin: Coin
+  onEnrichLegend?: (side: 'obverse' | 'reverse') => void
+}
+```
+
+**Key Features**:
+- Side-by-side on desktop (>= 1024px), stacked on mobile
+- Each panel has: image, legend (with copy), description, iconography
+- Metal badge overlay on obverse image
+- Legend expansion button for AI enrichment
+
+#### CoinSidePanel
+
+**File**: `CoinSidePanel.tsx`
+
+**Purpose**: Individual obverse/reverse panel content.
+
+```typescript
+interface CoinSidePanelProps {
+  side: 'obverse' | 'reverse'
+  image?: string
+  legend?: string | null
+  legendExpanded?: string | null
+  description?: string | null
+  iconography?: string[] | null
+  metal?: string
+  onEnrichLegend?: () => void
+}
+```
+
+**Key Features**:
+- Zoomable image (uses ImageZoom component)
+- Legend with copy-to-clipboard button
+- Sparkle button for AI legend expansion
+- Collapsible expanded legend section
+- Iconography bullet list
+
+#### ReferencesCard
+
+**File**: `ReferencesCard.tsx`
+
+**Purpose**: Display catalog references with validated external links.
+
+```typescript
+interface ReferencesCardProps {
+  references: CatalogReference[] | null
+  categoryType?: string
+}
+```
+
+**Key Features**:
+- Primary reference highlighted
+- Concordance (secondary references)
+- Validated external links (OCRE, CRRO, RPC)
+- General search links (ACSearch, CoinArchives, Wildwinds)
+- Uses `lib/referenceLinks.ts` for link generation
+
+#### ProvenanceTimeline
+
+**File**: `ProvenanceTimeline.tsx`
+
+**Purpose**: Visual timeline of coin ownership history.
+
+```typescript
+interface ProvenanceTimelineProps {
+  provenance: ProvenanceEntry[] | null
+  categoryType?: string
+  onAddProvenance?: () => void
+}
+```
+
+**Key Features**:
+- Chronological display with visual timeline
+- Gap detection (>10 years between entries)
+- Supports approximate dates (decades: "1920s")
+- Price and currency formatting
+- "Add provenance" button
+
+#### HistoricalContextCard
+
+**File**: `HistoricalContextCard.tsx`
+
+**Purpose**: LLM-generated historical context display.
+
+```typescript
+interface HistoricalContextCardProps {
+  context?: string | null
+  generatedAt?: string | null
+  coinMetadata: {
+    coinId: number
+    issuer?: string | null
+    denomination?: string | null
+    yearStart?: number | null
+    yearEnd?: number | null
+    category?: string | null
+  }
+  onGenerateContext?: () => Promise<void>
+  isGenerating?: boolean
+  categoryType?: string
+}
+```
+
+**Key Features**:
+- Collapsible card with AI-generated content
+- Generate button for empty context
+- Shows generation timestamp
+- Regenerate option
+- Purple sparkle icon for AI indicator
+
+#### EnrichmentToolbar
+
+**File**: `EnrichmentToolbar.tsx`
+
+**Purpose**: Compact toolbar for batch AI enrichment actions.
+
+```typescript
+interface EnrichmentToolbarProps {
+  actions: EnrichmentAction[]
+  isEnriching?: boolean
+  categoryType?: string
+  defaultExpanded?: boolean
+}
+```
+
+**Key Features**:
+- Quick access to all LLM capabilities
+- Progress indicator (X/Y complete)
+- Green checkmarks for completed enrichments
+- Collapsible for space saving
+
+**Helper Hook**:
+```typescript
+import { useCoinEnrichmentActions } from './CoinDetail'
+
+const actions = useCoinEnrichmentActions({
+  onExpandObverse: () => handleExpandLegend('obverse'),
+  onExpandReverse: () => handleExpandLegend('reverse'),
+  onGenerateContext: handleGenerateContext,
+  hasObverseLegendExpanded: !!coin.obverse_legend_expanded,
+  // ... other options
+})
+```
+
+#### DieStudyCard
+
+**File**: `DieStudyCard.tsx`
+
+**Purpose**: Simplified die study information display.
+
+```typescript
+interface DieStudyCardProps {
+  dieAxis?: number | null
+  dieMatch?: {
+    obverseDie?: string | null
+    reverseDie?: string | null
+    isKnownCombination?: boolean
+    matchingCoins?: number
+  } | null
+  controlMarks?: string[] | null
+  dieStats?: {
+    knownObverseDies?: number
+    knownReverseDies?: number
+    estimatedMintage?: string
+  } | null
+  categoryType?: string
+  defaultExpanded?: boolean
+}
+```
+
+**Key Features**:
+- Collapsible card (default collapsed)
+- Die axis with large clock visualization
+- Die axis description (medallic vs coin alignment)
+- Control marks display
+- Die statistics grid
+- Only renders when there's data
+
+#### IconographySection
+
+**File**: `IconographySection.tsx`
+
+**Purpose**: Display iconographic elements from coin designs.
+
+```typescript
+interface IconographySectionProps {
+  obverseIconography?: string[] | null
+  reverseIconography?: string[] | null
+  categoryType?: string
+}
+```
+
+**Key Features**:
+- Split view for obverse/reverse iconography
+- Auto-matching icons (crown, sword, eagle, etc.)
+- `IconographyInline` component for compact display
+- Only renders when there's data
+
+**Available Icons**:
+- Crown/Diadem - royalty
+- Swords/Spear - military
+- Shield - armor
+- Temple/Column - architecture
+- Eagle/Bird - animals
+- Branch/Olive - nature
+- Star - celestial
+- Flame/Torch - religious
+
+### 2.6 DieAxisClock
+
+**Location**: `frontend/src/components/coins/DieAxisClock.tsx`
+
+**Purpose**: SVG clock visualization for coin die axis.
+
+```typescript
+interface DieAxisClockProps {
+  axis: number | null  // 0-12 clock hours
+  size?: 'sm' | 'md' | 'lg'  // 32px, 48px, 64px
+  interactive?: boolean
+  onChange?: (axis: number) => void
+}
+```
+
+**Key Features**:
+- Hour markers at 12, 3, 6, 9 (12h and 6h highlighted)
+- Arrow pointing to die axis position
+- "?" display when axis is null
+- Interactive mode for editing
+- Uses `var(--cat-imperial)` for arrow color
+
+**Usage**:
+```typescript
+import { DieAxisClock } from '@/components/coins/DieAxisClock'
+
+// Display mode
+<DieAxisClock axis={6} size="sm" />
+
+// Edit mode
+<DieAxisClock
+  axis={dieAxis}
+  size="md"
+  interactive
+  onChange={(newAxis) => setDieAxis(newAxis)}
+/>
+```
+
+### 2.7 CoinNavigation
+
+**Location**: `frontend/src/components/coins/CoinNavigation.tsx`
+
+**Purpose**: Left/right navigation between coin detail pages.
+
+```typescript
+interface CoinNavigationProps {
+  currentCoinId: number
+  className?: string
+}
+```
+
+**Key Features**:
+- Arrow buttons to navigate prev/next coin
+- Keyboard shortcuts (left/right arrow keys)
+- Position indicator (e.g., "5 / 30")
+- Uses collection order from `useCoins()` hook
+
+**Usage**:
+```typescript
+import { CoinNavigation } from '@/components/coins/CoinNavigation'
+
+// In page header
+<CoinNavigation currentCoinId={coinId} />
+```
 
 ---
 
@@ -602,7 +919,47 @@ export function useDeleteCoin() {
 }
 ```
 
-### 6.2 useCollectionStats
+### 6.2 useLLM Hooks
+
+**Location**: `frontend/src/hooks/useLLM.ts`
+
+**Purpose**: React hooks for LLM-powered numismatic operations.
+
+```typescript
+import { 
+  useExpandLegendV2, 
+  useObserveCondition, 
+  useGenerateHistoricalContext,
+  useNormalizeVocab,
+  useParseAuction 
+} from '@/hooks/useLLM'
+
+// Legend expansion
+const expandLegend = useExpandLegendV2()
+expandLegend.mutate({ abbreviation: "IMP CAES AVG" })
+// Returns: { expanded, confidence, cost_usd, model_used, cached }
+
+// Condition observations (NOT grades)
+const observeCondition = useObserveCondition()
+observeCondition.mutate({ image_b64: base64Image })
+// Returns: { wear_observations, surface_notes, strike_quality, concerns }
+
+// Vocabulary normalization
+const normalizeVocab = useNormalizeVocab()
+normalizeVocab.mutate({ 
+  raw_text: "Aug.", 
+  vocab_type: "issuer" 
+})
+// Returns: { canonical_name, confidence, reasoning }
+```
+
+**Backend Endpoints**:
+- `POST /api/v2/llm/legend/expand` - Expand Latin abbreviations
+- `POST /api/v2/llm/condition/observe` - Describe wear (not grade)
+- `POST /api/v2/llm/vocab/normalize` - Normalize vocabulary
+- `POST /api/v2/llm/auction/parse` - Parse auction descriptions
+
+### 6.3 useCollectionStats
 
 **Purpose**: Fetch collection statistics for dashboard.
 
@@ -762,7 +1119,37 @@ function formatPrice(price: number | null, currency = 'USD'): string {
 }
 ```
 
-### 8.4 Grade Color Helper
+### 8.4 Reference Links Utility
+
+**Location**: `frontend/src/lib/referenceLinks.ts`
+
+**Purpose**: Build validated external links for numismatic references.
+
+```typescript
+import { buildExternalLinks, formatReference } from '@/lib/referenceLinks'
+
+// Build links for references
+const links = buildExternalLinks([
+  { catalog: 'RIC', number: '118', volume: 'II' },
+  { catalog: 'RSC', number: '240' }
+])
+
+// Returns:
+// - OCRE (validated for RIC)
+// - ACSearch, Wildwinds, CoinArchives (general search)
+```
+
+**Validated Links**:
+- `OCRE` - Only for RIC references
+- `CRRO` - Only for Crawford/RRC references
+- `RPC Online` - Only for RPC references
+
+**General Search Links** (always included):
+- ACSearch
+- Wildwinds
+- CoinArchives
+
+### 8.5 Grade Color Helper
 
 ```typescript
 function getGradeColor(grade: string): string {
@@ -882,6 +1269,38 @@ Before submitting frontend changes:
 
 ---
 
+## 11. Planned Features (Not Yet Implemented)
+
+The following features are specified but not yet implemented. See [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) for full details.
+
+### High Priority (Phase 1)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Keyboard Shortcuts | 🔴 Missing | N, U, /, G C, J/K/H/L navigation |
+| Bulk Selection Store | 🔴 Missing | selectionStore.ts needed |
+| Bulk Actions Bar | 🔴 Missing | Enrich, Export, Delete selected |
+| Enhanced Command Palette | 🟡 Basic | Needs coin search, shortcuts |
+
+### Medium Priority (Phase 2)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Preferences | 🟡 Partial | Missing showLegends, enableFlip |
+| Saved Filters | 🔴 Missing | Save filter presets |
+| Recent Items | 🔴 Missing | Recent searches, coins |
+| Grid Navigation | 🔴 Missing | Vim-style J/K/H/L |
+
+### Accessibility (Phase 4)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| ARIA on Cards | 🟡 Partial | Need role, aria-label, aria-pressed |
+| Focus Management | 🟡 Partial | Need visible focus rings |
+| Reduced Motion | 🔴 Missing | prefers-reduced-motion support |
+
+---
+
 **Previous**: [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) - Design tokens
-**Next**: [06-FILE-LOCATIONS.md](06-FILE-LOCATIONS.md) - File reference
+**Next**: [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) - UI/UX implementation roadmap
 **Related**: [04-FRONTEND-MODULES.md](04-FRONTEND-MODULES.md) - Architecture overview

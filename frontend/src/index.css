@@ -17,6 +17,7 @@
     --bg-elevated: #0B1020;      /* Cards one level up */
     --bg-card: #0F1526;          /* Individual cards */
     --bg-hover: #1A1F35;         /* Hover state */
+    --bg-subtle: #14192a;        /* Between bg-elevated and bg-hover */
 
     /* Legacy aliases for compatibility */
     --bg-base: #050814;
@@ -361,6 +362,40 @@
     --unknown-subtle: rgba(110, 110, 115, 0.12);
     --unknown-border: rgba(110, 110, 115, 0.25);
     --unknown-text: #8e8e93;
+    
+    /* ═══════════════════════════════════════════════════════════════
+       AI/LLM ACCENT — Purple for AI-generated content
+       ═══════════════════════════════════════════════════════════════ */
+    
+    --accent-ai: #a855f7;              /* Purple for AI features */
+    --accent-ai-subtle: rgba(168, 85, 247, 0.15);
+    --accent-ai-border: rgba(168, 85, 247, 0.40);
+    
+    /* ═══════════════════════════════════════════════════════════════
+       LINKS — Interactive text links
+       ═══════════════════════════════════════════════════════════════ */
+    
+    --text-link: #60a5fa;              /* Link color */
+    --text-link-hover: #93c5fd;        /* Link hover */
+    
+    /* ═══════════════════════════════════════════════════════════════
+       STATE COLORS — Success, Warning, Error
+       ═══════════════════════════════════════════════════════════════ */
+    
+    /* Success */
+    --bg-success: rgba(34, 197, 94, 0.12);
+    --text-success: #22c55e;
+    --border-success: rgba(34, 197, 94, 0.40);
+    
+    /* Warning */
+    --bg-warning: rgba(234, 179, 8, 0.12);
+    --text-warning: #eab308;
+    --border-warning: rgba(234, 179, 8, 0.40);
+    
+    /* Error */
+    --bg-error: rgba(239, 68, 68, 0.12);
+    --text-error: #ef4444;
+    --border-error: rgba(239, 68, 68, 0.40);
   }
   
   /* Light theme - minimal adjustments for mostly dark-first app */

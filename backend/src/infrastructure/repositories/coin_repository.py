@@ -1,3 +1,4 @@
+import json
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import and_
@@ -7,7 +8,7 @@ from src.domain.coin import (
     Design, CatalogReference, ProvenanceEntry
 )
 from src.domain.repositories import ICoinRepository
-from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel
+from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel
 
 class SqlAlchemyCoinRepository(ICoinRepository):
     def __init__(self, session: Session):
@@ -27,9 +28,18 @@ class SqlAlchemyCoinRepository(ICoinRepository):
                 is_primary=img.is_primary
             ))
         orm_coin.images = orm_images
+        
+        # Handle References (separate from _to_model because they're complex relationships)
+        # TODO: Implement proper reference handling with reference_types table
+        # For now, skip references as they require complex lookup/creation in reference_types table
+        # References will be stored as JSON in llm_suggested_references field temporarily
+        if coin.references:
+            import json
+            orm_coin.llm_suggested_references = json.dumps([ref.raw_text for ref in coin.references])
 
         # Merge handles both insert (if id is None) and update
         merged_coin = self.session.merge(orm_coin)
+        
         self.session.flush()  # Get ID
         
         # Map ORM -> Domain (return updated entity with ID)
@@ -38,7 +48,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
     def get_by_id(self, coin_id: int) -> Optional[Coin]:
         orm_coin = self.session.query(CoinModel).options(
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
-            selectinload(CoinModel.provenance_events)  # Eager load provenance
+            selectinload(CoinModel.provenance_events),  # Eager load provenance
+            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type)  # Eager load references with their types
         ).filter(CoinModel.id == coin_id).first()
         if not orm_coin:
             return None
@@ -54,7 +65,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
     ) -> List[Coin]:
         query = self.session.query(CoinModel).options(
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
-            selectinload(CoinModel.provenance_events)  # Eager load provenance
+            selectinload(CoinModel.provenance_events),  # Eager load provenance
+            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type)  # Eager load references
         )
         
         # Apply filters
@@ -63,30 +75,48 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         # Apply sorting
         if sort_by:
             sort_column = None
-            if sort_by == "created":
+            if sort_by == "id":
+                sort_column = CoinModel.id
+            elif sort_by == "created":
                 sort_column = CoinModel.id # Proxy for creation time
             elif sort_by == "year":
                 sort_column = CoinModel.year_start
             elif sort_by == "price":
                 sort_column = CoinModel.acquisition_price
+            elif sort_by == "acquired":
+                sort_column = CoinModel.acquisition_date
             elif sort_by == "grade":
                 sort_column = CoinModel.grade
             elif sort_by == "name":
                 sort_column = CoinModel.issuer
             elif sort_by == "weight":
                 sort_column = CoinModel.weight_g
+            elif sort_by == "category":
+                sort_column = CoinModel.category
+            elif sort_by == "denomination":
+                sort_column = CoinModel.denomination
+            elif sort_by == "metal":
+                sort_column = CoinModel.metal
+            elif sort_by == "rarity":
+                sort_column = CoinModel.rarity
+            elif sort_by == "value":
+                # Sort by market_value (NULLs will be handled by nulls_last)
+                sort_column = CoinModel.market_value
                 
             if sort_column is not None:
+                from sqlalchemy import nulls_last
                 if sort_dir == "desc":
-                    from sqlalchemy import nulls_last
                     query = query.order_by(nulls_last(sort_column.desc()))
                 else:
-                    from sqlalchemy import nulls_last
                     query = query.order_by(nulls_last(sort_column.asc()))
-        
-        # Default sort if not specified or fallback
-        if not sort_by:
-             query = query.order_by(CoinModel.id.desc())
+            else:
+                # Unknown sort_by value - log warning and use default
+                import logging
+                logging.warning(f"Unknown sort_by value: {sort_by}, using default sort")
+                query = query.order_by(CoinModel.id.desc())
+        else:
+            # Default sort if not specified
+            query = query.order_by(CoinModel.id.desc())
 
         orm_coins = query.offset(skip).limit(limit).all()
         return [self._to_domain(c) for c in orm_coins]
@@ -255,15 +285,50 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             denomination=model.denomination,
             portrait_subject=model.portrait_subject,
             design=design,
-            # Note: references require separate handling
-            references=[],
+            # Map references from coin_references -> reference_types
+            references=[
+                self._reference_to_domain(ref) for ref in model.references
+                if ref.reference_type is not None
+            ],
             # Map provenance events from ORM to domain value objects
             provenance=[
                 self._provenance_to_domain(p) for p in model.provenance_events
             ] if model.provenance_events else [],
             # Collection management fields
             storage_location=model.storage_location,
-            personal_notes=model.personal_notes
+            personal_notes=model.personal_notes,
+            # LLM enrichment fields
+            historical_significance=model.historical_significance,
+            llm_enriched_at=model.llm_enriched_at.isoformat() if model.llm_enriched_at else None,
+            llm_analysis_sections=model.llm_analysis_sections,
+            llm_suggested_references=json.loads(model.llm_suggested_references) if model.llm_suggested_references else None,
+            llm_suggested_rarity=json.loads(model.llm_suggested_rarity) if model.llm_suggested_rarity else None
+        )
+    
+    def _reference_to_domain(self, model: CoinReferenceModel) -> CatalogReference:
+        """Map CoinReferenceModel + ReferenceTypeModel to domain CatalogReference."""
+        ref_type = model.reference_type
+        if not ref_type:
+            # Should not happen if filtered properly, but safety check
+            return CatalogReference(
+                catalog="unknown",
+                number="",
+                volume=None,
+                suffix=None,
+                raw_text=""
+            )
+        
+        # Build raw text from local_ref or construct from parts
+        raw_text = ref_type.local_ref or f"{ref_type.system.upper()} {ref_type.volume or ''} {ref_type.number or ''}".strip()
+        
+        return CatalogReference(
+            catalog=ref_type.system.upper(),
+            number=ref_type.number or "",
+            volume=ref_type.volume,
+            suffix=None,  # Not stored in V1 schema
+            raw_text=raw_text,
+            is_primary=model.is_primary or False,
+            notes=model.notes
         )
     
     def _provenance_to_domain(self, model: ProvenanceEventModel) -> ProvenanceEntry:
@@ -333,5 +398,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             exergue=coin.design.exergue if coin.design else None,
             # Collection management fields
             storage_location=coin.storage_location,
-            personal_notes=coin.personal_notes
+            personal_notes=coin.personal_notes,
+            # LLM enrichment fields
+            historical_significance=coin.historical_significance
         )

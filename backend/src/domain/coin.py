@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import date
 from decimal import Decimal
 from enum import Enum
@@ -118,6 +118,8 @@ class CatalogReference:
     volume: Optional[str] = None   # "II", "V.1", etc.
     suffix: Optional[str] = None   # Additional qualifiers
     raw_text: str = ""        # Original text as found
+    is_primary: bool = False  # Primary reference for this coin
+    notes: Optional[str] = None  # Additional notes about this reference
 
 @dataclass(frozen=True)
 class ProvenanceEntry:
@@ -158,6 +160,12 @@ class Coin:
     # Collection management
     storage_location: Optional[str] = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
     personal_notes: Optional[str] = None            # Owner notes, observations, research
+    # LLM enrichment
+    historical_significance: Optional[str] = None   # LLM-generated historical context
+    llm_enriched_at: Optional[str] = None           # Timestamp of last LLM enrichment
+    llm_analysis_sections: Optional[str] = None     # JSON-encoded analysis sections
+    llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
+    llm_suggested_rarity: Optional[Dict[str, Any]] = None # Rarity info from LLM for audit
     
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None

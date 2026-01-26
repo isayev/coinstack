@@ -29,6 +29,8 @@ class Coin:
     category: str          # republic, imperial, provincial, byzantine, greek, other
     denomination: str      # Denarius, Aureus, Antoninianus, Solidus, etc.
     metal: str            # gold, silver, bronze, billon, electrum, orichalcum
+    series: Optional[str]             # Collection series
+    sub_category: Optional[str]       # More specific categorization
 
     # Attribution (WHO issued the coin)
     issuing_authority: Optional[str]   # "Augustus", "Trajan", "Rome"
@@ -37,24 +39,34 @@ class Coin:
     status: Optional[str]              # "Augustus", "Caesar", "Usurper"
 
     # Chronology (WHEN minted)
-    reign_start: Optional[int]         # Year (negative for BC)
-    reign_end: Optional[int]
-    mint_year_start: Optional[int]
-    mint_year_end: Optional[int]
+    reign_start: Optional[int]         # Ruler reign start year (negative for BC)
+    reign_end: Optional[int]           # Ruler reign end year
+    mint_year_start: Optional[int]     # Coin mint year (start of range)
+    mint_year_end: Optional[int]       # Coin mint year (end of range)
+    dating_certainty: Optional[str]    # BROAD, NARROW, EXACT
+    is_circa: Optional[bool]           # Whether dating is approximate
 
     # Geography (WHERE minted)
     mint: Optional[str]               # "Rome", "Antioch", "Alexandria"
+    officina: Optional[str]           # Mint workshop identifier
+
+    # Script/Language
+    script: Optional[str]             # "Latin", "Greek", "Greek?"
 
     # Physical Characteristics
     weight_g: Optional[Decimal]       # Weight in grams
     diameter_mm: Optional[Decimal]    # Diameter in millimeters
+    thickness_mm: Optional[Decimal]   # Thickness in millimeters
     die_axis: Optional[int]           # 0-12 (clock positions)
+    orientation: Optional[str]        # OBVERSE_UP, REVERSE_UP
 
     # Design & Iconography
     obverse_legend: Optional[str]     # Text on front
     obverse_description: Optional[str]
+    obverse_symbols: Optional[str]    # Symbolic elements on obverse
     reverse_legend: Optional[str]     # Text on back
     reverse_description: Optional[str]
+    reverse_symbols: Optional[str]    # Symbolic elements on reverse
     exergue: Optional[str]            # Text below main design
 
     # Grading & Certification
@@ -66,7 +78,10 @@ class Coin:
     acquisition_date: Optional[date]
     acquisition_price: Optional[Decimal]
     acquisition_source: Optional[str]
-    acquisition_url: Optional[str]
+    acquisition_url: Optional[str]    # Web link to original purchase
+
+    # Provenance & History
+    provenance_notes: Optional[str]   # Auction/collection ownership history
 
     # Storage & Organization
     holder_type: Optional[str]        # "slab", "flip", "album"
@@ -74,8 +89,19 @@ class Coin:
 
     # Research & Notes
     rarity: Optional[str]             # common, scarce, rare, very_rare, extremely_rare, unique
+    rarity_notes: Optional[str]       # Additional rarity context
     historical_significance: Optional[str]
     personal_notes: Optional[str]
+
+    # Condition Details
+    surface_issues: Optional[str]     # JSON array: ["scratches", "corrosion"]
+    style_notes: Optional[str]        # Style observations
+    toning_description: Optional[str] # Patina/toning description
+    eye_appeal: Optional[str]         # Overall visual appeal
+
+    # Timestamps
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
 
     # Related Entities (Collections)
     images: List['CoinImage'] = field(default_factory=list)
@@ -92,11 +118,15 @@ class Coin:
 **Business Rules** (Invariants):
 - `category` must be one of valid enum values
 - `metal` must be one of valid enum values
+- `script` must be Latin, Greek, or Greek? (if present)
 - `weight_g` if present must be > 0
 - `diameter_mm` if present must be > 0
+- `thickness_mm` if present must be > 0
 - `die_axis` if present must be 0-12
 - `reign_start <= reign_end` (if both present)
 - `mint_year_start <= mint_year_end` (if both present)
+- `dating_certainty` must be BROAD, NARROW, or EXACT (if present)
+- `rarity` must be common, scarce, rare, very_rare, extremely_rare, or unique (if present)
 - BC years are negative integers
 
 **Methods**:
@@ -265,6 +295,7 @@ Value Objects are **immutable** objects defined by their attributes (no identity
 class Dimensions:
     weight_g: Optional[Decimal]
     diameter_mm: Optional[Decimal]
+    thickness_mm: Optional[Decimal]
     die_axis: Optional[int]
 
     def __post_init__(self):
@@ -273,17 +304,24 @@ class Dimensions:
             raise ValueError("Weight must be positive")
         if self.diameter_mm and self.diameter_mm <= 0:
             raise ValueError("Diameter must be positive")
+        if self.thickness_mm and self.thickness_mm <= 0:
+            raise ValueError("Thickness must be positive")
         if self.die_axis and not (0 <= self.die_axis <= 12):
             raise ValueError("Die axis must be 0-12")
 
     def is_complete(self) -> bool:
-        """Check if all dimensions are present."""
+        """Check if all core dimensions are present."""
         return all([self.weight_g, self.diameter_mm, self.die_axis])
 ```
 
 **Usage**:
 ```python
-dims = Dimensions(weight_g=Decimal("3.45"), diameter_mm=Decimal("19.2"), die_axis=6)
+dims = Dimensions(
+    weight_g=Decimal("3.45"), 
+    diameter_mm=Decimal("19.2"), 
+    thickness_mm=Decimal("2.1"),
+    die_axis=6
+)
 coin.dimensions = dims
 ```
 

@@ -725,6 +725,34 @@ class LLMService(ILLMService):
             logger.warning("LiteLLM not installed. LLM operations will fail.")
     
     # -------------------------------------------------------------------------
+    # Helper methods
+    # -------------------------------------------------------------------------
+    
+    @staticmethod
+    def _strip_markdown_json(content: str) -> str:
+        """
+        Strip markdown code block formatting from JSON responses.
+        
+        Handles formats like:
+        - ```json\n{...}\n```
+        - ```\n{...}\n```
+        - Direct JSON
+        """
+        content = content.strip()
+        
+        # Remove ```json or ``` at start
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        
+        # Remove ``` at end
+        if content.endswith("```"):
+            content = content[:-3]
+        
+        return content.strip()
+    
+    # -------------------------------------------------------------------------
     # Core completion method
     # -------------------------------------------------------------------------
     
@@ -968,20 +996,25 @@ class LLMService(ILLMService):
                 context={"vocab_type": vocab_type, "raw_text": raw_text},
             )
             
-            # Parse JSON response
+            # Parse JSON response (strip markdown if present)
+            parsed_confidence = result.confidence
+            reasoning = result.reasoning
             try:
-                parsed = json.loads(result.content)
+                cleaned = self._strip_markdown_json(result.content)
+                parsed = json.loads(cleaned)
                 canonical = parsed.get("canonical_name", "")
+                reasoning = parsed.get("reasoning", result.reasoning)
+                parsed_confidence = parsed.get("confidence", result.confidence)
             except json.JSONDecodeError:
                 canonical = result.content.strip()
             
             return VocabNormalizationResult(
                 content=result.content,
-                confidence=result.confidence,
+                confidence=parsed_confidence,
                 cost_usd=result.cost_usd,
                 model_used=result.model_used,
                 cached=result.cached,
-                reasoning=result.reasoning,
+                reasoning=reasoning,
                 raw_input=raw_text,
                 canonical_name=canonical,
                 vocab_type=vocab_type,
@@ -1100,9 +1133,10 @@ class LLMService(ILLMService):
             context={"description": description[:100]},  # Truncate for cache key
         )
         
-        # Parse JSON response
+        # Parse JSON response (strip markdown if present)
         try:
-            parsed = json.loads(result.content)
+            cleaned = self._strip_markdown_json(result.content)
+            parsed = json.loads(cleaned)
         except json.JSONDecodeError as e:
             raise LLMParseError(
                 f"Failed to parse auction response: {e}",
@@ -1149,7 +1183,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError as e:
             raise LLMParseError(
                 f"Failed to parse provenance response: {e}",
@@ -1240,7 +1274,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {}
         
@@ -1288,7 +1322,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {}
         
@@ -1306,17 +1340,385 @@ class LLMService(ILLMService):
             notes=parsed.get("notes", ""),
         )
     
+    # Section keys for parsing context response
+    CONTEXT_SECTIONS = [
+        "EPIGRAPHY_AND_TITLES",
+        "ICONOGRAPHY_AND_SYMBOLISM", 
+        "ARTISTIC_STYLE",
+        "PROPAGANDA_AND_MESSAGING",
+        "ECONOMIC_CONTEXT",
+        "DIE_STUDIES_AND_VARIETIES",
+        "ARCHAEOLOGICAL_CONTEXT",
+        "TYPOLOGICAL_RELATIONSHIPS",
+        "MILITARY_HISTORY",
+        "HISTORICAL_CONTEXT",
+        "NUMISMATIC_SIGNIFICANCE",
+    ]
+    
+    # Known catalog reference patterns
+    CATALOG_PATTERNS = [
+        # RIC - Roman Imperial Coinage (most common)
+        # Handles: RIC II 123, RIC IV.1 289c, RIC IVi 289c, RIC IV 289
+        r'\bRIC\s+[IVX]+(?:\.\d+|i)?\s*,?\s*\d+[a-z]?\b',
+        # RSC - Roman Silver Coins (Seaby)
+        r'\bRSC\s+\d+[a-z]?\b',                                                # RSC 382
+        # RRC - Roman Republican Coinage (Crawford)
+        r'\bRRC\s+\d+(?:/\d+)?[a-z]?\b',                                       # RRC 494/23a
+        r'\bCrawford\s+\d+(?:/\d+)?[a-z]?\b',                                  # Crawford 494/23
+        # Sear (Roman Coins and Their Values)
+        r'\bSear\s+\d+\b',                                                     # Sear 6846
+        r'\bSear\s+RCV\s+\d+\b',                                               # Sear RCV 6846
+        # Cohen (French catalog)
+        r'\bCohen\s+\d+\b',                                                    # Cohen 382
+        # BMC/BMCRE - British Museum Catalogue
+        r'\bBMC(?:RE)?\s+(?:[IVXLC]+|\d+)?\s*,?\s*\d+\b',                     # BMC III 234, BMCRE 842
+        # RPC - Roman Provincial Coinage (with comma/space variants)
+        r'\bRPC\s+[IVXLC]+\s*,?\s*\d+\??\b',                                  # RPC III, 3129 or RPC III 3129?
+        # SNG - Sylloge Nummorum Graecorum
+        r'\bSNG\s+\w+\s+\d+\b',                                                # SNG Copenhagen 123
+        # Calico (Spanish gold)
+        r'\bCalic[oó]\s+\d+[a-z]?\b',                                         # Calico 123
+        # Woytek (Trajanic coinage)
+        r'\bWoytek\s+\d+[a-z]?\b',                                            # Woytek 123
+        # Hill (Byzantine)
+        r'\bHill\s+\d+\b',                                                     # Hill 123
+        # DOC - Dumbarton Oaks Catalogue
+        r'\bDOC\s+[IVXLC]+\s*,?\s*\d+\b',                                     # DOC I 123
+        # MIB - Moneta Imperii Byzantini
+        r'\bMIB\s+[IVXLC]+\s+\d+\b',                                          # MIB I 123
+    ]
+    
+    def _parse_citations(self, content: str) -> List[str]:
+        """
+        Extract catalog citations from LLM response.
+        
+        Looks for standard numismatic reference patterns like:
+        - RIC IVi 289c
+        - RSC 382
+        - Cohen 382
+        - Sear 6846
+        - Crawford 494/23
+        - BMC III 234
+        
+        Returns deduplicated list of found citations.
+        """
+        citations = set()
+        
+        for pattern in self.CATALOG_PATTERNS:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            for match in matches:
+                # Normalize whitespace and clean up
+                cleaned = " ".join(match.split())
+                citations.add(cleaned)
+        
+        # Sort for consistent output
+        return sorted(citations, key=lambda x: (x.split()[0], x))
+    
+    def _normalize_reference(self, ref: str) -> str:
+        """Normalize a reference string for comparison."""
+        # Lowercase, remove extra spaces, normalize Roman numerals
+        normalized = " ".join(ref.upper().split())
+        # Remove punctuation variations
+        normalized = normalized.replace(".", " ").replace(",", " ").replace("-", " ")
+        normalized = " ".join(normalized.split())
+        return normalized
+    
+    def _compare_references(
+        self, 
+        llm_refs: List[str], 
+        existing_refs: List[str]
+    ) -> Tuple[List[str], List[str]]:
+        """
+        Compare LLM-found references with existing database references.
+        
+        Returns:
+            Tuple of (new_suggestions, matched_existing)
+        """
+        # Normalize existing refs for comparison
+        existing_normalized = {
+            self._normalize_reference(r): r for r in existing_refs
+        }
+        
+        new_suggestions = []
+        matched = []
+        
+        for llm_ref in llm_refs:
+            llm_norm = self._normalize_reference(llm_ref)
+            
+            # Check if any existing ref matches
+            found_match = False
+            for exist_norm, exist_orig in existing_normalized.items():
+                # Fuzzy match: check if core components match
+                # e.g., "RIC IVI 289C" should match "RIC IV.1 289c"
+                llm_parts = llm_norm.split()
+                exist_parts = exist_norm.split()
+                
+                if len(llm_parts) >= 2 and len(exist_parts) >= 2:
+                    # Compare catalog system
+                    if llm_parts[0] == exist_parts[0]:
+                        # Compare number (last element usually)
+                        llm_num = llm_parts[-1].rstrip("ABCDEFGHIJ")
+                        exist_num = exist_parts[-1].rstrip("ABCDEFGHIJ")
+                        if llm_num == exist_num:
+                            found_match = True
+                            matched.append(exist_orig)
+                            break
+            
+            if not found_match:
+                new_suggestions.append(llm_ref)
+        
+        return new_suggestions, matched
+    
+    def _parse_rarity(self, content: str) -> Dict[str, Any]:
+        """
+        Extract rarity information from structured LLM response.
+        
+        Expects format in RARITY_ASSESSMENT section:
+        ```
+        RARITY_CODE: C
+        RARITY_DESCRIPTION: Common
+        SOURCE: RIC IV.1 rates as C
+        SPECIMENS_KNOWN: Unknown
+        ```
+        
+        Returns dict with parsed rarity data.
+        """
+        result = {
+            "rarity_code": None,
+            "rarity_description": None,
+            "specimens_known": None,
+            "source": None,
+            "raw_section": None,
+        }
+        
+        # Look for RARITY_ASSESSMENT section
+        rarity_section_match = re.search(
+            r'##\s*RARITY_ASSESSMENT\s*\n(.*?)(?=\n##|\[END|$)',
+            content,
+            re.IGNORECASE | re.DOTALL
+        )
+        
+        if not rarity_section_match:
+            # Fallback: try to find structured fields anywhere
+            pass
+        else:
+            section_text = rarity_section_match.group(1)
+            result["raw_section"] = section_text.strip()
+        
+        # Strip markdown code block markers if present
+        clean_content = re.sub(r'```\w*\n?', '', content)
+        
+        # Parse structured fields (can be anywhere in content)
+        # RARITY_CODE: [value]
+        code_match = re.search(
+            r'RARITY_CODE:\s*(C|S|R[1-5]|RR|RRR|UNIQUE|UNKNOWN)\b',
+            clean_content,
+            re.IGNORECASE
+        )
+        if code_match:
+            code = code_match.group(1).upper()
+            if code != "UNKNOWN":
+                result["rarity_code"] = code
+        
+        # RARITY_DESCRIPTION: [value]
+        desc_match = re.search(
+            r'RARITY_DESCRIPTION:\s*([^\n]+)',
+            clean_content,
+            re.IGNORECASE
+        )
+        if desc_match:
+            desc = desc_match.group(1).strip()
+            if desc.lower() != "unknown":
+                result["rarity_description"] = desc
+        
+        # SOURCE: [value]
+        source_match = re.search(
+            r'SOURCE:\s*([^\n]+)',
+            clean_content,
+            re.IGNORECASE
+        )
+        if source_match:
+            source = source_match.group(1).strip()
+            if source.lower() not in ("unknown", "none", "n/a"):
+                result["source"] = source
+        
+        # SPECIMENS_KNOWN: [value]
+        specimens_match = re.search(
+            r'SPECIMENS_KNOWN:\s*(\d+|[^\n]+)',
+            clean_content,
+            re.IGNORECASE
+        )
+        if specimens_match:
+            specimens_str = specimens_match.group(1).strip()
+            try:
+                # Try to parse as number
+                result["specimens_known"] = int(specimens_str.replace(',', '').split()[0])
+            except (ValueError, IndexError):
+                # Not a number, ignore
+                pass
+        
+        # If no code but we have description, try to infer code
+        if not result["rarity_code"] and result["rarity_description"]:
+            desc_lower = result["rarity_description"].lower()
+            code_map = {
+                'common': 'C',
+                'scarce': 'S',
+                'rare': 'R1',
+                'very rare': 'R3',
+                'extremely rare': 'R4',
+                'unique': 'R5',
+            }
+            for key, code in code_map.items():
+                if key in desc_lower:
+                    result["rarity_code"] = code
+                    break
+        
+        return result
+    
+    def _parse_context_sections(self, content: str) -> Dict[str, str]:
+        """
+        Parse LLM response into named sections.
+        
+        Looks for ## SECTION_NAME headers and extracts content until next header.
+        Returns dict mapping section keys to content.
+        """
+        sections = {}
+        current_section = None
+        current_content = []
+        
+        for line in content.split("\n"):
+            # Check for section header (## SECTION_NAME)
+            if line.startswith("## "):
+                # Save previous section
+                if current_section and current_content:
+                    sections[current_section] = "\n".join(current_content).strip()
+                
+                # Extract section name
+                header = line[3:].strip()
+                # Normalize header to match our keys
+                normalized = header.upper().replace(" ", "_").replace("&", "AND")
+                if normalized in self.CONTEXT_SECTIONS:
+                    current_section = normalized
+                    current_content = []
+                else:
+                    current_section = None
+            elif current_section:
+                current_content.append(line)
+        
+        # Save last section
+        if current_section and current_content:
+            sections[current_section] = "\n".join(current_content).strip()
+        
+        return sections
+    
     async def generate_context(
         self,
         coin_data: dict,
-    ) -> LLMResult:
-        """Generate historical context narrative."""
-        prompt = f"Generate historical context for this coin:\n\n{json.dumps(coin_data, indent=2)}"
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive multi-section numismatic analysis.
         
-        return await self.complete(
+        Returns dict with:
+            - sections: Dict mapping section names to content
+            - raw_content: Full LLM response
+            - confidence: Confidence score
+            - cost_usd: API cost
+            - model_used: Model that generated response
+        """
+        # Build structured prompt with clear sections
+        prompt_parts = []
+        
+        # Identification header
+        prompt_parts.append("=== COIN IDENTIFICATION ===")
+        
+        # Core identification
+        if coin_data.get("issuer"):
+            date_str = ""
+            if coin_data.get("year_start"):
+                y1 = coin_data["year_start"]
+                y2 = coin_data.get("year_end", y1)
+                if y1 < 0:
+                    date_str = f" ({abs(y1)}-{abs(y2)} BC)" if y1 != y2 else f" ({abs(y1)} BC)"
+                else:
+                    date_str = f" (AD {y1}-{y2})" if y1 != y2 else f" (AD {y1})"
+            prompt_parts.append(f"Issuer: {coin_data['issuer']}{date_str}")
+        
+        if coin_data.get("denomination"):
+            denom = coin_data["denomination"]
+            metal = coin_data.get("metal", "").upper()
+            prompt_parts.append(f"Denomination: {metal} {denom}" if metal else f"Denomination: {denom}")
+        
+        if coin_data.get("mint"):
+            prompt_parts.append(f"Mint: {coin_data['mint']}")
+        
+        if coin_data.get("category"):
+            prompt_parts.append(f"Category: {coin_data['category']}")
+        
+        # References - clearly indicate what's known vs needed
+        refs = coin_data.get("references", [])
+        if isinstance(refs, list) and refs:
+            prompt_parts.append(f"KNOWN REFERENCES (already cataloged): {'; '.join(refs)}")
+            prompt_parts.append("NOTE: Verify and cite these references. If you find additional references (RIC, RSC, Cohen, Sear, BMC, Crawford, etc.), include them.")
+        else:
+            prompt_parts.append("KNOWN REFERENCES: None cataloged yet")
+            prompt_parts.append("IMPORTANT: Please identify and cite all applicable catalog references (RIC, RSC, Cohen, Sear, BMC, Crawford, RPC, etc.)")
+        
+        # Obverse
+        prompt_parts.append("\n=== OBVERSE ===")
+        if coin_data.get("obverse_legend"):
+            prompt_parts.append(f"Legend: {coin_data['obverse_legend']}")
+        if coin_data.get("obverse_description"):
+            prompt_parts.append(f"Description: {coin_data['obverse_description']}")
+        
+        # Reverse
+        prompt_parts.append("\n=== REVERSE ===")
+        if coin_data.get("reverse_legend"):
+            prompt_parts.append(f"Legend: {coin_data['reverse_legend']}")
+        if coin_data.get("reverse_description"):
+            prompt_parts.append(f"Description: {coin_data['reverse_description']}")
+        if coin_data.get("exergue"):
+            prompt_parts.append(f"Exergue: {coin_data['exergue']}")
+        
+        # Physical
+        prompt_parts.append("\n=== PHYSICAL ===")
+        if coin_data.get("weight_g"):
+            prompt_parts.append(f"Weight: {coin_data['weight_g']}g")
+        if coin_data.get("diameter_mm"):
+            prompt_parts.append(f"Diameter: {coin_data['diameter_mm']}mm")
+        if coin_data.get("die_axis") is not None:
+            prompt_parts.append(f"Die Axis: {coin_data['die_axis']}h")
+        if coin_data.get("grade"):
+            prompt_parts.append(f"Grade: {coin_data['grade']}")
+        
+        prompt = "\n".join(prompt_parts)
+        
+        result = await self.complete(
             capability=LLMCapability.CONTEXT_GENERATE,
             prompt=prompt,
         )
+        
+        # Parse sections from response
+        sections = self._parse_context_sections(result.content)
+        
+        # Extract catalog citations from LLM response
+        llm_citations = self._parse_citations(result.content)
+        
+        # Compare with existing references (if provided)
+        existing_refs = coin_data.get("references", [])
+        new_suggestions, matched_refs = self._compare_references(llm_citations, existing_refs)
+        
+        return {
+            "sections": sections,
+            "raw_content": result.content,
+            "confidence": result.confidence,
+            "cost_usd": result.cost_usd,
+            "model_used": result.model_used,
+            "cached": result.cached,
+            "llm_citations": llm_citations,          # All citations found by LLM
+            "suggested_references": new_suggestions,  # Citations NOT in existing DB refs
+            "matched_references": matched_refs,       # Citations that matched existing refs
+            "rarity_info": self._parse_rarity(result.content),  # Extracted rarity data
+        }
     
     # -------------------------------------------------------------------------
     # P2 Capabilities (Advanced)
@@ -1347,7 +1749,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {}
         
@@ -1429,7 +1831,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {}
         
@@ -1480,7 +1882,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {"raw_reference": reference}
         
@@ -1533,7 +1935,7 @@ class LLMService(ILLMService):
         
         # Parse JSON response
         try:
-            parsed = json.loads(result.content)
+            parsed = json.loads(self._strip_markdown_json(result.content))
         except json.JSONDecodeError:
             parsed = {}
         

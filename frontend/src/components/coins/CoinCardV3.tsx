@@ -49,6 +49,7 @@ interface CoinContentProps {
   performance: number | null;
   isMobile: boolean;
   compact?: boolean;
+  categoryType: string;
 }
 
 const CoinContent = memo(function CoinContent({
@@ -60,13 +61,21 @@ const CoinContent = memo(function CoinContent({
   performance,
   isMobile,
   compact = false,
+  categoryType,
 }: CoinContentProps) {
+  // Use isMobile for responsive adjustments within content
+  const fontSize = {
+    title: isMobile ? '16px' : compact ? '15px' : '17px',
+    subtitle: isMobile ? '13px' : compact ? '12px' : '13px',
+    legend: isMobile ? '11px' : compact ? '10px' : '11px',
+    price: isMobile ? '15px' : compact ? '14px' : '16px',
+  };
   return (
     <>
       {/* Ruler Name - Design spec: 17px */}
       <h3
         style={{
-          fontSize: compact ? '15px' : '17px',
+          fontSize: fontSize.title,
           fontWeight: 700,
           lineHeight: 1.2,
           color: 'var(--text-primary)',
@@ -82,7 +91,7 @@ const CoinContent = memo(function CoinContent({
       {/* Denomination, Mint, Date - Design spec: 13px */}
       <div
         style={{
-          fontSize: compact ? '12px' : '13px',
+          fontSize: fontSize.subtitle,
           lineHeight: 1.3,
           color: 'var(--text-secondary)',
           fontWeight: 500,
@@ -136,7 +145,7 @@ const CoinContent = memo(function CoinContent({
             </div>
             <span
               style={{
-                fontSize: compact ? '10px' : '11px',
+                fontSize: fontSize.legend,
                 lineHeight: 1.4,
                 color: 'var(--text-primary)',
                 fontFamily: coin.category.includes('greek')
@@ -183,7 +192,7 @@ const CoinContent = memo(function CoinContent({
             </div>
             <span
               style={{
-                fontSize: compact ? '10px' : '11px',
+                fontSize: fontSize.legend,
                 lineHeight: 1.4,
                 color: 'var(--text-primary)',
                 fontFamily: coin.category.includes('greek')
@@ -234,7 +243,7 @@ const CoinContent = memo(function CoinContent({
           {currentValue && (
             <div
               style={{
-                fontSize: compact ? '14px' : '16px',
+                fontSize: fontSize.price,
                 fontWeight: 700,
                 color: 'var(--text-primary)',
               }}
@@ -266,24 +275,28 @@ const CoinContent = memo(function CoinContent({
           )}
         </div>
 
-        {/* Right: Compact Badges - Certification, Grade, Metal */}
+        {/* Right: Unified Badge Row - Cert, Grade, Metal, Rarity, Category */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '3px',
+          gap: '4px',
           flexShrink: 0,
         }}>
           {/* Certification Service Badge */}
           {coin.grading.service && coin.grading.service !== 'none' && (
             <div
               style={{
-                fontSize: '8px',
-                fontWeight: 700,
-                padding: '2px 5px',
-                borderRadius: '2px',
+                fontSize: '9px',
+                fontWeight: 600,
+                padding: '2px 6px',
+                borderRadius: '3px',
+                height: '18px',
+                display: 'flex',
+                alignItems: 'center',
                 color: '#fff',
                 background: `var(--cert-${coin.grading.service.toLowerCase()})`,
                 textTransform: 'uppercase',
+                letterSpacing: '0.3px',
               }}
             >
               {coin.grading.service}
@@ -294,12 +307,16 @@ const CoinContent = memo(function CoinContent({
           {coin.grading.grade && (
             <div
               style={{
-                fontSize: '8px',
-                fontWeight: 700,
-                padding: '2px 5px',
-                borderRadius: '2px',
+                fontSize: '9px',
+                fontWeight: 600,
+                padding: '2px 6px',
+                borderRadius: '3px',
+                height: '18px',
+                display: 'flex',
+                alignItems: 'center',
                 border: `1px solid ${getGradeColor(coin.grading.grade)}`,
                 color: getGradeColor(coin.grading.grade),
+                letterSpacing: '0.3px',
               }}
             >
               {coin.grading.grade}
@@ -310,13 +327,17 @@ const CoinContent = memo(function CoinContent({
           {coin.metal && (
             <div
               style={{
-                fontSize: '8px',
-                fontWeight: 700,
-                padding: '2px 5px',
-                borderRadius: '2px',
+                fontSize: '9px',
+                fontWeight: 600,
+                padding: '2px 6px',
+                borderRadius: '3px',
+                height: '18px',
+                display: 'flex',
+                alignItems: 'center',
                 color: `var(--metal-${coin.metal.toLowerCase()})`,
                 background: `var(--metal-${coin.metal.toLowerCase()}-subtle)`,
                 textTransform: 'uppercase',
+                letterSpacing: '0.3px',
               }}
             >
               {coin.metal}
@@ -327,6 +348,25 @@ const CoinContent = memo(function CoinContent({
           {coin.rarity && (
             <RarityIndicator rarity={coin.rarity} variant="dot" />
           )}
+
+          {/* Category Badge - Rightmost */}
+          <div
+            style={{
+              fontSize: '9px',
+              fontWeight: 600,
+              padding: '2px 6px',
+              borderRadius: '3px',
+              height: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              color: `var(--cat-${categoryType})`,
+              background: 'rgba(0, 0, 0, 0.4)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.3px',
+            }}
+          >
+            {coin.category.replace('_', ' ').replace('roman ', '')}
+          </div>
         </div>
       </div>
     </>
@@ -340,18 +380,32 @@ const CoinContent = memo(function CoinContent({
 export interface CoinCardV3Props {
   coin: Coin;
   onClick?: (coin: Coin) => void;
+  /** Whether the card is selected */
+  selected?: boolean;
+  /** Callback when selection state changes */
+  onSelect?: (id: number, selected: boolean) => void;
+  /** Grid index for keyboard navigation */
+  gridIndex?: number;
 }
 
-export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
+export function CoinCardV3({ coin, onClick, selected, onSelect, gridIndex }: CoinCardV3Props) {
   const categoryType = parseCategory(coin.category);
   const [isFlipped, setIsFlipped] = React.useState(false);
   const screenSize = useUIStore((s) => s.screenSize);
   const isMobile = screenSize === 'mobile';
+  
+  // Handle selection checkbox click
+  const handleSelectClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (coin.id !== null) {
+      onSelect?.(coin.id, !selected);
+    }
+  };
 
-  // Memoize images
+  // Memoize images (case-insensitive comparison for image_type)
   const images = useMemo(() => ({
-    obverse: coin.images?.find(img => img.image_type === 'obverse')?.url || coin.images?.[0]?.url,
-    reverse: coin.images?.find(img => img.image_type === 'reverse')?.url || coin.images?.[1]?.url,
+    obverse: coin.images?.find(img => img.image_type?.toLowerCase() === 'obverse')?.url || coin.images?.[0]?.url,
+    reverse: coin.images?.find(img => img.image_type?.toLowerCase() === 'reverse')?.url || coin.images?.[1]?.url,
   }), [coin.images]);
 
   // Memoize year display
@@ -396,6 +450,7 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
       performance={performance}
       isMobile={isMobile}
       compact={compact}
+      categoryType={categoryType}
     />
   );
 
@@ -410,6 +465,11 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
   return (
     <div
       onClick={() => onClick?.(coin)}
+      data-grid-index={gridIndex}
+      tabIndex={0}
+      role="button"
+      aria-pressed={selected}
+      aria-label={`${coin.attribution.issuer || 'Unknown'} ${coin.denomination || ''}`}
       style={{
         position: 'relative',
         width: cardWidth,
@@ -421,21 +481,87 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'transform 0.2s, box-shadow 0.2s',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+        boxShadow: selected 
+          ? '0 0 0 2px var(--metal-au), 0 4px 12px rgba(0, 0, 0, 0.4)' 
+          : '0 2px 8px rgba(0, 0, 0, 0.3)',
+        outline: 'none',
       }}
       onMouseEnter={(e) => {
         if (!isMobile) {
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.4)';
+          e.currentTarget.style.boxShadow = selected 
+            ? '0 0 0 2px var(--metal-au), 0 8px 16px rgba(0, 0, 0, 0.4)' 
+            : '0 8px 16px rgba(0, 0, 0, 0.4)';
         }
       }}
       onMouseLeave={(e) => {
         if (!isMobile) {
           e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.boxShadow = selected 
+            ? '0 0 0 2px var(--metal-au), 0 4px 12px rgba(0, 0, 0, 0.4)' 
+            : '0 2px 8px rgba(0, 0, 0, 0.3)';
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'x' || e.key === 'X') {
+          e.preventDefault();
+          if (coin.id !== null) {
+            onSelect?.(coin.id, !selected);
+          }
+        }
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick?.(coin);
         }
       }}
     >
+      {/* Selection checkbox */}
+      {onSelect && (
+        <div
+          onClick={handleSelectClick}
+          style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            zIndex: 10,
+            width: '20px',
+            height: '20px',
+            borderRadius: '4px',
+            background: selected ? 'var(--metal-au)' : 'rgba(0, 0, 0, 0.5)',
+            border: selected ? 'none' : '2px solid var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            opacity: selected ? 1 : 0.7,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '1';
+            if (!selected) {
+              e.currentTarget.style.borderColor = 'var(--metal-au)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = selected ? '1' : '0.7';
+            if (!selected) {
+              e.currentTarget.style.borderColor = 'var(--text-muted)';
+            }
+          }}
+        >
+          {selected && (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path 
+                d="M2 6L5 9L10 3" 
+                stroke="#000" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </div>
+      )}
       {/* Category Bar - 4px left accent */}
       <div
         style={{
@@ -809,25 +935,6 @@ export function CoinCardV3({ coin, onClick }: CoinCardV3Props) {
         </table>
       )}
 
-      {/* Category Label - Subtle Badge */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          padding: '2px 6px',
-          borderRadius: '3px',
-          fontSize: '8px',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.3px',
-          background: 'rgba(0, 0, 0, 0.5)',
-          color: `var(--cat-${categoryType})`,
-          backdropFilter: 'blur(4px)',
-        }}
-      >
-        {coin.category.replace('_', ' ').replace('roman ', '')}
-      </div>
     </div>
   );
 }

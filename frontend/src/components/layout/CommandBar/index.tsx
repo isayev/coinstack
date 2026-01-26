@@ -172,18 +172,25 @@ export function CommandBar() {
           </CertLookupPopover>
         </div>
         
-        {/* Search - Expandable */}
+        {/* Search - Consolidated with Command Palette hint */}
         <div className="flex-1 max-w-md">
           <form onSubmit={handleSearch} className="relative">
             <Input
               type="text"
-              placeholder="Search coins, rulers, references..."
+              placeholder="Search coins, rulers..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onFocus={() => setSearchExpanded(true)}
               onBlur={() => !searchValue && setSearchExpanded(false)}
+              onKeyDown={(e) => {
+                // Cmd/Ctrl+K opens command palette
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                  e.preventDefault();
+                  setCommandPaletteOpen(true);
+                }
+              }}
               className={cn(
-                "pl-10 transition-all duration-200",
+                "pl-10 pr-20 transition-all duration-200",
                 searchExpanded ? "w-full" : "w-full"
               )}
               style={{
@@ -196,23 +203,26 @@ export function CommandBar() {
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
               style={{ color: 'var(--text-muted)' }}
             />
+            {/* Keyboard shortcut hint */}
+            <button
+              type="button"
+              onClick={() => setCommandPaletteOpen(true)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors hover:bg-[var(--bg-hover)]"
+              style={{ 
+                color: 'var(--text-muted)',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-subtle)'
+              }}
+              title="Command Palette"
+            >
+              <span className="hidden sm:inline">⌘K</span>
+              <span className="sm:hidden">⌘</span>
+            </button>
           </form>
         </div>
         
         {/* Right Section */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Command Palette shortcut */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCommandPaletteOpen(true)}
-            className="hidden sm:flex"
-            style={{ color: 'var(--text-secondary)' }}
-            title="Command Palette (Ctrl+K)"
-          >
-            <Search className="w-4 h-4" />
-          </Button>
-          
           {/* Theme toggle */}
           <ThemeToggle />
           

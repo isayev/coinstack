@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { CoinListV3 } from "@/features/collection/CoinListV3";
 import { CollectionDashboard } from "@/features/collection/CollectionDashboard";
+import { BulkActionsBar } from "@/features/collection/BulkActionsBar";
 import { BottomPanel } from "@/components/layout/BottomPanel";
 import { YearHistogram } from "@/components/dashboard/YearHistogram";
 import { useCollectionStats } from "@/hooks/useCollectionStats";
@@ -103,6 +104,9 @@ export function CollectionPage() {
         minHeight={120}
         maxHeight={350}
       />
+
+      {/* Bulk actions bar (appears when coins selected) */}
+      <BulkActionsBar />
     </div>
   );
 }

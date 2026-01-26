@@ -236,6 +236,10 @@ Essential domain vocabulary:
 | **Legend** | Inscribed text (often abbreviated Latin) |
 | **Exergue** | Area below main reverse design |
 | **Die Axis** | Orientation between obverse/reverse (0-12h clock) |
+| **Script** | Language/script on coin (Latin, Greek) |
+| **Reign Dates** | Years ruler was in power (negative for BC) |
+| **Officina** | Mint workshop identifier |
+| **Provenance** | Ownership history (auction appearances, collections) |
 | **RIC/RPC/Crawford** | Reference catalog systems |
 
 ---

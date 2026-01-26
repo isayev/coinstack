@@ -7,6 +7,7 @@ import {
   useBulkApplyEnrichments,
   useAutoApplyAllEnrichments,
   useFieldHistory,
+  useLLMSuggestions,
   type DiscrepancyFilters,
   type EnrichmentFilters,
   type DiscrepancyStatus,
@@ -22,6 +23,7 @@ import {
   AutoMergeTab,
   SourceBadge,
   ImageReviewTab,
+  LLMReviewTab,
 } from "@/components/audit";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +60,13 @@ import {
   ArrowRight,
   Clock,
   Image as ImageIcon,
+  Bot,
+  BookOpen,
+  ExternalLink,
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -233,6 +241,35 @@ export default function AuditPage() {
     isComplete,
   } = useAuditWithPolling();
 
+  // LLM suggestions
+  const { data: llmSuggestionsData } = useLLMSuggestions();
+  const llmSuggestionsCount = llmSuggestionsData?.total || 0;
+
+  // Vocab review queue count
+  const { data: vocabReviewData } = useQuery({
+    queryKey: ["vocab", "review", "count"],
+    queryFn: async () => {
+      const response = await api.get("/api/v2/vocab/review", {
+        params: { status: "pending_review", limit: 1 },
+      });
+      // The API returns an array, we just need the count info
+      // We'll estimate total from a separate query or use length
+      return response.data as Array<{ id: number }>;
+    },
+  });
+  
+  // Get actual count with a larger limit to estimate
+  const { data: vocabCountData } = useQuery({
+    queryKey: ["vocab", "review", "full-count"],
+    queryFn: async () => {
+      const response = await api.get("/api/v2/vocab/review", {
+        params: { status: "pending_review", limit: 200 },
+      });
+      return (response.data as Array<{ id: number }>).length;
+    },
+  });
+  const vocabReviewCount = vocabCountData || 0;
+
   const handleStartFullAudit = () => {
     startAudit({ scope: "all" });
   };
@@ -325,8 +362,35 @@ export default function AuditPage() {
 
       <AuditSummaryStats />
 
+      {/* Vocab Review Queue Link */}
+      {vocabReviewCount > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <BookOpen className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-medium">Vocabulary Review Queue</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {vocabReviewCount} vocabulary assignment{vocabReviewCount !== 1 ? "s" : ""} need review
+                  </p>
+                </div>
+              </div>
+              <Button asChild>
+                <Link to="/review" className="gap-2">
+                  Go to Review Queue
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+        <TabsList className="grid w-full grid-cols-6 max-w-4xl">
           <TabsTrigger value="discrepancies" className="gap-2">
             <AlertTriangle className="w-4 h-4" />
             Discrepancies
@@ -342,6 +406,15 @@ export default function AuditPage() {
             {enrichmentsData && enrichmentsData.total > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">
                 {enrichmentsData.total}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="llm" className="gap-2">
+            <Bot className="w-4 h-4" />
+            LLM
+            {llmSuggestionsCount > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {llmSuggestionsCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -739,6 +812,10 @@ export default function AuditPage() {
               </div>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="llm">
+          <LLMReviewTab />
         </TabsContent>
 
         <TabsContent value="auto-merge">

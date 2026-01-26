@@ -44,3 +44,6 @@ export { EnhancedConflictCard } from "./EnhancedConflictCard";
 
 // Image review
 export { ImageReviewTab } from "./ImageReviewTab";
+
+// LLM review
+export { LLMReviewTab } from "./LLMReviewTab";

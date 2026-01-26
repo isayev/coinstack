@@ -1,16 +1,20 @@
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { v2 } from "@/api/v2"
 import { CoinDetailV3 } from "@/features/collection/CoinDetailV3"
 import { AuditPanel } from "@/features/audit/AuditPanel"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Edit, AlertCircle } from "lucide-react"
+import { ArrowLeft, AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useExpandLegendV2, useGenerateHistoricalContext } from "@/hooks/useLLM"
+import { toast } from "sonner"
 
 export function CoinDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const coinId = parseInt(id!)
 
   const { data: coin, isLoading, error } = useQuery({
@@ -18,6 +22,106 @@ export function CoinDetailPage() {
     queryFn: () => v2.getCoin(coinId),
     enabled: !!id
   })
+
+  // LLM legend expansion
+  const [enrichingSide, setEnrichingSide] = useState<'obverse' | 'reverse' | null>(null)
+  const [isGeneratingContext, setIsGeneratingContext] = useState(false)
+  const expandLegend = useExpandLegendV2()
+  const generateContext = useGenerateHistoricalContext()
+
+  const handleGenerateContext = async () => {
+    if (!coin) return
+    
+    setIsGeneratingContext(true)
+    
+    try {
+      // Backend fetches full coin data from DB for comprehensive context generation
+      const result = await generateContext.mutateAsync({
+        coin_id: coin.id!,
+      })
+      
+      // Update the coin in cache with historical context
+      queryClient.setQueryData(['coin', coinId], (oldData: any) => ({
+        ...oldData,
+        historical_significance: result.context,
+        llm_enriched_at: new Date().toISOString(),
+      }))
+      
+      toast.success(`Historical context generated (${(result.confidence * 100).toFixed(0)}% confidence)`)
+    } catch (err: any) {
+      toast.error(`Failed to generate context: ${err.message || 'Unknown error'}`)
+    } finally {
+      setIsGeneratingContext(false)
+    }
+  }
+
+  const handleEnrichLegend = async (side: 'obverse' | 'reverse') => {
+    if (!coin) return
+    
+    const legend = side === 'obverse' 
+      ? (coin.design?.obverse_legend || coin.obverse_legend)
+      : (coin.design?.reverse_legend || coin.reverse_legend)
+    
+    if (!legend) {
+      toast.error(`No ${side} legend to expand`)
+      return
+    }
+
+    setEnrichingSide(side)
+    
+    try {
+      const result = await expandLegend.mutateAsync({ abbreviation: legend })
+      
+      // Update the coin in cache with expanded legend
+      queryClient.setQueryData(['coin', coinId], (oldData: any) => ({
+        ...oldData,
+        [`${side}_legend_expanded`]: result.expanded,
+      }))
+      
+      toast.success(`Legend expanded (${(result.confidence * 100).toFixed(0)}% confidence)`)
+    } catch (err: any) {
+      toast.error(`Failed to expand legend: ${err.message || 'Unknown error'}`)
+    } finally {
+      setEnrichingSide(null)
+    }
+  }
+
+  // Navigation handlers for side arrows
+  const handleNavigatePrev = useCallback(() => {
+    if (coin?.prev_id) {
+      navigate(`/coins/${coin.prev_id}`)
+    }
+  }, [coin?.prev_id, navigate])
+
+  const handleNavigateNext = useCallback(() => {
+    if (coin?.next_id) {
+      navigate(`/coins/${coin.next_id}`)
+    }
+  }, [coin?.next_id, navigate])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't interfere with input fields
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return
+      }
+
+      if (e.key === 'ArrowLeft' && coin?.prev_id) {
+        e.preventDefault()
+        handleNavigatePrev()
+      } else if (e.key === 'ArrowRight' && coin?.next_id) {
+        e.preventDefault()
+        handleNavigateNext()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [coin?.prev_id, coin?.next_id, handleNavigatePrev, handleNavigateNext])
 
   if (isLoading) {
     return (
@@ -72,9 +176,9 @@ export function CoinDetailPage() {
       className="h-full flex flex-col"
       style={{ background: 'var(--bg-app)' }}
     >
-      {/* Header */}
+      {/* Navigation Header */}
       <div
-        className="border-b px-6 py-4 flex items-center justify-between"
+        className="border-b px-6 py-3 flex items-center"
         style={{
           background: 'var(--bg-card)',
           borderColor: 'var(--border-subtle)',
@@ -87,15 +191,8 @@ export function CoinDetailPage() {
           style={{ color: 'var(--text-secondary)' }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          Back to Collection
         </Button>
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/coins/${id}/edit`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-        </div>
       </div>
 
       {/* Content */}
@@ -110,7 +207,19 @@ export function CoinDetailPage() {
             </TabsList>
 
             <TabsContent value="details" className="mt-0">
-              <CoinDetailV3 coin={coin} />
+              <CoinDetailV3 
+                coin={coin} 
+                onEdit={() => navigate(`/coins/${id}/edit`)}
+                onNavigatePrev={handleNavigatePrev}
+                onNavigateNext={handleNavigateNext}
+                hasPrev={!!coin?.prev_id}
+                hasNext={!!coin?.next_id}
+                onEnrichLegend={handleEnrichLegend}
+                isEnrichingObverse={enrichingSide === 'obverse'}
+                isEnrichingReverse={enrichingSide === 'reverse'}
+                onGenerateContext={handleGenerateContext}
+                isGeneratingContext={isGeneratingContext}
+              />
             </TabsContent>
 
             <TabsContent value="audit">

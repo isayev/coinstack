@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 import {
   Discrepancy,
@@ -11,7 +12,9 @@ import {
   PaginatedResponse,
   DiscrepancyStatus,
   EnrichmentStatus,
-  TrustLevel
+  TrustLevel,
+  LLMSuggestionItem,
+  LLMReviewQueueResponse,
 } from "@/types/audit";
 
 // Re-export types for convenience
@@ -231,3 +234,38 @@ export function useRejectEnrichment() {
     }
   });
 }
+
+// =============================================================================
+// LLM Suggestions Review Queue
+// =============================================================================
+
+export function useLLMSuggestions() {
+  return useQuery({
+    queryKey: ["llm-suggestions"],
+    queryFn: async () => {
+      const response = await api.get<LLMReviewQueueResponse>("/api/v2/llm/review");
+      return response.data;
+    },
+  });
+}
+
+export function useDismissLLMSuggestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { coinId: number; dismissReferences?: boolean; dismissRarity?: boolean }) => {
+      const response = await api.post(`/api/v2/llm/review/${params.coinId}/dismiss`, null, {
+        params: {
+          dismiss_references: params.dismissReferences ?? true,
+          dismiss_rarity: params.dismissRarity ?? true,
+        },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["llm-suggestions"] });
+    },
+  });
+}
+
+// Re-export LLM types for convenience
+export type { LLMSuggestionItem, LLMReviewQueueResponse };

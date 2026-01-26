@@ -1,0 +1,17 @@
+{
+  "weight_g": 3.5,
+  "grade": "VF",
+  "description": "TEST DESC",
+  "issuing_authority": "TEST",
+  "metal": "silver",
+  "diameter_mm": 19.0,
+  "obverse_legend": "TEST OBV",
+  "category": "imperial",
+  "references": [
+    "RIC IV.1 289c",
+    "RSC 382",
+    "Sear 6846"
+  ],
+  "reverse_legend": "TEST REV",
+  "denomination": "Denarius"
+}

@@ -444,8 +444,8 @@ export function ImportPage() {
               </div>
             )}
             
-            {/* Two-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Two-column layout - Images left, Form right (wider) */}
+            <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] xl:grid-cols-[450px_1fr] gap-6">
               {/* Left: Images */}
               <div className="space-y-6">
                 <ImagePreviewGrid

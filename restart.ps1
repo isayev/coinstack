@@ -37,8 +37,8 @@ Start-Sleep -Seconds 2
 Write-Host "[2/3] Starting Backend (V2)..." -ForegroundColor Yellow
 $backendPath = Join-Path $PSScriptRoot "backend"
 
-# Note: We use src.infrastructure.web.main:app for V2
-$backendArgs = @("-m", "uvicorn", "src.infrastructure.web.main:app", "--host", "127.0.0.1", "--port", "8000", "--reload")
+# Note: We use run_server.py which sets Windows event loop policy for Playwright
+$backendArgs = @("run_server.py")
 Start-Process -FilePath "python" -ArgumentList $backendArgs -WorkingDirectory $backendPath -NoNewWindow
 
 # Wait for backend to initialize

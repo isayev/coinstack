@@ -1,7 +1,7 @@
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
-from sqlalchemy import Integer, String, Numeric, Date, DateTime, Boolean, ForeignKey
+from sqlalchemy import Integer, String, Text, Numeric, Date, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.infrastructure.persistence.models import Base
 
@@ -81,10 +81,93 @@ class CoinModel(Base):
     
     # LLM enrichment metadata
     llm_enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    llm_analysis_sections: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string of sections
+    llm_suggested_references: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array of suggested refs not in DB
+    llm_suggested_rarity: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON object with rarity info from LLM
     
     # Collection management fields (migrated from V1)
     storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     personal_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # -------------------------------------------------------------------------
+    # Additional V1 fields (restored from migration)
+    # -------------------------------------------------------------------------
+    # Script/Language
+    script: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Latin, Greek, etc.
+    
+    # Chronology (ruler reign dates)
+    reign_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Year (negative for BC)
+    reign_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    dating_certainty: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # BROAD, NARROW, EXACT
+    is_circa: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    
+    # Provenance and history
+    provenance_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Auction/collection history
+    
+    # Physical characteristics
+    surface_issues: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # JSON array of issues
+    thickness_mm: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
+    orientation: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    
+    # Classification
+    series: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sub_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Mint details
+    officina: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Mint workshop
+    
+    # Design symbols
+    obverse_symbols: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reverse_symbols: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Rarity and value
+    rarity: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    rarity_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    
+    # Condition notes
+    style_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    toning_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    eye_appeal: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    
+    # -------------------------------------------------------------------------
+    # Advanced Numismatic Fields (Phase 2 - Comprehensive Cataloging)
+    # -------------------------------------------------------------------------
+    
+    # Iconography and design details (JSON arrays stored as strings)
+    obverse_iconography: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # JSON array of design elements
+    reverse_iconography: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # JSON array of design elements
+    control_marks: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # JSON array of control marks
+    
+    # Mint marks and control symbols
+    mintmark: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Specific mint mark on coin
+    field_marks: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Symbols in field (JSON array)
+    
+    # Die study fields (complement existing die_axis)
+    die_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # early, middle, late, worn
+    die_match_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Notes about die matches
+    
+    # Republican coinage specific
+    moneyer: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Moneyer name for Republican coins
+    
+    # Edge details
+    edge_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)  # plain, reeded, lettered, decorated
+    edge_inscription: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Edge lettering if present
+    
+    # Attribution confidence
+    attribution_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # certain, probable, possible, uncertain
+    attribution_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Notes on attribution
+    
+    # Conservation and cleaning history
+    cleaning_history: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Previous cleaning/conservation
+    conservation_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Conservation work done
+    
+    # Market value tracking
+    market_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)  # Current market estimate
+    market_value_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Date of valuation
 
     # Relationships
     images: Mapped[List["CoinImageModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
@@ -172,6 +255,28 @@ class AuctionDataModel(Base):
     coin: Mapped[Optional["CoinModel"]] = relationship(back_populates="auction_data")
 
 
+class ReferenceTypeModel(Base):
+    """
+    Catalog reference types (RIC, Crawford, Sear, etc.)
+    
+    This is a V1 schema table that stores the actual catalog metadata.
+    Each reference_type is a unique catalog + number combination.
+    """
+    __tablename__ = "reference_types"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    system: Mapped[str] = mapped_column(String(20))  # ric, crawford, sear, rpc, etc.
+    local_ref: Mapped[str] = mapped_column(String(100))  # "RIC I 207", original text
+    local_ref_normalized: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # "I", "II", etc.
+    number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "207", "335/1c"
+    external_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    external_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    
+    # Relationships
+    coin_references: Mapped[List["CoinReferenceModel"]] = relationship(back_populates="reference_type")
+
+
 class CoinReferenceModel(Base):
     """
     Links coins to catalog reference types (RIC, Crawford, Sear, etc.)
@@ -199,7 +304,9 @@ class CoinReferenceModel(Base):
     note_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
+    # Relationships
     coin: Mapped["CoinModel"] = relationship(back_populates="references")
+    reference_type: Mapped[Optional["ReferenceTypeModel"]] = relationship(back_populates="coin_references")
 
 
 class ProvenanceEventModel(Base):

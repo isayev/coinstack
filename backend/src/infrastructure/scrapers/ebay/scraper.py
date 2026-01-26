@@ -41,11 +41,43 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
     
     async def scrape(self, url: str) -> Optional[AuctionLot]:
         """Scrape an eBay listing URL with automatic rate limiting and retry."""
-        if not await self.ensure_browser():
+        with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+            f.write(f"\n=== eBay Scraper Called ===\n")
+            f.write(f"URL: {url}\n")
+        
+        logger.info(f"eBay scraper: Starting scrape for {url}")
+        browser_ok = await self.ensure_browser()
+        logger.info(f"eBay scraper: Browser ensure result: {browser_ok}")
+        
+        with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+            f.write(f"Browser OK: {browser_ok}\n")
+        
+        if not browser_ok:
+            logger.error("eBay scraper: Failed to ensure browser")
+            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                f.write("FAILED: Browser not OK\n")
             return None
 
         # Enforce rate limiting (handled by base class: 5.0s for eBay)
         await self._enforce_rate_limit()
+
+        # First, visit main eBay site to establish session (helps bypass anti-bot)
+        try:
+            session_page = await self.context.new_page()
+            try:
+                logger.debug("Establishing eBay session...")
+                await session_page.goto("https://www.ebay.com", wait_until='domcontentloaded', timeout=15000)
+                await asyncio.sleep(random.uniform(1.5, 3.0))  # Human-like pause
+                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                    f.write("Session established\n")
+            except Exception as e:
+                logger.warning(f"Failed to visit eBay main site (continuing anyway): {e}")
+                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                    f.write(f"Session failed: {e}\n")
+            finally:
+                await session_page.close()
+        except Exception as e:
+            logger.warning(f"Error establishing eBay session: {e}")
 
         page = await self.context.new_page()
         try:
@@ -54,8 +86,17 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
             # Navigate with longer timeout
             response = await page.goto(url, wait_until='domcontentloaded', timeout=60000)
             
+            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                f.write(f"Response status: {response.status if response else 'None'}\n")
+            
             if not response or response.status >= 400:
                 logger.error(f"eBay returned status {response.status if response else 'None'}")
+                # Check if we got the "Checking your browser" page
+                html = await page.content()
+                if "Checking your browser" in html or "Pardon Our Interruption" in html:
+                    logger.error("eBay anti-bot protection detected - blocking automated access")
+                    with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                        f.write("FAILED: Anti-bot detected\n")
                 return None
             
             # Human-like wait
@@ -66,10 +107,31 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
             
             html = await page.content()
             
+            # Check again for anti-bot page after waiting
+            if "Checking your browser" in html or "Pardon Our Interruption" in html:
+                logger.error("eBay anti-bot protection detected after page load")
+                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                    f.write("FAILED: Anti-bot detected after load\n")
+                return None
+            
+            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                f.write(f"HTML length: {len(html)}\n")
+                f.write("Calling parser...\n")
+            
             # Parse
             data: EbayCoinData = self.parser.parse(html, url)
             
-            return self._map_to_domain(data)
+            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                f.write(f"Parse result: {data is not None}\n")
+                if data:
+                    f.write(f"Issuer: {data.ruler}\n")
+            
+            result = self._map_to_domain(data)
+            
+            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
+                f.write(f"Map result: {result is not None}\n")
+            
+            return result
             
         except Exception as e:
             logger.exception(f"Error scraping eBay URL {url}: {e}")

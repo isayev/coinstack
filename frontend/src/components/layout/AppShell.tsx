@@ -3,10 +3,14 @@ import { CommandBar } from "./CommandBar";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { useUIStore, getScreenSize } from "@/stores/uiStore";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { sidebarOpen, setScreenSize } = useUIStore();
+  
+  // Initialize global keyboard shortcuts
+  useKeyboardShortcuts();
 
   useEffect(() => {
     const handleResize = () => {

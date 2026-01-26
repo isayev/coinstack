@@ -176,8 +176,8 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: k2
-        fallback: [claude-haiku]
+        primary: deepseek-v3
+        fallback: [k2, claude-haiku]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -264,23 +264,26 @@ capabilities:
       max_tokens: 300
   
   context_generate:
-    description: "Generate historical context and narrative for a coin"
+    description: "Comprehensive multi-section numismatic analysis"
     requires_json: false
     cacheable: false
-    streaming: true
+    streaming: false
     profiles:
       production:
-        primary: claude-sonnet
-        fallback: [deepseek-v3, gemini-2.5-pro]
+        primary: deepseek-v3
+        fallback: [claude-sonnet]
       development:
-        primary: ollama-llama3.2
-        fallback: [ollama-phi3]
+        primary: deepseek-v3
+        fallback: [ollama-llama3.2]
       offline:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
     parameters:
-      temperature: 0.7
-      max_tokens: 1000
+      temperature: 0.25          # Slightly higher for richer output while staying factual
+      max_tokens: 3000           # Allow fuller multi-section output
+      top_p: 0.9                 # Slight nucleus sampling
+      frequency_penalty: 0.0     # Don't penalize technical repetition
+      presence_penalty: 0.0      # Allow citing references multiple times
   
   # P2: Advanced Capabilities (Phase 2)
   

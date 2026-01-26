@@ -38,6 +38,7 @@ interface MetalBadgeProps {
   metal: string;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
+  showGlow?: boolean;
   count?: number;
   interactive?: boolean;
   active?: boolean;
@@ -49,6 +50,7 @@ export function MetalBadge({
   metal,
   size = 'md',
   showLabel = false,
+  showGlow = false,
   count,
   interactive = false,
   active = false,
@@ -79,7 +81,9 @@ export function MetalBadge({
         'inline-flex items-center justify-center gap-1 rounded font-bold font-mono',
         'transition-all duration-200',
         sizeClasses[size],
-        interactive && 'cursor-pointer hover:scale-105 metal-badge-glow',
+        interactive && 'cursor-pointer hover:scale-105',
+        (interactive || showGlow) && 'metal-badge-glow',
+        showGlow && 'shadow-lg',
         active && 'ring-2 ring-offset-1 ring-offset-[var(--bg-card)]',
         className
       )}

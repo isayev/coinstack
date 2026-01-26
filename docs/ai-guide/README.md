@@ -21,6 +21,7 @@ Then load the relevant guide based on your task:
 | **Backend work** | `03-BACKEND-MODULES.md` | `04-DOMAIN-ENTITIES.md`, `08-CODING-PATTERNS.md` |
 | **Frontend work** | `04-FRONTEND-MODULES.md` | `11-FRONTEND-COMPONENTS.md`, `10-DESIGN-SYSTEM.md` |
 | **UI/Design changes** | `10-DESIGN-SYSTEM.md` | `11-FRONTEND-COMPONENTS.md` |
+| **UI/UX features** | `12-UI-UX-ROADMAP.md` | `11-FRONTEND-COMPONENTS.md` |
 | **API integration** | `07-API-REFERENCE.md` | `06-DATA-FLOWS.md` |
 | **Database schema** | `05-DATA-MODEL.md` | `09-TASK-RECIPES.md` |
 | **Adding features** | `09-TASK-RECIPES.md` | Relevant module guide |
@@ -49,6 +50,7 @@ Then load the relevant guide based on your task:
 | [06-DATA-FLOWS.md](06-DATA-FLOWS.md) | Request flows, state management | Understanding processes |
 | [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) | Code conventions and patterns | Writing new code |
 | [09-TASK-RECIPES.md](09-TASK-RECIPES.md) | Step-by-step guides | Implementing features |
+| [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) | **Planned features, backlog** | UI/UX enhancements |
 
 ## Project at a Glance
 

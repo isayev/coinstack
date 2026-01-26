@@ -13,7 +13,8 @@ export type SortField =
   | "created"
   | "value"
   | "weight"
-  | "rarity";
+  | "rarity"
+  | "id";
 
 export type SortDirection = "asc" | "desc";
 

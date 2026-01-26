@@ -9,6 +9,8 @@ export const MetalSchema = z.enum([
   'billon',
   'potin',
   'orichalcum',
+  'lead',
+  'ae',
 ])
 
 export const CategorySchema = z.enum([
@@ -242,9 +244,88 @@ export const DomainCoinSchema = z.object({
   storage_location: z.string().nullable().optional(),
   personal_notes: z.string().nullable().optional(),
 
-  // Future features (not yet in backend)
-  market_value: z.number().nullable().optional(),
+  // -------------------------------------------------------------------------
+  // LLM-Generated Fields
+  // -------------------------------------------------------------------------
+  obverse_legend_expanded: z.string().nullable().optional(),
+  reverse_legend_expanded: z.string().nullable().optional(),
+  historical_significance: z.string().nullable().optional(),  // LLM historical context
+  catalog_description: z.string().nullable().optional(),
+  condition_observations: z.string().nullable().optional(),  // JSON string
+  llm_enriched_at: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Iconography and Design Details
+  // -------------------------------------------------------------------------
+  obverse_iconography: z.union([z.array(z.string()), z.string()]).nullable().optional(),
+  reverse_iconography: z.union([z.array(z.string()), z.string()]).nullable().optional(),
+  control_marks: z.union([z.array(z.string()), z.string()]).nullable().optional(),
+  obverse_symbols: z.string().nullable().optional(),
+  reverse_symbols: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Mint Details
+  // -------------------------------------------------------------------------
+  mintmark: z.string().nullable().optional(),
+  field_marks: z.string().nullable().optional(),
+  officina: z.string().nullable().optional(),  // Mint workshop
+
+  // -------------------------------------------------------------------------
+  // Die Study Fields
+  // -------------------------------------------------------------------------
+  die_state: z.string().nullable().optional(),  // early, middle, late, worn
+  die_match_notes: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Republican Coinage Specific
+  // -------------------------------------------------------------------------
+  moneyer: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Edge Details
+  // -------------------------------------------------------------------------
+  edge_type: z.string().nullable().optional(),  // plain, reeded, lettered, decorated
+  edge_inscription: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Attribution Confidence
+  // -------------------------------------------------------------------------
+  attribution_confidence: z.enum(['certain', 'probable', 'possible', 'uncertain']).nullable().optional(),
+  attribution_notes: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Conservation and Cleaning History
+  // -------------------------------------------------------------------------
+  cleaning_history: z.string().nullable().optional(),
+  conservation_notes: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Rarity and Condition Notes
+  // -------------------------------------------------------------------------
   rarity: z.enum(['c', 's', 'r1', 'r2', 'r3', 'u']).nullable().optional(),
+  rarity_notes: z.string().nullable().optional(),
+  style_notes: z.string().nullable().optional(),
+  toning_description: z.string().nullable().optional(),
+  eye_appeal: z.string().nullable().optional(),
+  surface_issues: z.string().nullable().optional(),  // JSON array
+
+  // -------------------------------------------------------------------------
+  // Market Value Tracking
+  // -------------------------------------------------------------------------
+  market_value: z.number().nullable().optional(),
+  market_value_date: z.string().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Additional Fields from Backend
+  // -------------------------------------------------------------------------
+  script: z.string().nullable().optional(),  // Latin, Greek, etc.
+  dating_certainty: z.string().nullable().optional(),  // BROAD, NARROW, EXACT
+  provenance_notes: z.string().nullable().optional(),
+  orientation: z.string().nullable().optional(),
+
+  // Navigation helpers (added by API)
+  prev_id: z.number().nullable().optional(),
+  next_id: z.number().nullable().optional(),
 })
 
 // Export CoinSchema as the Domain structure since backend V2 returns this nested format
@@ -252,6 +333,31 @@ export const CoinSchema = DomainCoinSchema;
 
 // Legacy flat schema if needed for reference or flat inputs
 // export const CoinSchemaOld = BaseCoinSchema.transform(...)
+
+// --- Provenance Event Schema ---
+export const ProvenanceEventSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number().optional(),
+  event_type: z.string(),  // auction, dealer, collection, private_sale
+  event_date: z.string().nullable().optional(),
+  auction_house: z.string().nullable().optional(),
+  sale_series: z.string().nullable().optional(),
+  sale_number: z.string().nullable().optional(),
+  lot_number: z.string().nullable().optional(),
+  catalog_reference: z.string().nullable().optional(),
+  hammer_price: z.number().nullable().optional(),
+  buyers_premium_pct: z.number().nullable().optional(),
+  total_price: z.number().nullable().optional(),
+  currency: z.string().nullable().optional(),
+  dealer_name: z.string().nullable().optional(),
+  collection_name: z.string().nullable().optional(),
+  url: z.string().nullable().optional(),
+  receipt_available: z.boolean().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  sort_order: z.number().nullable().optional(),
+});
+
+export type ProvenanceEvent = z.infer<typeof ProvenanceEventSchema>;
 
 export type Metal = z.infer<typeof MetalSchema>
 export type Category = z.infer<typeof CategorySchema>

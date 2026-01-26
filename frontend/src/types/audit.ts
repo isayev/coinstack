@@ -254,3 +254,59 @@ export const DIFFERENCE_TYPE_LABELS: Record<DifferenceType, string> = {
   mismatch: "Mismatch",
   missing: "Missing",
 };
+
+/**
+ * LLM-suggested rarity information
+ */
+export interface LLMRarityInfo {
+  rarity_code: string | null;
+  rarity_description: string | null;
+  specimens_known: number | null;
+  source: string | null;
+}
+
+/**
+ * Catalog reference validation result
+ */
+export interface CatalogReferenceValidation {
+  reference_text: string;
+  parsed_catalog: string | null;
+  parsed_number: string | null;
+  parsed_volume: string | null;
+  validation_status: "matches" | "partial_match" | "mismatch" | "unknown";
+  confidence: number;
+  match_reason: string | null;
+  existing_reference: string | null;
+}
+
+/**
+ * LLM suggestion item for review queue
+ */
+export interface LLMSuggestionItem {
+  coin_id: number;
+  // Core coin identification
+  issuer: string | null;
+  denomination: string | null;
+  mint: string | null;
+  year_start: number | null;
+  year_end: number | null;
+  category: string | null;
+  // Legends for context
+  obverse_legend: string | null;
+  reverse_legend: string | null;
+  // Existing catalog references (for comparison)
+  existing_references: string[];
+  // LLM suggestions
+  suggested_references: string[];
+  validated_references: CatalogReferenceValidation[];
+  rarity_info: LLMRarityInfo | null;
+  enriched_at: string | null;
+}
+
+/**
+ * LLM review queue response
+ */
+export interface LLMReviewQueueResponse {
+  items: LLMSuggestionItem[];
+  total: number;
+}

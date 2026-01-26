@@ -3,7 +3,7 @@ import { create } from "zustand";
 const BREAKPOINTS = {
   mobile: 640,
   tablet: 1024,
-  desktop: 1024
+  desktop: 1280
 } as const;
 
 function getScreenSize(): 'mobile' | 'tablet' | 'desktop' {
@@ -21,12 +21,14 @@ interface UIState {
   viewMode: ViewMode;
   parseListingOpen: boolean;
   commandPaletteOpen: boolean;
+  quickScrapeOpen: boolean;
   screenSize: 'mobile' | 'tablet' | 'desktop';
 
   toggleSidebar: () => void;
   setViewMode: (mode: ViewMode) => void;
   setParseListingOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
+  setQuickScrapeOpen: (open: boolean) => void;
   setScreenSize: (size: 'mobile' | 'tablet' | 'desktop') => void;
 }
 
@@ -35,12 +37,14 @@ export const useUIStore = create<UIState>((set) => ({
   viewMode: "grid",
   parseListingOpen: false,
   commandPaletteOpen: false,
+  quickScrapeOpen: false,
   screenSize: getScreenSize(),
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setViewMode: (viewMode) => set({ viewMode }),
   setParseListingOpen: (parseListingOpen) => set({ parseListingOpen }),
   setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
+  setQuickScrapeOpen: (quickScrapeOpen) => set({ quickScrapeOpen }),
   setScreenSize: (screenSize) => set({ screenSize }),
 }));
 

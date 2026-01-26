@@ -1,4 +1,4 @@
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -19,7 +19,7 @@ import AuditPage from "@/pages/AuditPage";
 import { SeriesDashboard } from "@/pages/SeriesDashboard";
 import { CreateSeriesPage } from "@/pages/CreateSeriesPage";
 import { SeriesDetailPage } from "@/pages/SeriesDetailPage";
-import { ReviewQueuePage } from "@/pages/ReviewQueuePage";
+import { ReviewCenterPage } from "@/pages/ReviewCenterPage";
 
 // Error Boundary to catch rendering errors
 class ErrorBoundary extends React.Component<
@@ -110,11 +110,11 @@ function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/bulk-enrich" element={<BulkEnrichPage />} />
                 <Route path="/auctions" element={<AuctionsPage />} />
-                <Route path="/audit" element={<AuditPage />} />
+                <Route path="/audit" element={<Navigate to="/review" replace />} />
                 <Route path="/series" element={<SeriesDashboard />} />
                 <Route path="/series/new" element={<CreateSeriesPage />} />
                 <Route path="/series/:id" element={<SeriesDetailPage />} />
-                <Route path="/review" element={<ReviewQueuePage />} />
+                <Route path="/review" element={<ReviewCenterPage />} />
               </Routes>
             </AppShell>
           </BrowserRouter>

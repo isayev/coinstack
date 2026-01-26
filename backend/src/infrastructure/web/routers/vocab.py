@@ -181,9 +181,11 @@ def normalize_vocab(
     Normalize raw text to a canonical vocabulary term.
     
     Uses a chain of matching strategies:
-    1. Exact match
-    2. FTS5 fuzzy match
-    3. Nomisma reconciliation API
+    1. Exact match (case-sensitive) → confidence 1.0
+    2. Case-insensitive exact match → confidence 0.98
+    3. Alias match → confidence 0.97
+    4. FTS5 fuzzy match → confidence 0.80-0.99
+    5. Nomisma reconciliation API → confidence 0.85
     
     Returns needs_review=True if confidence < 0.92 or no match found.
     """

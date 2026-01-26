@@ -104,6 +104,7 @@ class CoinResponse(BaseModel):
     acquisition: Optional[AcquisitionResponse] = None
     images: List[ImageResponse] = []
     # New fields
+    description: Optional[str] = None
     denomination: Optional[str] = None
     portrait_subject: Optional[str] = None
     design: Optional[DesignResponse] = None
@@ -112,6 +113,15 @@ class CoinResponse(BaseModel):
     # Collection management
     storage_location: Optional[str] = None
     personal_notes: Optional[str] = None
+    # LLM enrichment
+    historical_significance: Optional[str] = None
+    llm_enriched_at: Optional[str] = None
+    llm_analysis_sections: Optional[str] = None      # JSON-encoded sections
+    llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
+    llm_suggested_rarity: Optional[dict] = None      # Rarity info from LLM for audit
+    # Navigation helpers
+    prev_id: Optional[int] = None
+    next_id: Optional[int] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -154,6 +164,7 @@ class CoinResponse(BaseModel):
                     is_primary=img.is_primary
                 ) for img in coin.images
             ],
+            description=coin.description,
             denomination=coin.denomination,
             portrait_subject=coin.portrait_subject,
             design=DesignResponse(
@@ -183,7 +194,12 @@ class CoinResponse(BaseModel):
                 ) for p in coin.provenance
             ],
             storage_location=coin.storage_location,
-            personal_notes=coin.personal_notes
+            personal_notes=coin.personal_notes,
+            historical_significance=coin.historical_significance,
+            llm_enriched_at=coin.llm_enriched_at,
+            llm_analysis_sections=coin.llm_analysis_sections,
+            llm_suggested_references=coin.llm_suggested_references,
+            llm_suggested_rarity=coin.llm_suggested_rarity
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -239,6 +255,7 @@ def get_coins(
     per_page: int = Query(20, ge=1, le=1000),
     sort_by: Optional[str] = Query(None),
     sort_dir: str = Query("asc", pattern="^(asc|desc)$"),
+    ids: Optional[str] = Query(None, description="Comma-separated list of coin IDs to fetch"),
     # Filter parameters
     category: Optional[str] = Query(None, description="Filter by category (e.g., roman_imperial, greek)"),
     metal: Optional[str] = Query(None, description="Filter by metal (e.g., gold, silver, bronze)"),
@@ -256,7 +273,29 @@ def get_coins(
     Get paginated list of coins with optional filtering.
     
     Filters can be combined. All filters use AND logic.
+    If `ids` parameter is provided, returns only those coins (ignores pagination).
     """
+    # Handle ids parameter - fetch specific coins
+    if ids:
+        try:
+            coin_ids = [int(id_str.strip()) for id_str in ids.split(",") if id_str.strip()]
+            if coin_ids:
+                coins = []
+                for coin_id in coin_ids:
+                    coin = repo.get_by_id(coin_id)
+                    if coin:
+                        coins.append(coin)
+                return PaginatedResponse(
+                    items=[CoinResponse.from_domain(c) for c in coins],
+                    total=len(coins),
+                    page=1,
+                    per_page=len(coins),
+                    pages=1
+                )
+        except ValueError:
+            # Invalid ids format, fall through to normal query
+            pass
+    
     skip = (page - 1) * per_page
     
     # Build filters dict
@@ -301,6 +340,39 @@ def get_coins(
         pages=pages
     )
 
+def _get_neighbor_ids(repo: ICoinRepository, coin_id: int) -> tuple[Optional[int], Optional[int]]:
+    """
+    Get previous and next coin IDs for navigation.
+    
+    Uses efficient SQL queries to find neighbors without loading all coins.
+    Returns (prev_id, next_id) tuple.
+    """
+    # Get the coin's position in the collection (sorted by ID)
+    # This is a simple but effective approach for navigation
+    from src.infrastructure.persistence.database import SessionLocal
+    from sqlalchemy import text
+    
+    db = SessionLocal()
+    try:
+        # Get previous ID (largest ID less than current)
+        prev_result = db.execute(
+            text("SELECT id FROM coins_v2 WHERE id < :coin_id ORDER BY id DESC LIMIT 1"),
+            {"coin_id": coin_id}
+        ).fetchone()
+        prev_id = prev_result[0] if prev_result else None
+        
+        # Get next ID (smallest ID greater than current)
+        next_result = db.execute(
+            text("SELECT id FROM coins_v2 WHERE id > :coin_id ORDER BY id ASC LIMIT 1"),
+            {"coin_id": coin_id}
+        ).fetchone()
+        next_id = next_result[0] if next_result else None
+        
+        return prev_id, next_id
+    finally:
+        db.close()
+
+
 @router.get("/{coin_id}", response_model=CoinResponse)
 def get_coin(
     coin_id: int,
@@ -309,7 +381,14 @@ def get_coin(
     coin = repo.get_by_id(coin_id)
     if not coin:
         raise HTTPException(status_code=404, detail="Coin not found")
-    return CoinResponse.from_domain(coin)
+    
+    # Calculate neighbor IDs for navigation (efficient query)
+    prev_id, next_id = _get_neighbor_ids(repo, coin_id)
+    
+    response = CoinResponse.from_domain(coin)
+    response.prev_id = prev_id
+    response.next_id = next_id
+    return response
 
 @router.put("/{coin_id}", response_model=CoinResponse)
 def update_coin(
