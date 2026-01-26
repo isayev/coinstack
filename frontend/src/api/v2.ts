@@ -57,7 +57,7 @@ export const ScrapeResultSchema = z.object({
   url: z.string(),
   sale_name: z.string().nullable().optional(),
   lot_number: z.string().nullable().optional(),
-  hammer_price: z.number().nullable().optional(),
+  hammer_price: z.coerce.number().nullable().optional(),
   issuer: z.string().nullable().optional(),
   grade: z.string().nullable().optional()
 })
@@ -131,6 +131,14 @@ export const v2 = {
   scrapeLot: async (url: string): Promise<ScrapeResult> => {
     const response = await api.post('/api/v2/scrape/lot', { url })
     return ScrapeResultSchema.parse(response.data)
+  },
+
+  getCoinsByReference: async (catalog: string, number: string, volume?: string): Promise<Coin[]> => {
+    const response = await api.get('/api/v2/coins/by-reference', {
+      params: { catalog, number, volume }
+    })
+    // This returns a list of coins (clones or similar types)
+    return z.array(CoinSchema).parse(response.data.coins)
   }
 }
 
@@ -142,21 +150,50 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
     weight_g: coin.dimensions.weight_g,
     diameter_mm: coin.dimensions.diameter_mm,
     die_axis: coin.dimensions.die_axis,
+    specific_gravity: coin.dimensions.specific_gravity,
+    
     issuer: coin.attribution.issuer,
     issuer_id: coin.attribution.issuer_id,
     mint: coin.attribution.mint,
     mint_id: coin.attribution.mint_id,
     year_start: coin.attribution.year_start,
     year_end: coin.attribution.year_end,
+    
     grading_state: coin.grading.grading_state,
     grade: coin.grading.grade,
     grade_service: coin.grading.service,
     certification: coin.grading.certification_number,
     strike: coin.grading.strike,
     surface: coin.grading.surface,
+    
     acquisition_price: coin.acquisition?.price,
     acquisition_source: coin.acquisition?.source,
-    acquisition_date: coin.acquisition?.date,
-    acquisition_url: coin.acquisition?.url
+    acquisition_date: coin.acquisition?.date || null,
+    acquisition_url: coin.acquisition?.url,
+    
+    // Design
+    obverse_legend: coin.design?.obverse_legend,
+    obverse_description: coin.design?.obverse_description,
+    reverse_legend: coin.design?.reverse_legend,
+    reverse_description: coin.design?.reverse_description,
+    exergue: coin.design?.exergue,
+    
+    // Research Extensions
+    issue_status: coin.issue_status,
+    obverse_die_id: coin.die_info?.obverse_die_id,
+    reverse_die_id: coin.die_info?.reverse_die_id,
+    find_spot: coin.find_data?.find_spot,
+    find_date: coin.find_data?.find_date || null,
+    
+    // Images
+    images: (coin.images || []).map(img => ({
+      url: img.url,
+      image_type: img.image_type || 'other',
+      is_primary: img.is_primary || false
+    })),
+    
+    // Collection management
+    storage_location: coin.storage_location,
+    personal_notes: coin.personal_notes
   }
 }

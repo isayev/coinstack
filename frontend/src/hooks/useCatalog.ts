@@ -87,13 +87,38 @@ export interface ReferenceType {
 // API functions
 async function lookupReference(request: {
   raw_reference?: string;
-  system?: string;
-  volume?: string;
-  number?: string;
   context?: Record<string, unknown>;
 }): Promise<LookupResponse> {
-  const response = await api.post("/api/catalog/lookup", request);
-  return response.data;
+  if (!request.raw_reference) throw new Error("Reference required");
+  
+  // Use V2 LLM Catalog Parse
+  const response = await api.post("/api/v2/llm/catalog/parse", {
+    reference: request.raw_reference
+  });
+  
+  const data = response.data;
+  
+  return {
+    status: "success",
+    external_id: data.raw_reference,
+    external_url: null,
+    confidence: data.confidence,
+    candidates: [],
+    // Map parsed data to payload for form auto-population
+    payload: {
+      authority: data.issuer,
+      mint: data.mint,
+      date_from: data.year_start,
+      date_to: data.year_end,
+      metal: data.metal,
+      obverse_description: data.obverse_description,
+      reverse_description: data.reverse_description
+    },
+    error_message: null,
+    reference_type_id: null,
+    last_lookup: new Date().toISOString(),
+    cache_hit: false
+  };
 }
 
 async function enrichCoin(

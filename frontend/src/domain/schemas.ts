@@ -38,11 +38,38 @@ export const GradeServiceSchema = z.enum([
   'none',
 ])
 
+export const IssueStatusSchema = z.enum([
+  'official',
+  'fourree',
+  'imitation',
+  'barbarous',
+  'modern_fake',
+  'tooling_altered',
+])
+
 export const DimensionsSchema = z.object({
   weight_g: z.coerce.number().min(0).nullable().optional(),
   diameter_mm: z.coerce.number().min(0).nullable().optional(),
   thickness_mm: z.coerce.number().min(0).nullable().optional(),
   die_axis: z.coerce.number().min(0).max(12).nullable().optional(),
+  specific_gravity: z.coerce.number().min(0).nullable().optional(),
+})
+
+export const DieInfoSchema = z.object({
+  obverse_die_id: z.string().nullable().optional(),
+  reverse_die_id: z.string().nullable().optional(),
+})
+
+export const MonogramSchema = z.object({
+  id: z.number().optional(),
+  label: z.string(),
+  image_url: z.string().nullable().optional(),
+  vector_data: z.string().nullable().optional(),
+})
+
+export const FindDataSchema = z.object({
+  find_spot: z.string().nullable().optional(),
+  find_date: z.string().nullable().optional(),
 })
 
 export const AttributionSchema = z.object({
@@ -323,6 +350,18 @@ export const DomainCoinSchema = z.object({
   provenance_notes: z.string().nullable().optional(),
   orientation: z.string().nullable().optional(),
 
+  llm_suggested_references: z.array(z.string()).nullable().optional(),
+  llm_suggested_rarity: z.record(z.any()).nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Research Grade Extensions (V2.1)
+  // -------------------------------------------------------------------------
+  issue_status: IssueStatusSchema.optional(),
+  die_info: DieInfoSchema.nullable().optional(),
+  monograms: z.array(MonogramSchema).default([]).optional(),
+  secondary_treatments: z.array(z.record(z.any())).nullable().optional(),
+  find_data: FindDataSchema.nullable().optional(),
+
   // Navigation helpers (added by API)
   prev_id: z.number().nullable().optional(),
   next_id: z.number().nullable().optional(),
@@ -364,7 +403,11 @@ export type Category = z.infer<typeof CategorySchema>
 export type GradingState = z.infer<typeof GradingStateSchema>
 export type Rarity = 'c' | 's' | 'r1' | 'r2' | 'r3' | 'u';
 export type GradeService = z.infer<typeof GradeServiceSchema>
+export type IssueStatus = z.infer<typeof IssueStatusSchema>
 export type Dimensions = z.infer<typeof DimensionsSchema>
+export type DieInfo = z.infer<typeof DieInfoSchema>
+export type Monogram = z.infer<typeof MonogramSchema>
+export type FindData = z.infer<typeof FindDataSchema>
 export type Attribution = z.infer<typeof AttributionSchema>
 export type GradingDetails = z.infer<typeof GradingDetailsSchema>
 export type AcquisitionDetails = z.infer<typeof AcquisitionDetailsSchema>

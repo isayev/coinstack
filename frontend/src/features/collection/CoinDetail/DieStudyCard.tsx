@@ -16,10 +16,14 @@ import { ChevronDown, ChevronUp, CircleDot, Hash, Layers } from 'lucide-react';
 import { DieAxisClock } from '@/components/coins/DieAxisClock';
 import { cn } from '@/lib/utils';
 
+import { DieInfo } from '@/domain/schemas';
+
 interface DieStudyCardProps {
   /** Die axis value (0-12 clock hours) */
   dieAxis?: number | null;
-  /** Die match information */
+  /** Die match information (Research Grade) */
+  dieInfo?: DieInfo | null;
+  /** Legacy Die match information (deprecated but kept for compatibility) */
   dieMatch?: {
     obverseDie?: string | null;
     reverseDie?: string | null;
@@ -44,6 +48,7 @@ interface DieStudyCardProps {
 
 export function DieStudyCard({
   dieAxis,
+  dieInfo,
   dieMatch,
   controlMarks,
   dieStats,
@@ -53,8 +58,12 @@ export function DieStudyCard({
 }: DieStudyCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  // Use dieInfo if available, otherwise fall back to dieMatch
+  const displayObverseDie = dieInfo?.obverse_die_id ?? dieMatch?.obverseDie;
+  const displayReverseDie = dieInfo?.reverse_die_id ?? dieMatch?.reverseDie;
+
   // Check if there's any meaningful data to show
-  const hasData = dieAxis != null || dieMatch || (controlMarks && controlMarks.length > 0) || dieStats;
+  const hasData = dieAxis != null || displayObverseDie || displayReverseDie || (controlMarks && controlMarks.length > 0) || dieStats;
 
   if (!hasData) {
     return null; // Don't render if no die study data
@@ -143,7 +152,7 @@ export function DieStudyCard({
           )}
 
           {/* Die Match Section */}
-          {dieMatch && (dieMatch.obverseDie || dieMatch.reverseDie) && (
+          {(displayObverseDie || displayReverseDie) && (
             <div className="pt-2">
               <span
                 className="text-[10px] font-bold uppercase tracking-wider block mb-2"
@@ -152,7 +161,7 @@ export function DieStudyCard({
                 Die Identification
               </span>
               <div className="grid grid-cols-2 gap-4">
-                {dieMatch.obverseDie && (
+                {displayObverseDie && (
                   <div>
                     <span
                       className="text-xs block mb-1"
@@ -164,11 +173,11 @@ export function DieStudyCard({
                       className="text-sm font-mono"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {dieMatch.obverseDie}
+                      {displayObverseDie}
                     </span>
                   </div>
                 )}
-                {dieMatch.reverseDie && (
+                {displayReverseDie && (
                   <div>
                     <span
                       className="text-xs block mb-1"
@@ -180,12 +189,12 @@ export function DieStudyCard({
                       className="text-sm font-mono"
                       style={{ color: 'var(--text-primary)' }}
                     >
-                      {dieMatch.reverseDie}
+                      {displayReverseDie}
                     </span>
                   </div>
                 )}
               </div>
-              {dieMatch.matchingCoins && dieMatch.matchingCoins > 1 && (
+              {dieMatch?.matchingCoins && dieMatch.matchingCoins > 1 && (
                 <p
                   className="text-xs mt-2"
                   style={{ color: 'var(--text-secondary)' }}

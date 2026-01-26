@@ -242,52 +242,82 @@ export function VocabAutocomplete({
                 <CommandEmpty>
                   <div className="flex flex-col items-center gap-2 py-4">
                     <p className="text-sm text-muted-foreground">No results found.</p>
-                    {allowNormalize && (
+                    <div className="flex flex-col gap-2 w-full px-4">
+                      {allowNormalize && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleNormalize}
+                          className="gap-1.5 w-full justify-start"
+                        >
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Normalize "{search}"
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={handleNormalize}
-                        className="gap-1.5"
+                        onClick={() => {
+                          onChange(null, search)
+                          setOpen(false)
+                        }}
+                        className="gap-1.5 w-full justify-start text-muted-foreground hover:text-foreground"
                       >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Normalize "{search}"
+                        <Check className="h-3.5 w-3.5" />
+                        Use "{search}" as is
                       </Button>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Press Enter to normalize or click the button
-                    </p>
+                    </div>
                   </div>
                 </CommandEmpty>
               ) : data && data.length === 0 ? (
                 <CommandEmpty>Type to search...</CommandEmpty>
               ) : (
-                <CommandGroup>
-                  {data?.map((option) => (
-                    <CommandItem
-                      key={option.id}
-                      value={option.id.toString()}
-                      onSelect={() => {
-                        onChange(option.id, option.canonical_name)
-                        setOpen(false)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex w-full items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="font-medium">{option.canonical_name}</span>
-                          {getOptionInfo(option) && (
-                            <span className="text-xs text-muted-foreground">
-                              {getOptionInfo(option)}
-                            </span>
+                <>
+                  <CommandGroup>
+                    {data?.map((option) => (
+                      <CommandItem
+                        key={option.id}
+                        value={option.id.toString()}
+                        onSelect={() => {
+                          onChange(option.id, option.canonical_name)
+                          setOpen(false)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{option.canonical_name}</span>
+                            {getOptionInfo(option) && (
+                              <span className="text-xs text-muted-foreground">
+                                {getOptionInfo(option)}
+                              </span>
+                            )}
+                          </div>
+                          {value === option.id && (
+                            <Check className="h-4 w-4 text-primary" />
                           )}
                         </div>
-                        {value === option.id && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                  {search && search.length > 1 && !data?.find(o => o.canonical_name.toLowerCase() === search.toLowerCase()) && (
+                    <CommandGroup heading="Custom Value">
+                      <CommandItem
+                        value={`raw-${search}`}
+                        onSelect={() => {
+                          onChange(null, search)
+                          setOpen(false)
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Check className="h-3.5 w-3.5" />
+                          Use "{search}" as is
+                        </div>
+                      </CommandItem>
+                    </CommandGroup>
+                  )}
+                </>
               )}
             </CommandList>
           </Command>

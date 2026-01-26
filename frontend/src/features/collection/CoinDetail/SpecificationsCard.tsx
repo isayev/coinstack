@@ -150,6 +150,12 @@ export const SpecificationsCard = memo(function SpecificationsCard({
               label="Diameter" 
               value={coin.dimensions?.diameter_mm ? `${coin.dimensions.diameter_mm}mm` : null} 
             />
+            {coin.dimensions?.specific_gravity && (
+              <SpecRow 
+                label="Specific Gravity" 
+                value={coin.dimensions.specific_gravity} 
+              />
+            )}
             <SpecRow 
               label="Die Axis" 
               value={dieAxis !== null && dieAxis !== undefined ? (
@@ -163,6 +169,12 @@ export const SpecificationsCard = memo(function SpecificationsCard({
               label="Metal" 
               value={formatMetal(coin.metal)} 
             />
+            {coin.issue_status && coin.issue_status !== 'official' && (
+              <SpecRow 
+                label="Issue Status" 
+                value={<span className="capitalize font-bold text-red-500">{coin.issue_status.replace('_', ' ')}</span>} 
+              />
+            )}
             {coin.die_state && (
               <SpecRow 
                 label="Die State" 

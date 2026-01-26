@@ -5,10 +5,10 @@ from sqlalchemy import and_
 from src.domain.coin import (
     Coin, Dimensions, Attribution, Category, Metal, 
     GradingDetails, AcquisitionDetails, GradingState, GradeService, CoinImage,
-    Design, CatalogReference, ProvenanceEntry
+    Design, CatalogReference, ProvenanceEntry, IssueStatus, DieInfo, Monogram, FindData
 )
 from src.domain.repositories import ICoinRepository
-from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel
+from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
 
 class SqlAlchemyCoinRepository(ICoinRepository):
     def __init__(self, session: Session):
@@ -37,6 +37,20 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             import json
             orm_coin.llm_suggested_references = json.dumps([ref.raw_text for ref in coin.references])
 
+        # Handle Monograms (Many-to-Many)
+        if coin.monograms:
+            # We assume monograms are already persisted or managed elsewhere for now,
+            # OR we try to find existing ones by label/id. 
+            # For simplicity in this iteration, we look up by ID or create if needed (simple check).
+            orm_monograms = []
+            for m in coin.monograms:
+                if m.id:
+                    mono = self.session.get(MonogramModel, m.id)
+                    if mono:
+                        orm_monograms.append(mono)
+                # If no ID, we might create, but let's stick to linking for now to be safe
+            orm_coin.monograms = orm_monograms
+
         # Merge handles both insert (if id is None) and update
         merged_coin = self.session.merge(orm_coin)
         
@@ -49,7 +63,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         orm_coin = self.session.query(CoinModel).options(
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
             selectinload(CoinModel.provenance_events),  # Eager load provenance
-            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type)  # Eager load references with their types
+            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),  # Eager load references with their types
+            selectinload(CoinModel.monograms) # Eager load monograms
         ).filter(CoinModel.id == coin_id).first()
         if not orm_coin:
             return None
@@ -66,7 +81,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         query = self.session.query(CoinModel).options(
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
             selectinload(CoinModel.provenance_events),  # Eager load provenance
-            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type)  # Eager load references
+            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),  # Eager load references
+            selectinload(CoinModel.monograms)
         )
         
         # Apply filters
@@ -252,7 +268,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             dimensions=Dimensions(
                 weight_g=model.weight_g,
                 diameter_mm=model.diameter_mm,
-                die_axis=model.die_axis
+                die_axis=model.die_axis,
+                specific_gravity=model.specific_gravity
             ),
             attribution=Attribution(
                 issuer=model.issuer,
@@ -294,6 +311,23 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             provenance=[
                 self._provenance_to_domain(p) for p in model.provenance_events
             ] if model.provenance_events else [],
+            
+            # --- Research Grade Extensions ---
+            issue_status=IssueStatus(model.issue_status) if model.issue_status else IssueStatus.OFFICIAL,
+            die_info=DieInfo(
+                obverse_die_id=model.obverse_die_id,
+                reverse_die_id=model.reverse_die_id
+            ) if (model.obverse_die_id or model.reverse_die_id) else None,
+            monograms=[
+                Monogram(id=m.id, label=m.label, image_url=m.image_url, vector_data=m.vector_data)
+                for m in model.monograms
+            ] if model.monograms else [],
+            secondary_treatments=json.loads(model.secondary_treatments) if model.secondary_treatments else None,
+            find_data=FindData(
+                find_spot=model.find_spot,
+                find_date=model.find_date
+            ) if (model.find_spot or model.find_date) else None,
+
             # Collection management fields
             storage_location=model.storage_location,
             personal_notes=model.personal_notes,
@@ -371,23 +405,28 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             weight_g=coin.dimensions.weight_g,
             diameter_mm=coin.dimensions.diameter_mm,
             die_axis=coin.dimensions.die_axis,
+            specific_gravity=coin.dimensions.specific_gravity,
+            
             issuer=coin.attribution.issuer,
             issuer_id=coin.attribution.issuer_id,
             mint=coin.attribution.mint,
             mint_id=coin.attribution.mint_id,
             year_start=coin.attribution.year_start,
             year_end=coin.attribution.year_end,
+            
             grading_state=coin.grading.grading_state.value,
             grade=coin.grading.grade,
             grade_service=coin.grading.service.value if coin.grading.service else None,
             certification_number=coin.grading.certification_number,
             strike_quality=coin.grading.strike,
             surface_quality=coin.grading.surface,
+            
             acquisition_price=coin.acquisition.price if coin.acquisition else None,
             acquisition_currency=coin.acquisition.currency if coin.acquisition else None,
             acquisition_source=coin.acquisition.source if coin.acquisition else None,
             acquisition_date=coin.acquisition.date if coin.acquisition else None,
             acquisition_url=coin.acquisition.url if coin.acquisition else None,
+            
             description=coin.description,
             denomination=coin.denomination,
             portrait_subject=coin.portrait_subject,
@@ -396,6 +435,15 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             reverse_legend=coin.design.reverse_legend if coin.design else None,
             reverse_description=coin.design.reverse_description if coin.design else None,
             exergue=coin.design.exergue if coin.design else None,
+            
+            # --- Research Grade Extensions ---
+            issue_status=coin.issue_status.value,
+            obverse_die_id=coin.die_info.obverse_die_id if coin.die_info else None,
+            reverse_die_id=coin.die_info.reverse_die_id if coin.die_info else None,
+            secondary_treatments=json.dumps(coin.secondary_treatments) if coin.secondary_treatments else None,
+            find_spot=coin.find_data.find_spot if coin.find_data else None,
+            find_date=coin.find_data.find_date if coin.find_data else None,
+            
             # Collection management fields
             storage_location=coin.storage_location,
             personal_notes=coin.personal_notes,

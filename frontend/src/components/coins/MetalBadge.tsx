@@ -16,6 +16,8 @@ const METAL_SYMBOLS: Record<Metal, string> = {
   billon: 'Bi',
   potin: 'Po',
   orichalcum: 'Or',
+  lead: 'Pb',
+  ae: 'Ae',
 }
 
 export function MetalBadge({ metal, className }: MetalBadgeProps) {

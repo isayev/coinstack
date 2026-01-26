@@ -1,10 +1,11 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import date
 from src.domain.coin import (
     Coin, Dimensions, Attribution, Category, Metal, 
-    GradingDetails, GradingState, GradeService, AcquisitionDetails
+    GradingDetails, GradingState, GradeService, AcquisitionDetails,
+    IssueStatus, DieInfo, FindData
 )
 from src.domain.repositories import ICoinRepository
 
@@ -26,6 +27,13 @@ class CreateCoinDTO:
     acquisition_price: Optional[Decimal] = None
     acquisition_source: Optional[str] = None
     acquisition_date: Optional[date] = None
+    # Research Grade Extensions
+    specific_gravity: Optional[Decimal] = None
+    issue_status: str = "official"
+    obverse_die_id: Optional[str] = None
+    reverse_die_id: Optional[str] = None
+    find_spot: Optional[str] = None
+    find_date: Optional[date] = None
 
 class CreateCoinUseCase:
     def __init__(self, repository: ICoinRepository):
@@ -37,6 +45,7 @@ class CreateCoinUseCase:
             metal = Metal(dto.metal)
             grading_state = GradingState(dto.grading_state)
             grade_service = GradeService(dto.grade_service) if dto.grade_service else None
+            issue_status = IssueStatus(dto.issue_status) if dto.issue_status else IssueStatus.OFFICIAL
         except ValueError as e:
             raise ValueError(f"Invalid enum value: {e}")
 
@@ -63,7 +72,8 @@ class CreateCoinUseCase:
             dimensions=Dimensions(
                 weight_g=dto.weight_g,
                 diameter_mm=dto.diameter_mm,
-                die_axis=dto.die_axis
+                die_axis=dto.die_axis,
+                specific_gravity=dto.specific_gravity
             ),
             attribution=Attribution(
                 issuer=dto.issuer,
@@ -72,7 +82,18 @@ class CreateCoinUseCase:
                 year_end=dto.year_end
             ),
             grading=grading,
-            acquisition=acquisition
+            acquisition=acquisition,
+            
+            # Extensions
+            issue_status=issue_status,
+            die_info=DieInfo(
+                obverse_die_id=dto.obverse_die_id,
+                reverse_die_id=dto.reverse_die_id
+            ) if (dto.obverse_die_id or dto.reverse_die_id) else None,
+            find_data=FindData(
+                find_spot=dto.find_spot,
+                find_date=dto.find_date
+            ) if (dto.find_spot or dto.find_date) else None
         )
 
         return self.repository.save(new_coin)

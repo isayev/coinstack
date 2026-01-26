@@ -246,6 +246,7 @@ export function CoinDetailV3({
       {/* Die Study Section (collapsible) */}
       <DieStudyCard
         dieAxis={coin.dimensions?.die_axis}
+        dieInfo={coin.die_info}
         controlMarks={parseControlMarks(coin.control_marks)}
         categoryType={categoryType}
       />

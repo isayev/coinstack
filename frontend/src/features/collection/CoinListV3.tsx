@@ -23,6 +23,7 @@ import { useSelection } from '@/stores/selectionStore';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/Pagination';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export function CoinListV3() {
   const { viewMode, setViewMode } = useUIStore();
@@ -42,6 +43,13 @@ export function CoinListV3() {
   const totalPages = data?.pages || 1;
   const allIds = coins.map((coin) => coin.id).filter((id): id is number => id !== null);
   const allSelected = coins.length > 0 && allIds.every((id) => selectedIds.has(id));
+
+  // Reset page if we are out of bounds (e.g. filters changed or persisted state is stale)
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(1);
+    }
+  }, [page, totalPages, setPage]);
 
   // Selection handlers
   const handleSelect = (coinId: number) => {
@@ -214,7 +222,7 @@ export function CoinListV3() {
         </div>
 
         {/* Right: View Switcher */}
-        <div 
+        <div
           className="flex rounded-lg p-1"
           style={{ background: 'var(--bg-elevated)' }}
         >

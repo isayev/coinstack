@@ -5,11 +5,17 @@ import { LegendExpansionRequest, LegendExpansionResponse } from "@/domain/schema
 export function useExpandLegend() {
   return useMutation({
     mutationFn: async (request: LegendExpansionRequest) => {
-      const response = await api.post<LegendExpansionResponse>(
-        "/api/legend/expand",
-        request
+      const response = await api.post<{ expanded: string; confidence: number }>(
+        "/api/v2/llm/legend/expand",
+        { abbreviation: request.text }
       );
-      return response.data;
+      // Map V2 response to expected frontend interface
+      return {
+        original: request.text,
+        expanded: response.data.expanded,
+        confidence: response.data.confidence,
+        tokens: [] // V2 doesn't return tokens yet
+      } as LegendExpansionResponse;
     },
   });
 }

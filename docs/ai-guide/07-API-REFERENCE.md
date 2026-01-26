@@ -1,7 +1,7 @@
 # API Reference (V2)
 
 > **Interactive Documentation:** For complete, up-to-date API documentation, use Swagger UI at `http://localhost:8000/docs` when the backend is running.
->
+> 
 > This document provides a quick reference for V2 Clean Architecture endpoints.
 
 ---
@@ -61,8 +61,10 @@ GET /api/v2/coins
     "dimensions": {
       "weight_g": 3.82,
       "diameter_mm": 18.0,
-      "die_axis": 6
+      "die_axis": 6,
+      "specific_gravity": 10.5
     },
+    "issue_status": "official",
     "attribution": {
       "issuer": "Augustus",
       "mint": "Lugdunum",
@@ -123,6 +125,16 @@ GET /api/v2/coins/{id}
     "reverse_legend": "AVGVSTI F COS DESIG PRINC IVVENT",
     "reverse_description": "Gaius and Lucius standing"
   },
+  "issue_status": "official",
+  "die_info": {
+    "obverse_die_id": "O-Aug-1",
+    "reverse_die_id": "R-Aug-1"
+  },
+  "monograms": [ ... ],
+  "find_data": {
+    "find_spot": "Tetbury Hoard",
+    "find_date": "2024-01-01"
+  },
   "images": [ ... ],
   "references": [ ... ],
   "provenance": [ ... ]
@@ -145,6 +157,7 @@ POST /api/v2/coins
   "metal": "silver",
   "weight_g": 3.82,
   "diameter_mm": 18.0,
+  "specific_gravity": 10.5,
   "issuer": "Augustus",
   "grading_state": "graded",
   "grade": "VF",
@@ -159,6 +172,11 @@ POST /api/v2/coins
   "acquisition_date": "2023-06-15",
   "storage_location": "SlabBox1",
   "personal_notes": "Fine patina",
+  "issue_status": "official",
+  "obverse_die_id": "O-Aug-1",
+  "reverse_die_id": "R-Aug-1",
+  "find_spot": "Tetbury Hoard",
+  "find_date": "2024-01-01",
   "images": [
     {
       "url": "/images/coins/1/obverse.jpg",
@@ -185,7 +203,8 @@ PUT /api/v2/coins/{id}
 {
   "grade": "EF",
   "acquisition_price": 600.00,
-  "personal_notes": "Upgraded from VF to EF after re-examination"
+  "personal_notes": "Upgraded from VF to EF after re-examination",
+  "obverse_die_id": "O-Aug-2"
 }
 ```
 
@@ -1004,17 +1023,17 @@ created_coin = response.json()
 ### Using Frontend API Client
 
 ```typescript
-import { apiClient } from '@/api/client'
+import { apiClient } from '@/api/client' 
 
-// List coins
+# List coins
 const coins = await apiClient.get('/api/v2/coins', {
   params: { category: 'imperial', metal: 'silver' }
 })
 
-// Get coin by ID
+# Get coin by ID
 const coin = await apiClient.get('/api/v2/coins/1')
 
-// Create coin
+# Create coin
 const newCoin = await apiClient.post('/api/v2/coins', coinData)
 ```
 

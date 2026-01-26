@@ -59,6 +59,7 @@ export function CoinTableRowV3({
 
   // Format year range
   const displayYear = (): string => {
+    if (!coin.attribution) return 'Unknown';
     const { year_start, year_end } = coin.attribution;
     if (year_start === null || year_start === undefined) return 'Unknown';
     if (year_end === null || year_end === undefined || year_start === year_end) {
@@ -89,15 +90,11 @@ export function CoinTableRowV3({
   // Format physical dimensions
   const weightDisplay = coin.dimensions?.weight_g
     ? `${coin.dimensions.weight_g.toFixed(2)}g`
-    : coin.weight_g
-      ? `${coin.weight_g.toFixed(2)}g`
-      : '—';
+    : '—';
   
   const diameterDisplay = coin.dimensions?.diameter_mm
     ? `${coin.dimensions.diameter_mm.toFixed(1)}mm`
-    : coin.diameter_mm
-      ? `${coin.diameter_mm.toFixed(1)}mm`
-      : '—';
+    : '—';
 
   // Calculate performance
   const marketValue = coin.market_value;
@@ -160,7 +157,7 @@ export function CoinTableRowV3({
           {primaryImage ? (
             <img
               src={primaryImage}
-              alt={coin.attribution.issuer || 'Coin'}
+              alt={coin.attribution?.issuer || 'Coin'}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -190,9 +187,9 @@ export function CoinTableRowV3({
           <div
             className="text-sm font-semibold truncate"
             style={{ color: 'var(--text-primary)' }}
-            title={coin.attribution.issuer ?? undefined}
+            title={coin.attribution?.issuer ?? undefined}
           >
-            {coin.attribution.issuer || 'Unknown'}
+            {coin.attribution?.issuer || 'Unknown'}
           </div>
           <div
             className="text-[11px] truncate"
@@ -237,9 +234,9 @@ export function CoinTableRowV3({
           <div
             className="text-sm truncate"
             style={{ color: 'var(--text-secondary)' }}
-            title={coin.attribution.mint || coin.mint_name || 'Uncertain'}
+            title={coin.attribution?.mint || coin.mint_name || 'Uncertain'}
           >
-            {coin.attribution.mint || coin.mint_name || '—'}
+            {coin.attribution?.mint || coin.mint_name || '—'}
           </div>
         </div>
 

@@ -1,9 +1,28 @@
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
-from sqlalchemy import Integer, String, Text, Numeric, Date, DateTime, Boolean, ForeignKey
+from sqlalchemy import Integer, String, Text, Numeric, Date, DateTime, Boolean, ForeignKey, Table, Column
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.infrastructure.persistence.models import Base
+
+# Association Table for Monograms (Many-to-Many)
+coin_monograms = Table(
+    "coin_monograms",
+    Base.metadata,
+    Column("coin_id", Integer, ForeignKey("coins_v2.id"), primary_key=True),
+    Column("monogram_id", Integer, ForeignKey("monograms.id"), primary_key=True),
+)
+
+class MonogramModel(Base):
+    __tablename__ = "monograms"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    label: Mapped[str] = mapped_column(String, index=True) # e.g. "Price 123"
+    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    vector_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # SVG path or data
+    
+    # Relationship back to coins
+    coins: Mapped[List["CoinModel"]] = relationship(secondary=coin_monograms, back_populates="monograms")
 
 class CoinModel(Base):
     __tablename__ = "coins_v2"
@@ -61,6 +80,28 @@ class CoinModel(Base):
     reverse_legend: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     reverse_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     exergue: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # -------------------------------------------------------------------------
+    # Research Grade Extensions (V2.1)
+    # -------------------------------------------------------------------------
+    
+    # Production & Authenticity
+    issue_status: Mapped[str] = mapped_column(String, default="official", index=True) 
+    # Values: 'official', 'fourree', 'imitation', 'barbarous', 'modern_fake'
+    
+    # Metrology
+    specific_gravity: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    
+    # Die Linking
+    obverse_die_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    reverse_die_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    
+    # Structured Secondary Treatments (Countermarks, bankers marks, etc - JSON)
+    secondary_treatments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Find Data
+    find_spot: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    find_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     
     # -------------------------------------------------------------------------
     # LLM-Generated Fields (Phase 1C)
@@ -174,6 +215,7 @@ class CoinModel(Base):
     auction_data: Mapped[Optional["AuctionDataModel"]] = relationship(back_populates="coin", uselist=False)
     references: Mapped[List["CoinReferenceModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
     provenance_events: Mapped[List["ProvenanceEventModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
+    monograms: Mapped[List["MonogramModel"]] = relationship(secondary=coin_monograms, back_populates="coins")
     
     # Legacy vocab relationships (deprecated)
     issuer_rel: Mapped[Optional["IssuerModel"]] = relationship("src.infrastructure.persistence.models_vocab.IssuerModel")

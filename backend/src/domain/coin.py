@@ -51,6 +51,15 @@ class GradeService(str, Enum):
     ANACS = "anacs"
     NONE = "none"
 
+class IssueStatus(str, Enum):
+    """Manufacturing status of the coin."""
+    OFFICIAL = "official"
+    FOURREE = "fourree"
+    IMITATION = "imitation"
+    BARBAROUS = "barbarous"
+    MODERN_FAKE = "modern_fake"
+    TOOLING_ALTERED = "tooling_altered"
+
 # --- Value Objects ---
 
 @dataclass(frozen=True)
@@ -58,6 +67,7 @@ class Dimensions:
     weight_g: Decimal
     diameter_mm: Decimal
     die_axis: Optional[int] = None
+    specific_gravity: Optional[Decimal] = None
 
     def __post_init__(self):
         if self.weight_g < 0:
@@ -138,6 +148,26 @@ class CoinImage:
     image_type: str # 'obverse', 'reverse', 'slab', etc.
     is_primary: bool = False
 
+@dataclass(frozen=True)
+class Monogram:
+    """Represents a Monogram linked to a coin."""
+    id: Optional[int]
+    label: str
+    image_url: Optional[str] = None
+    vector_data: Optional[str] = None
+
+@dataclass(frozen=True)
+class DieInfo:
+    """Research-grade die study information."""
+    obverse_die_id: Optional[str] = None
+    reverse_die_id: Optional[str] = None
+
+@dataclass(frozen=True)
+class FindData:
+    """Archaeological context or find data."""
+    find_spot: Optional[str] = None
+    find_date: Optional[date] = None
+
 # --- Aggregate Root ---
 
 @dataclass
@@ -157,6 +187,14 @@ class Coin:
     design: Optional[Design] = None                 # Legends and descriptions
     references: List[CatalogReference] = field(default_factory=list)  # RIC, Crawford, etc.
     provenance: List[ProvenanceEntry] = field(default_factory=list)   # Ownership history
+    
+    # --- Research Grade Extensions ---
+    issue_status: IssueStatus = IssueStatus.OFFICIAL
+    die_info: Optional[DieInfo] = None
+    monograms: List[Monogram] = field(default_factory=list)
+    secondary_treatments: Optional[List[Dict[str, Any]]] = None # JSON structure
+    find_data: Optional[FindData] = None
+
     # Collection management
     storage_location: Optional[str] = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
     personal_notes: Optional[str] = None            # Owner notes, observations, research

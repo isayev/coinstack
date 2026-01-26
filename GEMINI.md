@@ -26,15 +26,26 @@
 - **Standard:** Use "Rich" scrapers (`heritage_rich`, `cng`, `biddr`, `ebay_rich`) in `backend/app/services/scrapers/`.
 - **Avoid:** Simple/legacy scrapers if a rich version exists.
 
+### 🔴 Documentation
+- **Sync Protocol:** Consult `design/` and `docs/ai-guide/` BEFORE changes.
+- **Update:** Update documentation (`05-DATA-MODEL.md`, `07-API-REFERENCE.md`, etc.) AFTER any functional change.
+
 ## 3. Architecture Cheat Sheet
-- **Models:** `backend/app/models/` (SQLAlchemy).
-- **Schemas:** `backend/app/schemas/` (Pydantic).
-- **API:** `backend/app/routers/` (Endpoints).
-- **UI:** `frontend/src/components/` (shadcn/ui), `pages/`, `hooks/`.
-- **State:** `frontend/src/stores/` (Zustand).
+- **Models:** `backend/src/infrastructure/persistence/orm.py` (SQLAlchemy).
+- **Domain:** `backend/src/domain/coin.py` (Entities).
+- **API:** `backend/src/infrastructure/web/routers/` (Endpoints).
+- **UI:** `frontend/src/features/` (CoinDetail, etc.), `frontend/src/components/`.
+- **Schema:** `frontend/src/domain/schemas.ts` (Zod/TS).
 
 ## 4. Server Management
 **Restart Protocol:**
 1. Kill ALL processes on 8000 & 3000.
-2. Start Backend: `uvicorn app.main:app --port 8000`
+2. Start Backend: `python run_server.py`
 3. Start Frontend: `npm run dev -- --port 3000`
+
+## 5. Research Grade Features (V2.1)
+- **Die Studies:** `obverse_die_id`, `reverse_die_id` (String).
+- **Issue Status:** `official`, `fourree`, `imitation`, `barbarous`, `modern_fake` (Enum).
+- **Metrology:** `specific_gravity` (Decimal).
+- **Monograms:** `monograms` (Table), `coin_monograms` (Link).
+- **Find Data:** `find_spot`, `find_date`.

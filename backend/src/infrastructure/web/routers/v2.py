@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, status, Query, HTTPException
 from pydantic import BaseModel, Field, ConfigDict
 from decimal import Decimal
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import date
 from src.domain.repositories import ICoinRepository
 from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
-from src.domain.coin import Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, Category, Metal, GradingState, GradeService
+from src.domain.coin import (
+    Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
+    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData
+)
 from src.infrastructure.web.dependencies import get_coin_repo
 
 router = APIRouter(prefix="/api/v2/coins", tags=["coins"])
@@ -40,11 +43,22 @@ class CreateCoinRequest(BaseModel):
     # Collection management
     storage_location: Optional[str] = None
     personal_notes: Optional[str] = None
+    
+    # Research Grade Extensions
+    specific_gravity: Optional[Decimal] = None
+    issue_status: str = "official"
+    obverse_die_id: Optional[str] = None
+    reverse_die_id: Optional[str] = None
+    find_spot: Optional[str] = None
+    find_date: Optional[date] = None
+    # Note: secondary_treatments and monograms not yet supported in simple CREATE
+    # They should be added via specific endpoints or future updates
 
 class DimensionsResponse(BaseModel):
     weight_g: Decimal
     diameter_mm: Decimal
     die_axis: Optional[int] = None
+    specific_gravity: Optional[Decimal] = None
 
 class AttributionResponse(BaseModel):
     issuer: str
@@ -94,6 +108,20 @@ class ProvenanceEntryResponse(BaseModel):
     notes: Optional[str] = None
     raw_text: str = ""
 
+class DieInfoResponse(BaseModel):
+    obverse_die_id: Optional[str] = None
+    reverse_die_id: Optional[str] = None
+
+class MonogramResponse(BaseModel):
+    id: Optional[int]
+    label: str
+    image_url: Optional[str] = None
+    vector_data: Optional[str] = None
+
+class FindDataResponse(BaseModel):
+    find_spot: Optional[str] = None
+    find_date: Optional[date] = None
+
 class CoinResponse(BaseModel):
     id: Optional[int]
     category: str
@@ -119,6 +147,14 @@ class CoinResponse(BaseModel):
     llm_analysis_sections: Optional[str] = None      # JSON-encoded sections
     llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
     llm_suggested_rarity: Optional[dict] = None      # Rarity info from LLM for audit
+    
+    # Research Grade Extensions
+    issue_status: str
+    die_info: Optional[DieInfoResponse] = None
+    monograms: List[MonogramResponse] = []
+    secondary_treatments: Optional[List[Dict[str, Any]]] = None
+    find_data: Optional[FindDataResponse] = None
+    
     # Navigation helpers
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
@@ -134,7 +170,8 @@ class CoinResponse(BaseModel):
             dimensions=DimensionsResponse(
                 weight_g=coin.dimensions.weight_g,
                 diameter_mm=coin.dimensions.diameter_mm,
-                die_axis=coin.dimensions.die_axis
+                die_axis=coin.dimensions.die_axis,
+                specific_gravity=coin.dimensions.specific_gravity
             ),
             attribution=AttributionResponse(
                 issuer=coin.attribution.issuer,
@@ -199,7 +236,27 @@ class CoinResponse(BaseModel):
             llm_enriched_at=coin.llm_enriched_at,
             llm_analysis_sections=coin.llm_analysis_sections,
             llm_suggested_references=coin.llm_suggested_references,
-            llm_suggested_rarity=coin.llm_suggested_rarity
+            llm_suggested_rarity=coin.llm_suggested_rarity,
+            
+            # Extensions mapping
+            issue_status=coin.issue_status.value,
+            die_info=DieInfoResponse(
+                obverse_die_id=coin.die_info.obverse_die_id,
+                reverse_die_id=coin.die_info.reverse_die_id
+            ) if coin.die_info else None,
+            monograms=[
+                MonogramResponse(
+                    id=m.id,
+                    label=m.label,
+                    image_url=m.image_url,
+                    vector_data=m.vector_data
+                ) for m in coin.monograms
+            ],
+            secondary_treatments=coin.secondary_treatments,
+            find_data=FindDataResponse(
+                find_spot=coin.find_data.find_spot,
+                find_date=coin.find_data.find_date
+            ) if coin.find_data else None
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -208,15 +265,6 @@ def create_coin(
     repo: ICoinRepository = Depends(get_coin_repo)
 ):
     use_case = CreateCoinUseCase(repo)
-    
-    # Map images via DTO? The UseCase/DTO needs updating too if we want to pass images.
-    # For now, let's create the coin then add images? Or update DTO.
-    # Updating DTO is better.
-    # But since DTO is simple, we might need to extend it.
-    
-    # Simplified flow: Create Use Case handles DTO which we haven't updated yet.
-    # Let's temporarily just pass basic data, and images support requires DTO update.
-    # Or, we update DTO now.
     
     dto = CreateCoinDTO(
         category=request.category,
@@ -235,12 +283,27 @@ def create_coin(
         acquisition_price=request.acquisition_price,
         acquisition_source=request.acquisition_source,
         acquisition_date=request.acquisition_date,
-        # TODO: Add images to DTO
+        
+        # Extensions
+        specific_gravity=request.specific_gravity,
+        issue_status=request.issue_status,
+        obverse_die_id=request.obverse_die_id,
+        reverse_die_id=request.reverse_die_id,
+        find_spot=request.find_spot,
+        find_date=request.find_date
     )
     
     domain_coin = use_case.execute(dto)
     
-    return CoinResponse.from_domain(domain_coin)
+    # Handle initial images
+    for img in request.images:
+        domain_coin.add_image(img.url, img.image_type, img.is_primary)
+    
+    # Save again with images (or update logic to handle images in UseCase)
+    # Since UseCase logic doesn't handle images in DTO yet, we do this:
+    saved_coin = repo.save(domain_coin)
+    
+    return CoinResponse.from_domain(saved_coin)
 
 class PaginatedResponse(BaseModel):
     items: List[CoinResponse]
@@ -408,7 +471,8 @@ def update_coin(
             dimensions=Dimensions(
                 weight_g=request.weight_g,
                 diameter_mm=request.diameter_mm,
-                die_axis=request.die_axis
+                die_axis=request.die_axis,
+                specific_gravity=request.specific_gravity
             ),
             attribution=Attribution(
                 issuer=request.issuer,
@@ -432,7 +496,33 @@ def update_coin(
                 url=request.acquisition_url
             ) if request.acquisition_price is not None else None,
             storage_location=request.storage_location,
-            personal_notes=request.personal_notes
+            personal_notes=request.personal_notes,
+            
+            # Extensions
+            issue_status=IssueStatus(request.issue_status) if request.issue_status else IssueStatus.OFFICIAL,
+            die_info=DieInfo(
+                obverse_die_id=request.obverse_die_id,
+                reverse_die_id=request.reverse_die_id
+            ) if (request.obverse_die_id or request.reverse_die_id) else None,
+            find_data=FindData(
+                find_spot=request.find_spot,
+                find_date=request.find_date
+            ) if (request.find_spot or request.find_date) else None,
+            
+            # Preserve existing fields that aren't in simple update request
+            monograms=existing_coin.monograms,
+            secondary_treatments=existing_coin.secondary_treatments,
+            description=existing_coin.description,
+            denomination=existing_coin.denomination,
+            portrait_subject=existing_coin.portrait_subject,
+            design=existing_coin.design,
+            references=existing_coin.references,
+            provenance=existing_coin.provenance,
+            historical_significance=existing_coin.historical_significance,
+            llm_enriched_at=existing_coin.llm_enriched_at,
+            llm_analysis_sections=existing_coin.llm_analysis_sections,
+            llm_suggested_references=existing_coin.llm_suggested_references,
+            llm_suggested_rarity=existing_coin.llm_suggested_rarity
         )
         
         # Add images manually here since DTO/UseCase flow is pending update

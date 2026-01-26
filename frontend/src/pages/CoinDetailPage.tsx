@@ -43,7 +43,7 @@ export function CoinDetailPage() {
       // Update the coin in cache with historical context
       queryClient.setQueryData(['coin', coinId], (oldData: any) => ({
         ...oldData,
-        historical_significance: result.context,
+        historical_significance: result.raw_content,
         llm_enriched_at: new Date().toISOString(),
       }))
       

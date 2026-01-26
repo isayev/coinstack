@@ -1,6 +1,6 @@
 # Data Model Reference
 
-> **Complete Schema:** For the full 64-column schema with all constraints, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
+> **Complete Schema:** For the full schema with all constraints, see [`backend/SCHEMA.md`](../../backend/SCHEMA.md).
 >
 > This document provides V2 Clean Architecture data layer reference with ORM models and query patterns.
 
@@ -70,6 +70,7 @@ erDiagram
     CoinModel }o--o| VocabTermModel : "mint"
     CoinModel }o--o| VocabTermModel : "denomination"
     CoinModel }o--o| VocabTermModel : "dynasty"
+    CoinModel }o--o{ MonogramModel : "has"
 
     SeriesModel ||--o{ SeriesSlotModel : "has"
     SeriesModel ||--o{ SeriesMembershipModel : "has"
@@ -103,6 +104,13 @@ erDiagram
         string acquisition_url
         string provenance_notes
         string rarity
+        string issue_status
+        decimal specific_gravity
+        string obverse_die_id
+        string reverse_die_id
+        string secondary_treatments JSON
+        string find_spot
+        date find_date
         datetime created_at
         datetime updated_at
     }
@@ -142,6 +150,13 @@ erDiagram
         float confidence
         string method
         string status
+    }
+
+    MonogramModel {
+        int id PK
+        string label
+        string image_url
+        string vector_data
     }
 
     SeriesModel {
@@ -185,7 +200,7 @@ Central coin entity using SQLAlchemy 2.0 `Mapped[T]` syntax.
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime
-from sqlalchemy import Integer, String, Numeric, Date, DateTime, Boolean, ForeignKey
+from sqlalchemy import Integer, String, Numeric, Date, DateTime, Boolean, ForeignKey, Text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.infrastructure.persistence.models import Base
 
@@ -249,6 +264,28 @@ class CoinModel(Base):
     storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     personal_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
+    # -------------------------------------------------------------------------
+    # Research Grade Extensions (V2.1)
+    # -------------------------------------------------------------------------
+    
+    # Production & Authenticity
+    issue_status: Mapped[str] = mapped_column(String, default="official", index=True) 
+    # Values: 'official', 'fourree', 'imitation', 'barbarous', 'modern_fake'
+    
+    # Metrology
+    specific_gravity: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    
+    # Die Linking
+    obverse_die_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    reverse_die_id: Mapped[Optional[str]] = mapped_column(String, nullable=True, index=True)
+    
+    # Structured Secondary Treatments (Countermarks, bankers marks, etc - JSON)
+    secondary_treatments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Find Data
+    find_spot: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    find_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
     # -------------------------------------------------------------------------
     # Extended V1 Fields (restored from migration)
     # -------------------------------------------------------------------------
@@ -354,6 +391,10 @@ class CoinModel(Base):
         back_populates="coin",
         cascade="all, delete-orphan"
     )
+    monograms: Mapped[List["MonogramModel"]] = relationship(
+        secondary="coin_monograms", 
+        back_populates="coins"
+    )
 
     # V3 Vocab relationships
     issuer_vocab: Mapped[Optional["VocabTermModel"]] = relationship(
@@ -369,10 +410,11 @@ class CoinModel(Base):
 **Domain Entity** (`src/domain/coin.py`):
 
 ```python
-from dataclasses import dataclass
-from typing import Optional, List
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict, Any
 from decimal import Decimal
 from datetime import date, datetime
+from enum import Enum
 
 @dataclass
 class Coin:
@@ -452,21 +494,17 @@ class Coin:
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     
+    # Research Grade Extensions (V2.1)
+    issue_status: str = "official" # official, fourree, imitation
+    die_info: Optional['DieInfo'] = None
+    monograms: List['Monogram'] = field(default_factory=list)
+    secondary_treatments: Optional[List[Dict[str, Any]]] = None # JSON structure
+    find_data: Optional['FindData'] = None
+    
     # Related Entities
-    images: List["CoinImage"] = None
+    images: List["CoinImage"] = field(default_factory=list)
 
-    def validate(self) -> List[str]:
-        """Domain validation logic."""
-        errors = []
-        if self.weight_g and self.weight_g <= 0:
-            errors.append("Weight must be positive")
-        if self.diameter_mm and self.diameter_mm <= 0:
-            errors.append("Diameter must be positive")
-        if self.die_axis and not (0 <= self.die_axis <= 12):
-            errors.append("Die axis must be 0-12")
-        if self.reign_start and self.reign_end and self.reign_start > self.reign_end:
-            errors.append("Reign start must be before reign end")
-        return errors
+    # ... validation logic ...
 ```
 
 **Key Differences**:
@@ -704,6 +742,42 @@ class VocabCacheModel(Base):
     cache_key: Mapped[str] = mapped_column(String(200), primary_key=True)
     data: Mapped[str] = mapped_column(Text, nullable=False)  # JSON string
     expires_at: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+```
+
+---
+
+### `monograms` (MonogramModel)
+
+Storage for monogram definitions (Research Grade V2.1).
+
+**ORM Model**:
+
+```python
+class MonogramModel(Base):
+    __tablename__ = "monograms"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    label: Mapped[str] = mapped_column(String, index=True) # e.g. "Price 123"
+    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    vector_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # SVG path or data
+    
+    # Relationship back to coins via association table
+    coins: Mapped[List["CoinModel"]] = relationship(secondary="coin_monograms", back_populates="monograms")
+```
+
+---
+
+### `coin_monograms` (Association Table)
+
+Many-to-many link between coins and monograms.
+
+```python
+coin_monograms = Table(
+    "coin_monograms",
+    Base.metadata,
+    Column("coin_id", Integer, ForeignKey("coins_v2.id"), primary_key=True),
+    Column("monogram_id", Integer, ForeignKey("monograms.id"), primary_key=True),
+)
 ```
 
 ---
@@ -1057,6 +1131,11 @@ greek | celtic | republic | imperial | provincial | judaean | byzantine | migrat
 ### Metal
 ```
 gold | electrum | silver | billon | potin | orichalcum | bronze | copper | lead | ae | uncertain
+```
+
+### IssueStatus
+```
+official | fourree | imitation | barbarous | modern_fake | tooling_altered
 ```
 
 ### Script

@@ -102,6 +102,13 @@ class Coin:
     # Timestamps
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+    
+    # Research Grade Extensions (V2.1)
+    issue_status: IssueStatus         # official, fourree, imitation, etc.
+    die_info: Optional['DieInfo']
+    monograms: List['Monogram']
+    secondary_treatments: Optional[List[Dict]] # JSON structure for countermarks
+    find_data: Optional['FindData']
 
     # Related Entities (Collections)
     images: List['CoinImage'] = field(default_factory=list)
@@ -297,6 +304,7 @@ class Dimensions:
     diameter_mm: Optional[Decimal]
     thickness_mm: Optional[Decimal]
     die_axis: Optional[int]
+    specific_gravity: Optional[Decimal] # V2.1
 
     def __post_init__(self):
         """Validation on construction."""
@@ -320,7 +328,8 @@ dims = Dimensions(
     weight_g=Decimal("3.45"), 
     diameter_mm=Decimal("19.2"), 
     thickness_mm=Decimal("2.1"),
-    die_axis=6
+    die_axis=6,
+    specific_gravity=Decimal("10.5")
 )
 coin.dimensions = dims
 ```
@@ -399,6 +408,47 @@ class AcquisitionDetails:
         return delta.days <= days
 ```
 
+### DieInfo (V2.1)
+
+**Location**: `src/domain/coin.py`
+
+**Purpose**: Research-grade die study information.
+
+```python
+@dataclass(frozen=True)
+class DieInfo:
+    obverse_die_id: Optional[str]
+    reverse_die_id: Optional[str]
+```
+
+### FindData (V2.1)
+
+**Location**: `src/domain/coin.py`
+
+**Purpose**: Archaeological context or find data.
+
+```python
+@dataclass(frozen=True)
+class FindData:
+    find_spot: Optional[str]
+    find_date: Optional[date]
+```
+
+### Monogram (V2.1)
+
+**Location**: `src/domain/coin.py`
+
+**Purpose**: Represents a Monogram linked to a coin.
+
+```python
+@dataclass(frozen=True)
+class Monogram:
+    id: Optional[int]
+    label: str
+    image_url: Optional[str]
+    vector_data: Optional[str]
+```
+
 ## Enums
 
 **Location**: `src/domain/coin.py`
@@ -430,6 +480,17 @@ class Metal(str, Enum):
     POTIN = "potin"         # Bronze-tin alloy
     LEAD = "lead"
     AE = "ae"              # Generic ancient bronze
+```
+
+### IssueStatus (V2.1)
+```python
+class IssueStatus(str, Enum):
+    OFFICIAL = "official"
+    FOURREE = "fourree"
+    IMITATION = "imitation"
+    BARBAROUS = "barbarous"
+    MODERN_FAKE = "modern_fake"
+    TOOLING_ALTERED = "tooling_altered"
 ```
 
 ### Rarity
