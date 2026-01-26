@@ -1,52 +1,94 @@
 ---
-description: MANDATORY - Consult and update developer guide when modifying functionality
+description: MANDATORY - Consult specs/guides BEFORE changes, update docs AFTER changes
 alwaysApply: true
 ---
 
-# Developer Guide Protocol (STRICT ENFORCEMENT)
+# Documentation Sync Protocol (ZERO TOLERANCE)
 
-**MANDATORY**: The `docs/ai-guide/` documentation MUST be consulted before changes and updated after changes. These documents are the authoritative source of truth for the codebase.
+## 🚨 CRITICAL REQUIREMENT 🚨
+
+**BEFORE any frontend/backend functionality change:**
+1. ✅ CONSULT relevant specs in `design/` folder
+2. ✅ CONSULT relevant guides in `docs/ai-guide/`
+3. ✅ UNDERSTAND existing patterns and behavior
+
+**AFTER any functionality change:**
+1. ✅ UPDATE `docs/ai-guide/` to reflect ALL changes
+2. ✅ VERIFY documentation matches implementation
+3. ✅ ENSURE future developers can rely on docs as source of truth
+
+**These documents are NOT optional reference - they are AUTHORITATIVE and MANDATORY.**
+
+---
+
+## Why This Rule Exists
+
+**Problem**: Code evolves, but documentation gets stale. Stale docs → wrong assumptions → bugs → wasted time.
+
+**Solution**: Enforce strict documentation sync at EVERY change:
+- Specs guide design decisions
+- Docs reflect current implementation
+- Future work builds on accurate foundation
+
+**This is NON-NEGOTIABLE.**
 
 ---
 
 ## BEFORE Making ANY Changes (REQUIRED)
 
-### Step 1: Identify Relevant Guides
+### Step 1: Consult Design Specs (for UI/Frontend work)
+
+**ALWAYS check `design/` folder first for UI changes:**
+
+| Change Type | Spec File |
+|-------------|-----------|
+| **Coin cards, grid layout** | `design/CoinStack Frontpage + Grid Design.md` |
+| **Individual coin details** | `design/CoinStack Individual Coin Page Design.md` |
+| **Table/list views** | `design/CoinStack Coin Table Design.md` |
+| **Dashboard/statistics** | `design/CoinStack Statistics Dashboard Design.md` |
+| **Colors, tokens, badges** | `design/CoinStack Design System v3.0.md` |
+
+**If design spec exists → FOLLOW IT. If behavior changes → UPDATE SPEC.**
+
+### Step 2: Consult AI Developer Guides
 
 | Change Type | MUST Read First |
 |-------------|-----------------|
-| **Backend logic** | `03-BACKEND-MODULES.md`, `08-CODING-PATTERNS.md` |
-| **Domain entities** | `04-DOMAIN-ENTITIES.md`, `05-DATA-MODEL.md` |
-| **Frontend components** | `04-FRONTEND-MODULES.md`, `11-FRONTEND-COMPONENTS.md` |
-| **UI/Design changes** | `10-DESIGN-SYSTEM.md`, `11-FRONTEND-COMPONENTS.md` |
-| **API endpoints** | `07-API-REFERENCE.md`, `06-DATA-FLOWS.md` |
-| **Database schema** | `05-DATA-MODEL.md`, `09-TASK-RECIPES.md` |
-| **New feature** | `09-TASK-RECIPES.md` + relevant module guide |
+| **Backend logic** | `docs/ai-guide/03-BACKEND-MODULES.md`, `08-CODING-PATTERNS.md` |
+| **Domain entities** | `docs/ai-guide/04-DOMAIN-ENTITIES.md`, `05-DATA-MODEL.md` |
+| **Frontend components** | `docs/ai-guide/04-FRONTEND-MODULES.md`, `11-FRONTEND-COMPONENTS.md` |
+| **UI/Design changes** | `docs/ai-guide/10-DESIGN-SYSTEM.md`, `11-FRONTEND-COMPONENTS.md` |
+| **API endpoints** | `docs/ai-guide/07-API-REFERENCE.md`, `06-DATA-FLOWS.md` |
+| **Database schema** | `docs/ai-guide/05-DATA-MODEL.md`, `09-TASK-RECIPES.md` |
+| **New feature** | `docs/ai-guide/09-TASK-RECIPES.md` + relevant module guide |
 
-### Step 2: Understand Existing Behavior
+### Step 3: Understand Existing Behavior
 
-- Read the relevant sections completely
+- Read the relevant specs/sections **completely** (not just skim)
 - Identify existing patterns and conventions
 - Note any constraints or requirements
 - Check for related components/modules
+- **Ask yourself: "Will my change contradict documented behavior?"**
 
 ---
 
-## AFTER Making Changes (REQUIRED)
+## AFTER Making Changes (REQUIRED - NOT OPTIONAL)
 
-### Step 1: Identify What Changed
+### Step 1: Identify ALL Changes Made
 
-Ask yourself:
+**Be thorough. Ask yourself:**
 - Did I add/modify an API endpoint?
 - Did I change the data model or schema?
 - Did I add/modify a component?
 - Did I change design tokens or UI patterns?
 - Did I add/modify a service or use case?
 - Did I change data flow or state management?
+- Did I change component props, behavior, or styling?
+- Did I add/remove files or restructure directories?
 
-### Step 2: Update Documentation
+### Step 2: Update Documentation (MANDATORY)
 
-**If you changed it, you MUST document it:**
+**RULE: If you changed code, you MUST update docs. NO EXCEPTIONS.**
 
 | Change Made | Update This Guide |
 |-------------|-------------------|
@@ -89,75 +131,164 @@ docs/ai-guide/
 
 ---
 
+## Verification Checklist (Use This EVERY Time)
+
+**Before committing ANY code change, verify:**
+
+- [ ] I consulted relevant `design/` specs (for UI work)
+- [ ] I consulted relevant `docs/ai-guide/` documents
+- [ ] I understood existing patterns before coding
+- [ ] My implementation follows documented conventions
+- [ ] I identified ALL documentation that needs updating
+- [ ] I updated `docs/ai-guide/` to reflect changes
+- [ ] Documentation examples match current implementation
+- [ ] Future developers can rely on docs as accurate
+
+**If ANY checkbox is unchecked → DO NOT commit. Fix documentation first.**
+
+---
+
 ## Examples
 
-### ✅ CORRECT Workflow
+### ✅ CORRECT Workflow (Backend Change)
 
 ```
 1. Task: Add "provenance_notes" field to Coin
 
-2. BEFORE - Read guides:
-   - docs/ai-guide/05-DATA-MODEL.md (understand current schema)
-   - docs/ai-guide/04-DOMAIN-ENTITIES.md (domain entity structure)
-   - docs/ai-guide/09-TASK-RECIPES.md (recipe for adding fields)
+2. BEFORE - Consult docs:
+   📖 CONSULTED BEFORE:
+   - docs/ai-guide/05-DATA-MODEL.md → Current Coin schema has 42 fields
+   - docs/ai-guide/04-DOMAIN-ENTITIES.md → Coin is aggregate root, uses value objects
+   - docs/ai-guide/09-TASK-RECIPES.md → Recipe: Add field → domain → ORM → repo → API
 
 3. IMPLEMENT - Make changes:
-   - Add field to domain entity
-   - Add field to ORM model
-   - Update repository mapping
-   - Add to API schema
-   - Add to frontend form
+   - Add provenance_notes: Optional[str] to Coin dataclass
+   - Add provenance_notes: Mapped[Optional[str]] to CoinModel
+   - Update _to_domain() and _from_domain() in repository
+   - Add provenance_notes to CoinResponse Pydantic model
+   - Add field to CoinForm in frontend
 
-4. AFTER - Update guides:
-   - Update 05-DATA-MODEL.md with new field
-   - Update 07-API-REFERENCE.md if API changed
-   - Update 11-FRONTEND-COMPONENTS.md if form changed
+4. AFTER - Update docs:
+   ✏️ UPDATED AFTER:
+   - docs/ai-guide/05-DATA-MODEL.md → Added provenance_notes field to Coin table spec
+   - docs/ai-guide/07-API-REFERENCE.md → Added provenance_notes to GET/POST/PUT schemas
+   - docs/ai-guide/11-FRONTEND-COMPONENTS.md → Added provenance_notes to CoinForm props
+   - ✅ VERIFIED: All docs match implementation
 ```
 
-### ✅ CORRECT Workflow (UI Change)
+### ✅ CORRECT Workflow (Frontend/UI Change)
 
 ```
-1. Task: Change coin card dimensions
+1. Task: Change coin card to show rarity badge prominently
 
-2. BEFORE - Read guides:
-   - docs/ai-guide/10-DESIGN-SYSTEM.md (current specs)
-   - docs/ai-guide/11-FRONTEND-COMPONENTS.md (component details)
+2. BEFORE - Consult specs AND guides:
+   📖 CONSULTED BEFORE:
+   - design/CoinStack Frontpage + Grid Design.md → Card spec: 360px × 170px, badges right-aligned
+   - design/CoinStack Design System v3.0.md → Rarity badge: 6px dot, gemstone colors
+   - docs/ai-guide/10-DESIGN-SYSTEM.md → Badge order: [Cert] [Grade] [Metal] [Rarity●]
+   - docs/ai-guide/11-FRONTEND-COMPONENTS.md → CoinCardV3 props and structure
 
 3. IMPLEMENT - Make changes:
-   - Update CoinCardV3.tsx dimensions
-   - Verify responsive behavior
+   - Increase rarity dot from 6px to 8px in CoinCardV3.tsx
+   - Update badge row spacing from 3px to 4px
+   - Verify responsive behavior on mobile/desktop
+   - Test with all rarity levels (common → unique)
 
-4. AFTER - Update guides:
-   - Update 10-DESIGN-SYSTEM.md with new dimensions
-   - Update 11-FRONTEND-COMPONENTS.md if props/behavior changed
+4. AFTER - Update docs:
+   ✏️ UPDATED AFTER:
+   - design/CoinStack Design System v3.0.md → Updated rarity dot spec: 6px → 8px
+   - design/CoinStack Frontpage + Grid Design.md → Updated badge spacing: 3px → 4px
+   - docs/ai-guide/10-DESIGN-SYSTEM.md → Updated rarity indicator dimensions
+   - docs/ai-guide/11-FRONTEND-COMPONENTS.md → Updated CoinCardV3 badge styling
+   - ✅ VERIFIED: All visual specs match implementation
 ```
 
-### ❌ INCORRECT Workflow
+### ❌ INCORRECT Workflow (DO NOT DO THIS)
 
 ```
-1. Add new API endpoint
-2. (skip reading existing patterns)
-3. (skip updating 07-API-REFERENCE.md)
-4. Code works but documentation is now outdated!
+1. Task: Add new API endpoint for bulk coin import
+
+2. ❌ SKIP consulting docs (assume I know the pattern)
+
+3. IMPLEMENT:
+   - Add POST /api/v2/coins/bulk endpoint
+   - Use different response format than other endpoints
+   - Code works, tests pass ✅
+
+4. ❌ SKIP updating 07-API-REFERENCE.md
+   - "I'll do it later"
+   - "It's obvious from the code"
+
+5. RESULT (3 months later):
+   - Another developer needs bulk import
+   - Checks 07-API-REFERENCE.md → not documented
+   - Implements DIFFERENT pattern
+   - Now codebase has TWO inconsistent bulk import approaches
+   - Tech debt accumulates
+   - Team wastes time debugging confusion
 ```
+
+**This is EXACTLY what we're preventing. Follow the protocol.**
 
 ---
 
-## Enforcement
+## Enforcement (ZERO TOLERANCE)
 
-**This rule is MANDATORY. Violations include:**
+### ❌ Violations (ALL are unacceptable)
 
-- Making changes without consulting relevant guides
-- Implementing patterns that contradict documented conventions
-- Adding functionality without updating documentation
-- Leaving documentation outdated after changes
+1. **Making changes without consulting specs/guides first**
+   - Result: Code contradicts documented patterns
+   - Impact: Inconsistent implementation, confusion, bugs
 
-**The AI assistant MUST:**
+2. **Implementing patterns that contradict documented conventions**
+   - Result: Codebase diverges from standards
+   - Impact: Maintenance nightmare, onboarding pain
 
-1. State which guides were consulted before making changes
-2. List which guides need updating after changes are complete
-3. Actually update the guides with accurate information
-4. Ensure documentation reflects current implementation
+3. **Adding/changing functionality without updating documentation**
+   - Result: Documentation lies about current behavior
+   - Impact: Future developers make wrong assumptions
+
+4. **Leaving documentation outdated after changes**
+   - Result: Docs become worthless
+   - Impact: Loss of source of truth, wasted time
+
+### ✅ AI Assistant MUST (Not "should", MUST)
+
+**BEFORE implementation:**
+1. ✅ EXPLICITLY STATE which specs/guides were read
+2. ✅ SUMMARIZE relevant constraints/patterns found
+3. ✅ CONFIRM approach aligns with documented conventions
+
+**DURING implementation:**
+4. ✅ Follow documented patterns exactly
+5. ✅ Note any deviations (if absolutely necessary)
+
+**AFTER implementation:**
+6. ✅ LIST which docs need updating
+7. ✅ ACTUALLY UPDATE the docs with accurate information
+8. ✅ VERIFY documentation matches implementation
+9. ✅ ENSURE examples/specs reflect new behavior
+
+**FORMAT for communication:**
+```
+📖 CONSULTED BEFORE:
+- design/[spec-file.md] - [what I learned]
+- docs/ai-guide/[guide.md] - [relevant patterns]
+
+✏️ UPDATED AFTER:
+- docs/ai-guide/[guide.md] - [what changed]
+- [verification that docs match code]
+```
+
+### 🚫 Consequences of Non-Compliance
+
+**If this rule is violated:**
+- Documentation becomes unreliable → developers lose trust
+- Specs become outdated → design inconsistency
+- Knowledge is lost → onboarding takes longer
+- Bugs multiply → time wasted debugging assumptions
+
+**This rule protects the codebase's long-term maintainability. It is NOT negotiable.**
 
 ---
 
