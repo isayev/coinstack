@@ -8,6 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Critical Rules (STRICT ENFORCEMENT)
 
+### Documentation Sync (ZERO TOLERANCE)
+**THE MOST IMPORTANT RULE - READ THIS FIRST:**
+- **BEFORE any code change**: Consult `design/` specs (UI) and `docs/ai-guide/` documents
+- **AFTER any code change**: Update `docs/ai-guide/` to reflect ALL changes
+- **See**: [DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md) for complete protocol
+- **Enforcement**: `.cursor/rules/developer-guide.mdc` (always applies)
+- **Why**: Documentation is the authoritative source of truth. Stale docs → wrong assumptions → bugs → tech debt.
+
+**If you change code without updating docs, you are breaking the codebase.**
+
 ### Ports (MANDATORY)
 - **Backend: Port 8000** (FastAPI/Uvicorn)
 - **Frontend: Port 3000** (Vite dev server)

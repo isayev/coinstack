@@ -2,6 +2,19 @@
 
 A personal ancient coin collection management system for numismatists, featuring catalog integration, intelligent data enrichment, and comprehensive collection analytics.
 
+---
+
+## 🚨 For Developers & AI Assistants
+
+**BEFORE making ANY code changes, read:**
+- **[DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)** - MANDATORY documentation sync protocol
+- **[docs/ai-guide/README.md](docs/ai-guide/README.md)** - Complete developer guide index
+- **[CLAUDE.md](CLAUDE.md)** - Project instructions for Claude Code
+
+**Key Rule**: All frontend/backend changes MUST consult `design/` specs and `docs/ai-guide/` BEFORE implementation, and update `docs/ai-guide/` AFTER changes. Documentation is the authoritative source of truth.
+
+---
+
 ## Features
 
 ### Collection Management
