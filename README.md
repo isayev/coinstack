@@ -1,279 +1,416 @@
 # CoinStack
 
-A personal ancient coin collection management system for numismatists, featuring catalog integration, intelligent data enrichment, and comprehensive collection analytics.
+> Personal ancient coin collection management system built with Clean Architecture (V2)
+
+Comprehensive catalog integration, intelligent data enrichment, auction scraping, and collection analytics for Roman, Greek, and Byzantine numismatics.
 
 ---
 
 ## 🚨 For Developers & AI Assistants
 
-**BEFORE making ANY code changes, read:**
-- **[DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)** - MANDATORY documentation sync protocol
-- **[docs/ai-guide/README.md](docs/ai-guide/README.md)** - Complete developer guide index
-- **[CLAUDE.md](CLAUDE.md)** - Project instructions for Claude Code
+**MANDATORY - Read BEFORE making ANY code changes:**
 
-**Key Rule**: All frontend/backend changes MUST consult `design/` specs and `docs/ai-guide/` BEFORE implementation, and update `docs/ai-guide/` AFTER changes. Documentation is the authoritative source of truth.
+1. **[DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)** - Zero tolerance documentation sync protocol
+2. **[CLAUDE.md](CLAUDE.md)** - Complete project reference for Claude Code
+3. **[docs/ai-guide/README.md](docs/ai-guide/README.md)** - Comprehensive developer guide index
+
+**Critical Rule**: All code changes require:
+- **BEFORE**: Consult `design/` specs (UI) + `docs/ai-guide/` documents
+- **AFTER**: Update `docs/ai-guide/` to reflect changes
+
+**Documentation is the authoritative source of truth. Stale docs break the codebase.**
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Python 3.12+** (backend)
+- **Node.js 18+** (frontend)
+- **Windows** (PowerShell scripts for restart)
+
+### Development Setup
+
+```bash
+# Backend (V2 Clean Architecture)
+cd backend
+python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+
+# Or use PowerShell restart script
+.\restart.ps1
+```
+
+### Access Points
+
+- **Frontend**: http://localhost:3000
+- **API Docs**: http://localhost:8000/docs (Swagger UI)
+- **Database**: `backend/coinstack_v2.db` (SQLite)
 
 ---
 
 ## Features
 
 ### Collection Management
-- **Full Metadata Cataloging**: Denomination, metal, ruler, dates (BC/AD), legends, physical attributes
-- **Extended Data Model**: Die axis, die studies, countermarks, auction history, price tracking
-- **Reference System**: Type-centric reference tracking (RIC, RPC, Crawford, Sear, BMC, etc.)
-- **Provenance Tracking**: Auction records, dealer history, price history
-
-### Views & Navigation
-- **Grid & Table Views**: Visual grid or sortable data table
-- **Advanced Filtering**: Category, metal, ruler, mint, date range, rarity, grade, storage location
-- **Sorting Options**: Year, name, weight, rarity (with proper BC/AD chronological ordering)
-- **Navigation**: Previous/next coin arrows on detail pages
+- **Full metadata cataloging** - Denomination, metal, ruler, dates (BC/AD), legends, physical attributes
+- **Controlled vocabulary** - Unified vocab system for issuers, mints, denominations
+- **Series management** - Organize coins by ruler/type with completion tracking
+- **Reference tracking** - RIC, RPC, Crawford, Sear, BMC catalog integration
+- **Image management** - Multi-image support with obverse/reverse
 
 ### Data Enrichment
-- **Catalog Integration**: OCRE (RIC), CRRO (Crawford), RPC lookups
-- **Legend Expansion**: Dictionary-based + LLM-powered abbreviation expansion (IMP → Imperator)
-- **Bulk Enrichment**: Queue-based batch processing with conflict resolution
-- **Compare Drawer**: Side-by-side view of local vs catalog data
+- **Auction scraping** - Heritage, CNG, Biddr, eBay (Playwright-based)
+- **Catalog integration** - OCRE (RIC), CRRO (Crawford), RPC lookups
+- **Legend expansion** - Dictionary + LLM-powered abbreviation expansion
+- **Audit system** - Validate attribution, physics, dates, grades
+
+### Analytics & Views
+- **Statistics dashboard** - Collection value, distribution charts, trends
+- **Advanced filtering** - Category, metal, ruler, mint, date range, grade, rarity
+- **Multiple views** - Grid (cards), table (sortable), detail pages
+- **BC/AD handling** - Proper chronological sorting with negative years
 
 ### Import/Export
-- **Excel/CSV Import**: Intelligent parsing with text normalization
-  - BC/AD date handling (negative years for BC)
-  - Abbreviated year expansion (159-60 → 159-160)
-  - Reference string parsing (RIC, RPC, Crawford, Sear, BMC, Cohen, etc.)
-  - Greek text and special character preservation
-- **Export**: CSV export, database backup
-- **Text Normalization**: Non-breaking spaces, special dashes, multiple spaces cleaned
+- **Excel/CSV import** - Intelligent parsing with text normalization
+- **Database backups** - Timestamped backups before schema changes
+- **CSV export** - Collection data export
 
-### Analytics
-- **Statistics Dashboard**: Collection value, distribution charts
-- **Category/Metal Breakdown**: Visual pie charts with all enum types
-- **Top Rulers**: Bar chart of most represented rulers
-- **Weight Tracking**: Total collection weight by metal
-
-### UI/UX
-- **Image Zoom**: Pan, zoom, rotate coin images
-- **Dark/Light Theme**: System-aware theming
-- **Responsive Design**: Modern shadcn/ui components
+---
 
 ## Tech Stack
 
-### Backend
-- Python 3.12+
-- FastAPI
-- SQLAlchemy 2.0 (ORM)
-- Pydantic 2.x (validation)
-- SQLite (database)
-- Anthropic SDK (Claude LLM for disambiguation)
-- httpx (external API calls)
-- openpyxl (Excel parsing)
+### Backend (Clean Architecture V2)
+
+```
+Python 3.12+ / FastAPI / SQLAlchemy 2.0 / SQLite
+├── Domain Layer       - Entities, value objects, services (no dependencies)
+├── Application Layer  - Use cases (depends on domain interfaces)
+└── Infrastructure     - Persistence, scrapers, API (implements interfaces)
+```
+
+**Key Technologies**:
+- **FastAPI** - Modern async web framework
+- **SQLAlchemy 2.0** - ORM with `Mapped[T]` syntax
+- **Pydantic 2.x** - Data validation
+- **Playwright** - Web scraping
+- **pytest** - Testing framework
 
 ### Frontend
-- React 18
-- TypeScript 5.x
-- Vite (build tool)
-- TanStack Query (data fetching)
-- Zustand (state management)
-- Tailwind CSS + shadcn/ui (styling)
-- Recharts (charts)
-- React Hook Form + Zod (forms)
 
-## Data Model
+```
+React 18 / TypeScript 5.x / Vite
+├── TanStack Query v5  - Server state (object-based config)
+├── Zustand 4.x        - UI state
+├── Tailwind + shadcn  - Styling components
+└── Zod                - Runtime validation
+```
 
-### Core Entities
-- **Coin**: Extended with `is_circa`, `is_test_cut`, `die_axis`, `die_study_*`, `sub_category`, `estimated_value_usd`
-- **CoinReference**: Links coins to ReferenceType (type-centric design)
-- **ReferenceType**: Shared catalog type info with external lookups
-- **ProvenanceEvent**: Auction details, hammer price, buyer's premium
-- **Countermark**: Provincial coin countermark tracking
-- **AuctionData**: Market data from auction houses
-- **PriceHistory**: Price trends by reference type
+**Key Technologies**:
+- **Vite** - Fast build tool
+- **React Hook Form** - Form management
+- **Recharts** - Analytics charts
+- **Vitest + MSW** - Testing
 
-### Enums
-- **Category**: imperial, republic, provincial, byzantine, greek, celtic, judaean, migration, pseudo_roman, other
-- **Metal**: gold, silver, bronze, copper, billon, electrum, orichalcum, potin, lead, ae, uncertain
+---
 
-## Project Structure
+## Architecture Overview (V2)
+
+### Clean Architecture Layers
+
+```
+Domain Layer (src/domain/)
+├── Entities: Coin, AuctionLot, Series, VocabTerm
+├── Value Objects: Dimensions, Attribution, GradingDetails
+├── Services: AuditEngine, SearchService
+└── Interfaces (Protocols): ICoinRepository, IVocabRepository
+
+Application Layer (src/application/commands/)
+├── CreateCoinUseCase, UpdateCoinUseCase
+├── ImportCollectionUseCase, EnrichCoinUseCase
+└── ScrapeAuctionLotUseCase
+
+Infrastructure Layer (src/infrastructure/)
+├── Persistence: ORM models, repositories
+├── Web: FastAPI routers (v2, vocab, series, scrape_v2)
+├── Scrapers: Heritage, CNG, Biddr, eBay, Agora
+└── Services: VocabSyncService, SeriesService
+```
+
+**Dependency Rule**: Dependencies flow INWARD only. Domain has NO external dependencies.
+
+### Project Structure
 
 ```
 coinstack/
 ├── backend/
-│   ├── app/
-│   │   ├── models/          # SQLAlchemy ORM models
-│   │   │   ├── coin.py      # Coin, Category, Metal enums
-│   │   │   ├── reference.py # CoinReference
-│   │   │   ├── reference_type.py # ReferenceType, ReferenceMatchAttempt
-│   │   │   ├── countermark.py    # Countermark model
-│   │   │   ├── auction_data.py   # AuctionData model
-│   │   │   └── price_history.py  # PriceHistory model
-│   │   ├── schemas/         # Pydantic schemas
-│   │   ├── routers/         # API endpoints
-│   │   │   ├── coins.py     # CRUD + navigation
-│   │   │   ├── catalog.py   # Catalog lookup/enrich
-│   │   │   ├── legend.py    # Legend expansion
-│   │   │   └── stats.py     # Analytics
-│   │   ├── services/        # Business logic
-│   │   │   ├── excel_import.py      # Import with normalization
-│   │   │   ├── legend_dictionary.py # 50+ abbreviations
-│   │   │   ├── numismatic_synonyms.py # Dynasty/grade mappings
-│   │   │   ├── reference_parser.py  # Reference string parsing
-│   │   │   ├── diff_enricher.py     # Catalog diff computation
-│   │   │   ├── llm_disambiguator.py # Claude disambiguation
-│   │   │   └── catalogs/            # OCRE, CRRO, RPC services
-│   │   └── crud/            # Database operations
-│   ├── data/                # SQLite database
-│   └── uploads/             # Uploaded images
+│   └── src/
+│       ├── domain/              # Domain layer (entities, value objects)
+│       │   ├── coin.py          # Coin aggregate root
+│       │   ├── auction.py       # AuctionLot entity
+│       │   ├── series.py        # Series entity
+│       │   ├── vocab.py         # VocabTerm entity
+│       │   ├── repositories.py  # Repository interfaces (Protocols)
+│       │   ├── services/        # Domain services
+│       │   └── strategies/      # Audit strategies
+│       │
+│       ├── application/         # Application layer (use cases)
+│       │   └── commands/
+│       │       ├── create_coin.py
+│       │       ├── enrich_coin.py
+│       │       └── import_collection.py
+│       │
+│       └── infrastructure/      # Infrastructure layer
+│           ├── persistence/     # Database & ORM
+│           │   ├── database.py
+│           │   ├── orm.py       # Core ORM models
+│           │   ├── models_vocab.py
+│           │   └── models_series.py
+│           ├── repositories/    # Concrete repository implementations
+│           ├── scrapers/        # Auction house scrapers
+│           ├── services/        # Infrastructure services
+│           └── web/             # FastAPI application
+│               ├── main.py      # App entry point
+│               └── routers/     # API endpoints
+│
 ├── frontend/
 │   └── src/
-│       ├── components/
-│       │   ├── coins/
-│       │   │   ├── CoinCard.tsx       # Grid card with badges
-│       │   │   ├── CoinFilters.tsx    # Advanced filter panel
-│       │   │   ├── CoinForm.tsx       # Add/Edit form
-│       │   │   ├── CompareDrawer.tsx  # Catalog comparison
-│       │   │   ├── ImageZoom.tsx      # Image viewer
-│       │   │   ├── LegendInput.tsx    # Legend expansion input
-│       │   │   └── ReferenceSuggest.tsx # Reference autocomplete
-│       │   └── ui/           # shadcn/ui components
-│       ├── pages/
-│       │   ├── CollectionPage.tsx  # Grid/table with filters
-│       │   ├── CoinDetailPage.tsx  # Full detail with tabs
-│       │   ├── BulkEnrichPage.tsx  # Batch enrichment
-│       │   └── StatsPage.tsx       # Analytics dashboard
-│       ├── hooks/            # TanStack Query hooks
-│       ├── stores/           # Zustand state (filters)
-│       └── types/            # TypeScript definitions
-└── original-data/            # Source Excel files
+│       ├── pages/               # Route pages
+│       ├── features/            # Feature modules (collection, etc.)
+│       ├── components/          # React components
+│       │   ├── ui/              # shadcn/ui base components
+│       │   ├── coins/           # Coin-specific components
+│       │   └── layout/          # AppShell, Header, Sidebar
+│       ├── hooks/               # TanStack Query hooks
+│       ├── stores/              # Zustand stores (UI, filters)
+│       ├── api/                 # API client + hooks
+│       └── domain/              # TypeScript schemas (mirrors backend)
+│
+├── docs/
+│   └── ai-guide/                # Comprehensive developer documentation
+│       ├── README.md            # Guide index
+│       ├── 01-OVERVIEW.md       # Project overview
+│       ├── 02-CLEAN-ARCHITECTURE.md
+│       ├── 03-BACKEND-MODULES.md
+│       ├── 04-FRONTEND-MODULES.md
+│       ├── 05-DATA-MODEL.md
+│       ├── 07-API-REFERENCE.md
+│       ├── 08-CRITICAL-RULES.md # MANDATORY rules
+│       └── ...
+│
+├── design/                      # UI/UX specifications
+│   ├── CoinStack Design System v3.0.md
+│   ├── CoinStack Frontpage + Grid Design.md
+│   └── ...
+│
+├── DOCUMENTATION_RULES.md       # MANDATORY sync protocol
+├── CLAUDE.md                    # Claude Code reference
+└── README.md                    # This file
 ```
 
-## Getting Started
+---
 
-### Prerequisites
-- Python 3.12+
-- Node.js 18+
-- npm or yarn
+## API Reference (V2)
 
-### Backend Setup
+### Core Endpoints
+
+```
+# Coins
+GET    /api/v2/coins                    # List coins (paginated, filterable)
+POST   /api/v2/coins                    # Create coin
+GET    /api/v2/coins/{id}               # Get coin detail
+PUT    /api/v2/coins/{id}               # Update coin
+DELETE /api/v2/coins/{id}               # Delete coin
+POST   /api/v2/coins/{id}/audit         # Run audit checks
+
+# Vocabulary (V3 unified system)
+GET    /api/v2/vocab/{type}             # List vocabulary terms
+POST   /api/v2/vocab/{type}             # Create term
+GET    /api/v2/vocab/search/{type}?q=   # FTS5 search
+POST   /api/v2/vocab/normalize          # Normalize raw text
+
+# Series
+GET    /api/v2/series                   # List series
+POST   /api/v2/series                   # Create series
+GET    /api/v2/series/{id}              # Get series details
+PUT    /api/v2/series/{id}              # Update series
+
+# Scraping
+POST   /api/v2/scrape?url=...           # Scrape auction lot
+```
+
+**Full API Reference**: `docs/ai-guide/07-API-REFERENCE.md`
+
+**Interactive Docs**: http://localhost:8000/docs (Swagger UI)
+
+---
+
+## Key Concepts
+
+### Numismatic Terminology
+
+| Term | Definition |
+|------|------------|
+| **Denomination** | Coin type (Denarius, Antoninianus, Aureus, Solidus) |
+| **Metal** | AU (gold), AR (silver), AE (bronze), BI (billon) |
+| **Category** | imperial, republic, provincial, byzantine, greek, celtic |
+| **Obverse** | Front of coin (usually portrait) |
+| **Reverse** | Back of coin (design/legend) |
+| **Legend** | Inscribed text (often abbreviated Latin) |
+| **Die Axis** | Orientation between obverse/reverse (0-12h) |
+| **RIC/RPC/Crawford** | Standard reference catalog systems |
+
+### Domain Entities
+
+**Coin** (Aggregate Root):
+- Classification: category, denomination, metal, series
+- Attribution: issuing_authority, portrait_subject, dynasty
+- Chronology: reign dates, mint year (BC/AD handling)
+- Physical: weight, diameter, die_axis
+- Design: obverse/reverse legends, descriptions
+- Grading: grade_service (NGC/PCGS/self), grade, cert number
+- Acquisition: date, price, source, provenance
+
+**Value Objects** (immutable):
+- `Dimensions` - weight_g, diameter_mm, die_axis
+- `Attribution` - issuing_authority, portrait_subject, dynasty
+- `GradingDetails` - service, grade, certification_number
+- `AcquisitionDetails` - date, price, source, url
+
+---
+
+## Development Workflow
+
+### Critical Rules
+
+1. **Ports** (MANDATORY):
+   - Backend: Port **8000**
+   - Frontend: Port **3000**
+   - Never increment - use `.\restart.ps1`
+
+2. **Git Authorship** (MANDATORY):
+   - Author: `isayev <olexandr@olexandrisayev.com>`
+   - NO Co-authored-by trailers
+   - NO AI mentions
+
+3. **Database Safety** (MANDATORY):
+   - Backup to `backend/backups/` BEFORE schema changes
+   - Format: `coinstack_YYYYMMDD_HHMMSS.db`
+
+4. **Architecture** (MANDATORY):
+   - Domain layer has ZERO dependencies
+   - Repositories use `flush()`, NEVER `commit()`
+   - Always use `selectinload()` for eager loading
+   - ORM models use `Mapped[T]` syntax
+
+### Testing
 
 ```bash
+# Backend
 cd backend
-pip install -e .
-# Or manually:
-pip install fastapi uvicorn sqlalchemy pydantic pydantic-settings alembic python-multipart openpyxl anthropic httpx python-dateutil
+pytest -m unit              # Fast unit tests
+pytest -m integration       # Integration tests
+pytest tests                # All tests
 
-python -m uvicorn app.main:app --reload --port 8000
-```
-
-### Frontend Setup
-
-```bash
+# Frontend
 cd frontend
-npm install
-npm run dev
+npm test                    # Watch mode
+npm run test:run            # Run once
+npm run test:coverage       # With coverage
 ```
 
-### Import Collection
+### Common Commands
 
 ```bash
-# Via API
-curl -X POST "http://localhost:8000/api/import/collection" \
-  -F "file=@collection.xlsx"
+# Restart both servers (Windows)
+.\restart.ps1
 
-# Or use the Import page in the UI
+# Backend type checking
+cd backend
+mypy src/
+
+# Frontend type checking
+cd frontend
+npm run typecheck
+
+# Database backups
+python -m src.infrastructure.scripts.backup_db
+
+# Verify indexes
+python -m src.infrastructure.scripts.add_indexes --verify
 ```
 
-### Access
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+---
 
-## API Endpoints
+## Documentation
 
-### Core CRUD
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/coins` | GET | List coins with pagination/filters/sorting |
-| `/api/coins` | POST | Create new coin |
-| `/api/coins/{id}` | GET | Get coin detail |
-| `/api/coins/{id}` | PUT | Update coin |
-| `/api/coins/{id}` | DELETE | Delete coin |
-| `/api/coins/{id}/navigation` | GET | Get prev/next coin IDs |
+### For AI Assistants
 
-### Catalog Integration
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/catalog/lookup` | POST | Look up reference in external catalog |
-| `/api/catalog/enrich/{coin_id}` | POST | Enrich coin from catalog |
-| `/api/catalog/bulk-enrich` | POST | Start bulk enrichment job |
-| `/api/catalog/job/{job_id}` | GET | Check bulk job status |
+Start here in order:
+1. **[DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)** - Workflow protocol
+2. **[CLAUDE.md](CLAUDE.md)** - Complete reference
+3. **[docs/ai-guide/README.md](docs/ai-guide/README.md)** - Guide index
+4. **[docs/ai-guide/08-CRITICAL-RULES.md](docs/ai-guide/08-CRITICAL-RULES.md)** - Validation checklist
 
-### Legend & Search
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/legend/expand` | POST | Expand legend abbreviations |
-| `/api/legend/lookup/{abbr}` | GET | Look up single abbreviation |
-| `/api/legend/search` | GET | Search with synonym expansion |
+### For Human Developers
 
-### Analytics & Settings
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/stats` | GET | Collection statistics |
-| `/api/import/collection` | POST | Import from Excel/CSV |
-| `/api/settings/backup` | GET | Download database backup |
-| `/api/settings/export-csv` | GET | Export to CSV |
+**Architecture & Design**:
+- `docs/ai-guide/02-CLEAN-ARCHITECTURE.md` - V2 architecture
+- `docs/ai-guide/03-BACKEND-MODULES.md` - Backend layers
+- `docs/ai-guide/04-FRONTEND-MODULES.md` - Frontend architecture
+- `design/CoinStack Design System v3.0.md` - UI specifications
 
-## Excel Import Format
+**Implementation**:
+- `docs/ai-guide/08-CODING-PATTERNS.md` - Code conventions
+- `docs/ai-guide/09-TASK-RECIPES.md` - Step-by-step guides
+- `docs/ai-guide/05-DATA-MODEL.md` - Database schema
+- `docs/ai-guide/07-API-REFERENCE.md` - Complete API docs
 
-Expected columns (flexible naming):
-- `Ruler Issuer` - Issuing authority
-- `Coin type` - Denomination
-- `Category` - Roman Imperial/Provincial/Republic
-- `Composition` - Metal (Silver, Gold, Bronze, etc.)
-- `Minted` - Mint date (e.g., "2 BC-AD 4", "96 BC", "AD 140/141")
-- `Ruled` - Reign dates
-- `Reference` - Catalog references (e.g., "RIC I 207; Crawford 335/1c")
-- `Obverse` / `Reverse` - Design descriptions with legends
-- `Weight` / `Diameter` - Physical measurements
-- `Condition` / `NGC Grade` - Grading info
-- `Mint` - Mint location
-- `Amount Paid` - Acquisition price
-- `Source` / `Link` - Provenance info
+---
 
-### Supported Reference Formats
-- RIC: `RIC I 207`, `RIC II.1 756`, `RIC IV.III (Trajan Decius) 58b`
-- RPC: `RPC I 1701a`, `RPC V.3 1234`
-- Crawford: `Crawford 335/1c`
-- Sear: `Sear 8677`, `SEAR II 5722`, `SRCV 11967`
-- BMC: `BMC 837`, `BMCRE 227`
-- RSC: `RSC 966`
-- Cohen: `Cohen 161`, `Coh. 84`
-- Sydenham: `Sydenham 611`
-- SNG: `SNG Cop 281-282`
-- And more...
+## Migration Notes
+
+**V1 Archive** (deprecated - DO NOT MODIFY):
+- Location: `backend/v1_archive/`
+- Database: `backend/coinstack.db`
+
+**V2 Current** (use this):
+- Location: `backend/src/`
+- Database: `backend/coinstack_v2.db`
+- Entry point: `src.infrastructure.web.main:app`
+
+---
 
 ## Changelog
 
-### v0.2.0 (Current)
-- Type-centric reference system with ReferenceType table
-- Catalog integration (OCRE, CRRO, RPC)
-- Legend expansion with dictionary + LLM fallback
-- Bulk enrichment with job queue
-- Advanced filtering (year range, circa, test cut, rarity)
-- Proper BC/AD date sorting
-- Text normalization preserving Greek
-- Image zoom component
-- Navigation arrows on detail pages
-- Extended enums (Metal, Category)
-- Countermark, AuctionData, PriceHistory models
+### v2.0.0 (Current - Clean Architecture)
+- ✅ **Clean Architecture V2** - Domain/Application/Infrastructure layers
+- ✅ **Vocabulary V3** - Unified vocab system with FTS5 search
+- ✅ **Series Management** - Collection groupings with completion tracking
+- ✅ **Audit System** - Pluggable strategy-based validation
+- ✅ **Rich Scrapers** - Playwright-based for Heritage, CNG, Biddr, eBay
+- ✅ **TanStack Query v5** - Object-based configuration
+- ✅ **Design System V3** - Complete token system with badges
+- ✅ **Comprehensive Docs** - 288KB ai-guide documentation
 
-### v0.1.0
-- Core data model (Coin, Mint, Reference, Image, Provenance)
-- Collection grid/table views with filtering
-- Coin detail pages with tabs
-- Add/Edit coin forms
-- Statistics dashboard with charts
-- Excel/CSV import wizard
-- Settings page (backup, export, theme)
-- Dark/light theme support
+### v0.2.0 (Legacy V1)
+- Type-centric reference system
+- Catalog integration (OCRE, CRRO, RPC)
+- Legend expansion with LLM
+- Bulk enrichment
+- Advanced filtering
+
+### v0.1.0 (Initial)
+- Core CRUD operations
+- Grid/table views
+- Excel import
+- Statistics dashboard
+
+---
 
 ## License
 
@@ -281,4 +418,10 @@ Private project - All rights reserved.
 
 ## Author
 
-isayev (olexandr@olexandrisayev.com)
+**isayev** (olexandr@olexandrisayev.com)
+
+---
+
+**Last Updated**: January 25, 2026
+**Version**: V2.0.0 (Clean Architecture)
+**Documentation**: Zero tolerance enforcement - always keep docs synchronized with code

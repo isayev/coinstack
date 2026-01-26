@@ -1,111 +1,193 @@
-# CLAUDE.md
+# CoinStack - Claude Code Guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> **For Claude Code AI Assistant** - Complete project reference and workflow guide
 
-## Project Identity
+---
 
-**CoinStack** is a personal ancient coin collection management system for cataloging Roman, Greek, and Byzantine coins. Single-user desktop/web application with catalog integration, auction data scraping, and collection analytics.
+## 🚨 START HERE - Critical Workflow
 
-## Critical Rules (STRICT ENFORCEMENT)
+### Before ANY Code Change
 
-### Documentation Sync (ZERO TOLERANCE)
-**THE MOST IMPORTANT RULE - READ THIS FIRST:**
-- **BEFORE any code change**: Consult `design/` specs (UI) and `docs/ai-guide/` documents
-- **AFTER any code change**: Update `docs/ai-guide/` to reflect ALL changes
-- **See**: [DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md) for complete protocol
-- **Enforcement**: `.cursor/rules/developer-guide.mdc` (always applies)
-- **Why**: Documentation is the authoritative source of truth. Stale docs → wrong assumptions → bugs → tech debt.
+1. **📖 READ** relevant documentation:
+   - UI changes? → `design/` specs + `docs/ai-guide/10-DESIGN-SYSTEM.md`
+   - Backend? → `docs/ai-guide/03-BACKEND-MODULES.md` + `08-CODING-PATTERNS.md`
+   - API? → `docs/ai-guide/07-API-REFERENCE.md`
+   - Database? → `docs/ai-guide/05-DATA-MODEL.md`
+
+2. **✅ STATE** what you consulted:
+   ```
+   📖 CONSULTED BEFORE:
+   - design/[file] - [what I learned]
+   - docs/ai-guide/[file] - [relevant patterns]
+   ```
+
+3. **🔨 IMPLEMENT** following documented patterns
+
+4. **✏️ UPDATE** documentation after changes:
+   ```
+   ✏️ UPDATED AFTER:
+   - docs/ai-guide/[file] - [what changed]
+   - ✅ VERIFIED: Docs match implementation
+   ```
+
+**📚 Full Protocol**: [DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)
+
+---
+
+## Quick Navigation
+
+| Need | Go To |
+|------|-------|
+| **Quick start** | [Development Commands](#development-commands) |
+| **Architecture** | [Clean Architecture V2](#clean-architecture-v2) |
+| **Critical rules** | [Mandatory Rules](#mandatory-rules-zero-tolerance) |
+| **Domain concepts** | [Numismatic Terms](#numismatic-terms) |
+| **API reference** | [Backend Routes](#backend-routes-fastapi) |
+| **Database** | [Database Architecture](#database-architecture-v2) |
+| **Testing** | [Testing Strategy](#testing-strategy) |
+| **Common issues** | [Common Gotchas](#common-gotchas) |
+| **Full guides** | `docs/ai-guide/README.md` |
+
+---
+
+## Mandatory Rules (ZERO TOLERANCE)
+
+### 1. Documentation Sync (THE MOST IMPORTANT)
+
+**BEFORE any code change:**
+- ✅ Consult `design/` specs (for UI work)
+- ✅ Consult `docs/ai-guide/` documents
+- ✅ Understand existing patterns
+
+**AFTER any code change:**
+- ✅ Update `docs/ai-guide/` to reflect ALL changes
+- ✅ Verify documentation matches implementation
+
+**Why**: Documentation is the authoritative source of truth. Stale docs → wrong assumptions → bugs → tech debt.
 
 **If you change code without updating docs, you are breaking the codebase.**
 
-### Ports (MANDATORY)
-- **Backend: Port 8000** (FastAPI/Uvicorn)
-- **Frontend: Port 3000** (Vite dev server)
-- **NEVER** increment ports. If port is busy, kill the process using it.
-- Frontend proxy at `/api` always points to `http://localhost:8000`
+See: [DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md) | `.cursor/rules/developer-guide.mdc`
 
-### Git Authorship (MANDATORY)
+### 2. Ports (MANDATORY)
+
+- **Backend: Port 8000** (FastAPI)
+- **Frontend: Port 3000** (Vite)
+- **NEVER** increment ports - kill the process if busy
+- Use `.\restart.ps1` to restart both servers
+
+### 3. Git Authorship (MANDATORY)
+
 - **Author**: `isayev <olexandr@olexandrisayev.com>`
-- **NO Co-authored-by trailers** - all commits authored solely by repository owner
-- **NO mentions of AI assistance** in commits, PRs, or code comments
+- **NO** Co-authored-by trailers
+- **NO** AI assistance mentions in commits/PRs/comments
 
-### Database Safety (MANDATORY)
-- **Database**: `backend/coinstack_v2.db` (SQLite)
-- **REQUIRED**: Timestamped backup to `backend/backups/` BEFORE any schema change/migration
+### 4. Database Safety (MANDATORY)
+
+- **Database**: `backend/coinstack_v2.db`
+- **REQUIRED**: Timestamped backup to `backend/backups/` BEFORE schema changes
 - **Format**: `coinstack_YYYYMMDD_HHMMSS.db`
-- **Retention**: Keep rolling 5 backups, delete oldest when creating new
 
-### Scraper Usage
-- **ALWAYS use rich scrapers**: `heritage`, `cng`, `biddr`, `ebay` (in `backend/src/infrastructure/scrapers/`)
-- Rich scrapers are Playwright-based with structured data extraction
-- Avoid simple/legacy scrapers if rich version exists
+### 5. Architecture (MANDATORY)
 
-## Architecture Overview
+- Domain layer has ZERO dependencies
+- Repositories use `flush()`, NEVER `commit()`
+- Use `selectinload()` for relationships (prevent N+1)
+- Use cases depend on interfaces (Protocols), not concrete classes
+- ORM models use `Mapped[T]` + `mapped_column()` syntax
 
-### Clean Architecture (V2)
-The codebase follows Clean Architecture with clear separation of concerns:
+---
+
+## Project Overview
+
+**CoinStack** is a personal ancient coin collection management system for cataloging Roman, Greek, and Byzantine coins. Built with Clean Architecture (V2).
+
+### Tech Stack
 
 ```
-Domain Layer (src/domain/)
-├── Entities: Coin (Aggregate Root), AuctionLot, Series, Vocab
-├── Value Objects: Dimensions, Attribution, GradingDetails, AcquisitionDetails
-├── Services: AuditEngine, ScraperOrchestrator
-├── Strategies: AttributionStrategy, PhysicsStrategy, DateStrategy, GradeStrategy
-└── Interfaces: IScraper, ICollectionImporter, repositories
-
-Application Layer (src/application/commands/)
-├── CreateCoinUseCase
-├── ImportCollectionUseCase
-├── EnrichCoinUseCase
-└── ScrapeAuctionLotUseCase
-
-Infrastructure Layer (src/infrastructure/)
-├── Persistence: SqlAlchemyCoinRepository, CoinModel (SQLAlchemy)
-├── Importers: ExcelImporter
-├── Scrapers: HeritageScraper, CNGScraper, BiddrScraper, EBayScraper
-└── Web: FastAPI routers (v2, audit_v2, scrape_v2, vocab, series)
+Backend:  Python 3.12+ / FastAPI / SQLAlchemy 2.0 / SQLite
+Frontend: React 18 / TypeScript 5.x / Vite / TanStack Query v5 / Zustand
+UI:       Tailwind CSS / shadcn/ui
+Testing:  pytest (backend) / Vitest + MSW (frontend)
 ```
 
-**Dependency Rule**: Domain has NO dependencies. Application depends on Domain. Infrastructure depends on both.
+### Access Points
+
+- **Frontend**: http://localhost:3000
+- **API Docs**: http://localhost:8000/docs (Swagger UI)
+- **Database**: `backend/coinstack_v2.db`
+
+---
+
+## Clean Architecture (V2)
+
+### Layer Structure
+
+```
+Domain Layer (src/domain/)           ← NO dependencies
+    ↓ depends on
+Application Layer (src/application/) ← Depends on Domain interfaces
+    ↓ depends on
+Infrastructure Layer (src/infrastructure/)  ← Implements interfaces
+```
+
+**Dependency Rule**: Dependencies flow INWARD only.
+
+### Key Components
+
+**Domain Layer** (`src/domain/`):
+- **Entities**: Coin (Aggregate Root), AuctionLot, Series, VocabTerm
+- **Value Objects**: Dimensions, Attribution, GradingDetails, AcquisitionDetails
+- **Services**: AuditEngine, SearchService
+- **Strategies**: AttributionStrategy, PhysicsStrategy, DateStrategy
+- **Interfaces** (Protocols): ICoinRepository, IVocabRepository, ISeriesRepository
+
+**Application Layer** (`src/application/commands/`):
+- CreateCoinUseCase, UpdateCoinUseCase
+- ImportCollectionUseCase, EnrichCoinUseCase
+- ScrapeAuctionLotUseCase
+
+**Infrastructure Layer** (`src/infrastructure/`):
+- **Persistence**: ORM models, concrete repositories
+- **Web**: FastAPI routers (v2, vocab, series, scrape_v2)
+- **Scrapers**: Heritage, CNG, Biddr, eBay, Agora
+- **Services**: VocabSyncService, SeriesService
 
 ### Frontend Architecture
+
 ```
 React 18 + TypeScript + Vite
-├── State: TanStack Query (server), Zustand (UI/filters)
-├── UI: Tailwind CSS + shadcn/ui components
-├── Routing: React Router v6
+├── State: TanStack Query v5 (server), Zustand 4.x (UI/filters)
+├── UI: Tailwind CSS + shadcn/ui
+├── Forms: React Hook Form + Zod schemas
 └── Testing: Vitest + React Testing Library + MSW
 ```
 
 **Key Patterns**:
-- Feature-based structure in `src/features/` (collection, audit, scraper)
-- Domain types in `src/domain/` mirroring backend
-- API client in `src/api/`
-- Mock service workers in `src/mocks/` for testing
+- Feature-based structure: `src/features/collection/`
+- Domain types mirror backend: `src/domain/schemas.ts`
+- API client with Zod validation: `src/api/v2.ts`
+- TanStack Query hooks: `src/hooks/useCoins.ts`
+
+---
 
 ## Development Commands
 
 ### Backend (Python 3.12+)
 
 ```bash
-# Install dependencies (uses uv)
 cd backend
-pip install uv
-uv sync
 
-# Run development server (V2 Clean Architecture)
+# Start server (V2 Clean Architecture)
 python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
 
-# Run tests (pytest with markers)
-python -m pytest tests -p pytest_asyncio         # All tests
-python -m pytest -m unit                         # Unit tests only
-python -m pytest -m integration                  # Integration tests only
-python -m pytest tests/unit/domain/test_vocab.py # Single test file
+# Tests
+python -m pytest tests -p pytest_asyncio    # All tests
+python -m pytest -m unit                    # Unit only (fast)
+python -m pytest -m integration             # Integration only
 
-# Type checking
+# Type checking & linting
 mypy src/
-
-# Linting
 ruff check src/
 ```
 
@@ -114,425 +196,338 @@ ruff check src/
 ```bash
 cd frontend
 
-# Install dependencies
-npm install
+# Start server (port 3000)
+npm run dev
 
-# Run development server
-npm run dev                # Starts on port 3000
-
-# Testing
-npm test                   # Watch mode (Vitest)
-npm run test:run           # Run once
-npm run test:coverage      # With coverage report
+# Tests
+npm test                # Watch mode
+npm run test:run        # Run once
+npm run test:coverage   # With coverage
 
 # Build & validation
-npm run build              # TypeScript compile + Vite build
-npm run typecheck          # TypeScript type checking only
-npm run lint               # ESLint
-npm run preview            # Preview production build
+npm run build           # TypeScript + Vite
+npm run typecheck       # TypeScript only
+npm run lint            # ESLint
 ```
 
 ### Full Stack
 
 ```bash
-# Local development (kills ports, starts both servers)
-.\restart.ps1              # PowerShell script for Windows
+# Restart both servers (Windows)
+.\restart.ps1
 
 # Docker deployment
 docker-compose up --build -d
-# Access: Frontend http://localhost:3000, Backend http://localhost:8000/docs
 ```
 
-## Key Domain Concepts
+---
 
-### Numismatic Terms
-- **Denomination**: Coin type (Denarius, Antoninianus, Solidus, Aureus, etc.)
-- **Metal**: gold, silver, bronze, billon, electrum, orichalcum, potin, lead, ae
-- **Category**: imperial, republic, provincial, byzantine, greek, celtic, judaean
-- **Obverse/Reverse**: Front (portrait) / Back (design/legend) of coin
-- **Legend**: Inscribed text on coin (often abbreviated Latin)
-- **Exergue**: Area below main reverse design
-- **Die Axis**: Orientation between obverse/reverse (0-12h clock positions)
-- **RIC/RPC/Crawford/Sear**: Reference catalog systems
+## Numismatic Terms
 
-### Data Model (Domain Entities)
+Essential domain vocabulary:
 
-**Coin** (Aggregate Root):
-- Classification: category, denomination, metal, series
-- People: issuing_authority, portrait_subject, dynasty, status
-- Chronology: reign dates, mint year (with BC/AD handling)
-- Physical: weight, diameter, die_axis
-- Design: obverse/reverse legend/description, exergue
-- Grading: grade_service (NGC/PCGS/self), grade, certification_number
-- Acquisition: date, price, source, url
-- Research: rarity, historical_significance, personal_notes
+| Term | Definition |
+|------|------------|
+| **Denomination** | Coin type (Denarius, Antoninianus, Aureus, Solidus) |
+| **Metal** | AU (gold), AR (silver), AE (bronze), BI (billon), EL (electrum) |
+| **Category** | imperial, republic, provincial, byzantine, greek, celtic, judaean |
+| **Obverse** | Front of coin (usually portrait) |
+| **Reverse** | Back of coin (design/legend) |
+| **Legend** | Inscribed text (often abbreviated Latin) |
+| **Exergue** | Area below main reverse design |
+| **Die Axis** | Orientation between obverse/reverse (0-12h clock) |
+| **RIC/RPC/Crawford** | Reference catalog systems |
 
-**Value Objects** (immutable):
-- `Dimensions(weight_g, diameter_mm, die_axis)`
-- `Attribution(issuing_authority, portrait_subject, dynasty, status)`
-- `GradingDetails(service, grade, cert_number)`
-- `AcquisitionDetails(date, price, source, url)`
+---
 
-### Audit System
-The `AuditEngine` compares coins against reference data using pluggable strategies:
-- **AttributionStrategy**: Checks issuing authority, portrait subject
-- **PhysicsStrategy**: Validates weight, diameter within tolerances
-- **DateStrategy**: Verifies mint year against reign dates
-- **GradeStrategy**: Reviews grade vs expected for reference type
+## Backend Routes (FastAPI)
 
-Audit results are color-coded: `green` (pass), `yellow` (warning), `red` (fail).
+### Core Endpoints
 
-### Scraper System
-**ScraperOrchestrator** coordinates auction house scrapers:
-- Each scraper implements `IScraper` interface
-- Returns `AuctionLot` with structured data
-- Playwright-based for JavaScript rendering
-- Handles pagination, image downloads, provenance parsing
-
-Supported auction houses: Heritage, CNG, Biddr (+ sub-houses), eBay, Agora.
-
-## API Structure
-
-### Backend Routes (FastAPI)
 ```
-/api/v2/coins              # CRUD operations (GET, POST, PUT, DELETE)
-/api/v2/coins/{id}/audit   # Run audit on coin
-/api/v2/scrape             # Scrape auction lot URL
-/api/v2/vocab              # Vocabulary management (issuing authorities, mints)
-/api/v2/series             # Series management (ruler/type groupings)
+GET    /api/v2/coins                    # List coins (paginated, filterable)
+POST   /api/v2/coins                    # Create coin
+GET    /api/v2/coins/{id}               # Get single coin
+PUT    /api/v2/coins/{id}               # Update coin
+DELETE /api/v2/coins/{id}               # Delete coin
+POST   /api/v2/coins/{id}/audit         # Run audit checks
+
+POST   /api/v2/scrape?url=...           # Scrape auction lot
+
+GET    /api/v2/vocab/{type}             # List vocabulary (issuers, mints)
+POST   /api/v2/vocab/{type}             # Create vocabulary term
+GET    /api/v2/vocab/search/{type}?q=   # Search vocabulary
+
+GET    /api/v2/series                   # List series
+POST   /api/v2/series                   # Create series
+GET    /api/v2/series/{id}              # Get series details
 ```
 
-**Key Endpoints**:
-- `GET /api/v2/coins?skip=0&limit=50&category=imperial&metal=silver` - List with filters
-- `POST /api/v2/coins` - Create coin (body: CoinCreate schema)
-- `GET /api/v2/coins/{id}` - Get single coin
-- `PUT /api/v2/coins/{id}` - Update coin
-- `DELETE /api/v2/coins/{id}` - Delete coin
-- `POST /api/v2/coins/{id}/audit` - Run audit checks
-- `POST /api/v2/scrape?url=...` - Scrape auction lot
-
-### Frontend API Client
-Located in `frontend/src/api/client.ts`, uses Axios with:
-- Base URL: `/api` (proxied to backend by Vite)
-- TanStack Query hooks in `src/api/` for each resource
-- Request/response transformers for date handling
-
-## Testing Strategy
-
-### Backend Tests
-Located in `backend/tests/`:
-- **Unit tests** (`tests/unit/`): Fast, no DB, no I/O (marked `@pytest.mark.unit`)
-- **Integration tests** (`tests/integration/`): DB interactions, external APIs (marked `@pytest.mark.integration`)
-
-Test structure mirrors `src/` with domain, application, infrastructure layers.
-
-**Running specific test types**:
+**Examples**:
 ```bash
-pytest -m unit              # Only unit tests (fast)
-pytest -m integration       # Only integration tests (slower, need DB)
+# List imperial silver coins
+GET /api/v2/coins?category=imperial&metal=silver&limit=50
+
+# Scrape Heritage auction
+POST /api/v2/scrape?url=https://coins.ha.com/...
+
+# Search issuers
+GET /api/v2/vocab/search/issuer?q=Augustus
 ```
 
-### Frontend Tests
-Located in `frontend/src/`:
-- Vitest for test runner (Jest-compatible API)
-- React Testing Library for component tests
-- MSW (Mock Service Worker) for API mocking in `src/mocks/handlers.ts`
-- Tests colocated with components: `ComponentName.test.tsx`
+**Full API Reference**: `docs/ai-guide/07-API-REFERENCE.md`
 
-**Test globals** configured in `vite.config.ts` (no imports needed for describe/it/expect).
-
-## File Conventions
-
-### Backend Python
-- Models (ORM): `backend/src/infrastructure/persistence/models/`
-- Domain entities: `backend/src/domain/*.py`
-- Use cases: `backend/src/application/commands/*.py`
-- Routers: `backend/src/infrastructure/web/routers/*.py`
-- Services: `backend/src/domain/services/*.py` or `backend/src/infrastructure/services/`
-
-### Frontend TypeScript
-- Path alias: `@/` maps to `src/`
-- Components: PascalCase filenames (e.g., `CoinCard.tsx`)
-- Hooks: camelCase with `use` prefix (e.g., `useCoins.ts`)
-- Types: `src/types/` for shared types, `src/domain/` for domain models
-- Pages: `src/pages/` (route components)
-
-## Migration Notes
-
-**V1 Archive**: The original app structure is preserved in `backend/v1_archive/` and uses `app.main:app` entry point. Do NOT modify V1 code.
-
-**V2 Entry Point**: Current application uses `src.infrastructure.web.main:app` (Clean Architecture).
-
-**Database Migration**: Data was migrated from `coinstack.db` (V1) to `coinstack_v2.db` (V2). Both databases may exist; V2 is canonical.
-
-## Important Patterns
-
-### Backend Dependency Injection
-FastAPI dependencies in `src/infrastructure/web/dependencies.py`:
-- `get_db()` - SQLAlchemy session
-- `get_coin_repository()` - Repository instance
-- Injected via `Depends()` in router functions
-
-### Frontend Data Fetching
-All server state via TanStack Query:
-```typescript
-const { data, isLoading, error } = useCoins({ category: 'imperial' })
-```
-- Automatic caching, refetching, background updates
-- Mutation hooks invalidate queries on success
-- Query keys in `src/api/queryKeys.ts`
-
-### Excel Import Format
-Expected columns (flexible naming, case-insensitive matching):
-- `Ruler Issuer`, `Coin type`, `Category`, `Composition`
-- `Minted` (handles BC/AD, ranges like "96-95 BC")
-- `Reference` (parses "RIC I 207; Crawford 335/1c")
-- `Obverse`, `Reverse`, `Weight`, `Diameter`
-- `Condition`, `NGC Grade`, `Mint`
-- `Amount Paid`, `Source`, `Link`
-
-Text normalization preserves Greek characters while cleaning spaces/dashes.
+---
 
 ## Database Architecture (V2)
 
-### Schema Initialization
-Database tables are created automatically when importing from `database.py`:
+### Critical Patterns
+
+**1. ORM Models** - Use SQLAlchemy 2.0 `Mapped[T]` syntax:
+
 ```python
-from src.infrastructure.persistence.database import init_db
-init_db()  # Creates all tables defined in ORM models
-```
-
-**Important**: All ORM model files MUST be imported in `database.py` for tables to be created:
-- `orm.py` - Core models (CoinModel, CoinImageModel, AuctionDataModel)
-- `models_vocab.py` - Vocabulary (IssuerModel, MintModel)
-- `models_series.py` - Series management
-
-### ORM Model Syntax (SQLAlchemy 2.0)
-**Rule**: Use modern `Mapped[T]` + `mapped_column()` syntax for all ORM models.
-
-**Pattern**:
-```python
-from typing import Optional, List
-from decimal import Decimal
-from datetime import date
-from sqlalchemy import Integer, String, Numeric, Date, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-from src.infrastructure.persistence.models import Base
+from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
 
 class CoinModel(Base):
     __tablename__ = "coins_v2"
 
-    # Required fields (non-nullable)
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    # Required fields
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     category: Mapped[str] = mapped_column(String)
-    metal: Mapped[str] = mapped_column(String)
-    weight_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
-    # Optional fields (nullable)
-    issuer_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("issuers.id"), nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    acquisition_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    # Optional fields
+    issuer_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     # Relationships
-    images: Mapped[List["CoinImageModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
-    issuer_rel: Mapped[Optional["IssuerModel"]] = relationship("src.infrastructure.persistence.models_vocab.IssuerModel")
+    images: Mapped[List["CoinImageModel"]] = relationship(...)
 ```
 
-**Key Rules**:
-- **Non-nullable**: `field: Mapped[type] = mapped_column(...)`
-- **Nullable**: `field: Mapped[Optional[type]] = mapped_column(..., nullable=True)`
-- **One-to-Many**: `field: Mapped[List["Model"]] = relationship(...)`
-- **One-to-One/Many-to-One**: `field: Mapped[Optional["Model"]] = relationship(...)`
-- Always use type hints (enables mypy type checking)
-- Import types: `Decimal` from `decimal`, `date` from `datetime`
+**2. Transaction Management** - Automatic via `get_db()`:
 
-**Why this matters**:
-- Better type safety and IDE autocomplete
-- mypy compatibility for type checking
-- Modern SQLAlchemy 2.0 best practices
-- Consistency with newer models (models_vocab.py, models_series.py)
-
-### Foreign Key Enforcement
-Foreign keys are ENABLED via SQLAlchemy event listener in `database.py`:
 ```python
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_conn, connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-```
-This ensures referential integrity for all connections made through SQLAlchemy.
-
-### Database Indexes
-Critical indexes for query performance:
-- `coins_v2`: issuer, category, metal, year_start, acquisition_date, grading_state
-- `issuers`: canonical_name
-- `series`: slug (unique)
-- `auction_data_v2`: url (unique), coin_id
-
-Run `python -m src.infrastructure.scripts.add_indexes --verify` to create/verify indexes.
-
-### Transaction Management
-**Rule**: Transactions are managed automatically by the `get_db()` dependency. Repositories should NEVER call `commit()` or `rollback()`.
-
-**How it works**:
-```python
-# dependencies.py (automatic transaction management):
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-        db.commit()  # Auto-commit on success
-    except Exception:
-        db.rollback()  # Auto-rollback on error
-        raise
-    finally:
-        db.close()
-
-# Repository (CORRECT - use flush() not commit()):
+# ✅ CORRECT - Repositories use flush()
 def save(self, coin: Coin) -> Coin:
-    merged = self.session.merge(orm_coin)
+    self.session.merge(orm_coin)
     self.session.flush()  # Get ID, but don't commit
-    return self._to_domain(merged)
+    return self._to_domain(coin)
 
-# Repository (INCORRECT - don't do this):
-def delete(self, coin_id: int):
-    self.session.delete(orm_coin)
-    self.session.commit()  # ❌ WRONG - breaks transaction boundaries
-
-# Router (CORRECT - transaction is automatic):
-@router.post("/coins")
-def create_coin(..., repo: ICoinRepository = Depends(get_coin_repo)):
-    coin = use_case.execute(dto)  # Changes are flushed
-    return coin  # Auto-committed via get_db() dependency
+# ❌ WRONG - Never call commit() in repositories
+def save(self, coin: Coin):
+    self.session.commit()  # Breaks transaction boundaries!
 ```
 
-**Why this matters**:
-- Multiple repository calls in one request are part of the same transaction
-- Exceptions automatically roll back ALL changes
-- Clean separation: repositories handle data access, dependency handles transactions
+**3. N+1 Prevention** - Always use eager loading:
 
-### Query Optimization (N+1 Prevention)
-**Rule**: Always use eager loading for relationships to prevent N+1 query problems.
-
-**Pattern**:
 ```python
 from sqlalchemy.orm import selectinload
 
-# Repository method (CORRECT - eager load):
+# ✅ CORRECT - Eager load relationships
 def get_by_id(self, coin_id: int) -> Optional[Coin]:
-    orm_coin = self.session.query(CoinModel).options(
-        selectinload(CoinModel.images)  # Eager load images
+    return self.session.query(CoinModel).options(
+        selectinload(CoinModel.images)  # 1 extra query for all images
     ).filter(CoinModel.id == coin_id).first()
-    return self._to_domain(orm_coin)
 
-def get_all(self, skip: int = 0, limit: int = 100, ...) -> List[Coin]:
-    query = self.session.query(CoinModel).options(
-        selectinload(CoinModel.images)  # Eager load images
-    )
-    # ... sorting and filtering ...
-    return [self._to_domain(c) for c in query.offset(skip).limit(limit).all()]
+# ❌ WRONG - Lazy loading causes N+1
+def get_by_id(self, coin_id: int):
+    return self.session.query(CoinModel).get(coin_id)  # N queries!
 ```
 
-**Why this matters**:
-- Without eager loading: 1 query for coins + N queries for images = O(n) queries
-- With eager loading: 1 query for coins + 1 query for all images = O(1) queries
-- Performance difference: 10-100x faster with large collections
+**4. Repository Interfaces** - Depend on Protocols:
 
-### Repository Interfaces
-**Rule**: Always depend on repository interfaces (Protocols), never on concrete implementations.
-
-**Available Interfaces** (`src/domain/repositories.py`):
-- `ICoinRepository` - Coin persistence
-- `IAuctionDataRepository` - Auction lot persistence
-- `ISeriesRepository` - Series/collection management
-- `IVocabRepository` - Vocabulary (issuers, mints)
-
-**Pattern**:
 ```python
-# Use Case (CORRECT - depends on interface):
+# ✅ CORRECT - Use case depends on interface
 from src.domain.repositories import ICoinRepository
 
 class CreateCoinUseCase:
     def __init__(self, repo: ICoinRepository):
         self.repo = repo
 
-# Use Case (INCORRECT - depends on concrete class):
+# ❌ WRONG - Depends on concrete implementation
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
 
 class CreateCoinUseCase:
-    def __init__(self, repo: SqlAlchemyCoinRepository):  # ❌ WRONG
+    def __init__(self, repo: SqlAlchemyCoinRepository):  # Tight coupling!
         self.repo = repo
 ```
 
-**Why this matters**:
-- Enables dependency injection and testing with mocks
-- Loose coupling between layers (Clean Architecture)
-- Can swap implementations without changing use cases
+**Full Database Guide**: `docs/ai-guide/05-DATA-MODEL.md`
+
+---
+
+## Testing Strategy
+
+### Backend Tests
+
+```bash
+# Fast unit tests (no DB, no I/O)
+pytest -m unit
+
+# Integration tests (DB, external APIs)
+pytest -m integration
+
+# All tests
+pytest tests -p pytest_asyncio
+```
+
+**Structure**:
+- `tests/unit/` - Domain, application, infrastructure units
+- `tests/integration/` - Database, API integration
+- Mark tests: `@pytest.mark.unit` or `@pytest.mark.integration`
+
+### Frontend Tests
+
+```bash
+# Watch mode
+npm test
+
+# Run once
+npm run test:run
+
+# Coverage report
+npm run test:coverage
+```
+
+**Tools**:
+- Vitest (test runner)
+- React Testing Library (component tests)
+- MSW (API mocking in `src/mocks/handlers.ts`)
+
+---
 
 ## Common Gotchas
 
-1. **Port conflicts**: Always kill processes on 8000/3000 before restarting. Use `restart.ps1` to automate.
-2. **Database backups**: Schema changes without backup violate critical rules. Always backup first to `backend/backups/`.
-3. **Import paths**: Backend uses `src.` prefix (e.g., `from src.domain.coin import Coin`).
-4. **Frontend proxy**: Vite dev server proxies `/api` to backend. In production, Nginx handles this.
-5. **Test markers**: Backend tests MUST be marked `@pytest.mark.unit` or `@pytest.mark.integration`.
-6. **BC/AD dates**: Years are stored as signed integers (negative for BC). Sort chronologically, not numerically.
-7. **Git commits**: NO Co-authored-by trailers. Author must be `isayev <olexandr@olexandrisayev.com>`.
-8. **Foreign Keys**: Always enabled for SQLAlchemy connections. Direct sqlite3 CLI shows disabled (different connection).
-9. **Index Usage**: LIKE queries with leading wildcards (`%Augustus%`) cannot use indexes - this is expected SQLite behavior.
+1. **Port conflicts**: Use `.\restart.ps1` to kill and restart servers
+2. **Database backups**: ALWAYS backup before schema changes
+3. **Import paths**: Backend uses `from src.` prefix
+4. **Frontend proxy**: Vite proxies `/api` to `http://localhost:8000`
+5. **Test markers**: MUST mark tests `@pytest.mark.unit` or `@pytest.mark.integration`
+6. **BC/AD dates**: Stored as signed integers (negative for BC)
+7. **Git commits**: Author MUST be `isayev <olexandr@olexandrisayev.com>`
+8. **Repositories**: Use `flush()` NOT `commit()`
+9. **Relationships**: ALWAYS use `selectinload()` for eager loading
+10. **Documentation**: Update `docs/ai-guide/` after EVERY change
 
-## Access Points
+---
 
-- **Frontend**: http://localhost:3000
-- **Backend API Docs**: http://localhost:8000/docs (Swagger UI)
-- **Alternative Docs**: http://localhost:8000/redoc (ReDoc)
-- **Database**: `backend/coinstack_v2.db` (SQLite, can open with any SQLite viewer)
+## File Locations Quick Reference
 
-## Reference Documentation
+### Backend
 
-### Quick References
-- **API endpoints**: See Swagger UI at `/docs` when backend is running
-- **Domain model**: `ARCHITECTURE.md` for entity relationships
-- **README.md**: Feature list and tech stack overview
-- **Cursor rules**: `.cursor/rules/*.mdc` for specific constraints (ports, git, database, scrapers)
-- **GEMINI.md**: Condensed project context and rules summary
+| Component | Path |
+|-----------|------|
+| Domain entities | `backend/src/domain/*.py` |
+| Use cases | `backend/src/application/commands/*.py` |
+| ORM models | `backend/src/infrastructure/persistence/orm.py` |
+| Repositories | `backend/src/infrastructure/repositories/*.py` |
+| API routers | `backend/src/infrastructure/web/routers/*.py` |
+| Scrapers | `backend/src/infrastructure/scrapers/*/scraper.py` |
+| Tests | `backend/tests/unit/` or `backend/tests/integration/` |
 
-### Comprehensive AI Guide (`docs/ai-guide/`)
+### Frontend
 
-For detailed implementation guidance, see the comprehensive AI assistant documentation:
+| Component | Path |
+|-----------|------|
+| Pages (routes) | `frontend/src/pages/*.tsx` |
+| Features | `frontend/src/features/collection/*.tsx` |
+| Components | `frontend/src/components/coins/*.tsx` |
+| API client | `frontend/src/api/v2.ts` |
+| Hooks | `frontend/src/hooks/useCoins.ts` |
+| Stores | `frontend/src/stores/uiStore.ts` |
+| Domain types | `frontend/src/domain/schemas.ts` |
+| Design specs | `design/*.md` |
 
-**Architecture & Design**:
-- `02-architecture/clean-architecture.md` - V2 Clean Architecture layers in depth
-- `02-architecture/domain-layer.md` - Domain entities, value objects, aggregates
-- `02-architecture/application-layer.md` - Use cases and command handlers
-- `02-architecture/infrastructure-layer.md` - Persistence, web, scrapers
+**Full File Map**: `docs/ai-guide/06-FILE-LOCATIONS.md`
 
-**Development Guides**:
-- `05-backend-modules/` - Domain entities, repositories, services, scrapers
-- `06-frontend-modules/` - Components, state management, hooks, design system
-- `07-coding-patterns/` - Backend and frontend conventions with examples
+---
 
-**API Reference**:
-- `04-api/coins-api.md` - Coin CRUD operations
-- `04-api/vocab-api.md` - Vocabulary management
-- `04-api/series-api.md` - Series/collection endpoints
-- `04-api/scraper-api.md` - Auction scraping operations
+## Documentation Resources
 
-**Task Recipes** (Step-by-Step):
-- `08-task-recipes/add-field.md` - Adding new coin fields
-- `08-task-recipes/add-endpoint.md` - Creating API endpoints
-- `08-task-recipes/add-scraper.md` - Adding new auction houses
-- `08-task-recipes/database-migration.md` - Safe schema changes
+### Essential Guides (Start Here)
 
-**Systems Documentation**:
-- `09-systems/scraper-system.md` - End-to-end scraping flow
-- `09-systems/audit-system.md` - Audit engine and strategies
-- `09-systems/vocab-system.md` - Controlled vocabulary and normalization
+| Guide | Purpose |
+|-------|---------|
+| **[DOCUMENTATION_RULES.md](DOCUMENTATION_RULES.md)** | **MANDATORY workflow protocol** |
+| **[docs/ai-guide/README.md](docs/ai-guide/README.md)** | **Complete guide index** |
+| [docs/ai-guide/08-CRITICAL-RULES.md](docs/ai-guide/08-CRITICAL-RULES.md) | Validation checklist |
+| [docs/ai-guide/01-OVERVIEW.md](docs/ai-guide/01-OVERVIEW.md) | Project context |
 
-**Quick Lookups**:
-- `10-reference/file-locations.md` - Complete file map
-- `10-reference/enum-reference.md` - All enum values
-- `10-reference/troubleshooting.md` - Common issues and solutions
+### Architecture & Patterns
 
-**Note**: CLAUDE.md provides quick reference for immediate tasks. Consult `docs/ai-guide/` for comprehensive implementation details, patterns, and architectural context.
+- `02-CLEAN-ARCHITECTURE.md` - V2 architecture principles
+- `03-BACKEND-MODULES.md` - Domain/Application/Infrastructure layers
+- `04-FRONTEND-MODULES.md` - React architecture
+- `08-CODING-PATTERNS.md` - Backend/frontend conventions
+
+### Data & API
+
+- `05-DATA-MODEL.md` - Database schema, ORM models
+- `06-DATA-FLOWS.md` - Request flows, state management
+- `07-API-REFERENCE.md` - Complete API endpoint reference
+
+### Design & UI
+
+- `10-DESIGN-SYSTEM.md` - Design tokens, colors, typography
+- `11-FRONTEND-COMPONENTS.md` - Component specifications
+- `design/CoinStack Design System v3.0.md` - Master design spec
+- `design/CoinStack Frontpage + Grid Design.md` - Grid layout
+
+### Implementation Recipes
+
+- `09-TASK-RECIPES.md` - Step-by-step guides for common tasks
+  - Adding fields, API endpoints, scrapers
+  - Database migrations, new components
+
+---
+
+## Migration Notes
+
+**V1 Archive** (DO NOT MODIFY):
+- Location: `backend/v1_archive/`
+- Entry point: `app.main:app`
+- Database: `backend/coinstack.db`
+
+**V2 Current** (USE THIS):
+- Location: `backend/src/`
+- Entry point: `src.infrastructure.web.main:app`
+- Database: `backend/coinstack_v2.db`
+
+---
+
+## Scraper System
+
+**Always use rich scrapers** (Playwright-based):
+- Heritage: `backend/src/infrastructure/scrapers/heritage/scraper.py`
+- CNG: `backend/src/infrastructure/scrapers/cng/scraper.py`
+- Biddr: `backend/src/infrastructure/scrapers/biddr/scraper.py`
+- eBay: `backend/src/infrastructure/scrapers/ebay/scraper.py`
+
+**Pattern**:
+- Implement `IScraper` interface
+- Return `AuctionLot` entity
+- Handle pagination, images, provenance
+
+**Full Guide**: `docs/ai-guide/` (search for scraper documentation)
+
+---
+
+## Quick Start Checklist
+
+Starting a new task? Follow this:
+
+1. [ ] Read `DOCUMENTATION_RULES.md`
+2. [ ] Consult relevant `design/` specs (UI work)
+3. [ ] Consult relevant `docs/ai-guide/` documents
+4. [ ] Note existing patterns and constraints
+5. [ ] Implement following documented conventions
+6. [ ] Update `docs/ai-guide/` to reflect changes
+7. [ ] Verify documentation matches implementation
+8. [ ] State what you consulted/updated in your response
+
+**Remember**: Documentation is the source of truth. Keep it current.
+
+---
+
+**Last Updated**: January 25, 2026
+**Version**: V2 Clean Architecture
+**Enforcement**: Zero tolerance for outdated documentation
