@@ -118,6 +118,16 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             elif sort_by == "value":
                 # Sort by market_value (NULLs will be handled by nulls_last)
                 sort_column = CoinModel.market_value
+            elif sort_by == "mint":
+                sort_column = CoinModel.mint
+            elif sort_by == "diameter":
+                sort_column = CoinModel.diameter_mm
+            elif sort_by == "die_axis":
+                sort_column = CoinModel.die_axis
+            elif sort_by == "specific_gravity":
+                sort_column = CoinModel.specific_gravity
+            elif sort_by == "issue_status":
+                sort_column = CoinModel.issue_status
                 
             if sort_column is not None:
                 from sqlalchemy import nulls_last
@@ -193,8 +203,14 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         
         return [self._to_domain(c) for c in orm_coins]
     
+        if conditions:
+            query = query.filter(and_(*conditions))
+        
+        return query
+        
     def _apply_filters(self, query, filters: Optional[Dict[str, Any]]):
         """Apply filter conditions to a query."""
+        from sqlalchemy import and_, or_, func
         if not filters:
             return query
         
@@ -202,10 +218,11 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         
         # Exact match filters
         if "category" in filters:
-            conditions.append(CoinModel.category == filters["category"])
+            # Case insensitive category match since backend uses slugs/values inconsistently
+            conditions.append(func.lower(CoinModel.category) == filters["category"].lower())
         
         if "metal" in filters:
-            conditions.append(CoinModel.metal == filters["metal"])
+            conditions.append(func.lower(CoinModel.metal) == filters["metal"].lower())
         
         if "denomination" in filters:
             conditions.append(CoinModel.denomination == filters["denomination"])
@@ -220,6 +237,28 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         if "issuer" in filters:
             conditions.append(CoinModel.issuer.ilike(f"%{filters['issuer']}%"))
         
+        # Grade filter (Smart Buckets)
+        if "grade" in filters:
+            g = filters["grade"].lower()
+            if g == 'poor':
+                conditions.append(or_(CoinModel.grade.ilike('%Poor%'), CoinModel.grade.ilike('%Fair%'), CoinModel.grade.ilike('%Basal%'), CoinModel.grade.ilike('AG%')))
+            elif g == 'good':
+                conditions.append(or_(CoinModel.grade.ilike('%Good%'), CoinModel.grade.ilike('%VG%')))
+            elif g == 'fine':
+                conditions.append(or_(CoinModel.grade.ilike('%Fine%'), CoinModel.grade.ilike('%VF%'), CoinModel.grade == 'F', CoinModel.grade.ilike('F %')))
+            elif g == 'ef':
+                conditions.append(or_(CoinModel.grade.ilike('%XF%'), CoinModel.grade.ilike('%EF%'), CoinModel.grade.ilike('%Extremely%')))
+            elif g == 'au':
+                conditions.append(or_(CoinModel.grade.ilike('%AU%'), CoinModel.grade.ilike('%About Unc%')))
+            elif g == 'ms':
+                conditions.append(or_(CoinModel.grade.ilike('%MS%'), CoinModel.grade.ilike('%Mint State%'), CoinModel.grade.ilike('%FDC%'), CoinModel.grade.ilike('%Unc%')))
+            else:
+                conditions.append(CoinModel.grade.ilike(f"%{filters['grade']}%"))
+
+        # Rarity filter
+        if "rarity" in filters:
+             conditions.append(CoinModel.rarity.ilike(filters["rarity"]))
+
         # Year range filters
         if "year_start" in filters:
             # Coins minted on or after this year

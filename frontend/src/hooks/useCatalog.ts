@@ -87,38 +87,52 @@ export interface ReferenceType {
 // API functions
 async function lookupReference(request: {
   raw_reference?: string;
+  external_id?: string;
+  system?: string;
   context?: Record<string, unknown>;
 }): Promise<LookupResponse> {
-  if (!request.raw_reference) throw new Error("Reference required");
-  
-  // Use V2 LLM Catalog Parse
-  const response = await api.post("/api/v2/llm/catalog/parse", {
-    reference: request.raw_reference
-  });
-  
-  const data = response.data;
-  
-  return {
-    status: "success",
-    external_id: data.raw_reference,
-    external_url: null,
-    confidence: data.confidence,
-    candidates: [],
-    // Map parsed data to payload for form auto-population
-    payload: {
-      authority: data.issuer,
-      mint: data.mint,
-      date_from: data.year_start,
-      date_to: data.year_end,
-      metal: data.metal,
-      obverse_description: data.obverse_description,
-      reverse_description: data.reverse_description
-    },
-    error_message: null,
-    reference_type_id: null,
-    last_lookup: new Date().toISOString(),
-    cache_hit: false
-  };
+  if (!request.raw_reference && !request.external_id) {
+    throw new Error("Reference or ID required");
+  }
+
+  try {
+    // Use dedicated Catalog Lookup API (Non-LLM)
+    const response = await api.post("/api/catalog/lookup", {
+      reference: request.raw_reference,
+      external_id: request.external_id,
+      system: request.system,
+      context: request.context
+    });
+
+    const data = response.data;
+
+    return {
+      status: data.status,
+      external_id: data.external_id,
+      external_url: data.external_url,
+      confidence: data.confidence,
+      candidates: data.candidates || [],
+      payload: data.payload,
+      error_message: data.error_message,
+      reference_type_id: null,
+      last_lookup: new Date().toISOString(),
+      cache_hit: false
+    };
+  } catch (err: any) {
+    console.error("Catalog Lookup Error:", err);
+    return {
+      status: "error",
+      external_id: request.raw_reference || null,
+      external_url: null,
+      confidence: 0,
+      candidates: [],
+      payload: null,
+      error_message: err.message || "Unknown error",
+      reference_type_id: null,
+      last_lookup: new Date().toISOString(),
+      cache_hit: false
+    };
+  }
 }
 
 async function enrichCoin(
@@ -168,7 +182,7 @@ export function useLookupReference() {
 
 export function useEnrichCoin() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({
       coinId,

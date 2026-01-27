@@ -150,6 +150,27 @@ Cold → Hot progression represents increasing quality:
 --perf-neutral: #9CA3AF;   /* Gray - no change */
 ```
 
+### 2.7 Form Interaction Colors
+
+Standardized feedback colors for data entry and AI population:
+
+```css
+/* Standard Text */
+--text-input: var(--foreground);           /* User-entered / Committed */
+--text-placeholder: var(--muted-foreground); /* Empty / Hint */
+
+/* Tentative / Fetched Data */
+--text-tentative: #C2410C;                 /* Orange-700 (Light) */
+--text-tentative-dark: #FDBA74;            /* Orange-300 (Dark) */
+--ring-tentative: rgba(249, 115, 22, 0.5); /* Orange-500/50 */
+--bg-tentative: rgba(255, 247, 237, 0.1);  /* Orange-50/10 */
+```
+
+**Usage Rule**:
+- **Gray**: Placeholder / Empty
+- **White/Black**: User committed data / Current value
+- **Orange**: AI-fetched or Auto-populated suggestions (Tentative)
+
 ---
 
 ## 3. Typography

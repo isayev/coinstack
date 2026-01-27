@@ -1,4 +1,4 @@
-import { Plus, Search, Coins } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useUIStore } from "@/stores/uiStore";
@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 export function Header() {
   const navigate = useNavigate();
   const { setCommandPaletteOpen } = useUIStore();
-  
+
   return (
     <header
       className="sticky top-0 z-50 w-full backdrop-blur"
@@ -18,32 +18,14 @@ export function Header() {
     >
       <div className="flex h-14 items-center justify-between px-4">
         {/* Logo - Clickable to home */}
-        <Link 
-          to="/" 
-          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
-        >
-          {/* Logo icon with gold/silver gradient */}
-          <div 
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ 
-              background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))'
-            }}
-          >
-            <Coins className="w-4 h-4 text-black" />
-          </div>
-          {/* Logo text */}
-          <span 
-            className="text-xl font-bold"
-            style={{ 
-              background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}
-          >
-            CoinStack
-          </span>
+        <Link to="/" className="hover:opacity-80 transition-opacity">
+          <img
+            src="/logo-lg.png"
+            alt="CoinStack"
+            className="h-10 w-auto object-contain"
+          />
         </Link>
-        
+
         {/* Right side controls */}
         <div className="flex items-center gap-2">
           {/* Search button */}
@@ -56,7 +38,7 @@ export function Header() {
           >
             <Search className="w-4 h-4" />
           </Button>
-          
+
           {/* Add Coin button */}
           <Button
             onClick={() => navigate("/coins/new")}
@@ -69,7 +51,7 @@ export function Header() {
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add Coin</span>
           </Button>
-          
+
           {/* Theme toggle */}
           <ThemeToggle />
         </div>

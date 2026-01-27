@@ -622,6 +622,18 @@
     @apply shadow-lg;
     transform: translateY(-2px);
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     FORM INTERACTION STATES — Edit/Input Feedback
+     ═══════════════════════════════════════════════════════════════ */
+
+  .input-tentative {
+    @apply ring-2 ring-orange-500/50 bg-orange-50/10 text-orange-700 dark:text-orange-300 transition-all duration-500 font-medium;
+  }
+  
+  .text-tentative {
+    @apply text-orange-700 dark:text-orange-300;
+  }
 }
 
 /* Custom scrollbar for dark theme */

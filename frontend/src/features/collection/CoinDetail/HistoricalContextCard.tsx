@@ -11,14 +11,17 @@
  * @module features/collection/CoinDetail/HistoricalContextCard
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw, Clock, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MarkdownContent } from '@/components/ui/MarkdownContent';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface HistoricalContextCardProps {
   /** Pre-existing historical context from backend */
   context?: string | null;
+  /** JSON-encoded analysis sections (Research Grade) */
+  analysisSections?: string | null;
   /** When context was generated */
   generatedAt?: string | null;
   /** Coin metadata for context generation */
@@ -42,6 +45,7 @@ interface HistoricalContextCardProps {
 
 export function HistoricalContextCard({
   context,
+  analysisSections,
   generatedAt,
   coinMetadata,
   onGenerateContext,
@@ -49,8 +53,26 @@ export function HistoricalContextCard({
   categoryType = 'imperial',
   className,
 }: HistoricalContextCardProps) {
-  const [isExpanded, setIsExpanded] = useState(!!context);
-  const hasContext = !!context;
+  // Parse sections if available
+  const parsedSections = useMemo(() => {
+    if (!analysisSections) return null;
+    try {
+      const parsed = JSON.parse(analysisSections);
+      // Ensure it's an array of objects
+      if (Array.isArray(parsed)) return parsed;
+      // Convert dict to array if needed
+      if (typeof parsed === 'object') {
+        return Object.entries(parsed).map(([title, content]) => ({ title, content }));
+      }
+      return null;
+    } catch (e) {
+      console.error("Failed to parse analysis sections", e);
+      return null;
+    }
+  }, [analysisSections]);
+
+  const hasData = !!context || !!parsedSections;
+  const [isExpanded, setIsExpanded] = useState(hasData);
 
   const formatDate = (dateStr: string | null | undefined): string => {
     if (!dateStr) return '';
@@ -95,9 +117,9 @@ export function HistoricalContextCard({
             className="text-base font-semibold"
             style={{ color: 'var(--text-primary)' }}
           >
-            Historical Context
+            Historical Analysis
           </h2>
-          {hasContext && generatedAt && (
+          {hasData && generatedAt && (
             <span
               className="text-xs flex items-center gap-1"
               style={{ color: 'var(--text-muted)' }}
@@ -107,9 +129,9 @@ export function HistoricalContextCard({
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
-          {hasContext && (
+          {hasData && (
             <span
               className="text-xs px-2 py-0.5 rounded"
               style={{
@@ -134,10 +156,25 @@ export function HistoricalContextCard({
           className="px-5 pb-5 pl-7 border-t"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
-          {hasContext ? (
+          {hasData ? (
             <div className="space-y-4 pt-4">
-              {/* Styled markdown content */}
-              <MarkdownContent content={context} />
+              {parsedSections ? (
+                <Tabs defaultValue={parsedSections[0]?.title}>
+                  <TabsList className="mb-4 flex-wrap h-auto">
+                    {parsedSections.map((s: any, i: number) => (
+                      <TabsTrigger key={i} value={s.title}>{s.title}</TabsTrigger>
+                    ))}
+                    {/* Fallback to legacy context if needed in a tab? No, usually sections cover it */}
+                  </TabsList>
+                  {parsedSections.map((s: any, i: number) => (
+                    <TabsContent key={i} value={s.title}>
+                      <MarkdownContent content={s.content} />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              ) : (
+                <MarkdownContent content={context!} />
+              )}
 
               {/* Actions */}
               {onGenerateContext && (

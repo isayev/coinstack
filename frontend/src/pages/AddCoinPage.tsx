@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { v2 } from "@/api/v2"
+import { client } from "@/api/client"
 import { CoinForm } from "@/components/coins/CoinForm"
 import { IngestionSelector } from "@/components/coins/IngestionSelector"
 import { Button } from "@/components/ui/button"
@@ -11,14 +11,14 @@ import { useState } from "react"
 export function AddCoinPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  
+
   // States
   const [ingestionMode, setIngestionMode] = useState(true)
   const [initialData, setInitialData] = useState<any>(null)
   const [dataSource, setDataSource] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: v2.createCoin,
+    mutationFn: client.createCoin,
     onSuccess: () => {
       toast.success("Coin added successfully")
       queryClient.invalidateQueries({ queryKey: ['coins'] })
@@ -31,12 +31,12 @@ export function AddCoinPage() {
 
   const handleDataLoaded = (data: any) => {
     setInitialData(data)
-    
+
     // Determine source for the banner
     if (data.source) setDataSource(`Auction Import (${data.source})`)
     else if (data.ruler) setDataSource("AI Visual Identification")
     else if (data.id) setDataSource(`Cloned from #${data.id}`)
-    
+
     setIngestionMode(false)
   }
 
@@ -117,9 +117,9 @@ export function AddCoinPage() {
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
-        <IngestionSelector 
-          onDataLoaded={handleDataLoaded} 
-          onManualStart={() => setIngestionMode(false)} 
+        <IngestionSelector
+          onDataLoaded={handleDataLoaded}
+          onManualStart={() => setIngestionMode(false)}
         />
       </div>
     )
@@ -168,7 +168,7 @@ export function AddCoinPage() {
       )}
 
       <CoinForm
-        key={dataSource || 'manual'} 
+        key={dataSource || 'manual'}
         defaultValues={getFormDefaults()}
         onSubmit={(data) => mutation.mutate(data as any)}
         isSubmitting={mutation.isPending}

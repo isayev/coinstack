@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { X, Check, RotateCcw, Eye } from "lucide-react";
+import { X, Check, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/uiStore";
 

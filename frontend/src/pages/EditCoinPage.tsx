@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { v2 } from "@/api/v2"
+import { client } from "@/api/client"
 import { CoinForm } from "@/components/coins/CoinForm"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -15,12 +15,12 @@ export function EditCoinPage() {
 
   const { data: coin, isLoading } = useQuery({
     queryKey: ['coin', coinId],
-    queryFn: () => v2.getCoin(coinId),
+    queryFn: () => client.getCoin(coinId),
     enabled: !!id
   })
 
   const mutation = useMutation({
-    mutationFn: (data: any) => v2.updateCoin(coinId, data),
+    mutationFn: (data: any) => client.updateCoin(coinId, data),
     onSuccess: () => {
       toast.success("Coin updated successfully")
       queryClient.invalidateQueries({ queryKey: ['coins'] })
@@ -84,16 +84,9 @@ export function EditCoinPage() {
         </div>
       </div>
 
-      <CoinForm 
-        defaultValues={{
-          category: coin.category,
-          metal: coin.metal,
-          dimensions: coin.dimensions,
-          attribution: coin.attribution,
-          grading: coin.grading,
-          acquisition: coin.acquisition || undefined
-        }}
-        onSubmit={(data) => mutation.mutate(data)} 
+      <CoinForm
+        coin={coin}
+        onSubmit={(data) => mutation.mutate(data)}
         isSubmitting={mutation.isPending}
       />
     </div>

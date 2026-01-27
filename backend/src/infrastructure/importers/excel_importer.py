@@ -31,6 +31,13 @@ class ExcelImporter(ICollectionImporter):
                 continue
 
             # Parse normalized fields
+            references = []
+            ref_str = self._get_str(raw_map, ["Reference", "References", "Ref", "Catalog"])
+            if ref_str:
+                from src.infrastructure.services.catalogs.parser import parser
+                parsed_refs = parser.parse_multiple(ref_str)
+                references = [p.model_dump() for p in parsed_refs]
+
             imported_rows.append(ImportedCoinRow(
                 row_number=idx,
                 raw_data=raw_map,
@@ -39,7 +46,8 @@ class ExcelImporter(ICollectionImporter):
                 weight=self._get_decimal(raw_map, ["Weight", "Weight (g)"]),
                 diameter=self._get_decimal(raw_map, ["Diameter", "Size", "Diameter (mm)"]),
                 price=self._get_decimal(raw_map, ["Price", "Cost", "Acquisition Price"]),
-                date=self._get_date(raw_map, ["Date", "Acquired", "Acquisition Date"])
+                date=self._get_date(raw_map, ["Date", "Acquired", "Acquisition Date"]),
+                references=references
             ))
             
         return imported_rows

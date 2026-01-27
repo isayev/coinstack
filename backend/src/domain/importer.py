@@ -18,6 +18,7 @@ class ImportedCoinRow:
     grade: Optional[str] = None
     price: Optional[Decimal] = None
     date: Optional[date] = None
+    references: Optional[List[dict]] = None
 
 class ICollectionImporter(Protocol):
     def load(self, file_path: str) -> List[ImportedCoinRow]:

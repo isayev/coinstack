@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import { v2 } from "@/api/v2";
+import { client } from "@/api/client";
 import { Coin } from "@/domain/schemas";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Microscope, Link as LinkIcon, ExternalLink, ChevronUp, ChevronDown, AlertCircle } from "lucide-react";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Microscope, ExternalLink, ChevronUp, ChevronDown, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DieLinkerProps {
@@ -22,7 +21,7 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
     queryKey: queryKey,
     queryFn: async () => {
       if (!dieId || dieId.length < 3) return [];
-      
+
       const params: Record<string, any> = {};
       if (side === 'obverse') {
         params.obverse_die_id = dieId;
@@ -30,8 +29,8 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
         params.reverse_die_id = dieId;
       }
       params.limit = 10;
-      
-      const response = await v2.getCoins(params);
+
+      const response = await client.getCoins(params);
       return response.items;
     },
     enabled: !!dieId && dieId.length >= 3,
@@ -43,7 +42,7 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
 
   return (
     <Card className={cn('relative rounded-xl overflow-hidden mt-2', className)}>
-      <div 
+      <div
         className="p-3 pl-4 cursor-pointer hover:bg-muted/50 transition-colors flex items-center justify-between"
         onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -65,7 +64,7 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
               <Loader2 className="h-3 w-3 animate-spin" /> Searching collection...
             </div>
           )}
-          
+
           {hasError && (
             <div className="text-xs text-red-500 flex items-center gap-2 py-2">
               <AlertCircle className="h-3 w-3" /> Error loading linked coins.
@@ -83,7 +82,7 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
                       #{coin.id}
                     </div>
                   )}
-                  <a 
+                  <a
                     href={`/coins/${coin.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -96,7 +95,7 @@ export function DieLinker({ dieId, side, className }: DieLinkerProps) {
               ))}
             </div>
           )}
-          
+
           {!isLoading && !hasError && data && data.length === 0 && (
             <p className="text-xs text-muted-foreground italic py-2">
               No other coins found with this die ID.

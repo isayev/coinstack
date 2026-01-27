@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { CoinListV3 } from "@/features/collection/CoinListV3";
+import { CoinList } from "@/features/collection/CoinList";
 import { CollectionDashboard } from "@/features/collection/CollectionDashboard";
 import { BulkActionsBar } from "@/features/collection/BulkActionsBar";
 import { BottomPanel } from "@/components/layout/BottomPanel";
@@ -41,7 +41,10 @@ export function CollectionPage() {
           height={160}
           showBrush
           onYearClick={(year) => {
-            console.log('Year clicked:', year);
+            // TODO: Implement year filter navigation
+            if (import.meta.env.DEV) {
+              console.log('Year clicked:', year);
+            }
           }}
         />
       ),
@@ -90,7 +93,7 @@ export function CollectionPage() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Coin list/table (includes its own toolbar) */}
           <div className="flex-1 overflow-auto p-4">
-            <CoinListV3 />
+            <CoinList />
           </div>
         </div>
       </div>

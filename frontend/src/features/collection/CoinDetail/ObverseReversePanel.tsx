@@ -13,6 +13,7 @@ import { Coin, Image } from '@/domain/schemas';
 import { CoinSidePanel } from './CoinSidePanel';
 import { cn } from '@/lib/utils';
 import { parseIconography } from '@/lib/parsers';
+import { CoinGallery } from './CoinGallery';
 
 interface ObverseReversePanelProps {
   coin: Coin;
@@ -29,16 +30,32 @@ export const ObverseReversePanel = memo(function ObverseReversePanel({
   isEnrichingReverse = false,
   className,
 }: ObverseReversePanelProps) {
-  // Get images by type (case-insensitive comparison)
-  const getImageUrl = (type: string): string | undefined => {
-    const img = coin.images?.find(
-      (img: Image) => img.image_type?.toLowerCase() === type.toLowerCase()
-    );
-    return img?.url || img?.file_path;
-  };
+  // Get images by type with fallback logic
+  const allImages = coin.images || [];
 
-  const obverseImage = getImageUrl('obverse') || coin.images?.[0]?.url || coin.images?.[0]?.file_path;
-  const reverseImage = getImageUrl('reverse');
+  // 1. Try to find explicit matches
+  let obvImg = allImages.find(img => img.image_type?.toLowerCase() === 'obverse');
+  let revImg = allImages.find(img => img.image_type?.toLowerCase() === 'reverse');
+
+  // 2. Fallback: If no explicit obverse, use the first image (primary)
+  if (!obvImg && allImages.length > 0) {
+    obvImg = allImages[0];
+  }
+
+  // 3. Fallback: If no explicit reverse, use the second image (if it exists and is different/untagged)
+  if (!revImg && allImages.length > 1) {
+    // Avoid re-using the obverse image
+    const candidate = allImages.find(img => img !== obvImg && (!img.image_type || img.image_type === 'general'));
+    if (candidate) {
+      revImg = candidate;
+    } else if (allImages[1] !== obvImg) {
+      // Just take the second one if we can't find a clean 'general' one
+      revImg = allImages[1];
+    }
+  }
+
+  const obverseImage = obvImg?.url || obvImg?.file_path;
+  const reverseImage = revImg?.url || revImg?.file_path;
 
   // Get legend data - check both nested design object and flat fields
   const obverseLegend = coin.design?.obverse_legend || coin.obverse_legend;
@@ -89,6 +106,13 @@ export const ObverseReversePanel = memo(function ObverseReversePanel({
         onEnrichLegend={onEnrichLegend ? () => onEnrichLegend('reverse') : undefined}
         isEnriching={isEnrichingReverse}
       />
+
+      {/* Gallery Trigger (if multiple images exist) - Spans full width */}
+      {coin.images && coin.images.length > 0 && (
+        <div className="flex justify-center mt-2 lg:col-span-2">
+          <CoinGallery images={coin.images} />
+        </div>
+      )}
     </div>
   );
 });

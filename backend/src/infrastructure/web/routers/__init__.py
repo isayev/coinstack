@@ -10,6 +10,7 @@ from . import provenance
 from . import die_study
 from . import stats
 from . import review
+from . import catalog
 
 __all__ = [
     "v2",
@@ -23,4 +24,5 @@ __all__ = [
     "die_study",
     "stats",
     "review",
+    "catalog",
 ]

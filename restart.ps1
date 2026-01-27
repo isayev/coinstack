@@ -37,9 +37,17 @@ Start-Sleep -Seconds 2
 Write-Host "[2/3] Starting Backend (V2)..." -ForegroundColor Yellow
 $backendPath = Join-Path $PSScriptRoot "backend"
 
+# Detect Python (venv or global)
+$pythonCmd = "python"
+$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+if (Test-Path $venvPython) {
+    $pythonCmd = $venvPython
+    Write-Host "    Using venv: $pythonCmd" -ForegroundColor Cyan
+}
+
 # Note: We use run_server.py which sets Windows event loop policy for Playwright
 $backendArgs = @("run_server.py")
-Start-Process -FilePath "python" -ArgumentList $backendArgs -WorkingDirectory $backendPath -NoNewWindow
+Start-Process -FilePath $pythonCmd -ArgumentList $backendArgs -WorkingDirectory $backendPath -NoNewWindow
 
 # Wait for backend to initialize
 Write-Host "    Waiting for API..." -ForegroundColor Gray
@@ -64,7 +72,7 @@ if ($retries -eq 10) {
 # 3. Start Frontend
 Write-Host "[3/3] Starting Frontend..." -ForegroundColor Yellow
 $frontendPath = Join-Path $PSScriptRoot "frontend"
-Start-Process -FilePath "npm" -ArgumentList "run", "dev" -WorkingDirectory $frontendPath -NoNewWindow
+Start-Process -FilePath "npm" -ArgumentList "run", "dev", "--", "--port", "3000" -WorkingDirectory $frontendPath -NoNewWindow
 
 Write-Host "`n=== Deployment Complete ===" -ForegroundColor Green
 Write-Host "Frontend: " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Cyan

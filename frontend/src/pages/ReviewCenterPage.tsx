@@ -50,7 +50,7 @@ export function ReviewCenterPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>(getInitialTab());
   const cardRefs = useRef<Map<number, HTMLElement>>(new Map());
-  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [_focusedIndex, setFocusedIndex] = useState<number>(-1);
 
   // Update tab from URL
   useEffect(() => {
@@ -121,7 +121,9 @@ export function ReviewCenterPage() {
     if (isInputFocused()) return;
     e.preventDefault();
     // TODO: Show keyboard shortcuts modal
-    console.log("Review shortcuts: j/k (navigate), 1-4 (tabs), a (approve), r (reject), Space (select), Escape (clear)");
+    if (import.meta.env.DEV) {
+      console.log("Review shortcuts: j/k (navigate), 1-4 (tabs), a (approve), r (reject), Space (select), Escape (clear)");
+    }
   });
 
   const tabs = [
@@ -194,7 +196,7 @@ export function ReviewCenterPage() {
       </div>
 
       {/* Summary Cards */}
-      <ReviewSummaryCards activeTab={activeTab} onTabChange={handleTabChange} />
+      <ReviewSummaryCards activeTab={activeTab} onTabChange={(tab) => handleTabChange(tab as TabId)} />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as TabId)}>

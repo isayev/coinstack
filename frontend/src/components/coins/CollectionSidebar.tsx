@@ -19,12 +19,12 @@ import { useUIStore } from "@/stores/uiStore";
 import { useCollectionStats } from "@/hooks/useCoins";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Search, ChevronDown, ChevronRight, RotateCcw, Bell,
   Calendar, Scissors
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { 
+import {
   MetalChip,
   PlaceholderSparkline,
   MetalType,
@@ -63,13 +63,13 @@ interface CollectionStatsProps {
   isLoading?: boolean;
 }
 
-function CollectionStats({ 
-  totalCoins, 
+function CollectionStats({
+  totalCoins,
   totalValue,
   isLoading = false,
 }: CollectionStatsProps) {
   return (
-    <div 
+    <div
       className="rounded-lg p-3"
       style={{ background: 'var(--bg-elevated)' }}
     >
@@ -81,7 +81,7 @@ function CollectionStats({
           {isLoading ? '...' : `${totalCoins} coins`}
         </span>
       </div>
-      
+
       {/* Value */}
       <div className="flex items-center justify-between">
         <div>
@@ -89,7 +89,7 @@ function CollectionStats({
             ${isLoading ? '...' : totalValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
           </span>
           {/* Muted placeholder for future market data */}
-          <span 
+          <span
             className="ml-1 text-xs opacity-30"
             style={{ color: 'var(--text-tertiary)' }}
             title="Market trends coming soon"
@@ -100,9 +100,9 @@ function CollectionStats({
         {/* Muted placeholder sparkline */}
         <PlaceholderSparkline width={10} height="sm" className="opacity-20" />
       </div>
-      
+
       {/* Muted secondary stats placeholder */}
-      <div 
+      <div
         className="mt-2 pt-2 text-xs flex items-center gap-3 opacity-30"
         style={{ borderTop: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)' }}
         title="Analytics coming soon"
@@ -127,15 +127,15 @@ interface FilterSectionProps {
   onClear?: () => void;
 }
 
-function FilterSection({ 
-  title, 
-  children, 
+function FilterSection({
+  title,
+  children,
   defaultOpen = true,
   badge,
   onClear
 }: FilterSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  
+
   return (
     <div style={{ borderBottom: '1px solid var(--border-subtle)' }} className="pb-3">
       <button
@@ -215,10 +215,10 @@ const DISPLAY_CATEGORIES: CategoryType[] = ['imperial', 'provincial', 'republic'
 
 function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
   const maxCount = Math.max(...Object.values(counts), 1);
-  
+
   // Filter to only show categories with coins
   const activeCategories = DISPLAY_CATEGORIES.filter(cat => counts[cat] > 0 || selected === cat);
-  
+
   return (
     <div className="space-y-1.5">
       {activeCategories.map((cat) => {
@@ -226,7 +226,7 @@ function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
         const count = counts[cat] || 0;
         const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
         const isSelected = selected === cat;
-        
+
         return (
           <button
             key={cat}
@@ -240,38 +240,38 @@ function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
             }}
           >
             {/* Color indicator */}
-            <div 
+            <div
               className="w-3 h-3 rounded-sm flex-shrink-0"
-              style={{ 
+              style={{
                 background: `var(--category-${config.cssVar})`,
                 opacity: isSelected ? 1 : 0.7,
               }}
             />
-            
+
             {/* Label */}
-            <span 
+            <span
               className="text-sm flex-1 text-left"
               style={{ color: isSelected ? `var(--category-${config.cssVar})` : 'var(--text-secondary)' }}
             >
               {config.label}
             </span>
-            
+
             {/* Count */}
-            <span 
+            <span
               className="text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
               {count}
             </span>
-            
+
             {/* Distribution bar */}
-            <div 
+            <div
               className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
               style={{ background: 'var(--bg-surface)' }}
             >
-              <div 
+              <div
                 className="h-full rounded-full transition-all"
-                style={{ 
+                style={{
                   width: `${barWidth}%`,
                   background: `var(--category-${config.cssVar})`
                 }}
@@ -301,17 +301,17 @@ interface GradeFilterProps {
 
 function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
   const maxCount = Math.max(...Object.values(counts), 1);
-  
+
   // Filter to only show grades with coins
   const activeGrades = GRADE_FILTER_CONFIG.filter(g => counts[g.tier] > 0 || selected === g.tier);
-  
+
   return (
     <div className="space-y-1.5">
       {activeGrades.map(({ tier, label, cssVar }) => {
         const count = counts[tier] || 0;
         const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
         const isSelected = selected === tier;
-        
+
         return (
           <button
             key={tier}
@@ -325,38 +325,38 @@ function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
             }}
           >
             {/* Temperature color indicator */}
-            <div 
+            <div
               className="w-3 h-3 rounded-sm flex-shrink-0"
-              style={{ 
+              style={{
                 background: `var(--grade-${cssVar})`,
                 opacity: isSelected ? 1 : 0.7,
               }}
             />
-            
+
             {/* Label */}
-            <span 
+            <span
               className="text-sm flex-1 text-left"
               style={{ color: isSelected ? `var(--grade-${cssVar})` : 'var(--text-secondary)' }}
             >
               {label}
             </span>
-            
+
             {/* Count */}
-            <span 
+            <span
               className="text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
               {count}
             </span>
-            
+
             {/* Distribution bar */}
-            <div 
+            <div
               className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
               style={{ background: 'var(--bg-surface)' }}
             >
-              <div 
+              <div
                 className="h-full rounded-full transition-all"
-                style={{ 
+                style={{
                   width: `${barWidth}%`,
                   background: `var(--grade-${cssVar})`
                 }}
@@ -395,17 +395,17 @@ const RARITY_OPTIONS = [
 
 function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
   const maxCount = Math.max(...Object.values(counts), 1);
-  
+
   // Filter to only show rarities with coins
   const activeRarities = RARITY_OPTIONS.filter(r => counts[r.value] > 0 || selected === r.value);
-  
+
   return (
     <div className="space-y-1.5">
       {activeRarities.map(({ value, label, code, cssVar }) => {
         const count = counts[value] || 0;
         const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
         const isSelected = selected === value;
-        
+
         return (
           <button
             key={value}
@@ -419,35 +419,35 @@ function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
             }}
           >
             {/* Rarity dot */}
-            <div 
+            <div
               className={cn("w-2 h-2 rounded-full flex-shrink-0", value === 'unique' && 'animate-pulse')}
               style={{ background: `var(--rarity-${cssVar})` }}
             />
-            
+
             {/* Code + Label */}
-            <span 
+            <span
               className="text-sm flex-1 text-left"
               style={{ color: isSelected ? `var(--rarity-${cssVar})` : 'var(--text-secondary)' }}
             >
               <span className="font-semibold">{code}</span> {label}
             </span>
-            
+
             {/* Count */}
-            <span 
+            <span
               className="text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
               {count}
             </span>
-            
+
             {/* Distribution bar */}
-            <div 
+            <div
               className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
               style={{ background: 'var(--bg-surface)' }}
             >
-              <div 
+              <div
                 className="h-full rounded-full transition-all"
-                style={{ 
+                style={{
                   width: `${barWidth}%`,
                   background: `var(--rarity-${cssVar})`
                 }}
@@ -471,7 +471,7 @@ function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
 
 function AlertsSection() {
   return (
-    <div 
+    <div
       className="rounded-lg p-3 opacity-40"
       style={{ background: 'var(--bg-elevated)' }}
       title="Market alerts coming soon"
@@ -481,14 +481,14 @@ function AlertsSection() {
         <span className="text-sm font-medium" style={{ color: 'var(--text-tertiary)' }}>
           Alerts
         </span>
-        <span 
+        <span
           className="text-[10px] px-1.5 py-0.5 rounded"
           style={{ background: 'var(--bg-surface)', color: 'var(--text-tertiary)' }}
         >
           Soon
         </span>
       </div>
-      
+
       <div className="space-y-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
         <div className="flex items-start gap-2">
           <span>•</span>
@@ -520,7 +520,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
   const { setCommandPaletteOpen } = useUIStore();
   const { data: stats, isLoading: statsLoading } = useCollectionStats();
   const activeFilterCount = filters.getActiveFilterCount();
-  
+
   // Use real stats data
   const totalCoins = stats?.total_coins ?? propTotalCoins ?? 0;
   const totalValue = stats?.total_value ?? 0;
@@ -531,11 +531,11 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
   const yearRange = stats?.year_range ?? { min: null, max: null, unknown_count: 0 };
   const yearDistribution = stats?.year_distribution ?? [];
   const unknownCounts = stats?.unknown_counts ?? { grade: 0, year: 0, ruler: 0, mint: 0, denomination: 0, rarity: 0 };
-  
+
   return (
-    <div 
+    <div
       className="w-72 flex flex-col h-full"
-      style={{ 
+      style={{
         background: 'var(--bg-surface)',
         borderRight: '1px solid var(--border-subtle)'
       }}
@@ -545,7 +545,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
         <button
           onClick={() => setCommandPaletteOpen(true)}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors"
-          style={{ 
+          style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border-subtle)',
             color: 'var(--text-tertiary)'
@@ -553,7 +553,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
         >
           <Search className="w-4 h-4" />
           <span className="flex-1 text-left">Search coins...</span>
-          <kbd 
+          <kbd
             className="text-[10px] px-1.5 py-0.5 rounded"
             style={{ background: 'var(--bg-elevated)' }}
           >
@@ -561,18 +561,18 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
           </kbd>
         </button>
       </div>
-      
+
       {/* Stats */}
       <div className="p-3" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-        <CollectionStats 
-          totalCoins={totalCoins} 
+        <CollectionStats
+          totalCoins={totalCoins}
           totalValue={totalValue}
           isLoading={statsLoading}
         />
       </div>
-      
+
       {/* Filters header */}
-      <div 
+      <div
         className="px-3 py-2 flex items-center justify-between"
         style={{ borderBottom: '1px solid var(--border-subtle)' }}
       >
@@ -581,11 +581,11 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             Filters
           </span>
           {activeFilterCount > 0 && (
-            <span 
+            <span
               className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-              style={{ 
-                background: 'var(--metal-au-subtle)', 
-                color: 'var(--metal-au-text)' 
+              style={{
+                background: 'var(--metal-au-subtle)',
+                color: 'var(--metal-au-text)'
               }}
             >
               {activeFilterCount}
@@ -593,9 +593,9 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
           )}
         </div>
         {activeFilterCount > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={filters.reset}
             className="h-7 px-2 text-xs"
             style={{ color: 'var(--text-tertiary)' }}
@@ -605,60 +605,61 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
           </Button>
         )}
       </div>
-      
+
+
       {/* Filter sections */}
-      <div className="flex-1 overflow-auto p-3 space-y-1 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1 scrollbar-thin">
         {/* Metal */}
-        <FilterSection 
+        <FilterSection
           title="Metal"
           onClear={filters.metal ? () => filters.setMetal(null) : undefined}
         >
-          <MetalFilter 
+          <MetalFilter
             selected={filters.metal}
             onSelect={(m) => filters.setMetal(m)}
             counts={metalCounts}
           />
         </FilterSection>
-        
+
         {/* Category */}
-        <FilterSection 
+        <FilterSection
           title="Category"
           onClear={filters.category ? () => filters.setCategory(null) : undefined}
         >
-          <CategoryFilter 
+          <CategoryFilter
             selected={filters.category}
             onSelect={(c) => filters.setCategory(c)}
             counts={categoryCounts}
           />
         </FilterSection>
-        
+
         {/* Grade - NEW temperature-scale design */}
-        <FilterSection 
+        <FilterSection
           title="Grade"
           onClear={filters.grade ? () => filters.setGrade(null) : undefined}
         >
-          <GradeFilter 
+          <GradeFilter
             selected={filters.grade}
             onSelect={(g) => filters.setGrade(g)}
             counts={gradeCounts}
           />
         </FilterSection>
-        
+
         {/* Rarity */}
-        <FilterSection 
+        <FilterSection
           title="Rarity"
           defaultOpen={false}
           onClear={filters.rarity ? () => filters.setRarity(null) : undefined}
         >
-          <RarityFilter 
+          <RarityFilter
             selected={filters.rarity}
             onSelect={(r) => filters.setRarity(r)}
             counts={rarityCounts}
           />
         </FilterSection>
-        
+
         {/* Year Range */}
-        <FilterSection 
+        <FilterSection
           title="Year Range"
           defaultOpen={false}
           badge={(filters.mint_year_gte !== null || filters.mint_year_lte !== null || filters.is_year_unknown) && (
@@ -699,7 +700,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
                 />
               </div>
             </div>
-            
+
             {/* Year distribution histogram */}
             {yearDistribution.length > 0 ? (
               <div className="mt-3">
@@ -708,12 +709,12 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
                     const maxCount = Math.max(...yearDistribution.map((b: any) => b.count));
                     const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
                     const isBc = bucket.start < 0;
-                    
+
                     return (
-                      <div 
+                      <div
                         key={idx}
                         className="flex-1 rounded-t transition-all hover:opacity-80 cursor-pointer"
-                        style={{ 
+                        style={{
                           height: `${Math.max(height, 4)}%`,
                           background: isBc ? 'var(--category-republic)' : 'var(--category-imperial)',
                           minWidth: '8px',
@@ -743,7 +744,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             <p className="text-[10px] text-center mt-1" style={{ color: 'var(--text-tertiary)' }}>
               Negative = BC, Positive = AD
             </p>
-            
+
             {/* Unknown Year option */}
             {yearRange.unknown_count > 0 && (
               <button
@@ -765,10 +766,10 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             )}
           </div>
         </FilterSection>
-        
+
         {/* Ruler */}
-        <FilterSection 
-          title="Ruler" 
+        <FilterSection
+          title="Ruler"
           defaultOpen={false}
           onClear={(filters.issuing_authority || filters.is_ruler_unknown) ? () => {
             filters.setIssuingAuthority(null);
@@ -784,6 +785,27 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
               disabled={filters.is_ruler_unknown === true}
             />
+
+            {/* Top Rulers */}
+            {stats?.top_rulers && stats.top_rulers.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-1">
+                {stats.top_rulers.slice(0, 8).map(r => (
+                  <button
+                    key={r.ruler}
+                    onClick={() => filters.setIssuingAuthority(filters.issuing_authority === r.ruler ? null : r.ruler)}
+                    className={cn(
+                      "text-[10px] px-1.5 py-0.5 rounded transition-colors border",
+                      filters.issuing_authority === r.ruler
+                        ? "bg-stone-100 dark:bg-stone-800 border-yellow-500/50 text-yellow-700 dark:text-yellow-500"
+                        : "bg-transparent border-transparent hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
+                    )}
+                  >
+                    {r.ruler} <span className="opacity-50 ml-0.5">{r.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             {unknownCounts.ruler > 0 && (
               <button
                 onClick={() => filters.setIsRulerUnknown(filters.is_ruler_unknown ? null : true)}
@@ -803,10 +825,10 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             )}
           </div>
         </FilterSection>
-        
+
         {/* Mint */}
-        <FilterSection 
-          title="Mint" 
+        <FilterSection
+          title="Mint"
           defaultOpen={false}
           onClear={(filters.mint_name || filters.is_mint_unknown) ? () => {
             filters.setMintName(null);
@@ -841,7 +863,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
             )}
           </div>
         </FilterSection>
-        
+
         {/* Attributes */}
         <FilterSection title="Attributes" defaultOpen={false}>
           <div className="flex flex-wrap gap-2">
@@ -872,7 +894,7 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
           </div>
         </FilterSection>
       </div>
-      
+
       {/* Alerts (muted placeholder) */}
       <div className="p-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <AlertsSection />

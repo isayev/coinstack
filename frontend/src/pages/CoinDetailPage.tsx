@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { v2 } from "@/api/v2"
-import { CoinDetailV3 } from "@/features/collection/CoinDetailV3"
+import { client } from "@/api/client"
+import { CoinDetail } from "@/features/collection/CoinDetail"
 import { AuditPanel } from "@/features/audit/AuditPanel"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, AlertCircle } from "lucide-react"
@@ -15,11 +15,41 @@ export function CoinDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const coinId = parseInt(id!)
+
+  // Safely parse coin ID with validation
+  const coinId = id ? parseInt(id, 10) : NaN
+
+  // Handle invalid ID early
+  if (!id || isNaN(coinId)) {
+    return (
+      <div
+        className="flex items-center justify-center h-full"
+        style={{ background: 'var(--bg-app)' }}
+      >
+        <div className="text-center">
+          <h2
+            className="text-xl font-bold mb-2"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Invalid Coin ID
+          </h2>
+          <p
+            className="text-sm mb-4"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            The URL contains an invalid coin identifier.
+          </p>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            Back to Collection
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const { data: coin, isLoading, error } = useQuery({
     queryKey: ['coin', coinId],
-    queryFn: () => v2.getCoin(coinId),
+    queryFn: () => client.getCoin(coinId),
     enabled: !!id
   })
 
@@ -31,22 +61,22 @@ export function CoinDetailPage() {
 
   const handleGenerateContext = async () => {
     if (!coin) return
-    
+
     setIsGeneratingContext(true)
-    
+
     try {
       // Backend fetches full coin data from DB for comprehensive context generation
       const result = await generateContext.mutateAsync({
         coin_id: coin.id!,
       })
-      
+
       // Update the coin in cache with historical context
       queryClient.setQueryData(['coin', coinId], (oldData: any) => ({
         ...oldData,
         historical_significance: result.raw_content,
         llm_enriched_at: new Date().toISOString(),
       }))
-      
+
       toast.success(`Historical context generated (${(result.confidence * 100).toFixed(0)}% confidence)`)
     } catch (err: any) {
       toast.error(`Failed to generate context: ${err.message || 'Unknown error'}`)
@@ -57,27 +87,27 @@ export function CoinDetailPage() {
 
   const handleEnrichLegend = async (side: 'obverse' | 'reverse') => {
     if (!coin) return
-    
-    const legend = side === 'obverse' 
+
+    const legend = side === 'obverse'
       ? (coin.design?.obverse_legend || coin.obverse_legend)
       : (coin.design?.reverse_legend || coin.reverse_legend)
-    
+
     if (!legend) {
       toast.error(`No ${side} legend to expand`)
       return
     }
 
     setEnrichingSide(side)
-    
+
     try {
       const result = await expandLegend.mutateAsync({ abbreviation: legend })
-      
+
       // Update the coin in cache with expanded legend
       queryClient.setQueryData(['coin', coinId], (oldData: any) => ({
         ...oldData,
         [`${side}_legend_expanded`]: result.expanded,
       }))
-      
+
       toast.success(`Legend expanded (${(result.confidence * 100).toFixed(0)}% confidence)`)
     } catch (err: any) {
       toast.error(`Failed to expand legend: ${err.message || 'Unknown error'}`)
@@ -207,8 +237,8 @@ export function CoinDetailPage() {
             </TabsList>
 
             <TabsContent value="details" className="mt-0">
-              <CoinDetailV3 
-                coin={coin} 
+              <CoinDetail
+                coin={coin}
                 onEdit={() => navigate(`/coins/${id}/edit`)}
                 onNavigatePrev={handleNavigatePrev}
                 onNavigateNext={handleNavigateNext}

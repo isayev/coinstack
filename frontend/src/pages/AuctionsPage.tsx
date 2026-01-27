@@ -9,21 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Pagination } from "@/components/ui/Pagination";
-import { AuctionCard, AuctionTable, ScrapeDialog } from "@/components/auctions";
+import { ScrapeDialog } from "@/components/auctions";
+import { AuctionListV2 } from "@/features/auctions/AuctionListV2";
 import {
-  useAuctions,
   useAuctionHouses,
   type AuctionFilters,
-  type AuctionListItem,
 } from "@/hooks/useAuctions";
 
 type ViewMode = "grid" | "table";
 
 export function AuctionsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
   const [sortBy, setSortBy] = useState("auction_date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [scrapeDialogOpen, setScrapeDialogOpen] = useState(false);
@@ -32,26 +28,9 @@ export function AuctionsPage() {
   const [filters, setFilters] = useState<AuctionFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: auctionsData, isLoading, refetch } = useAuctions(
-    { ...filters, search: searchTerm || undefined },
-    page,
-    perPage,
-    sortBy,
-    sortOrder
-  );
   const { data: auctionHouses } = useAuctionHouses();
 
-  const handleSort = (column: string) => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(column);
-      setSortOrder("desc");
-    }
-  };
-
   const handleFilterChange = (key: keyof AuctionFilters, value: string | undefined) => {
-    setPage(1);
     setFilters((prev) => ({
       ...prev,
       [key]: value === "all" ? undefined : value,
@@ -60,18 +39,17 @@ export function AuctionsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setPage(1);
-  };
-
-  const handleAuctionSelect = (auction: AuctionListItem) => {
-    // Open auction URL in new tab for now
-    window.open(auction.url, "_blank");
+    setFilters(prev => ({ ...prev, search: searchTerm || undefined }));
   };
 
   const handleScrapeComplete = () => {
-    refetch();
+    // List will refetch automatically if keys change or via queryClient invalidation
+    // For now, just close dialog
     setScrapeDialogOpen(false);
+    window.location.reload(); // Simple reload to refresh data
   };
+
+
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -84,7 +62,7 @@ export function AuctionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
           </Button>
@@ -148,6 +126,7 @@ export function AuctionsPage() {
             size="sm"
             className="rounded-r-none"
             onClick={() => setViewMode("grid")}
+            title="Grid View"
           >
             <Grid className="w-4 h-4" />
           </Button>
@@ -156,56 +135,23 @@ export function AuctionsPage() {
             size="sm"
             className="rounded-l-none"
             onClick={() => setViewMode("table")}
+            title="Table View"
           >
             <List className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Results count */}
-      {auctionsData && (
-        <p className="text-sm text-muted-foreground">
-          Showing {auctionsData.items.length} of {auctionsData.total} records
-        </p>
-      )}
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          Loading auctions...
-        </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {auctionsData?.items.map((auction) => (
-            <AuctionCard
-              key={auction.id}
-              auction={auction}
-              onSelect={handleAuctionSelect}
-            />
-          ))}
-        </div>
-      ) : (
-        <AuctionTable
-          auctions={auctionsData?.items || []}
-          onSelect={handleAuctionSelect}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSort={handleSort}
-          loading={isLoading}
-        />
-      )}
-
-      {/* Pagination */}
-      {auctionsData && auctionsData.pages > 1 && (
-        <Pagination
-          currentPage={page}
-          totalPages={auctionsData.pages}
-          totalItems={auctionsData.total}
-          perPage={perPage as any}
-          onPageChange={setPage}
-          onPerPageChange={(v) => setPerPage(v as any)}
-        />
-      )}
+      {/* Main Content: AuctionListV2 matches CoinListV3 pattern */}
+      <AuctionListV2
+        filters={filters}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+      />
 
       {/* Scrape Dialog */}
       <ScrapeDialog

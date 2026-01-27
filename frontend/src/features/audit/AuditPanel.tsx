@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { v2, Discrepancy } from "@/api/v2"
+import { client, Discrepancy } from "@/api/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react"
@@ -14,12 +14,12 @@ export function AuditPanel({ coinId }: AuditPanelProps) {
   const queryClient = useQueryClient()
   const { data: audit, isLoading } = useQuery({
     queryKey: ['audit', coinId],
-    queryFn: () => v2.auditCoin(coinId)
+    queryFn: () => client.auditCoin(coinId)
   })
 
   const applyMutation = useMutation({
-    mutationFn: ({ field, value }: { field: string, value: string }) => 
-      v2.applyEnrichment(coinId, field, value),
+    mutationFn: ({ field, value }: { field: string, value: string }) =>
+      client.applyEnrichment(coinId, field, value),
     onSuccess: () => {
       toast.success("Data updated successfully")
       queryClient.invalidateQueries({ queryKey: ['audit', coinId] })
@@ -50,9 +50,9 @@ export function AuditPanel({ coinId }: AuditPanelProps) {
 
       <div className="grid gap-4">
         {audit.discrepancies.map((d, i) => (
-          <DiscrepancyCard 
-            key={i} 
-            discrepancy={d} 
+          <DiscrepancyCard
+            key={i}
+            discrepancy={d}
             onApply={() => applyMutation.mutate({ field: d.field, value: d.auction_value })}
             isApplying={applyMutation.isPending}
           />
@@ -62,12 +62,12 @@ export function AuditPanel({ coinId }: AuditPanelProps) {
   )
 }
 
-function DiscrepancyCard({ 
-  discrepancy, 
-  onApply, 
-  isApplying 
-}: { 
-  discrepancy: Discrepancy, 
+function DiscrepancyCard({
+  discrepancy,
+  onApply,
+  isApplying
+}: {
+  discrepancy: Discrepancy,
   onApply: () => void,
   isApplying: boolean
 }) {
@@ -87,7 +87,7 @@ function DiscrepancyCard({
               {discrepancy.current_value}
             </div>
           </div>
-          
+
           <ArrowRight className="w-4 h-4 text-muted-foreground mt-4" />
 
           <div className="flex-1">
@@ -97,12 +97,12 @@ function DiscrepancyCard({
             </div>
           </div>
         </div>
-        
+
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="outline" size="sm" className="h-8 text-xs">Ignore</Button>
-          <Button 
-            variant="default" 
-            size="sm" 
+          <Button
+            variant="default"
+            size="sm"
             className="h-8 text-xs bg-destructive hover:bg-destructive/90"
             onClick={onApply}
             disabled={isApplying}

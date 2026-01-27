@@ -32,26 +32,26 @@ interface CollectionDashboardProps {
 export function CollectionDashboard({ className }: CollectionDashboardProps) {
   const navigate = useNavigate();
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  
+
   // Get filter state - include grade and issuing_authority for selectable widgets
-  const { 
-    category, 
-    metal, 
+  const {
+    category,
+    metal,
     grade,
     issuing_authority,
     mint_year_gte,
     mint_year_lte,
     priceRange,
-    setCategory, 
-    setMetal, 
+    setCategory,
+    setMetal,
     setGrade,
     setIssuingAuthority,
     setMintYearGte,
     setMintYearLte,
     setPriceRange,
-    reset 
+    reset
   } = useFilterStore();
-  
+
   // Fetch stats
   const { data: stats, isLoading } = useCollectionStats();
 
@@ -105,19 +105,19 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
   };
 
   // Prepare metal data for badges (memoized) - MUST be before any early returns
-  const metalData = useMemo(() => 
+  const metalData = useMemo(() =>
     stats?.by_metal?.map(m => ({ metal: m.metal, count: m.count })) ?? [],
     [stats?.by_metal]
   );
 
   // Prepare grade data for spectrum (memoized)
-  const gradeData = useMemo(() => 
-    stats?.by_grade?.map(g => ({ grade: g.grade, count: g.count })) ?? [],
+  const gradeData = useMemo(() =>
+    stats?.by_grade?.map(g => ({ grade: g.grade || 'Unknown', count: g.count })) ?? [],
     [stats?.by_grade]
   );
 
   // Prepare certification data (memoized)
-  const certData = useMemo(() => 
+  const certData = useMemo(() =>
     stats?.by_certification?.map(c => ({ service: c.service, count: c.count })) ?? [],
     [stats?.by_certification]
   );
@@ -127,7 +127,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
     return (
       <div className={cn("space-y-4 p-4", className)}>
         {[...Array(4)].map((_, i) => (
-          <div 
+          <div
             key={i}
             className="h-40 rounded-lg animate-pulse"
             style={{ background: 'var(--bg-card)' }}
@@ -138,7 +138,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
   }
 
   return (
-    <div 
+    <div
       className={cn(
         "h-full overflow-y-auto space-y-4 p-4",
         className
@@ -170,7 +170,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
           border: '1px solid var(--border-subtle)',
         }}
       >
-        <h3 
+        <h3
           className="text-sm font-semibold uppercase tracking-wide mb-3"
           style={{ color: 'var(--text-muted)' }}
         >
@@ -192,7 +192,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
           border: '1px solid var(--border-subtle)',
         }}
       >
-        <h3 
+        <h3
           className="text-sm font-semibold uppercase tracking-wide mb-3"
           style={{ color: 'var(--text-muted)' }}
         >
@@ -235,7 +235,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
           border: '1px solid var(--border-subtle)',
         }}
       >
-        <h3 
+        <h3
           className="text-sm font-semibold uppercase tracking-wide mb-3"
           style={{ color: 'var(--text-muted)' }}
         >
@@ -260,7 +260,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
           onClick={() => setAdvancedOpen(!advancedOpen)}
           className="w-full flex items-center justify-between p-4 hover:bg-[var(--bg-hover)] transition-colors"
         >
-          <span 
+          <span
             className="text-sm font-semibold uppercase tracking-wide"
             style={{ color: 'var(--text-muted)' }}
           >
@@ -272,7 +272,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
             <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-ghost)' }} />
           )}
         </button>
-        
+
         {advancedOpen && (
           <div className="p-4 pt-2 space-y-4">
             {/* Reset button - at TOP for quick access */}
@@ -289,7 +289,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
 
             {/* Year Range */}
             <div>
-              <label 
+              <label
                 className="block text-xs font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
@@ -330,7 +330,7 @@ export function CollectionDashboard({ className }: CollectionDashboardProps) {
 
             {/* Price Range */}
             <div>
-              <label 
+              <label
                 className="block text-xs font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >

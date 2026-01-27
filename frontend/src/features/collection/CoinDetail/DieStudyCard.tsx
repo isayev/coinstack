@@ -16,13 +16,15 @@ import { ChevronDown, ChevronUp, CircleDot, Hash, Layers } from 'lucide-react';
 import { DieAxisClock } from '@/components/coins/DieAxisClock';
 import { cn } from '@/lib/utils';
 
-import { DieInfo } from '@/domain/schemas';
+import { DieInfo, Monogram } from '@/domain/schemas';
 
 interface DieStudyCardProps {
   /** Die axis value (0-12 clock hours) */
   dieAxis?: number | null;
   /** Die match information (Research Grade) */
   dieInfo?: DieInfo | null;
+  /** Monograms */
+  monograms?: Monogram[] | null;
   /** Legacy Die match information (deprecated but kept for compatibility) */
   dieMatch?: {
     obverseDie?: string | null;
@@ -49,6 +51,7 @@ interface DieStudyCardProps {
 export function DieStudyCard({
   dieAxis,
   dieInfo,
+  monograms,
   dieMatch,
   controlMarks,
   dieStats,
@@ -63,7 +66,7 @@ export function DieStudyCard({
   const displayReverseDie = dieInfo?.reverse_die_id ?? dieMatch?.reverseDie;
 
   // Check if there's any meaningful data to show
-  const hasData = dieAxis != null || displayObverseDie || displayReverseDie || (controlMarks && controlMarks.length > 0) || dieStats;
+  const hasData = dieAxis != null || displayObverseDie || displayReverseDie || (controlMarks && controlMarks.length > 0) || (monograms && monograms.length > 0) || dieStats;
 
   if (!hasData) {
     return null; // Don't render if no die study data
@@ -203,6 +206,43 @@ export function DieStudyCard({
                   {dieMatch.matchingCoins} known specimens from this die combination
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Monograms Section */}
+          {monograms && monograms.length > 0 && (
+            <div className="pt-2">
+              <span
+                className="text-[10px] font-bold uppercase tracking-wider block mb-2"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Monograms
+              </span>
+              <div className="flex flex-wrap gap-3">
+                {monograms.map((m, i) => (
+                  <div
+                    key={m.id || i}
+                    className="flex flex-col items-center justify-center p-2 rounded w-16 h-16 h-auto min-h-[64px]"
+                    style={{
+                      background: 'var(--bg-subtle)',
+                      border: '1px solid var(--border-subtle)'
+                    }}
+                    title={m.label}
+                  >
+                    {m.image_url ? (
+                      <img src={m.image_url} alt={m.label} className="h-8 w-8 object-contain mb-1 opacity-80" />
+                    ) : (
+                      <Hash size={20} style={{ color: 'var(--text-muted)' }} className="mb-1" />
+                    )}
+                    <span
+                      className="text-[10px] font-mono text-center leading-tight truncate w-full px-1"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {m.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

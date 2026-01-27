@@ -14,13 +14,13 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-  Plus, 
-  Search, 
-  Coins, 
-  ChevronDown, 
-  PenLine, 
-  FileSpreadsheet, 
+import {
+  Plus,
+  Search,
+
+  ChevronDown,
+  PenLine,
+  FileSpreadsheet,
   Sparkles,
   ClipboardCheck,
   Link as LinkIcon,
@@ -47,7 +47,7 @@ export function CommandBar() {
   const { setCommandPaletteOpen } = useUIStore();
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchValue.trim()) {
@@ -66,23 +66,20 @@ export function CommandBar() {
         borderBottom: '1px solid var(--border-subtle)'
       }}
     >
-      <div className="flex h-14 items-center justify-between px-4 gap-4">
+      <div className="flex h-20 items-center justify-between px-4 gap-4">
         {/* Logo - Clickable to home */}
-        <Link 
-          to="/" 
-          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity flex-shrink-0"
+        <Link
+          to="/"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity flex-shrink-0"
         >
-          <div 
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ 
-              background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))'
-            }}
-          >
-            <Coins className="w-4 h-4 text-black" />
-          </div>
-          <span 
-            className="text-xl font-bold hidden sm:inline"
-            style={{ 
+          <img
+            src="/logo-sm.png"
+            alt="CoinStack"
+            className="h-14 w-14 object-contain"
+          />
+          <span
+            className="text-3xl font-bold tracking-tight hidden sm:inline"
+            style={{
               background: 'linear-gradient(135deg, var(--metal-au), var(--metal-ag))',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
@@ -91,7 +88,7 @@ export function CommandBar() {
             CoinStack
           </span>
         </Link>
-        
+
         {/* Primary Actions Group */}
         <div className="flex items-center gap-2">
           {/* Split Button: Add Coin */}
@@ -140,7 +137,7 @@ export function CommandBar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          
+
           {/* Quick Scrape URL */}
           <QuickScrapePopover>
             <Button
@@ -155,7 +152,7 @@ export function CommandBar() {
               <span className="hidden lg:inline">Paste URL</span>
             </Button>
           </QuickScrapePopover>
-          
+
           {/* Cert Lookup */}
           <CertLookupPopover>
             <Button
@@ -171,7 +168,7 @@ export function CommandBar() {
             </Button>
           </CertLookupPopover>
         </div>
-        
+
         {/* Search - Consolidated with Command Palette hint */}
         <div className="flex-1 max-w-md">
           <form onSubmit={handleSearch} className="relative">
@@ -199,7 +196,7 @@ export function CommandBar() {
                 color: 'var(--text-primary)'
               }}
             />
-            <Search 
+            <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
               style={{ color: 'var(--text-muted)' }}
             />
@@ -208,7 +205,7 @@ export function CommandBar() {
               type="button"
               onClick={() => setCommandPaletteOpen(true)}
               className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors hover:bg-[var(--bg-hover)]"
-              style={{ 
+              style={{
                 color: 'var(--text-muted)',
                 background: 'var(--bg-subtle)',
                 border: '1px solid var(--border-subtle)'
@@ -220,12 +217,12 @@ export function CommandBar() {
             </button>
           </form>
         </div>
-        
+
         {/* Right Section */}
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Theme toggle */}
           <ThemeToggle />
-          
+
           {/* Settings */}
           <Button
             variant="ghost"

@@ -23,22 +23,22 @@ const GRADE_CONFIG: Record<string, GradeConfig> = {
   'P': { tier: 'poor', label: 'Poor', cssVar: 'poor', numeric: 1 },
   'FR': { tier: 'poor', label: 'Fair', cssVar: 'poor', numeric: 2 },
   'AG': { tier: 'poor', label: 'About Good', cssVar: 'poor', numeric: 3 },
-  
+
   // Good tier (cool)
   'G': { tier: 'good', label: 'Good', cssVar: 'good', numeric: 6 },
   'VG': { tier: 'good', label: 'Very Good', cssVar: 'good', numeric: 10 },
-  
+
   // Fine tier (neutral)
   'F': { tier: 'fine', label: 'Fine', cssVar: 'fine', numeric: 15 },
   'VF': { tier: 'fine', label: 'Very Fine', cssVar: 'fine', numeric: 30 },
-  
+
   // EF tier (warm)
   'EF': { tier: 'ef', label: 'Extremely Fine', cssVar: 'ef', numeric: 45 },
   'XF': { tier: 'ef', label: 'Extremely Fine', cssVar: 'ef', numeric: 45 },
-  
+
   // AU tier (hot)
   'AU': { tier: 'au', label: 'About Uncirculated', cssVar: 'au', numeric: 55 },
-  
+
   // MS tier (fire)
   'MS': { tier: 'ms', label: 'Mint State', cssVar: 'ms', numeric: 65 },
   'FDC': { tier: 'ms', label: 'Fleur de Coin', cssVar: 'ms', numeric: 70 },
@@ -54,7 +54,7 @@ const GRADE_CONFIG: Record<string, GradeConfig> = {
  */
 function parseGrade(grade: string): { base: string; numeric?: number } {
   const normalized = grade.toUpperCase().trim();
-  
+
   // Try to match "BASE NUMERIC" pattern
   const match = normalized.match(/^([A-Z]+)\s*(\d+)?$/);
   if (match) {
@@ -63,7 +63,7 @@ function parseGrade(grade: string): { base: string; numeric?: number } {
       numeric: match[2] ? parseInt(match[2], 10) : undefined,
     };
   }
-  
+
   return { base: normalized };
 }
 
@@ -94,7 +94,7 @@ export function GradeBadge({
     label: grade,
     cssVar: 'unknown',
   };
-  
+
   const numericValue = score ?? parsed.numeric;
   const displayGrade = parsed.base;
 
@@ -159,9 +159,22 @@ export function GradeSpectrum({
   className,
 }: GradeSpectrumProps) {
   const total = grades.reduce((sum, g) => sum + g.count, 0);
-  
+
+  // Deduplicate grades by aggregating counts for same grade label
+  const uniqueGradesMap = new Map<string, number>();
+  grades.forEach(g => {
+    if (!g || !g.grade) return;
+    const label = g.grade;
+    uniqueGradesMap.set(label, (uniqueGradesMap.get(label) || 0) + g.count);
+  });
+
+  const uniqueGrades: GradeDistribution[] = Array.from(uniqueGradesMap.entries()).map(([grade, count]) => ({
+    grade,
+    count
+  }));
+
   // Sort grades by numeric value
-  const sortedGrades = [...grades].sort((a, b) => {
+  const sortedGrades = uniqueGrades.sort((a, b) => {
     const aConfig = GRADE_CONFIG[parseGrade(a.grade).base];
     const bConfig = GRADE_CONFIG[parseGrade(b.grade).base];
     return (aConfig?.numeric || 0) - (bConfig?.numeric || 0);
@@ -176,9 +189,9 @@ export function GradeSpectrum({
           const config = GRADE_CONFIG[parsed.base] || { cssVar: 'unknown' };
           const width = total > 0 ? (count / total) * 100 : 0;
           const isActive = activeGrades.includes(grade.toLowerCase());
-          
+
           if (width < 1) return null;
-          
+
           return (
             <div
               key={grade}
@@ -206,7 +219,7 @@ export function GradeSpectrum({
           );
         })}
       </div>
-      
+
       {/* Labels */}
       {showCounts && (
         <div className="flex justify-between text-[10px]" style={{ color: 'var(--text-muted)' }}>

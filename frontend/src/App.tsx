@@ -6,7 +6,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Routes, Route } from "react-router-dom";
 import React from "react";
 
-import { CollectionPage } from "@/pages/CollectionPage";
+import { CoinGridPage } from "@/pages/CoinGridPage";
+import { CoinTablePage } from "@/pages/CoinTablePage";
 import { CoinDetailPage } from "@/pages/CoinDetailPage";
 import { AddCoinPage } from "@/pages/AddCoinPage";
 import { EditCoinPage } from "@/pages/EditCoinPage";
@@ -15,7 +16,6 @@ import { StatsPageV3 } from "@/pages/StatsPageV3";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { BulkEnrichPage } from "@/pages/BulkEnrichPage";
 import { AuctionsPage } from "@/pages/AuctionsPage";
-import AuditPage from "@/pages/AuditPage";
 import { SeriesDashboard } from "@/pages/SeriesDashboard";
 import { CreateSeriesPage } from "@/pages/CreateSeriesPage";
 import { SeriesDetailPage } from "@/pages/SeriesDetailPage";
@@ -42,17 +42,17 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          padding: '40px', 
-          background: '#1a1a2e', 
-          color: '#fff', 
+        <div style={{
+          padding: '40px',
+          background: '#1a1a2e',
+          color: '#fff',
           minHeight: '100vh',
           fontFamily: 'monospace'
         }}>
           <h1 style={{ color: '#ff6b6b', marginBottom: '20px' }}>Something went wrong</h1>
-          <pre style={{ 
-            background: '#0f0f1a', 
-            padding: '20px', 
+          <pre style={{
+            background: '#0f0f1a',
+            padding: '20px',
             borderRadius: '8px',
             overflow: 'auto',
             whiteSpace: 'pre-wrap',
@@ -62,8 +62,8 @@ class ErrorBoundary extends React.Component<
             {'\n\n'}
             {this.state.error?.stack}
           </pre>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             style={{
               marginTop: '20px',
               padding: '10px 20px',
@@ -101,7 +101,11 @@ function App() {
           <BrowserRouter>
             <AppShell>
               <Routes>
-                <Route path="/" element={<CollectionPage />} />
+                <Route path="/" element={<Navigate to="/collection/grid" replace />} />
+                <Route path="/collection" element={<Navigate to="/collection/grid" replace />} />
+                <Route path="/collection/grid" element={<CoinGridPage />} />
+                <Route path="/collection/table" element={<CoinTablePage />} />
+
                 <Route path="/coins/new" element={<AddCoinPage />} />
                 <Route path="/coins/:id" element={<CoinDetailPage />} />
                 <Route path="/coins/:id/edit" element={<EditCoinPage />} />

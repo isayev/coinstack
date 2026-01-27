@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReviewEmptyState, ReviewBulkActionsBar } from "@/components/review";
-import { Filter, Loader2, Sparkles, CheckCheck, ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
+import { Filter, Loader2, Sparkles, ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 
 /**

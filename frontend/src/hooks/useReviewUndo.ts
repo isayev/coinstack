@@ -60,7 +60,9 @@ export function useReviewUndo() {
       
       // Execute undo function
       lastAction.undoFn().catch((error) => {
-        console.error("Undo failed:", error);
+        if (import.meta.env.DEV) {
+          console.error("Undo failed:", error);
+        }
         toast.error("Failed to undo action");
       });
 

@@ -104,8 +104,10 @@ export function useKeyboardShortcuts() {
   // ? - Show keyboard shortcuts help (future)
   useHotkeys('shift+/', () => {
     if (!isInputFocused()) {
-      // Future: show shortcuts modal
-      console.log('Keyboard shortcuts: Cmd+K (palette), N (new), U (url), / (search), G+C/S/E (navigate)');
+      // TODO: Implement shortcuts help modal
+      if (import.meta.env.DEV) {
+        console.log('Keyboard shortcuts: Cmd+K (palette), N (new), U (url), / (search), G+C/S/E (navigate)');
+      }
     }
   });
 }

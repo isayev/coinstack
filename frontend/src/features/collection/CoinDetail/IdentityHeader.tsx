@@ -46,33 +46,33 @@ interface IdentityHeaderProps {
  */
 function formatProvenancePreview(provenance: any[] | null | undefined): string | null {
   if (!provenance?.length) return null;
-  
+
   // Prefer collection names over auction houses
   const collection = provenance.find(p => p.event_type === 'collection');
   if (collection?.source_name) return collection.source_name;
-  
+
   // Fall back to notable auction houses
-  const notable = provenance.find(p => 
-    p.source_name?.includes('Triton') || 
+  const notable = provenance.find(p =>
+    p.source_name?.includes('Triton') ||
     p.source_name?.includes('NAC') ||
     p.source_name?.includes('Heritage') ||
     p.source_name?.includes('CNG')
   );
   if (notable?.source_name) return notable.source_name;
-  
+
   // Fall back to first entry with a source name
   return provenance[0]?.source_name || null;
 }
 
-export const IdentityHeader = memo(function IdentityHeader({ 
-  coin, 
-  onEdit, 
+export const IdentityHeader = memo(function IdentityHeader({
+  coin,
+  onEdit,
   onDelete,
   onNavigatePrev,
   onNavigateNext,
   hasPrev = false,
   hasNext = false,
-  className 
+  className
 }: IdentityHeaderProps) {
   const categoryType = parseCategory(coin.category);
   const categoryConfig = CATEGORY_CONFIG[categoryType];
@@ -209,6 +209,20 @@ export const IdentityHeader = memo(function IdentityHeader({
             >
               {categoryConfig.label}
             </span>
+
+            {/* Issue Status Badge */}
+            {coin.issue_status && coin.issue_status !== 'official' && (
+              <span
+                className="ml-3 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: 'rgb(239, 68, 68)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)'
+                }}
+              >
+                {coin.issue_status.replace(/_/g, ' ')}
+              </span>
+            )}
 
             {/* Actions */}
             <div className="flex items-center gap-1">

@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RefreshCw, ArrowUpDown, Loader2 } from "lucide-react";
 import { ReviewCard, ReviewEmptyState, ReviewBulkActionsBar } from "@/components/review";
 import { useReviewUndo } from "@/hooks/useReviewUndo";
-import { toast } from "sonner";
 
 interface ReviewQueueItem {
   id: number;
@@ -164,11 +163,8 @@ export function VocabularyReviewTab() {
 
   const handleSmartSort = () => {
     // Client-side heuristic: sort by confidence ASC, then by field importance
-    const fieldImportance: Record<string, number> = {
-      issuer: 3,
-      mint: 2,
-      denomination: 1,
-    };
+    // Field importance weights for future use:
+    // const _fieldImportance = { issuer: 3, mint: 2, denomination: 1 };
     setSortField("confidence");
     setSortDirection("asc");
     // Additional sorting by field importance could be added here

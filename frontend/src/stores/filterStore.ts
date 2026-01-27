@@ -14,7 +14,19 @@ export type SortField =
   | "value"
   | "weight"
   | "rarity"
-  | "id";
+  | "id"
+  | "mint"
+  | "diameter"
+  | "die_axis"
+  | "specific_gravity"
+  | "issue_status"
+  | "reign_start"
+  | "reference"
+  | "storage_location"
+  | "obverse_legend"
+  | "reverse_legend"
+  | "obverse_description"
+  | "reverse_description";
 
 export type SortDirection = "asc" | "desc";
 
@@ -77,14 +89,52 @@ interface FilterState {
   setStorageLocation: (v: string | null) => void;
   setSort: (field: SortField, dir?: SortDirection) => void;
   toggleSortDir: () => void;
-  setFilter: (key: string, value: any) => void;
+  /** Type-safe filter setter - accepts only valid filter keys and appropriate value types */
+  setFilter: <K extends keyof FilterStateValues>(key: K, value: FilterStateValues[K]) => void;
   setPage: (page: number) => void;
   setPerPage: (perPage: PerPageOption) => void;
   nextPage: () => void;
   prevPage: () => void;
   reset: () => void;
-  toParams: () => Record<string, any>;
+  toParams: () => CoinQueryParams;
   getActiveFilterCount: () => number;
+}
+
+/** Filter state values (excluding action methods) for type-safe setFilter */
+type FilterStateValues = Omit<FilterState,
+  | 'setCategory' | 'setSubCategory' | 'setMetal' | 'setIssuingAuthority'
+  | 'setIsRulerUnknown' | 'setMintName' | 'setIsMintUnknown' | 'setDenomination'
+  | 'setGrade' | 'setRarity' | 'setPriceRange' | 'setMintYearGte' | 'setMintYearLte'
+  | 'setIsYearUnknown' | 'setIsCirca' | 'setIsTestCut' | 'setStorageLocation'
+  | 'setSort' | 'toggleSortDir' | 'setFilter' | 'setPage' | 'setPerPage'
+  | 'nextPage' | 'prevPage' | 'reset' | 'toParams' | 'getActiveFilterCount'
+>;
+
+/** Typed query params returned by toParams() */
+export interface CoinQueryParams {
+  sort_by: SortField;
+  sort_dir: SortDirection;
+  page: number;
+  per_page: number;
+  category?: string;
+  sub_category?: string;
+  metal?: string;
+  issuing_authority?: string;
+  issuer?: string;
+  is_ruler_unknown?: boolean;
+  mint_name?: string;
+  is_mint_unknown?: boolean;
+  denomination?: string;
+  grade?: string;
+  rarity?: string;
+  storage_location?: string;
+  acquisition_price_gte?: number;
+  acquisition_price_lte?: number;
+  mint_year_gte?: number;
+  mint_year_lte?: number;
+  is_year_unknown?: boolean;
+  is_circa?: boolean;
+  is_test_cut?: boolean;
 }
 
 const initialState = {
@@ -174,9 +224,9 @@ export const useFilterStore = create<FilterState>()(
         return count;
       },
 
-      toParams: () => {
+      toParams: (): CoinQueryParams => {
         const state = get();
-        const params: Record<string, any> = {
+        const params: CoinQueryParams = {
           sort_by: state.sortBy,
           sort_dir: state.sortDir,
           page: state.page,
@@ -184,10 +234,22 @@ export const useFilterStore = create<FilterState>()(
         };
 
         // String filters
-        if (state.category) params.category = state.category;
+        if (state.category) {
+          let cat = state.category;
+          // Map simple frontend keys to typical backend values
+          if (cat === 'imperial') cat = 'roman_imperial';
+          if (cat === 'provincial') cat = 'roman_provincial';
+          if (cat === 'republic') cat = 'roman_republic';
+          params.category = cat;
+        }
         if (state.sub_category) params.sub_category = state.sub_category;
         if (state.metal) params.metal = state.metal;
-        if (state.issuing_authority) params.issuing_authority = state.issuing_authority;
+
+        if (state.issuing_authority) {
+          params.issuing_authority = state.issuing_authority;
+          params.issuer = state.issuing_authority;
+        }
+
         if (state.is_ruler_unknown !== null) params.is_ruler_unknown = state.is_ruler_unknown;
         if (state.mint_name) params.mint_name = state.mint_name;
         if (state.is_mint_unknown !== null) params.is_mint_unknown = state.is_mint_unknown;

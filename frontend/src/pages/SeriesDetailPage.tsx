@@ -96,7 +96,7 @@ export function SeriesDetailPage() {
                       <DialogTitle>Assign Coin to {slot.name}</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-2 mt-4">
-                      {coinsData?.items.map((coin) => (
+                      {coinsData?.items?.map((coin) => (
                         <Button
                           key={coin.id}
                           variant="ghost"

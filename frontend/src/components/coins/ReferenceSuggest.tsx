@@ -35,7 +35,7 @@ export function ReferenceSuggest({
   const [suggestions, setSuggestions] = useState<LookupResponse | null>(null);
   const debouncedValue = useDebounce(value, 500);
   const lookupMutation = useLookupReference();
-  
+
   // Fetch suggestions when debounced value changes
   useEffect(() => {
     if (debouncedValue && debouncedValue.length >= 3) {
@@ -58,14 +58,36 @@ export function ReferenceSuggest({
       setOpen(false);
     }
   }, [debouncedValue, coinContext]);
-  
-  const handleSelect = (suggestion: LookupResponse) => {
-    setOpen(false);
-    if (onSelectSuggestion) {
-      onSelectSuggestion(suggestion);
+
+  /* 
+   * Handle Selection
+   * If we have a full payload (successful lookup), just return it.
+   * If we only have a candidate (ambiguous selection), we must FETCH the details.
+   */
+  const handleSelect = (suggestionOrCandidate: LookupResponse | any) => {
+    // Case 1: It's a full LookupResponse with payload
+    if (suggestionOrCandidate.payload) {
+      setOpen(false);
+      if (onSelectSuggestion) onSelectSuggestion(suggestionOrCandidate);
+      return;
+    }
+
+    // Case 2: It's a candidate (or incomplete response) -> Hydrate it!
+    const externalId = suggestionOrCandidate.external_id;
+    if (externalId) {
+      // Show loading state if needed (optional optimization)
+      lookupMutation.mutate(
+        { external_id: externalId },
+        {
+          onSuccess: (fullResult) => {
+            setOpen(false);
+            if (onSelectSuggestion) onSelectSuggestion(fullResult);
+          }
+        }
+      );
     }
   };
-  
+
   return (
     <div className="relative">
       <Command className="rounded-lg border shadow-md" shouldFilter={false}>
@@ -76,7 +98,7 @@ export function ReferenceSuggest({
           onFocus={() => suggestions && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 200)}
         />
-        
+
         {open && (
           <CommandList>
             {lookupMutation.isPending && (
@@ -85,13 +107,13 @@ export function ReferenceSuggest({
                 <span className="text-sm text-muted-foreground">Looking up...</span>
               </div>
             )}
-            
+
             {!lookupMutation.isPending && suggestions?.status === "not_found" && (
               <CommandEmpty>
                 No matches found in catalog
               </CommandEmpty>
             )}
-            
+
             {!lookupMutation.isPending && suggestions?.status === "success" && (
               <CommandGroup heading="Best Match">
                 <CommandItem
@@ -103,19 +125,19 @@ export function ReferenceSuggest({
                 </CommandItem>
               </CommandGroup>
             )}
-            
+
             {!lookupMutation.isPending && suggestions?.status === "ambiguous" && suggestions.candidates && (
-              <CommandGroup heading="Multiple Matches">
+              <CommandGroup heading={suggestions.candidates.length === 1 ? "Possible Match" : "Multiple Matches"}>
                 {suggestions.candidates.map((candidate, i) => (
                   <CommandItem
                     key={candidate.external_id || i}
-                    value={candidate.external_id}
+                    value={`${candidate.external_id}_${i}`} // Ensure uniqueness for CommandItem
                     onSelect={() => handleSelect({
-                      ...suggestions,
-                      status: "success",
+                      status: "success", // Treat candidate selection as success
                       external_id: candidate.external_id,
                       external_url: candidate.external_url,
                       confidence: candidate.confidence,
+                      // handleSelect triggers full hydration if payload missing
                     })}
                     className="cursor-pointer"
                   >
@@ -124,10 +146,10 @@ export function ReferenceSuggest({
                 ))}
               </CommandGroup>
             )}
-            
+
             {!lookupMutation.isPending && suggestions?.status === "deferred" && (
               <CommandGroup heading="Manual Lookup Required">
-                <CommandItem className="cursor-pointer">
+                <CommandItem className="cursor-pointer" value="manual_lookup_required">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       {suggestions.error_message || "API not available"}
@@ -151,7 +173,7 @@ export function ReferenceSuggest({
           </CommandList>
         )}
       </Command>
-      
+
       {/* Status indicator */}
       {suggestions && !open && (
         <div className="mt-1 text-xs text-muted-foreground">
@@ -179,7 +201,7 @@ export function ReferenceSuggest({
 // Suggestion item component
 function SuggestionItem({ suggestion }: { suggestion: LookupResponse }) {
   const payload = suggestion.payload as any;
-  
+
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex items-center justify-between">

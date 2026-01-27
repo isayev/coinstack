@@ -43,10 +43,12 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
   // Handle successful fetch
   useEffect(() => {
     if (data) {
-      console.log("Mutation data received:", data);
+      if (import.meta.env.DEV) {
+        console.log("Mutation data received:", data);
+      }
       if (data.success) {
         onPreviewReady(data);
-      } else {
+      } else if (import.meta.env.DEV) {
         // Even if success is false, we might want to show the error
         console.log("Data received but success is false:", data.error);
       }
@@ -55,7 +57,7 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
 
   // Log errors for debugging
   useEffect(() => {
-    if (error) {
+    if (error && import.meta.env.DEV) {
       console.error("URL import error:", error);
     }
   }, [error]);
@@ -80,38 +82,29 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
   // Auto-trigger on paste
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
     const pastedText = e.clipboardData?.getData("text");
-    console.log("Paste detected:", pastedText);
     if (pastedText) {
       const trimmed = pastedText.trim();
       // Check if it looks like a URL
       if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
         // Prevent default paste to avoid double-paste
         e.preventDefault();
-        console.log("Setting URL from paste:", trimmed);
         setUrl(trimmed);
         reset();
         // Auto-fetch after a short delay to allow state to update
         setTimeout(() => {
-          console.log("Auto-fetching after paste");
           if (trimmed) {
             fetchUrl(trimmed);
           }
         }, 100);
-      } else {
-        console.log("Pasted text doesn't look like a URL");
       }
     }
   };
 
   const handleFetch = () => {
-    console.log("handleFetch called, url:", url, "url length:", url?.length);
     if (url && url.trim()) {
-      console.log("Calling fetchUrl with:", url.trim());
       reset();
       // Just call mutate - errors will be in the error state
       fetchUrl(url.trim());
-    } else {
-      console.warn("handleFetch called but URL is empty or invalid");
     }
   };
 
@@ -139,15 +132,12 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
               placeholder="https://coins.ha.com/itm/..."
               value={url}
               onChange={(e) => {
-                const newUrl = e.target.value;
-                console.log("URL input changed:", newUrl);
-                setUrl(newUrl);
+                setUrl(e.target.value);
                 if (error) reset();
               }}
               onPaste={handlePaste}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && url && !isPending) {
-                  console.log("Enter key pressed, triggering fetch");
                   handleFetch();
                 }
               }}
@@ -159,7 +149,6 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
                 size="sm"
                 className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
                 onClick={() => {
-                  console.log("Clear button clicked");
                   setUrl("");
                   reset();
                 }}
@@ -173,18 +162,9 @@ export function URLImportPanel({ onPreviewReady, onManualEntry }: URLImportPanel
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log("=== FETCH BUTTON CLICKED ===");
-              console.log("URL value:", url);
-              console.log("URL length:", url?.length);
-              console.log("isPending:", isPending);
-              console.log("retryCountdown:", retryCountdown);
-              console.log("Button disabled?", !url || isPending || retryCountdown > 0);
               if (!url || isPending || retryCountdown > 0) {
-                console.warn("Button is disabled, cannot fetch");
-                alert(`Button disabled: url=${!!url}, isPending=${isPending}, retryCountdown=${retryCountdown}`);
                 return;
               }
-              console.log("Calling handleFetch...");
               handleFetch();
             }}
             disabled={!url || isPending || retryCountdown > 0}

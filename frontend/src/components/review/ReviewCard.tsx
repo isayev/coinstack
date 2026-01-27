@@ -40,7 +40,7 @@ export interface ReviewCardProps {
  * - Action buttons (Approve/Reject/Skip)
  */
 export function ReviewCard({
-  id,
+  id: _id, // Reserved for future use (e.g., data attributes)
   coinId,
   coinPreview,
   field,

@@ -107,6 +107,11 @@ export function useExpandLegendV2() {
       );
       return response.data;
     },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('Legend expansion failed:', error.message);
+      }
+    },
   });
 }
 
@@ -125,6 +130,11 @@ export function useObserveCondition() {
         request
       );
       return response.data;
+    },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('Condition observation failed:', error.message);
+      }
     },
   });
 }
@@ -169,6 +179,11 @@ export function useLLMStatus() {
       const response = await api.get<LLMStatusResponse>("/api/v2/llm/status");
       return response.data;
     },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('LLM status check failed:', error.message);
+      }
+    },
   });
 }
 
@@ -192,6 +207,11 @@ export function useSubmitLLMFeedback() {
     mutationFn: async (request: FeedbackRequest): Promise<{ status: string; event_id: string }> => {
       const response = await api.post("/api/v2/llm/feedback", request);
       return response.data;
+    },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('LLM feedback submission failed:', error.message);
+      }
     },
   });
 }
@@ -232,6 +252,11 @@ export function useParseAuction() {
       );
       return response.data;
     },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('Auction parsing failed:', error.message);
+      }
+    },
   });
 }
 
@@ -261,6 +286,11 @@ export function useNormalizeVocab() {
         request
       );
       return response.data;
+    },
+    onError: (error: Error) => {
+      if (import.meta.env.DEV) {
+        console.error('Vocab normalization failed:', error.message);
+      }
     },
   });
 }

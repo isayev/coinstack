@@ -35,7 +35,7 @@ interface SpecRowProps {
 
 function SpecRow({ label, value, className }: SpecRowProps) {
   if (value === null || value === undefined) return null;
-  
+
   return (
     <div className={cn('flex justify-between items-start gap-4 py-1.5', className)}>
       <span
@@ -84,9 +84,9 @@ function AttributionBadge({ confidence }: { confidence: string }) {
     'possible': { bg: 'rgba(234, 179, 8, 0.08)', text: 'var(--text-warning)' },
     'uncertain': { bg: 'var(--bg-error)', text: 'var(--text-error)' },
   };
-  
+
   const style = colors[confidence.toLowerCase()] || colors['uncertain'];
-  
+
   return (
     <span
       className="px-2 py-0.5 rounded text-xs font-medium capitalize"
@@ -97,14 +97,14 @@ function AttributionBadge({ confidence }: { confidence: string }) {
   );
 }
 
-export const SpecificationsCard = memo(function SpecificationsCard({ 
-  coin, 
+export const SpecificationsCard = memo(function SpecificationsCard({
+  coin,
   categoryType,
-  className 
+  className
 }: SpecificationsCardProps) {
   // Get die axis for clock display
   const dieAxis = coin.dimensions?.die_axis;
-  
+
   return (
     <div
       className={cn(
@@ -133,65 +133,79 @@ export const SpecificationsCard = memo(function SpecificationsCard({
         <div className="specs-column">
           <h3
             className="text-xs font-bold uppercase tracking-wider mb-3 pb-2"
-            style={{ 
+            style={{
               color: 'var(--text-muted)',
               borderBottom: '1px solid var(--border-subtle)'
             }}
           >
             Physical
           </h3>
-          
+
           <div className="space-y-0.5">
-            <SpecRow 
-              label="Weight" 
-              value={coin.dimensions?.weight_g ? `${coin.dimensions.weight_g}g` : null} 
+            <SpecRow
+              label="Weight"
+              value={coin.dimensions?.weight_g ? `${coin.dimensions.weight_g}g` : null}
             />
-            <SpecRow 
-              label="Diameter" 
-              value={coin.dimensions?.diameter_mm ? `${coin.dimensions.diameter_mm}mm` : null} 
+            <SpecRow
+              label="Diameter"
+              value={coin.dimensions?.diameter_mm ? `${coin.dimensions.diameter_mm}mm` : null}
             />
             {coin.dimensions?.specific_gravity && (
-              <SpecRow 
-                label="Specific Gravity" 
-                value={coin.dimensions.specific_gravity} 
+              <SpecRow
+                label="Specific Gravity"
+                value={coin.dimensions.specific_gravity}
               />
             )}
-            <SpecRow 
-              label="Die Axis" 
+            <SpecRow
+              label="Die Axis"
               value={dieAxis !== null && dieAxis !== undefined ? (
                 <div className="flex items-center gap-2">
                   <DieAxisClock axis={dieAxis} size="sm" />
                   <span className="font-mono">↑{dieAxis}h</span>
                 </div>
-              ) : null} 
+              ) : null}
             />
-            <SpecRow 
-              label="Metal" 
-              value={formatMetal(coin.metal)} 
+            <SpecRow
+              label="Metal"
+              value={formatMetal(coin.metal)}
             />
             {coin.issue_status && coin.issue_status !== 'official' && (
-              <SpecRow 
-                label="Issue Status" 
-                value={<span className="capitalize font-bold text-red-500">{coin.issue_status.replace('_', ' ')}</span>} 
+              <SpecRow
+                label="Issue Status"
+                value={<span className="capitalize font-bold text-red-500">{coin.issue_status.replace('_', ' ')}</span>}
               />
             )}
             {coin.die_state && (
-              <SpecRow 
-                label="Die State" 
-                value={<span className="capitalize">{coin.die_state}</span>} 
+              <SpecRow
+                label="Die State"
+                value={<span className="capitalize">{coin.die_state}</span>}
               />
             )}
             {coin.officina && (
-              <SpecRow 
-                label="Officina" 
-                value={coin.officina} 
+              <SpecRow
+                label="Officina"
+                value={coin.officina}
               />
             )}
             {coin.moneyer && (
-              <SpecRow 
-                label="Moneyer" 
-                value={coin.moneyer} 
+              <SpecRow
+                label="Moneyer"
+                value={coin.moneyer}
               />
+            )}
+            {/* Find Data */}
+            {(coin.find_data?.find_spot || coin.find_data?.find_date) && (
+              <>
+                <div className="my-3 border-t" style={{ borderColor: 'var(--border-subtle)' }} />
+                <SpecRow
+                  label="Find Spot"
+                  value={coin.find_data?.find_spot}
+                />
+                <SpecRow
+                  label="Find Date"
+                  value={coin.find_data?.find_date}
+                />
+              </>
             )}
           </div>
         </div>
@@ -200,18 +214,18 @@ export const SpecificationsCard = memo(function SpecificationsCard({
         <div className="specs-column">
           <h3
             className="text-xs font-bold uppercase tracking-wider mb-3 pb-2"
-            style={{ 
+            style={{
               color: 'var(--text-muted)',
               borderBottom: '1px solid var(--border-subtle)'
             }}
           >
             Condition
           </h3>
-          
+
           <div className="space-y-0.5">
             {/* Grade with badge */}
-            <SpecRow 
-              label="Grade" 
+            <SpecRow
+              label="Grade"
               value={
                 <div className="flex items-center gap-2">
                   <GradeBadge
@@ -220,7 +234,7 @@ export const SpecificationsCard = memo(function SpecificationsCard({
                     size="sm"
                   />
                   {coin.grading?.certification_number && (
-                    <span 
+                    <span
                       className="text-xs font-mono"
                       style={{ color: 'var(--text-muted)' }}
                     >
@@ -228,49 +242,74 @@ export const SpecificationsCard = memo(function SpecificationsCard({
                     </span>
                   )}
                 </div>
-              } 
+              }
             />
-            
+
             {/* Strike and Surface on same row if both exist */}
             {(coin.grading?.strike || coin.grading?.surface) && (
-              <SpecRow 
-                label="Strike / Surface" 
+              <SpecRow
+                label="Strike / Surface"
                 value={[
                   coin.grading?.strike ? `${coin.grading.strike}/5` : null,
                   coin.grading?.surface ? `${coin.grading.surface}/5` : null
-                ].filter(Boolean).join(' · ') || null} 
+                ].filter(Boolean).join(' · ') || null}
               />
             )}
-            
+
             {/* Rarity */}
             {coin.rarity && (
-              <SpecRow 
-                label="Rarity" 
-                value={<RarityIndicator rarity={coin.rarity} variant="badge" />} 
+              <SpecRow
+                label="Rarity"
+                value={<RarityIndicator rarity={coin.rarity} variant="badge" />}
               />
             )}
-            
+
             {/* Eye Appeal */}
             {coin.eye_appeal && (
-              <SpecRow 
-                label="Eye Appeal" 
-                value={<span className="capitalize">{coin.eye_appeal}</span>} 
+              <SpecRow
+                label="Eye Appeal"
+                value={<span className="capitalize">{coin.eye_appeal}</span>}
               />
             )}
-            
+
             {/* Toning */}
             {coin.toning_description && (
-              <SpecRow 
-                label="Toning" 
-                value={coin.toning_description} 
+              <SpecRow
+                label="Toning"
+                value={coin.toning_description}
               />
             )}
-            
+
             {/* Attribution Confidence */}
             {coin.attribution_confidence && (
-              <SpecRow 
-                label="Attribution" 
-                value={<AttributionBadge confidence={coin.attribution_confidence} />} 
+              <SpecRow
+                label="Attribution"
+                value={<AttributionBadge confidence={coin.attribution_confidence} />}
+              />
+            )}
+
+            {/* Secondary Treatments */}
+            {coin.secondary_treatments && Array.isArray(coin.secondary_treatments) && coin.secondary_treatments.length > 0 && (
+              <SpecRow
+                label="Treatments"
+                value={
+                  <div className="flex flex-wrap gap-1 justify-end">
+                    {coin.secondary_treatments.map((t: any, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-1.5 py-0.5 rounded font-medium"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.05)',
+                          color: 'var(--text-error)',
+                          border: '1px solid rgba(239, 68, 68, 0.2)'
+                        }}
+                        title={t.description}
+                      >
+                        {t.type}
+                      </span>
+                    ))}
+                  </div>
+                }
               />
             )}
           </div>

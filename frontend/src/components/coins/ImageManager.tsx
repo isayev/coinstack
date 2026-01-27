@@ -159,7 +159,9 @@ export function ImageManager({
       onImagesUpdated?.();
     } catch (error) {
       toast.error("Failed to save images");
-      console.error("Failed to save images:", error);
+      if (import.meta.env.DEV) {
+        console.error("Failed to save images:", error);
+      }
     } finally {
       setSaving(false);
     }

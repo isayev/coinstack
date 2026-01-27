@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { v2 } from "@/api/v2"
+import { client } from "@/api/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,13 +15,18 @@ export function ScraperForm({ onScrapeSuccess }: ScraperFormProps) {
   const [url, setUrl] = useState("")
 
   const scrapeMutation = useMutation({
-    mutationFn: v2.scrapeLot,
+    mutationFn: client.importFromUrl,
     onSuccess: (data) => {
-      toast.success("Lot scraped successfully")
-      onScrapeSuccess(data)
+      // Check success flag from backend
+      if (data.success) {
+        toast.success("Lot imported successfully")
+        onScrapeSuccess(data)
+      } else {
+        toast.error(`Import failed: ${data.error}`)
+      }
     },
     onError: (error) => {
-      toast.error(`Scrape failed: ${error.message}`)
+      toast.error(`Request failed: ${error.message}`)
     }
   })
 
@@ -37,8 +42,8 @@ export function ScraperForm({ onScrapeSuccess }: ScraperFormProps) {
         <form onSubmit={handleSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Paste Heritage or CNG auction URL..." 
+            <Input
+              placeholder="Paste Heritage or CNG auction URL..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="pl-9"

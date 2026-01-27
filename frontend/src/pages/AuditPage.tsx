@@ -245,8 +245,8 @@ export default function AuditPage() {
   const { data: llmSuggestionsData } = useLLMSuggestions();
   const llmSuggestionsCount = llmSuggestionsData?.total || 0;
 
-  // Vocab review queue count
-  const { data: vocabReviewData } = useQuery({
+  // Vocab review queue count (data reserved for future count display)
+  const { data: _vocabReviewData } = useQuery({
     queryKey: ["vocab", "review", "count"],
     queryFn: async () => {
       const response = await api.get("/api/v2/vocab/review", {

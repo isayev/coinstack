@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { v2 } from "@/api/v2"
+import { client } from "@/api/client"
 import api from "@/api/api"
 import { toast } from "sonner"
 
@@ -17,7 +17,7 @@ export interface IdentificationResult {
 export function useSmartIngest() {
   // 1. Scraper Mutation
   const scrapeMutation = useMutation({
-    mutationFn: v2.scrapeLot,
+    mutationFn: client.scrapeLot,
     onSuccess: () => toast.success("Auction data retrieved"),
     onError: (error: any) => toast.error(`Scrape failed: ${error.message}`)
   })
@@ -25,7 +25,7 @@ export function useSmartIngest() {
   // 2. Reference Lookup Mutation
   const referenceMutation = useMutation({
     mutationFn: async ({ catalog, number, volume }: { catalog: string, number: string, volume?: string }) => {
-      return v2.getCoinsByReference(catalog, number, volume)
+      return client.getCoinsByReference(catalog, number, volume)
     },
     onSuccess: (data) => {
       if (data.length > 0) {
@@ -49,13 +49,13 @@ export function useSmartIngest() {
   return {
     scrape: scrapeMutation.mutateAsync,
     isScraping: scrapeMutation.isPending,
-    
+
     lookupReference: referenceMutation.mutateAsync,
     isLookingUp: referenceMutation.isPending,
-    
+
     identify: identifyMutation.mutateAsync,
     isIdentifying: identifyMutation.isPending,
-    
+
     // We can add more helpers here as needed
   }
 }

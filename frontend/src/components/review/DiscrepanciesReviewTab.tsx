@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ReviewEmptyState, ReviewBulkActionsBar } from "@/components/review";
-import { Filter, Loader2, CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Filter, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 /**

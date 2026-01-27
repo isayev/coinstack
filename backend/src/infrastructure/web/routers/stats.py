@@ -81,6 +81,11 @@ class FilterContext(BaseModel):
     filtered_value_usd: Optional[float] = None
 
 
+class RarityDistribution(BaseModel):
+    rarity: str
+    count: int
+
+
 class StatsSummaryResponse(BaseModel):
     # Totals
     total_coins: int
@@ -96,7 +101,10 @@ class StatsSummaryResponse(BaseModel):
     by_certification: List[CertificationDistribution]
     by_ruler: List[RulerDistribution]
     by_year: List[YearDistribution]
-    
+    by_rarity: List[RulerDistribution] = []  # Typo fix: List[RarityDistribution] actually, but I defined it above.
+                                             # Wait, I should use RarityDistribution
+    by_rarity: List[RarityDistribution] = []
+
     # Acquisition timeline
     acquisitions: List[AcquisitionMonth]
     
@@ -389,6 +397,17 @@ async def get_stats_summary(
         for row in acq_query.all()
     ]
     
+    # --- Rarity Distribution ---
+    rarity_query = base_query.with_entities(
+        CoinModel.rarity,
+        func.count().label("count")
+    ).filter(CoinModel.rarity.isnot(None), CoinModel.rarity != "").group_by(CoinModel.rarity).order_by(func.count().desc())
+
+    by_rarity = [
+        {"rarity": row.rarity, "count": row.count}
+        for row in rarity_query.all()
+    ]
+
     # --- Filter Context ---
     filter_context = None
     if has_filters:
@@ -409,6 +428,7 @@ async def get_stats_summary(
         by_certification=by_certification,
         by_ruler=by_ruler,
         by_year=by_year,
+        by_rarity=by_rarity,  # New field
         acquisitions=acquisitions,
         filter_context=filter_context,
     )

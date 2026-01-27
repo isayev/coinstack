@@ -24,14 +24,26 @@ export function useDatabaseInfo() {
   });
 }
 
+/**
+ * STUB: Download database backup
+ * TODO: Implement /api/v2/settings/backup endpoint
+ */
 export async function downloadBackup() {
   // Real implementation would be:
   // window.location.href = `${api.defaults.baseURL}/api/v2/settings/backup`;
-  console.log("Downloading backup...");
+  if (import.meta.env.DEV) {
+    console.log("STUB: downloadBackup - not implemented");
+  }
 }
 
+/**
+ * STUB: Download CSV export
+ * TODO: Implement /api/v2/settings/export-csv endpoint
+ */
 export async function downloadCSV() {
   // Real implementation would be:
   // window.location.href = `${api.defaults.baseURL}/api/v2/settings/export-csv`;
-  console.log("Downloading CSV...");
+  if (import.meta.env.DEV) {
+    console.log("STUB: downloadCSV - not implemented");
+  }
 }

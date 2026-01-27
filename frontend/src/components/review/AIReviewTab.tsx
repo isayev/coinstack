@@ -34,7 +34,7 @@ export function AIReviewTab() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const items = data?.items || [];
-  const total = data?.total || 0;
+  // Total count available via: data?.total || 0
 
   // Fetch coin data for previews
   const coinIds = useMemo(() => items.map((item) => item.coin_id), [items]);

@@ -7,7 +7,7 @@ from src.domain.repositories import ICoinRepository
 from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
 from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
-    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData
+    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design
 )
 from src.infrastructure.web.dependencies import get_coin_repo
 
@@ -18,6 +18,13 @@ class ImageRequest(BaseModel):
     url: str
     image_type: str
     is_primary: bool = False
+
+class DesignRequest(BaseModel):
+    obverse_legend: Optional[str] = None
+    obverse_description: Optional[str] = None
+    reverse_legend: Optional[str] = None
+    reverse_description: Optional[str] = None
+    exergue: Optional[str] = None
 
 class CreateCoinRequest(BaseModel):
     category: str
@@ -40,6 +47,8 @@ class CreateCoinRequest(BaseModel):
     acquisition_date: Optional[date] = None
     acquisition_url: Optional[str] = None
     images: List[ImageRequest] = []
+    # Design
+    design: Optional[DesignRequest] = None
     # Collection management
     storage_location: Optional[str] = None
     personal_notes: Optional[str] = None
@@ -298,7 +307,17 @@ def create_coin(
     # Handle initial images
     for img in request.images:
         domain_coin.add_image(img.url, img.image_type, img.is_primary)
-    
+     
+    # Handle initial design if provided
+    if request.design:
+        domain_coin.design = Design(
+            obverse_legend=request.design.obverse_legend,
+            obverse_description=request.design.obverse_description,
+            reverse_legend=request.design.reverse_legend,
+            reverse_description=request.design.reverse_description,
+            exergue=request.design.exergue
+        )
+
     # Save again with images (or update logic to handle images in UseCase)
     # Since UseCase logic doesn't handle images in DTO yet, we do this:
     saved_coin = repo.save(domain_coin)
@@ -330,6 +349,9 @@ def get_coins(
     year_end: Optional[int] = Query(None, description="Filter by maximum year (negative for BC)"),
     weight_min: Optional[float] = Query(None, description="Filter by minimum weight in grams"),
     weight_max: Optional[float] = Query(None, description="Filter by maximum weight in grams"),
+    # Added filters
+    grade: Optional[str] = Query(None, description="Filter by grade (e.g., XF, VF, or tier like 'fine')"),
+    rarity: Optional[str] = Query(None, description="Filter by rarity (e.g., R1, Common)"),
     repo: ICoinRepository = Depends(get_coin_repo)
 ):
     """
@@ -383,6 +405,10 @@ def get_coins(
         filters["weight_min"] = weight_min
     if weight_max is not None:
         filters["weight_max"] = weight_max
+    if grade:
+        filters["grade"] = grade
+    if rarity:
+        filters["rarity"] = rarity
     
     # Pass filters to repository
     coins = repo.get_all(
@@ -464,6 +490,21 @@ def update_coin(
         raise HTTPException(status_code=404, detail="Coin not found")
         
     try:
+        # Construct Design object
+        design_obj = None
+        if request.design:
+            design_obj = Design(
+                obverse_legend=request.design.obverse_legend,
+                obverse_description=request.design.obverse_description,
+                reverse_legend=request.design.reverse_legend,
+                reverse_description=request.design.reverse_description,
+                exergue=request.design.exergue
+            )
+        elif existing_coin.design:
+            # Preserve existing design if not provided in update
+            # (Though usually frontend sends full state, so this might not be needed if form is complete)
+            design_obj = existing_coin.design
+
         updated_coin = Coin(
             id=coin_id,
             category=Category(request.category),
@@ -509,13 +550,15 @@ def update_coin(
                 find_date=request.find_date
             ) if (request.find_spot or request.find_date) else None,
             
+            # Design - Updated
+            design=design_obj,
+
             # Preserve existing fields that aren't in simple update request
             monograms=existing_coin.monograms,
             secondary_treatments=existing_coin.secondary_treatments,
             description=existing_coin.description,
             denomination=existing_coin.denomination,
             portrait_subject=existing_coin.portrait_subject,
-            design=existing_coin.design,
             references=existing_coin.references,
             provenance=existing_coin.provenance,
             historical_significance=existing_coin.historical_significance,
@@ -526,7 +569,6 @@ def update_coin(
         )
         
         # Add images manually here since DTO/UseCase flow is pending update
-        from src.domain.coin import CoinImage
         for img in request.images:
             updated_coin.add_image(img.url, img.image_type, img.is_primary)
         

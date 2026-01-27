@@ -12,10 +12,10 @@
 import { useState } from 'react';
 import { useSelection } from '@/stores/selectionStore';
 import { Button } from '@/components/ui/button';
-import { 
-  Sparkles, 
-  Download, 
-  Trash2, 
+import {
+  Sparkles,
+  Download,
+  Trash2,
   X,
   Loader2,
   CheckCircle2
@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { v2 } from '@/api/v2';
+import { client } from '@/api/client';
 import { toast } from 'sonner';
 
 interface BulkActionsBarProps {
@@ -50,7 +50,7 @@ export function BulkActionsBar({ onEnrich, onExport }: BulkActionsBarProps) {
   const deleteMutation = useMutation({
     mutationFn: async (ids: number[]) => {
       // Use allSettled to track individual success/failure
-      const results = await Promise.allSettled(ids.map(id => v2.deleteCoin(id)));
+      const results = await Promise.allSettled(ids.map(id => client.deleteCoin(id)));
 
       const succeeded = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
@@ -71,7 +71,9 @@ export function BulkActionsBar({ onEnrich, onExport }: BulkActionsBarProps) {
     },
     onError: (error) => {
       toast.error('Failed to delete coins');
-      console.error('Delete error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Delete error:', error);
+      }
     },
   });
 
@@ -109,7 +111,7 @@ export function BulkActionsBar({ onEnrich, onExport }: BulkActionsBarProps) {
   return (
     <>
       {/* Fixed bottom bar */}
-      <div 
+      <div
         className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-2xl"
         style={{
           background: 'var(--bg-elevated)',
@@ -118,12 +120,12 @@ export function BulkActionsBar({ onEnrich, onExport }: BulkActionsBarProps) {
         }}
       >
         {/* Selection count */}
-        <div 
+        <div
           className="flex items-center gap-2 pr-3 border-r"
           style={{ borderColor: 'var(--border-subtle)' }}
         >
           <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--metal-au)' }} />
-          <span 
+          <span
             className="text-sm font-semibold tabular-nums"
             style={{ color: 'var(--text-primary)' }}
           >
@@ -194,7 +196,7 @@ export function BulkActionsBar({ onEnrich, onExport }: BulkActionsBarProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {selectedCount} coin{selectedCount > 1 ? 's' : ''}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected 
+              This action cannot be undone. This will permanently delete the selected
               coin{selectedCount > 1 ? 's' : ''} from your collection.
             </AlertDialogDescription>
           </AlertDialogHeader>

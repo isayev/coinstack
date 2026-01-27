@@ -73,7 +73,7 @@ export const FindDataSchema = z.object({
 })
 
 export const AttributionSchema = z.object({
-  issuer: z.string().min(1).nullable().optional(),
+  issuer: z.string().nullable().optional(),
   issuer_id: z.number().nullable().optional(),
   mint: z.string().nullable().optional(),
   mint_id: z.number().nullable().optional(),
@@ -192,8 +192,8 @@ export const BaseCoinSchema = z.object({
   // Relations
   images: z.array(ImageSchema).default([]).optional(),
   tags: z.array(z.string()).optional(),
-  auction_data: z.array(z.any()).optional(),
-  provenance_events: z.array(z.any()).optional(),
+  auction_data: z.array(z.record(z.string(), z.unknown())).optional(),
+  provenance_events: z.array(z.record(z.string(), z.unknown())).optional(),
 })
 
 // Schema for the Nested Domain Entity (used by Forms and UI components)
@@ -265,7 +265,28 @@ export const DomainCoinSchema = z.object({
   images: z.array(ImageSchema).default([]).optional(),
   tags: z.array(z.string()).optional(),
   references: z.array(CatalogReferenceSchema).optional(),
-  provenance: z.array(z.any()).optional(),
+  // Provenance uses forward reference since ProvenanceEventSchema is defined later
+  provenance: z.array(z.object({
+    id: z.number().optional(),
+    coin_id: z.number().optional(),
+    event_type: z.string(),
+    event_date: z.string().nullable().optional(),
+    auction_house: z.string().nullable().optional(),
+    sale_series: z.string().nullable().optional(),
+    sale_number: z.string().nullable().optional(),
+    lot_number: z.string().nullable().optional(),
+    catalog_reference: z.string().nullable().optional(),
+    hammer_price: z.number().nullable().optional(),
+    buyers_premium_pct: z.number().nullable().optional(),
+    total_price: z.number().nullable().optional(),
+    currency: z.string().nullable().optional(),
+    dealer_name: z.string().nullable().optional(),
+    collection_name: z.string().nullable().optional(),
+    url: z.string().nullable().optional(),
+    receipt_available: z.boolean().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    sort_order: z.number().nullable().optional(),
+  })).optional(),
 
   // Collection management
   storage_location: z.string().nullable().optional(),
@@ -280,6 +301,7 @@ export const DomainCoinSchema = z.object({
   catalog_description: z.string().nullable().optional(),
   condition_observations: z.string().nullable().optional(),  // JSON string
   llm_enriched_at: z.string().nullable().optional(),
+  llm_analysis_sections: z.string().nullable().optional(),
 
   // -------------------------------------------------------------------------
   // Iconography and Design Details
@@ -351,7 +373,7 @@ export const DomainCoinSchema = z.object({
   orientation: z.string().nullable().optional(),
 
   llm_suggested_references: z.array(z.string()).nullable().optional(),
-  llm_suggested_rarity: z.record(z.any()).nullable().optional(),
+  llm_suggested_rarity: z.record(z.string(), z.unknown()).nullable().optional(),
 
   // -------------------------------------------------------------------------
   // Research Grade Extensions (V2.1)
@@ -359,7 +381,7 @@ export const DomainCoinSchema = z.object({
   issue_status: IssueStatusSchema.optional(),
   die_info: DieInfoSchema.nullable().optional(),
   monograms: z.array(MonogramSchema).default([]).optional(),
-  secondary_treatments: z.array(z.record(z.any())).nullable().optional(),
+  secondary_treatments: z.array(z.record(z.string(), z.unknown())).nullable().optional(),
   find_data: FindDataSchema.nullable().optional(),
 
   // Navigation helpers (added by API)
