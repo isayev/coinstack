@@ -373,6 +373,8 @@ class CoinModel(Base):
     catalog_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     condition_observations: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     llm_enriched_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    llm_suggested_design: Mapped[Optional[str]] = mapped_column(Text, nullable=True)   # JSON: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
+    llm_suggested_attribution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON: issuer, mint, denomination, year_start, year_end
 
     # Relationships (eager load with selectinload)
     images: Mapped[List["CoinImageModel"]] = relationship(

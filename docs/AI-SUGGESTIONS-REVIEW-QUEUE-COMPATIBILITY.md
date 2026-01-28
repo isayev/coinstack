@@ -65,7 +65,8 @@ Frontend (`ReviewQueuePage`, `VocabularyReviewTab`) uses the same shape. **Compa
 - **List**: `GET /api/v2/llm/review`
   - Query: `limit` (1–500, default 100).
 - **Dismiss**: `POST /api/v2/llm/review/{coin_id}/dismiss`
-  - Query: `dismiss_references` (default true), `dismiss_rarity` (default true).
+  - Query: `dismiss_references` (default true), `dismiss_rarity` (default true), `dismiss_design` (default true), `dismiss_attribution` (default true).
+- **Approve**: `POST /api/v2/llm/review/{coin_id}/approve` — applies pending rarity, references, design, and attribution to the coin and clears suggestion columns.
 
 ### 3.2 Response shape (list)
 
@@ -85,16 +86,18 @@ interface LLMSuggestionItem {
   suggested_references: string[];
   validated_references: CatalogReferenceValidation[];
   rarity_info: LLMRarityInfo | null;
+  suggested_design: LlmSuggestedDesign | null;
+  suggested_attribution: LlmSuggestedAttribution | null;
   enriched_at: string | null;
 }
 ```
 
-Frontend types (`@/types/audit`: `LLMSuggestionItem`, `LLMReviewQueueResponse`, `CatalogReferenceValidation`, `LLMRarityInfo`) align with backend Pydantic models. **Compatible.**
+Frontend types (`@/types/audit`: `LLMSuggestionItem`, `LLMReviewQueueResponse`, `LlmSuggestedDesign`, `LlmSuggestedAttribution`, `CatalogReferenceValidation`, `LLMRarityInfo`) align with backend Pydantic models. **Compatible.**
 
 ### 3.3 Schema / data source
 
-- **Source**: `coins_v2` columns `llm_suggested_references`, `llm_suggested_rarity`, `llm_enriched_at`. No separate “queue” table.
-- **Filled by**: Historical context generation (LLM) per coin. When the LLM returns new references or rarity, they are written into these fields.
+- **Source**: `coins_v2` columns `llm_suggested_references`, `llm_suggested_rarity`, `llm_suggested_design`, `llm_suggested_attribution`, `llm_enriched_at`. No separate “queue” table.
+- **Filled by**: Historical context generation (LLM) per coin. When the LLM returns new references, rarity, design, or attribution, they are written into these fields. Transcribe/identify endpoints also write design/attribution.
 
 ### 3.4 Compatibility verdict
 

@@ -28,7 +28,6 @@ Admin Endpoints:
 
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import re
@@ -54,68 +53,6 @@ from src.infrastructure.web.dependencies import get_db
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2/llm", tags=["LLM"])
-
-
-def _coin_images_dir() -> Path:
-    """Backend data/coin_images directory (same as main.py static mount)."""
-    backend_root = Path(__file__).resolve().parent.parent.parent.parent
-    return backend_root / "data" / "coin_images"
-
-
-async def _resolve_coin_primary_image_b64(session: Session, coin_id: int) -> Optional[str]:
-    """
-    Load coin by id, get primary image URL, return its content as base64.
-    Supports http(s) URLs (fetched) and /images/... paths (read from data/coin_images).
-    """
-    from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
-
-    repo = SqlAlchemyCoinRepository(session)
-    coin = repo.get_by_id(coin_id)
-    if not coin or not coin.images:
-        return None
-    primary = coin.primary_image or coin.images[0]
-    url = primary.url
-    if not url or not url.strip():
-        return None
-    url = url.strip()
-    if url.startswith("http://") or url.startswith("https://"):
-        try:
-            import httpx
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                r = await client.get(url)
-                r.raise_for_status()
-                return base64.b64encode(r.content).decode("utf-8")
-        except Exception as e:
-            logger.warning("Failed to fetch coin image URL %s: %s", url[:80], e)
-            return None
-    # Local path: /images/... or relative
-    images_dir = _coin_images_dir()
-    if "/images/" in url:
-        name = url.split("/images/")[-1].lstrip("/")
-        path = images_dir / name
-    elif Path(url).is_absolute():
-        path = Path(url)
-    else:
-        path = images_dir / Path(url).name
-    if not path.exists():
-        logger.warning("Coin image path not found: %s", path)
-        return None
-    try:
-        return base64.b64encode(path.read_bytes()).decode("utf-8")
-    except Exception as e:
-        logger.warning("Failed to read coin image %s: %s", path, e)
-        return None
-
-
-def _parse_date_range(s: Optional[str]) -> Tuple[Optional[int], Optional[int]]:
-    """Parse date_range string like '268–270' or 'ca. 260-268' -> (year_start, year_end)."""
-    if not s or not str(s).strip():
-        return (None, None)
-    text = str(s).strip()
-    numbers = [int(m) for m in re.findall(r"-?\d+", text)]
-    if not numbers:
-        return (None, None)
-    return (numbers[0], numbers[-1] if len(numbers) > 1 else numbers[0])
 
 
 # =============================================================================
@@ -442,6 +379,70 @@ def get_metrics_service():
     return LLMMetrics()
 
 
+def _coin_images_dir() -> Path:
+    """Backend data/coin_images directory (same as main.py static mount)."""
+    backend_root = Path(__file__).resolve().parent.parent.parent.parent
+    return backend_root / "data" / "coin_images"
+
+
+async def _resolve_coin_primary_image_b64(session: Session, coin_id: int) -> Optional[str]:
+    """
+    Load coin by id, get primary image URL, return its content as base64.
+    Supports http(s) URLs (fetched) and /images/... paths (read from data/coin_images).
+    """
+    from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+
+    repo = SqlAlchemyCoinRepository(session)
+    coin = repo.get_by_id(coin_id)
+    if not coin or not coin.images:
+        return None
+    primary = coin.primary_image or coin.images[0]
+    url = primary.url
+    if not url or not url.strip():
+        return None
+    url = url.strip()
+    if url.startswith("http://") or url.startswith("https://"):
+        try:
+            import base64
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.get(url)
+                r.raise_for_status()
+                return base64.b64encode(r.content).decode("utf-8")
+        except Exception as e:
+            logger.warning("Failed to fetch coin image URL %s: %s", url[:80], e)
+            return None
+    # Local path: /images/... or relative
+    images_dir = _coin_images_dir()
+    if "/images/" in url:
+        name = url.split("/images/")[-1].lstrip("/")
+        path = images_dir / name
+    elif Path(url).is_absolute():
+        path = Path(url)
+    else:
+        path = images_dir / Path(url).name
+    if not path.exists():
+        logger.warning("Coin image path not found: %s", path)
+        return None
+    try:
+        import base64
+        return base64.b64encode(path.read_bytes()).decode("utf-8")
+    except Exception as e:
+        logger.warning("Failed to read coin image %s: %s", path, e)
+        return None
+
+
+def _parse_date_range(s: Optional[str]) -> Tuple[Optional[int], Optional[int]]:
+    """Parse date_range string like '268–270' or 'ca. 260-268' -> (year_start, year_end)."""
+    if not s or not str(s).strip():
+        return (None, None)
+    text = str(s).strip()
+    numbers = [int(m) for m in re.findall(r"-?\d+", text)]
+    if not numbers:
+        return (None, None)
+    return (numbers[0], numbers[-1] if len(numbers) > 1 else numbers[0])
+
+
 # =============================================================================
 # P0 ENDPOINTS
 # =============================================================================
@@ -661,7 +662,7 @@ async def identify_coin_for_coin(
     """
     Identify coin from its primary image and store in llm_suggested_attribution,
     llm_suggested_design (obverse/reverse descriptions), and llm_suggested_references.
-    Sets llm_enriched_at.
+    Sets llm_enriched_at. Merges design delta into existing llm_suggested_design.
     """
     from datetime import datetime, timezone
     from src.infrastructure.persistence.orm import CoinModel
@@ -1029,8 +1030,9 @@ async def transcribe_legend_for_coin(
     db: Session = Depends(get_db),
 ):
     """
-    Transcribe legends from the coin's primary image and store in llm_suggested_design.
-    Sets llm_enriched_at. Returns the same shape as POST /legend/transcribe.
+    Transcribe legends from the coin's primary image and merge into llm_suggested_design.
+    Uses the same merge pattern as identify_coin_for_coin so descriptions (or other fields)
+    from a prior identify run are preserved. Sets llm_enriched_at.
     """
     from datetime import datetime, timezone
     from src.infrastructure.persistence.orm import CoinModel
@@ -1045,16 +1047,23 @@ async def transcribe_legend_for_coin(
             detail="Coin has no primary image or image could not be loaded",
         )
     result = await llm_service.transcribe_legend(image_b64=image_b64, hints=None)
-    design = {
+    design_delta = {
         "obverse_legend": result.obverse_legend,
         "reverse_legend": result.reverse_legend,
         "exergue": result.exergue,
         "obverse_legend_expanded": result.obverse_legend_expanded,
         "reverse_legend_expanded": result.reverse_legend_expanded,
     }
-    design = {k: v for k, v in design.items() if v is not None}
+    design_delta = {k: v for k, v in design_delta.items() if v is not None}
     try:
-        orm_coin.llm_suggested_design = json.dumps(design) if design else None
+        existing = {}
+        if orm_coin.llm_suggested_design:
+            try:
+                existing = json.loads(orm_coin.llm_suggested_design) or {}
+            except json.JSONDecodeError:
+                pass
+        existing.update(design_delta)
+        orm_coin.llm_suggested_design = json.dumps(existing) if existing else orm_coin.llm_suggested_design
         orm_coin.llm_enriched_at = datetime.now(timezone.utc)
         db.commit()
     except HTTPException:
@@ -1515,14 +1524,13 @@ async def get_llm_review_queue(
     """
     Get LLM suggestions pending review.
     
-    Returns coins that have LLM-suggested references or rarity info
+    Returns coins that have LLM-suggested references, rarity, design, or attribution
     that haven't been applied yet. Includes full coin details for context
     and validates suggested catalog references against coin attributes.
     """
     from sqlalchemy import text
     from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
 
-    # Query coins with LLM suggestions - fetch more fields for context (incl. design/attribution)
     result = db.execute(text("""
         SELECT 
             id, issuer, denomination, mint, category,
@@ -1542,8 +1550,6 @@ async def get_llm_review_queue(
 
     rows = result.fetchall()
     items = []
-
-    # Get repository for fetching existing references
     repo = SqlAlchemyCoinRepository(db)
 
     for row in rows:
@@ -1551,7 +1557,6 @@ async def get_llm_review_queue(
          year_start, year_end, obverse_legend, reverse_legend,
          refs_json, rarity_json, design_json, attribution_json, enriched_at) = row
 
-        # Get existing references from coin
         coin = repo.get_by_id(coin_id)
         existing_refs = []
         if coin and coin.references:
@@ -1560,7 +1565,6 @@ async def get_llm_review_queue(
                 for ref in coin.references
             ]
 
-        # Parse references JSON
         suggested_refs = []
         if refs_json:
             try:
@@ -1568,7 +1572,6 @@ async def get_llm_review_queue(
             except json.JSONDecodeError:
                 pass
 
-        # Validate each suggested reference
         validated_refs = []
         for ref_text in suggested_refs:
             validation = _validate_catalog_reference(
@@ -1581,7 +1584,6 @@ async def get_llm_review_queue(
             )
             validated_refs.append(validation)
 
-        # Parse rarity JSON
         rarity_info = None
         if rarity_json:
             try:
@@ -1595,12 +1597,17 @@ async def get_llm_review_queue(
             except json.JSONDecodeError:
                 pass
 
-        # Parse design and attribution suggestions
         suggested_design = None
         if design_json:
             try:
                 design_data = json.loads(design_json)
-                if isinstance(design_data, dict) and any(design_data.get(k) for k in ("obverse_legend", "reverse_legend", "exergue", "obverse_description", "reverse_description", "obverse_legend_expanded", "reverse_legend_expanded")):
+                if isinstance(design_data, dict) and any(
+                    design_data.get(k) for k in (
+                        "obverse_legend", "reverse_legend", "exergue",
+                        "obverse_description", "reverse_description",
+                        "obverse_legend_expanded", "reverse_legend_expanded",
+                    )
+                ):
                     suggested_design = LlmSuggestedDesign(
                         obverse_legend=design_data.get("obverse_legend"),
                         reverse_legend=design_data.get("reverse_legend"),
@@ -1612,11 +1619,14 @@ async def get_llm_review_queue(
                     )
             except (json.JSONDecodeError, TypeError):
                 pass
+
         suggested_attribution = None
         if attribution_json:
             try:
                 attr_data = json.loads(attribution_json)
-                if isinstance(attr_data, dict) and any(attr_data.get(k) is not None for k in ("issuer", "mint", "denomination", "year_start", "year_end")):
+                if isinstance(attr_data, dict) and any(
+                    attr_data.get(k) is not None for k in ("issuer", "mint", "denomination", "year_start", "year_end")
+                ):
                     suggested_attribution = LlmSuggestedAttribution(
                         issuer=attr_data.get("issuer"),
                         mint=attr_data.get("mint"),
@@ -1627,7 +1637,6 @@ async def get_llm_review_queue(
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        # Include if there are any suggestions (refs, rarity, design, or attribution)
         if suggested_refs or rarity_info or suggested_design or suggested_attribution:
             enriched_at_str = str(enriched_at) if enriched_at else None
             items.append(LLMSuggestionItem(
@@ -1710,9 +1719,11 @@ async def approve_llm_suggestions(
     db: Session = Depends(get_db),
 ):
     """
-    Apply LLM-suggested rarity and references to the coin, then clear llm_suggested_*.
+    Apply LLM-suggested rarity, references, design, and attribution to the coin, then clear llm_suggested_*.
     - Rarity: copy rarity_code or rarity_description into coin.rarity; source into rarity_notes.
     - References: create reference_types + coin_references for each suggested ref string.
+    - Design: copy obverse_legend, reverse_legend, exergue, descriptions, *_expanded into coin.
+    - Attribution: copy issuer, mint, denomination, year_start, year_end into coin.
     """
     from sqlalchemy.orm import selectinload
     from src.infrastructure.persistence.orm import CoinModel, ReferenceTypeModel, CoinReferenceModel
@@ -1738,7 +1749,6 @@ async def approve_llm_suggestions(
         applied_design = False
         applied_attribution = False
 
-        # Apply rarity from llm_suggested_rarity
         if coin.llm_suggested_rarity:
             try:
                 rarity_data = json.loads(coin.llm_suggested_rarity)
@@ -1753,7 +1763,6 @@ async def approve_llm_suggestions(
             except (json.JSONDecodeError, TypeError):
                 coin.llm_suggested_rarity = None
 
-        # Apply references from llm_suggested_references
         if coin.llm_suggested_references:
             try:
                 ref_strings = json.loads(coin.llm_suggested_references)
@@ -1800,7 +1809,6 @@ async def approve_llm_suggestions(
             except (json.JSONDecodeError, TypeError):
                 coin.llm_suggested_references = None
 
-        # Apply design from llm_suggested_design (merge with existing)
         if coin.llm_suggested_design:
             try:
                 design_data = json.loads(coin.llm_suggested_design)
@@ -1824,7 +1832,6 @@ async def approve_llm_suggestions(
             except (json.JSONDecodeError, TypeError):
                 coin.llm_suggested_design = None
 
-        # Apply attribution from llm_suggested_attribution (merge with existing)
         if coin.llm_suggested_attribution:
             try:
                 attr_data = json.loads(coin.llm_suggested_attribution)

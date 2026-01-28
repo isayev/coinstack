@@ -346,7 +346,7 @@ def test_identify_coin_for_coin_not_found_returns_404(client: TestClient):
     assert r.status_code == 404
 
 
-# --- Success paths (mocked LLM and image resolver) ---
+# --- Success paths (mocked LLM via dependency override + patched image resolver) ---
 
 
 class _TranscribeResult:
@@ -360,18 +360,23 @@ class _TranscribeResult:
     cost_usd = 0.0
 
 
-def test_transcribe_legend_for_coin_success_saves_design(client: TestClient, db_session):
+def test_transcribe_legend_for_coin_success_saves_design(client: TestClient, app, db_session):
     """POST .../legend/transcribe/coin/{id} with mocked image+LLM saves llm_suggested_design and returns 200."""
+    from src.infrastructure.web.routers.llm import get_llm_service
+
     repo = SqlAlchemyCoinRepository(db_session)
     saved = repo.save(_make_coin(issuer="Test"))
     db_session.flush()
 
-    with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
-        with patch("src.infrastructure.web.routers.llm.get_llm_service") as mock_get:
-            mock_svc = MagicMock()
-            mock_svc.transcribe_legend = AsyncMock(return_value=_TranscribeResult())
-            mock_get.return_value = mock_svc
+    mock_svc = MagicMock()
+    mock_svc.transcribe_legend = AsyncMock(return_value=_TranscribeResult())
+    app.dependency_overrides[get_llm_service] = lambda: mock_svc
+
+    try:
+        with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
             r = client.post(f"/api/v2/llm/legend/transcribe/coin/{saved.id}")
+    finally:
+        app.dependency_overrides.pop(get_llm_service, None)
 
     assert r.status_code == 200
     data = r.json()
@@ -400,18 +405,23 @@ class _IdentifyResult:
     cost_usd = 0.0
 
 
-def test_identify_coin_for_coin_success_saves_attribution_and_design(client: TestClient, db_session):
+def test_identify_coin_for_coin_success_saves_attribution_and_design(client: TestClient, app, db_session):
     """POST .../identify/coin/{id} with mocked image+LLM saves llm_suggested_attribution, design delta, refs."""
+    from src.infrastructure.web.routers.llm import get_llm_service
+
     repo = SqlAlchemyCoinRepository(db_session)
     saved = repo.save(_make_coin(issuer="Test"))
     db_session.flush()
 
-    with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
-        with patch("src.infrastructure.web.routers.llm.get_llm_service") as mock_get:
-            mock_svc = MagicMock()
-            mock_svc.identify_coin = AsyncMock(return_value=_IdentifyResult())
-            mock_get.return_value = mock_svc
+    mock_svc = MagicMock()
+    mock_svc.identify_coin = AsyncMock(return_value=_IdentifyResult())
+    app.dependency_overrides[get_llm_service] = lambda: mock_svc
+
+    try:
+        with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
             r = client.post(f"/api/v2/llm/identify/coin/{saved.id}")
+    finally:
+        app.dependency_overrides.pop(get_llm_service, None)
 
     assert r.status_code == 200
     data = r.json()
@@ -436,3 +446,51 @@ def test_identify_coin_for_coin_success_saves_attribution_and_design(client: Tes
     refs = json.loads(orm_coin.llm_suggested_references)
     assert "RIC V.1 123" in refs
     assert orm_coin.llm_enriched_at is not None
+
+
+def test_transcribe_after_identify_preserves_descriptions(client: TestClient, app, db_session):
+    """Transcribe merges into llm_suggested_design; identify-then-transcribe keeps descriptions."""
+    from src.infrastructure.web.routers.llm import get_llm_service
+
+    repo = SqlAlchemyCoinRepository(db_session)
+    saved = repo.save(_make_coin(issuer="Test"))
+    db_session.flush()
+
+    # 1) Run identify: stores obverse/reverse descriptions (and attribution/refs)
+    mock_svc = MagicMock()
+    mock_svc.identify_coin = AsyncMock(return_value=_IdentifyResult())
+    app.dependency_overrides[get_llm_service] = lambda: mock_svc
+    try:
+        with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
+            r1 = client.post(f"/api/v2/llm/identify/coin/{saved.id}")
+    finally:
+        app.dependency_overrides.pop(get_llm_service, None)
+    assert r1.status_code == 200
+
+    db_session.expire_all()
+    orm_coin = db_session.get(CoinModel, saved.id)
+    design_after_identify = json.loads(orm_coin.llm_suggested_design or "{}")
+    assert design_after_identify.get("obverse_description") == "Radiate bust right"
+    assert design_after_identify.get("reverse_description") == "Laetitia standing left"
+
+    # 2) Run transcribe: should merge legends into existing design, not overwrite
+    mock_svc = MagicMock()
+    mock_svc.transcribe_legend = AsyncMock(return_value=_TranscribeResult())
+    app.dependency_overrides[get_llm_service] = lambda: mock_svc
+    try:
+        with patch("src.infrastructure.web.routers.llm._resolve_coin_primary_image_b64", new_callable=AsyncMock, return_value="dummy_b64"):
+            r2 = client.post(f"/api/v2/llm/legend/transcribe/coin/{saved.id}")
+    finally:
+        app.dependency_overrides.pop(get_llm_service, None)
+    assert r2.status_code == 200
+
+    db_session.expire_all()
+    orm_coin = db_session.get(CoinModel, saved.id)
+    design_after_transcribe = json.loads(orm_coin.llm_suggested_design or "{}")
+    # Legends from transcribe
+    assert design_after_transcribe.get("obverse_legend") == "IMP CAES AVG"
+    assert design_after_transcribe.get("reverse_legend") == "COS III"
+    assert design_after_transcribe.get("exergue") == "SC"
+    # Descriptions from identify must still be present (merge, not overwrite)
+    assert design_after_transcribe.get("obverse_description") == "Radiate bust right"
+    assert design_after_transcribe.get("reverse_description") == "Laetitia standing left"
