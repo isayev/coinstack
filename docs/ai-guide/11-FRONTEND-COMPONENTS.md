@@ -50,8 +50,10 @@ frontend/src/
 │   │   └── CommandBar/        # Top action bar
 │   │
 │   ├── coins/                 # Coin-specific components
-│   │   ├── CoinCardV3.tsx     # Grid card (v3.1 design)
+│   │   ├── CoinCard.tsx       # Grid card (v3 design)
 │   │   ├── CoinTableRowV3.tsx # Table row (v3.1 design)
+│   │   ├── ImageUploadWithSplit.tsx # Upload + 2:1/1:2 split + gallery
+│   │   ├── AddCoinImagesDialog.tsx  # Add obv/rev images from card
 │   │   ├── CoinForm.tsx       # Create/edit form
 │   │   ├── CoinFilters.tsx    # Filter panel
 │   │   └── VocabAutocomplete.tsx # Issuer/mint search
@@ -111,9 +113,9 @@ frontend/src/
 
 ## 2. Core Components
 
-### 2.1 CoinCardV3 (Grid View)
+### 2.1 CoinCard / CoinCardV3 (Grid View)
 
-**Location**: `frontend/src/components/coins/CoinCardV3.tsx`
+**Location**: `frontend/src/components/coins/CoinCard.tsx`
 
 **Purpose**: Displays a coin in grid view with v3.1 design system compliance.
 
@@ -123,23 +125,38 @@ frontend/src/
 - Category bar with matching border-radius
 - Compact badge row: [Cert] [Grade] [Metal] [Rarity●]
 - Price with performance indicator
+- **Add images trigger**: When obverse or reverse image is missing and `onAddImages` is provided, a semi-transparent overlay with “Add images” + `ImagePlus` icon is shown on the image area; click calls `onAddImages(coin)` and stops propagation so the card navigate does not fire.
 
 **Props**:
 ```typescript
-interface CoinCardV3Props {
-  coin: DomainCoin
-  onClick?: (coin: DomainCoin) => void
-  compact?: boolean
+interface CoinCardProps {
+  coin: Coin
+  onClick?: (coin: Coin) => void
+  selected?: boolean
+  onSelect?: (id: number, selected: boolean) => void
+  gridIndex?: number
+  /** Opens add-images dialog when obv/rev missing; parent renders AddCoinImagesDialog and passes (coin) => setAddImagesCoin(coin) */
+  onAddImages?: (coin: Coin) => void
 }
 ```
 
 **Usage**:
 ```typescript
-import { CoinCardV3 } from '@/components/coins/CoinCardV3'
+import { CoinCard } from '@/components/coins/CoinCard'
+import { AddCoinImagesDialog } from '@/components/coins/AddCoinImagesDialog'
 
-<CoinCardV3
+const [addImagesCoin, setAddImagesCoin] = useState<Coin | null>(null)
+
+<CoinCard
   coin={coin}
-  onClick={(c) => navigate(`/coins/${c.id}`)}
+  onClick={() => navigate(`/coins/${coin.id}`)}
+  onAddImages={(c) => setAddImagesCoin(c)}
+/>
+<AddCoinImagesDialog
+  coin={addImagesCoin}
+  open={!!addImagesCoin}
+  onOpenChange={(open) => !open && setAddImagesCoin(null)}
+  onSuccess={() => setAddImagesCoin(null)}
 />
 ```
 
@@ -266,7 +283,52 @@ function AddCoinPage() {
 }
 ```
 
-### 2.4 VocabAutocomplete
+### 2.4 ImageUploadWithSplit
+
+**Location**: `frontend/src/components/coins/ImageUploadWithSplit.tsx`
+
+**Purpose**: Shared “upload → detect 2:1/1:2 → split or add single → gallery with Obv/Rev/Remove/Primary”. Used by Coin Edit Finalize step and by AddCoinImagesDialog.
+
+**Props**:
+```typescript
+export interface ImageEntry {
+  url: string
+  image_type: string   // 'obverse' | 'reverse' | 'general'
+  is_primary: boolean
+}
+
+interface ImageUploadWithSplitProps {
+  images: ImageEntry[]
+  onImagesChange: (images: ImageEntry[]) => void
+}
+```
+
+**Behavior**:
+- Hidden file input + “Select File” (or similar) upload UI.
+- Single file: `checkImageDimensions` — ratio 1.8–2.2 → 2:1 horizontal split suggestion; 0.45–0.55 → 1:2 vertical split suggestion; else add as general.
+- Multiple files: each added via `addSingleImage`.
+- Smart-split UI: toast + inline “Smart Split” panel with Confirm/Cancel; on confirm, appends obv + rev via `onImagesChange`.
+- Gallery: Obv/Rev/Remove/Set-primary controls; all updates via `onImagesChange`.
+
+### 2.5 AddCoinImagesDialog
+
+**Location**: `frontend/src/components/coins/AddCoinImagesDialog.tsx`
+
+**Purpose**: Dialog to add or replace obverse/reverse images for a single coin. Renders ImageUploadWithSplit, then saves via `client.updateCoin(id, { ...coin, images })` and invalidates `["coin", id]` and `["coins"]`.
+
+**Props**:
+```typescript
+interface AddCoinImagesDialogProps {
+  coin: Coin | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+}
+```
+
+**Usage**: Parent (e.g. CoinGridPage) holds `addImagesCoin: Coin | null`, renders one dialog, passes `onAddImages={(c) => setAddImagesCoin(c)}` to CoinCard. When user clicks “Add images” on a card, parent sets the coin and opens the dialog.
+
+### 2.6 VocabAutocomplete
 
 **Location**: `frontend/src/components/coins/VocabAutocomplete.tsx`
 
@@ -288,11 +350,13 @@ interface VocabAutocompleteProps {
 - Shows canonical_name in dropdown
 - Allows creating new terms
 
-### 2.5 CoinDetail Components (v3.2)
+### 2.7 CoinDetail Components (v3.2)
 
 **Location**: `frontend/src/features/collection/CoinDetail/`
 
 **Purpose**: Scholarly numismatic coin detail page components.
+
+**Add/attach images on detail page**: `CoinDetailPage` holds `addImagesOpen` state, renders `AddCoinImagesDialog` with the current coin, and passes `onOpenAddImages={() => setAddImagesOpen(true)}` to `CoinDetail`. The header shows “Attach images” (always), and each obverse/reverse panel shows “Add obverse/reverse image” when that side has no image; both open the same dialog. The dialog supports uploading single/multiple images, 2:1/1:2 smart split, and Obv/Rev/Remove/Set-primary in the gallery, then saves via `client.updateCoin` and invalidates `["coin", id]`.
 
 #### IdentityHeader
 
@@ -305,6 +369,7 @@ interface IdentityHeaderProps {
   coin: Coin
   onEdit: () => void
   onDelete?: () => void
+  onOpenAddImages?: () => void  // Opens add/attach images dialog
 }
 ```
 
@@ -315,6 +380,7 @@ interface IdentityHeaderProps {
 - Type line: Denomination · Mint · Date
 - References inline (RIC II 118 · RSC 240)
 - Physical specs: 3.42g · 19mm · ↑6h
+- **Attach images**: When `onOpenAddImages` is provided, an “Attach images” button (ImagePlus icon) appears next to Edit; opens AddCoinImagesDialog for adding or replacing obv/rev/general images.
 
 #### ObverseReversePanel
 
@@ -325,6 +391,7 @@ interface IdentityHeaderProps {
 ```typescript
 interface ObverseReversePanelProps {
   coin: Coin
+  onOpenAddImages?: () => void  // Opens add/attach images dialog; passed to side panels when that side has no image
   onEnrichLegend?: (side: 'obverse' | 'reverse') => void
 }
 ```
@@ -334,6 +401,7 @@ interface ObverseReversePanelProps {
 - Each panel has: image, legend (with copy), description, iconography
 - Metal badge overlay on obverse image
 - Legend expansion button for AI enrichment
+- When a side has no image and `onOpenAddImages` is provided, that side shows an “Add obverse/reverse image” button (see CoinSidePanel).
 
 #### CoinSidePanel
 
@@ -350,12 +418,14 @@ interface CoinSidePanelProps {
   description?: string | null
   iconography?: string[] | null
   metal?: string
+  onAddImage?: () => void   // Opens add-images dialog when this side has no image
   onEnrichLegend?: () => void
 }
 ```
 
 **Key Features**:
 - Zoomable image (uses ImageZoom component)
+- When `!image && onAddImage`: shows “Add obverse/reverse image” button that calls `onAddImage` (opens AddCoinImagesDialog).
 - Legend with copy-to-clipboard button
 - Sparkle button for AI legend expansion
 - Collapsible expanded legend section
@@ -531,7 +601,7 @@ interface IconographySectionProps {
 - Star - celestial
 - Flame/Torch - religious
 
-### 2.6 DieAxisClock
+### 2.8 DieAxisClock
 
 **Location**: `frontend/src/components/coins/DieAxisClock.tsx`
 
@@ -569,7 +639,7 @@ import { DieAxisClock } from '@/components/coins/DieAxisClock'
 />
 ```
 
-### 2.7 CoinNavigation
+### 2.9 CoinNavigation
 
 **Location**: `frontend/src/components/coins/CoinNavigation.tsx`
 

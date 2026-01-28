@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CoinList } from "@/features/collection/CoinList";
 import { CollectionDashboard } from "@/features/collection/CollectionDashboard";
 import { BulkActionsBar } from "@/features/collection/BulkActionsBar";
@@ -18,6 +19,7 @@ import { Calendar, TrendingUp, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function CollectionPage() {
+  const navigate = useNavigate();
   const [sidebarCollapsed, _setSidebarCollapsed] = useState(false);
 
   // Fetch stats for dashboard
@@ -109,7 +111,9 @@ export function CollectionPage() {
       />
 
       {/* Bulk actions bar (appears when coins selected) */}
-      <BulkActionsBar />
+      <BulkActionsBar
+        onEnrich={(ids) => navigate(`/bulk-enrich?coin_ids=${ids.join(",")}`)}
+      />
     </div>
   );
 }

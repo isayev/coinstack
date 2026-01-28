@@ -54,10 +54,11 @@ export function EnrichmentsReviewTab() {
   };
 
   const handleBulkApply = async () => {
-    if (selectedIds.length === 0) return;
-    await bulkApply.mutateAsync(selectedIds);
+    if (selectedIds.length === 0 || !enrichmentsData) return;
+    const toApply = enrichmentsData.items.filter((e) => selectedIds.includes(e.id));
+    await bulkApply.mutateAsync(toApply);
     setSelectedIds([]);
-    toast.success(`Applied ${selectedIds.length} enrichments`);
+    toast.success(`Applied ${toApply.length} enrichments`);
   };
 
   const handleApplyAll = async () => {

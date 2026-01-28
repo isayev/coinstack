@@ -18,13 +18,39 @@ import { useState } from "react"
 export function SeriesDetailPage() {
   const { id } = useParams<{ id: string }>()
   const seriesId = parseInt(id!)
-  const { data: series, isLoading } = useSeriesDetail(seriesId)
+  const { data: series, isLoading, isError, error, refetch } = useSeriesDetail(seriesId)
   const { data: coinsData } = useCoins()
   const addCoinMutation = useAddCoinToSeries()
-  
+
   const [, setSelectedSlot] = useState<number | null>(null)
-  
+
   if (isLoading) return <div className="container py-6">Loading series details...</div>
+
+  if (isError && error) {
+    const status = (error as { response?: { status?: number } })?.response?.status
+    if (status === 404) {
+      return (
+        <div className="container py-6">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+            <p className="font-medium">Series unavailable</p>
+            <p className="text-sm mt-1">The series service could not be reached. Check that the backend is running.</p>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div className="container py-6">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+          <p className="font-medium">Error loading series</p>
+          <p className="text-sm mt-1">{String(error)}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (!series) return <div className="container py-6">Series not found</div>
   
   const filledCount = series.slots?.filter(sl => sl.status === 'filled').length || 0

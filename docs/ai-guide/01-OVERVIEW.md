@@ -49,6 +49,7 @@ CoinStack is a **personal ancient coin collection management system** designed f
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | Python | 3.12+ | Runtime |
+| uv | Latest | Package manager & env (sync, run, lock); backend uses `uv run run_server.py` |
 | FastAPI | Latest | Web framework |
 | SQLAlchemy | 2.0 | ORM |
 | Pydantic | 2.x | Data validation |

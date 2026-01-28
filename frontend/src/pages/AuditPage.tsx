@@ -293,8 +293,9 @@ export default function AuditPage() {
   };
 
   const handleBulkApplyEnrichments = async () => {
-    if (selectedEnrichments.length === 0) return;
-    await bulkApply.mutateAsync(selectedEnrichments);
+    if (selectedEnrichments.length === 0 || !enrichmentsData) return;
+    const toApply = enrichmentsData.items.filter((e) => selectedEnrichments.includes(e.id));
+    await bulkApply.mutateAsync(toApply);
     setSelectedEnrichments([]);
   };
 

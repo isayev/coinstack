@@ -13,7 +13,8 @@
  */
 
 import { useState, memo } from 'react';
-import { Copy, Check, Sparkles, ZoomIn } from 'lucide-react';
+import { Copy, Check, Sparkles, ZoomIn, ImagePlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { MetalBadge } from '@/components/ui/badges/MetalBadge';
 import { ImageZoom } from '@/components/coins/ImageZoom';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,8 @@ interface CoinSidePanelProps {
   iconography?: string[] | null;
   exergue?: string | null;
   metal?: string;
+  /** Opens add-images dialog when this side has no image */
+  onAddImage?: () => void;
   onEnrichLegend?: () => void;
   isEnriching?: boolean;
   className?: string;
@@ -41,6 +44,7 @@ export const CoinSidePanel = memo(function CoinSidePanel({
   iconography,
   exergue,
   metal,
+  onAddImage,
   onEnrichLegend,
   isEnriching = false,
   className,
@@ -97,10 +101,26 @@ export const CoinSidePanel = memo(function CoinSidePanel({
             className="aspect-square flex items-center justify-center"
             style={{ background: 'var(--bg-subtle)' }}
           >
-            <div className="text-center" style={{ color: 'var(--text-ghost)' }}>
-              <ZoomIn className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No {side} image</p>
-            </div>
+            {onAddImage ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={onAddImage}
+                style={{
+                  color: 'var(--text-secondary)',
+                  borderColor: 'var(--border-subtle)',
+                }}
+              >
+                <ImagePlus className="w-5 h-5" />
+                Add {side} image
+              </Button>
+            ) : (
+              <div className="text-center" style={{ color: 'var(--text-ghost)' }}>
+                <ZoomIn className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No {side} image</p>
+              </div>
+            )}
           </div>
         )}
       </div>

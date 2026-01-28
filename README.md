@@ -33,16 +33,17 @@ Comprehensive catalog integration, intelligent data enrichment, auction scraping
 ### Development Setup
 
 ```bash
-# Backend (V2 Clean Architecture)
+# Backend (V2, uses uv)
 cd backend
-python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+uv sync --all-extras
+uv run run_server.py
 
 # Frontend (new terminal)
 cd frontend
 npm install
 npm run dev
 
-# Or use PowerShell restart script
+# Or use PowerShell restart script (starts both via uv + npm)
 .\restart.ps1
 ```
 

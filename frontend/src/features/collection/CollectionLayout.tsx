@@ -1,12 +1,23 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { CollectionSidebar } from "@/components/coins/CollectionSidebar";
 import { CollectionToolbar } from "./CollectionToolbar";
+import { useFilterStore } from "@/stores/filterStore";
 
 interface CollectionLayoutProps {
     children: ReactNode;
 }
 
 export function CollectionLayout({ children }: CollectionLayoutProps) {
+    const [searchParams] = useSearchParams();
+    const setSearch = useFilterStore((s) => s.setSearch);
+
+    // Sync URL ?search= into filterStore so list uses it (Option B: issuer)
+    useEffect(() => {
+        const q = searchParams.get("search");
+        setSearch(q && q.trim() ? q.trim() : null);
+    }, [searchParams, setSearch]);
+
     return (
         <div className="flex h-[calc(100vh-3.5rem)]"> {/* Full height minus header */}
             {/* Filter Sidebar */}

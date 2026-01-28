@@ -2,26 +2,32 @@
 
 ## Setup
 
-1. Install dependencies:
+1. Install [uv](https://docs.astral.sh/uv/) and sync dependencies:
 ```bash
-pip install uv
-uv sync
+# Install uv: pip install uv  (or curl -LsSf https://astral.sh/uv/install.sh | sh)
+cd backend
+uv sync --all-extras
 ```
 
-2. Create data directories:
+2. Install Playwright browser (required for scrapers):
+```bash
+uv run playwright install chromium
+```
+
+3. Create data directories:
 ```bash
 bash create_dirs.sh
 ```
 
-3. Set up environment variables:
+4. Set up environment variables:
 ```bash
 cp .env.example .env
 # Edit .env and add your ANTHROPIC_API_KEY
 ```
 
-4. Run the server:
+5. Run the server (V2 entrypoint; sets Windows event loop for Playwright):
 ```bash
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run run_server.py
 ```
 
 ## Import Collection

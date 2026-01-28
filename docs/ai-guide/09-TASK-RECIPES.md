@@ -217,7 +217,7 @@ Edit `frontend/src/features/collection/CoinDetailV3.tsx`:
 1. **Backend**:
    ```bash
    cd backend
-   python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+   uv run run_server.py
    ```
 
 2. **Check Swagger UI**: http://localhost:8000/docs
@@ -241,7 +241,7 @@ Edit `frontend/src/features/collection/CoinDetailV3.tsx`:
    ```bash
    # Backend
    cd backend
-   pytest tests/unit/domain/test_coin_domain.py -v
+   uv run pytest tests/unit/domain/test_coin_domain.py -v
 
    # Frontend
    cd frontend

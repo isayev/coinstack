@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -20,6 +20,7 @@ import { SeriesDashboard } from "@/pages/SeriesDashboard";
 import { CreateSeriesPage } from "@/pages/CreateSeriesPage";
 import { SeriesDetailPage } from "@/pages/SeriesDetailPage";
 import { ReviewCenterPage } from "@/pages/ReviewCenterPage";
+import { ReviewQueuePage } from "@/pages/ReviewQueuePage";
 
 // Error Boundary to catch rendering errors
 class ErrorBoundary extends React.Component<
@@ -93,6 +94,12 @@ const queryClient = new QueryClient({
   },
 });
 
+function RedirectToCollectionGrid() {
+  const location = useLocation();
+  const search = location.search || "";
+  return <Navigate to={`/collection/grid${search}`} replace />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -101,8 +108,8 @@ function App() {
           <BrowserRouter>
             <AppShell>
               <Routes>
-                <Route path="/" element={<Navigate to="/collection/grid" replace />} />
-                <Route path="/collection" element={<Navigate to="/collection/grid" replace />} />
+                <Route path="/" element={<RedirectToCollectionGrid />} />
+                <Route path="/collection" element={<RedirectToCollectionGrid />} />
                 <Route path="/collection/grid" element={<CoinGridPage />} />
                 <Route path="/collection/table" element={<CoinTablePage />} />
 
@@ -119,6 +126,7 @@ function App() {
                 <Route path="/series/new" element={<CreateSeriesPage />} />
                 <Route path="/series/:id" element={<SeriesDetailPage />} />
                 <Route path="/review" element={<ReviewCenterPage />} />
+                <Route path="/review/queue" element={<ReviewQueuePage />} />
               </Routes>
             </AppShell>
           </BrowserRouter>

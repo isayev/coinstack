@@ -33,6 +33,8 @@ export type SortDirection = "asc" | "desc";
 export type PerPageOption = 20 | 50 | 100 | "all";
 
 interface FilterState {
+  // Quick search (header/palette). Mapped to issuer in toParams (Option B).
+  search: string | null;
   // Basic filters
   category: string | null;
   sub_category: string | null;
@@ -91,6 +93,7 @@ interface FilterState {
   toggleSortDir: () => void;
   /** Type-safe filter setter - accepts only valid filter keys and appropriate value types */
   setFilter: <K extends keyof FilterStateValues>(key: K, value: FilterStateValues[K]) => void;
+  setSearch: (v: string | null) => void;
   setPage: (page: number) => void;
   setPerPage: (perPage: PerPageOption) => void;
   nextPage: () => void;
@@ -106,7 +109,7 @@ type FilterStateValues = Omit<FilterState,
   | 'setIsRulerUnknown' | 'setMintName' | 'setIsMintUnknown' | 'setDenomination'
   | 'setGrade' | 'setRarity' | 'setPriceRange' | 'setMintYearGte' | 'setMintYearLte'
   | 'setIsYearUnknown' | 'setIsCirca' | 'setIsTestCut' | 'setStorageLocation'
-  | 'setSort' | 'toggleSortDir' | 'setFilter' | 'setPage' | 'setPerPage'
+  | 'setSort' | 'toggleSortDir' | 'setFilter' | 'setSearch' | 'setPage' | 'setPerPage'
   | 'nextPage' | 'prevPage' | 'reset' | 'toParams' | 'getActiveFilterCount'
 >;
 
@@ -138,6 +141,7 @@ export interface CoinQueryParams {
 }
 
 const initialState = {
+  search: null as string | null,
   category: null,
   sub_category: null,
   metal: null,
@@ -194,6 +198,8 @@ export const useFilterStore = create<FilterState>()(
 
       setFilter: (key, value) => set({ [key]: value, page: 1 }), // Reset page on filter change
 
+      setSearch: (search) => set({ search, page: 1 }),
+
       setPage: (page) => set({ page }),
       setPerPage: (perPage) => set({ perPage, page: 1 }), // Reset to first page when changing per_page
       nextPage: () => set((state) => ({ page: state.page + 1 })),
@@ -204,6 +210,7 @@ export const useFilterStore = create<FilterState>()(
       getActiveFilterCount: () => {
         const state = get();
         let count = 0;
+        if (state.search?.trim()) count++;
         if (state.category) count++;
         if (state.sub_category) count++;
         if (state.metal) count++;
@@ -245,7 +252,11 @@ export const useFilterStore = create<FilterState>()(
         if (state.sub_category) params.sub_category = state.sub_category;
         if (state.metal) params.metal = state.metal;
 
-        if (state.issuing_authority) {
+        // Search (header/palette) maps to issuer (Option B). When set, it drives issuer.
+        if (state.search?.trim()) {
+          params.issuer = state.search.trim();
+          params.issuing_authority = state.search.trim();
+        } else if (state.issuing_authority) {
           params.issuing_authority = state.issuing_authority;
           params.issuer = state.issuing_authority;
         }

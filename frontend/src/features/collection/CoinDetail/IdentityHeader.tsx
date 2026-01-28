@@ -16,7 +16,7 @@
  */
 
 import { memo } from 'react';
-import { Pencil, MoreHorizontal, Trash2, Copy, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, ImagePlus, MoreHorizontal, Trash2, Copy, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -38,6 +38,8 @@ interface IdentityHeaderProps {
   onNavigateNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  /** Opens add/attach images dialog */
+  onOpenAddImages?: () => void;
   className?: string;
 }
 
@@ -72,6 +74,7 @@ export const IdentityHeader = memo(function IdentityHeader({
   onNavigateNext,
   hasPrev = false,
   hasNext = false,
+  onOpenAddImages,
   className
 }: IdentityHeaderProps) {
   const categoryType = parseCategory(coin.category);
@@ -235,6 +238,17 @@ export const IdentityHeader = memo(function IdentityHeader({
                 <Pencil size={14} />
                 Edit
               </Button>
+              {onOpenAddImages && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onOpenAddImages}
+                  className="h-8 px-3 gap-1.5"
+                >
+                  <ImagePlus size={14} />
+                  Attach images
+                </Button>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">

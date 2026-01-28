@@ -1,13 +1,20 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCoinCollection } from "@/hooks/useCoinCollection";
 import { CoinCard, CoinCardV3Skeleton } from "@/components/coins/CoinCard";
+import { AddCoinImagesDialog } from "@/components/coins/AddCoinImagesDialog";
+import type { Coin } from "@/domain/schemas";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Plus } from "lucide-react";
+import { AlertCircle, Plus, FilterX } from "lucide-react";
 import { CollectionLayout } from "@/features/collection/CollectionLayout";
+import { useFilterStore } from "@/stores/filterStore";
 
 export function CoinGridPage() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { getActiveFilterCount, reset } = useFilterStore();
+    const [addImagesCoin, setAddImagesCoin] = useState<Coin | null>(null);
 
     const {
         coins,
@@ -19,7 +26,8 @@ export function CoinGridPage() {
         total,
         selectedIds,
         handleSelect,
-        isSelected
+        isSelected,
+        refetch,
     } = useCoinCollection();
 
     // Shared Sentinel Component
@@ -68,22 +76,49 @@ export function CoinGridPage() {
                     <AlertDescription>
                         Failed to load collection: {String(error)}
                     </AlertDescription>
+                    <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+                        Retry
+                    </Button>
                 </Alert>
             </CollectionLayout>
         );
     }
 
     if (coins.length === 0) {
+        const hasFilters = getActiveFilterCount() > 0;
+        const handleClearFilters = () => {
+            reset();
+            navigate(location.pathname, { replace: true });
+        };
         return (
             <CollectionLayout>
                 <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
                     <div className="text-6xl mb-4 text-[var(--text-ghost)]">📦</div>
-                    <h3 className="text-xl font-semibold mb-2">No coins found</h3>
-                    <p className="text-muted-foreground mb-4">Add your first coin to start your collection.</p>
-                    <Button onClick={() => navigate('/coins/new')}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Coin
-                    </Button>
+                    {hasFilters ? (
+                        <>
+                            <h3 className="text-xl font-semibold mb-2">No coins match your filters</h3>
+                            <p className="text-muted-foreground mb-4">Try clearing or changing filters.</p>
+                            <div className="flex gap-3">
+                                <Button onClick={handleClearFilters} variant="default">
+                                    <FilterX className="w-4 h-4 mr-2" />
+                                    Clear filters
+                                </Button>
+                                <Button variant="outline" onClick={() => navigate('/coins/new')}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Coin
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-xl font-semibold mb-2">No coins found</h3>
+                            <p className="text-muted-foreground mb-4">Add your first coin to start your collection.</p>
+                            <Button onClick={() => navigate('/coins/new')}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Coin
+                            </Button>
+                        </>
+                    )}
                 </div>
             </CollectionLayout>
         );
@@ -112,10 +147,17 @@ export function CoinGridPage() {
                             selected={coin.id !== null && isSelected(coin.id)}
                             onSelect={handleSelect}
                             gridIndex={index}
+                            onAddImages={(c) => setAddImagesCoin(c)}
                         />
                     ))}
                 </div>
                 {Sentinel}
+                <AddCoinImagesDialog
+                    coin={addImagesCoin}
+                    open={!!addImagesCoin}
+                    onOpenChange={(open) => !open && setAddImagesCoin(null)}
+                    onSuccess={() => setAddImagesCoin(null)}
+                />
             </div>
         </CollectionLayout>
     );

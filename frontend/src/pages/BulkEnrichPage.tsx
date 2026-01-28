@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,45 +73,68 @@ const FILTER_PRESETS: FilterPreset[] = [
   },
 ];
 
+const SELECTED_COINS_PRESET_ID = "__selected_coins__";
+
 export function BulkEnrichPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const coinIdsFromUrl = useMemo(() => {
+    const raw = searchParams.get("coin_ids");
+    if (!raw) return null;
+    return raw
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !Number.isNaN(n));
+  }, [searchParams]);
+
   const [selectedPreset, setSelectedPreset] = useState<FilterPreset | null>(null);
   const [jobResponse, setJobResponse] = useState<BulkEnrichResponse | null>(null);
   const [dryRun, setDryRun] = useState(true);
-  
   const [pollingEnabled, setPollingEnabled] = useState(false);
-  
+
   const bulkEnrichMutation = useBulkEnrich();
   const { data: jobStatus } = useJobStatus(
     jobResponse?.job_id || null,
     { refetchInterval: pollingEnabled ? 2000 : undefined }
   );
-  
+
   // Stop polling when job completes
   useEffect(() => {
     if (jobStatus && (jobStatus.status === "completed" || jobStatus.status === "failed")) {
       setPollingEnabled(false);
     }
   }, [jobStatus?.status]);
-  
+
   const handleStartEnrichment = async () => {
+    const isSelectedCoins = selectedPreset?.id === SELECTED_COINS_PRESET_ID;
+    if (isSelectedCoins && coinIdsFromUrl && coinIdsFromUrl.length > 0) {
+      const result = await bulkEnrichMutation.mutateAsync({
+        coin_ids: coinIdsFromUrl,
+        dry_run: dryRun,
+        max_coins: coinIdsFromUrl.length,
+      });
+      setJobResponse(result);
+      if (result.job_id) setPollingEnabled(true);
+      return;
+    }
     if (!selectedPreset) return;
-    
+
     const result = await bulkEnrichMutation.mutateAsync({
       ...selectedPreset.filter,
       dry_run: dryRun,
       max_coins: 50,
     });
-    
+
     setJobResponse(result);
     if (result.job_id) {
       setPollingEnabled(true);
     }
   };
   
-  const progress = jobStatus 
-    ? Math.round((jobStatus.progress / jobStatus.total) * 100) 
-    : 0;
+  const progress =
+    jobStatus && jobStatus.total > 0
+      ? Math.round((jobStatus.progress / jobStatus.total) * 100)
+      : 0;
   
   return (
     <div className="container max-w-4xl mx-auto p-6">
@@ -133,6 +156,30 @@ export function BulkEnrichPage() {
         <div className="space-y-4 mb-8">
           <h2 className="text-lg font-semibold">Select Filter</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {coinIdsFromUrl && coinIdsFromUrl.length > 0 && (
+              <Card
+                className={`cursor-pointer transition-colors ${
+                  selectedPreset?.id === SELECTED_COINS_PRESET_ID
+                    ? "border-primary bg-primary/5"
+                    : "hover:border-muted-foreground/50"
+                }`}
+                onClick={() =>
+                  setSelectedPreset({
+                    id: SELECTED_COINS_PRESET_ID,
+                    label: `Selected coins (${coinIdsFromUrl.length})`,
+                    description: "Enrich only the coins selected on the collection page",
+                    filter: {},
+                  })
+                }
+              >
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Selected coins ({coinIdsFromUrl.length})</CardTitle>
+                  <CardDescription>
+                    Enrich only the coins selected on the collection page
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
             {FILTER_PRESETS.map((preset) => (
               <Card
                 key={preset.id}

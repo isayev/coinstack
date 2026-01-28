@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { client } from "@/api/client"
 import { CoinDetail } from "@/features/collection/CoinDetail"
+import { AddCoinImagesDialog } from "@/components/coins/AddCoinImagesDialog"
 import { AuditPanel } from "@/features/audit/AuditPanel"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, AlertCircle } from "lucide-react"
@@ -52,6 +53,9 @@ export function CoinDetailPage() {
     queryFn: () => client.getCoin(coinId),
     enabled: !!id
   })
+
+  // Add/attach images dialog
+  const [addImagesOpen, setAddImagesOpen] = useState(false)
 
   // LLM legend expansion
   const [enrichingSide, setEnrichingSide] = useState<'obverse' | 'reverse' | null>(null)
@@ -244,11 +248,18 @@ export function CoinDetailPage() {
                 onNavigateNext={handleNavigateNext}
                 hasPrev={!!coin?.prev_id}
                 hasNext={!!coin?.next_id}
+                onOpenAddImages={() => setAddImagesOpen(true)}
                 onEnrichLegend={handleEnrichLegend}
                 isEnrichingObverse={enrichingSide === 'obverse'}
                 isEnrichingReverse={enrichingSide === 'reverse'}
                 onGenerateContext={handleGenerateContext}
                 isGeneratingContext={isGeneratingContext}
+              />
+              <AddCoinImagesDialog
+                coin={coin}
+                open={addImagesOpen}
+                onOpenChange={setAddImagesOpen}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['coin', coinId] })}
               />
             </TabsContent>
 

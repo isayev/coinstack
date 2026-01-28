@@ -191,25 +191,25 @@ export const client = {
     await api.delete(`/api/v2/coins/${id}`)
   },
 
-  // Series
+  // Series (backend prefix: /api/v2/series)
   getSeries: async (): Promise<SeriesListResponse> => {
-    const response = await api.get('/api/series')
+    const response = await api.get('/api/v2/series')
     return SeriesListSchema.parse(response.data)
   },
 
   getSeriesDetail: async (id: number): Promise<z.infer<typeof SeriesSchema>> => {
-    const response = await api.get(`/api/series/${id}`)
+    const response = await api.get(`/api/v2/series/${id}`)
     return SeriesSchema.parse(response.data)
   },
 
   createSeries: async (data: z.infer<typeof SeriesCreateSchema>): Promise<z.infer<typeof SeriesSchema>> => {
     const validatedData = SeriesCreateSchema.parse(data)
-    const response = await api.post('/api/series', validatedData)
+    const response = await api.post('/api/v2/series', validatedData)
     return SeriesSchema.parse(response.data)
   },
 
   addCoinToSeries: async (seriesId: number, coinId: number, slotId?: number): Promise<z.infer<typeof AddCoinToSeriesResponseSchema>> => {
-    const response = await api.post(`/api/series/${seriesId}/coins/${coinId}`, null, {
+    const response = await api.post(`/api/v2/series/${seriesId}/coins/${coinId}`, null, {
       params: { slot_id: slotId }
     })
     return AddCoinToSeriesResponseSchema.parse(response.data)

@@ -131,8 +131,13 @@ export function CoinTableRow({
             loading="lazy"
           />
         ) : (
-          <div className="flex items-center justify-center w-full h-full text-[var(--text-ghost)]">
+          <div
+            className="flex flex-col items-center justify-center w-full h-full gap-0.5 text-[var(--text-ghost)]"
+            aria-label="No image"
+            role="img"
+          >
             <Coins className="w-5 h-5" />
+            <span className="text-[8px] text-muted-foreground">No image</span>
           </div>
         )}
       </div>

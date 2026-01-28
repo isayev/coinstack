@@ -51,8 +51,8 @@ export function CommandBar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchValue.trim()) {
-      // Navigate to collection with search query
-      navigate(`/?search=${encodeURIComponent(searchValue.trim())}`);
+      // Navigate to collection grid with search query preserved
+      navigate(`/collection/grid?search=${encodeURIComponent(searchValue.trim())}`);
       setSearchValue("");
       setSearchExpanded(false);
     }
@@ -184,6 +184,12 @@ export function CommandBar() {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
                   e.preventDefault();
                   setCommandPaletteOpen(true);
+                  return;
+                }
+                // Ensure Enter submits search (navigate to collection with ?search=)
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearch(e as unknown as React.FormEvent);
                 }
               }}
               className={cn(

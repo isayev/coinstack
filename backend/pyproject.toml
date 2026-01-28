@@ -1,3 +1,6 @@
+# Managed with uv: https://docs.astral.sh/uv/
+# Setup: uv sync   |   Run: uv run run_server.py   |   Test: uv run pytest tests
+
 [project]
 name = "coinstack-backend"
 version = "0.1.0"
@@ -36,6 +39,9 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q --strict-markers"
@@ -50,3 +56,6 @@ markers = [
 pythonpath = [
     "src"
 ]
+
+[tool.uv]
+# Backend uses uv. Install: uv sync --all-extras  |  Run: uv run run_server.py  |  Test: uv run pytest tests

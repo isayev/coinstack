@@ -53,7 +53,7 @@ const actionCommands = [
   { id: "import", label: "Import Excel", description: "Batch import", icon: Upload, path: "/import" },
   { id: "cert-lookup", label: "Cert Lookup", description: "NGC/PCGS", icon: ScrollText, action: "certLookup" },
   { id: "bulk-enrich", label: "Bulk Normalize", description: "AI enrichment", icon: Sparkles, path: "/bulk-enrich" },
-  { id: "audit", label: "Run Audit", description: "Check collection", icon: ClipboardCheck, path: "/audit" },
+  { id: "audit", label: "Run Audit", description: "Open Review Center", icon: ClipboardCheck, path: "/audit" },
 ];
 
 export function CommandPalette() {
@@ -61,10 +61,10 @@ export function CommandPalette() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
-  // Search coins when query is long enough
-  const { data: coinResults } = useQuery({
-    queryKey: ['coins', 'search', search],
-    queryFn: () => client.getCoins({ search, limit: 5 }),
+  // Search coins when query is long enough (Option B: issuer partial match, per_page)
+  const { data: coinResults, isLoading: coinsLoading } = useQuery({
+    queryKey: ['coins', 'palette-search', search],
+    queryFn: () => client.getCoins({ issuer: search.trim(), per_page: 5, page: 1 }),
     enabled: search.length >= 2 && commandPaletteOpen,
     staleTime: 30000, // 30 seconds
   });
@@ -149,16 +149,26 @@ export function CommandPalette() {
               No results found.
             </CommandEmpty>
 
-            {/* Coin search results */}
-            {coinResults?.items && coinResults.items.length > 0 && (
-              <CommandGroup heading="Coins">
-                {coinResults.items.filter((coin: Coin) => coin.id !== null).map((coin: Coin) => (
+            {/* Coin search: loading / empty / results */}
+            {search.length >= 2 && (
+              <CommandGroup heading="Coins" aria-label="Coin search results">
+                {coinsLoading ? (
+                  <div className="py-4 px-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+                    Searching…
+                  </div>
+                ) : !coinResults?.items || coinResults.items.length === 0 ? (
+                  <div className="py-4 px-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+                    No coins match.
+                  </div>
+                ) : (
+                  coinResults.items.filter((coin: Coin) => coin.id !== null).map((coin: Coin) => (
                   <CommandItem
                     key={coin.id!}
                     value={`coin-${coin.id}`}
                     onSelect={handleValueSelect}
                     onClick={() => handleValueSelect(`coin-${coin.id}`)}
                     className="flex items-center gap-3 px-3 py-2 cursor-pointer"
+                    aria-label={`${coin.attribution?.issuer || 'Unknown Ruler'} ${coin.denomination}`}
                   >
                     {/* Coin thumbnail */}
                     <div
@@ -192,7 +202,8 @@ export function CommandPalette() {
                       </div>
                     </div>
                   </CommandItem>
-                ))}
+                  ))
+                )}
               </CommandGroup>
             )}
 

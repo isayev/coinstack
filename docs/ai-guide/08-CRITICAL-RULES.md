@@ -6,8 +6,8 @@
 
 ### Backend Port: 8000
 ```bash
-# CORRECT - Always use port 8000
-python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+# CORRECT - Always use port 8000 (backend uses uv)
+cd backend && uv run run_server.py
 ```
 
 ### Frontend Port: 3000

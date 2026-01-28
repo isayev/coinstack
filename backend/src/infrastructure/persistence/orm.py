@@ -394,3 +394,25 @@ class ProvenanceEventModel(Base):
     auction_data_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("auction_data_v2.id"), nullable=True)
     
     coin: Mapped["CoinModel"] = relationship(back_populates="provenance_events")
+
+
+class EnrichmentJobModel(Base):
+    """
+    Tracks bulk catalog enrichment job progress and results.
+    Used by POST /api/catalog/bulk-enrich and GET /api/catalog/job/{id}.
+    """
+    __tablename__ = "enrichment_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, index=True)  # UUID
+    status: Mapped[str] = mapped_column(String(20), index=True)  # queued, running, completed, failed
+    total: Mapped[int] = mapped_column(Integer, default=0)
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    updated: Mapped[int] = mapped_column(Integer, default=0)
+    conflicts: Mapped[int] = mapped_column(Integer, default=0)
+    not_found: Mapped[int] = mapped_column(Integer, default=0)
+    errors: Mapped[int] = mapped_column(Integer, default=0)
+    result_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)

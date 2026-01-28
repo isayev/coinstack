@@ -51,6 +51,12 @@ Then load the relevant guide based on your task:
 | [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) | Code conventions and patterns | Writing new code |
 | [09-TASK-RECIPES.md](09-TASK-RECIPES.md) | Step-by-step guides | Implementing features |
 | [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) | **Planned features, backlog** | UI/UX enhancements |
+| **UX/QA** |
+| [../UX-UI-EXPLORATION-REPORT.md](../UX-UI-EXPLORATION-REPORT.md) | UX/UI exploration & API/routing evaluation | Pre-release review, consistency fixes |
+| [../BROWSER-UX-FINDINGS.md](../BROWSER-UX-FINDINGS.md) | Browser-based UX validation (typical + corner cases) | Live-session findings, improvement ideas |
+| [../BROWSER-UX-RECOMMENDATIONS-PLAN.md](../BROWSER-UX-RECOMMENDATIONS-PLAN.md) | Plan for browser findings (header search, palette, empty states, Add, image a11y) | Phased implementation steps, files, acceptance criteria |
+| [../ACCESSIBILITY-CHECKLIST.md](../ACCESSIBILITY-CHECKLIST.md) | a11y checklist (keyboard, screen reader, contrast) | Accessibility audits |
+| [../NUMISMATIC-EDGE-CASE-TEST-PLAN.md](../NUMISMATIC-EDGE-CASE-TEST-PLAN.md) | Numismatic edge cases (BC/AD, refs, die study) | Domain-specific QA |
 
 ## Project at a Glance
 
@@ -176,24 +182,25 @@ See [08-CRITICAL-RULES.md](08-CRITICAL-RULES.md) for complete requirements.
 
 ## Development Commands
 
-### Backend (V2)
+### Backend (V2, uses uv)
 
 ```bash
 cd backend
 
-# Start server (V2 Clean Architecture)
-python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+# Sync env: uv sync --all-extras  (first time or after dep changes)
+# Start server (V2)
+uv run run_server.py
 
 # Run tests
-python -m pytest tests -p pytest_asyncio         # All tests
-python -m pytest -m unit                         # Unit tests only
-python -m pytest -m integration                  # Integration tests only
+uv run pytest tests -p pytest_asyncio         # All tests
+uv run pytest -m unit                         # Unit tests only
+uv run pytest -m integration                  # Integration tests only
 
 # Type checking
-mypy src/
+uv run mypy src/
 
 # Linting
-ruff check src/
+uv run ruff check src/
 ```
 
 ### Frontend

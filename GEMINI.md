@@ -40,7 +40,7 @@
 ## 4. Server Management
 **Restart Protocol:**
 1. Kill ALL processes on 8000 & 3000.
-2. Start Backend: `python run_server.py`
+2. Start Backend: `cd backend && uv run run_server.py`
 3. Start Frontend: `npm run dev -- --port 3000`
 
 ## 5. Research Grade Features (V2.1)

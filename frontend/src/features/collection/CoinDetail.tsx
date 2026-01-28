@@ -38,6 +38,8 @@ interface CoinDetailV3Props {
   onNavigateNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  /** Opens add/attach images dialog */
+  onOpenAddImages?: () => void;
   onEnrichLegend?: (side: 'obverse' | 'reverse') => void;
   isEnrichingObverse?: boolean;
   isEnrichingReverse?: boolean;
@@ -53,6 +55,7 @@ export function CoinDetail({
   onNavigateNext,
   hasPrev = false,
   hasNext = false,
+  onOpenAddImages,
   onEnrichLegend,
   isEnrichingObverse = false,
   isEnrichingReverse = false,
@@ -80,11 +83,13 @@ export function CoinDetail({
         onNavigateNext={onNavigateNext}
         hasPrev={hasPrev}
         hasNext={hasNext}
+        onOpenAddImages={onOpenAddImages}
       />
 
       {/* Obverse/Reverse Panels - Side by side on desktop */}
       <ObverseReversePanel
         coin={coin}
+        onOpenAddImages={onOpenAddImages}
         onEnrichLegend={onEnrichLegend}
         isEnrichingObverse={isEnrichingObverse}
         isEnrichingReverse={isEnrichingReverse}

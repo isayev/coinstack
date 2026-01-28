@@ -265,22 +265,22 @@ src/
 
 ## Quick Command Reference
 
-### Backend
+### Backend (uv)
 ```bash
 # Start server (V2)
 cd backend
-python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+uv run run_server.py
 
 # Run tests
-python -m pytest tests -p pytest_asyncio
-python -m pytest -m unit
-python -m pytest -m integration
+uv run pytest tests -p pytest_asyncio
+uv run pytest -m unit
+uv run pytest -m integration
 
 # Type checking
-mypy src/
+uv run mypy src/
 
 # Linting
-ruff check src/
+uv run ruff check src/
 ```
 
 ### Frontend
@@ -309,10 +309,10 @@ npm run typecheck
 ```bash
 # Add indexes
 cd backend
-python -m src.infrastructure.scripts.add_indexes --verify
+uv run python -m src.infrastructure.scripts.add_indexes --verify
 
 # Backup database
-python -m src.infrastructure.scripts.backup_database
+uv run python -m src.infrastructure.scripts.backup_database
 ```
 
 ## File Naming Conventions

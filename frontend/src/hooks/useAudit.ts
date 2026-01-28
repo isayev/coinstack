@@ -17,6 +17,13 @@ import {
   LLMReviewQueueResponse,
 } from "@/types/audit";
 
+/** Params for single apply: send coin_id, field_name, value (backend has no id-based apply). */
+export interface ApplyEnrichmentParams {
+  coin_id: number;
+  field_name: string;
+  value: string;
+}
+
 // Re-export types for convenience
 export type {
   Discrepancy,
@@ -85,23 +92,35 @@ export function useDiscrepancies(filters: DiscrepancyFilters = {}) {
 }
 
 /**
- * STUB: Enrichments query - returns empty data
- * TODO: Implement /api/v2/audit/enrichments endpoint
+ * Enrichments query - fetches from GET /api/v2/audit/enrichments
  */
 export function useEnrichments(filters: EnrichmentFilters = {}) {
   return useQuery({
     queryKey: ["enrichments", filters],
     queryFn: async () => {
-      // STUB: Backend endpoint not implemented
+      const params: Record<string, string | number | boolean | undefined> = {};
+      if (filters.status != null) params.status = filters.status;
+      if (filters.trust_level != null) params.trust_level = filters.trust_level;
+      if (filters.coin_id != null) params.coin_id = filters.coin_id;
+      if (filters.auto_applicable != null) params.auto_applicable = filters.auto_applicable;
+      if (filters.page != null) params.page = filters.page;
+      if (filters.per_page != null) params.per_page = filters.per_page;
+      const res = await api.get<{
+        items: Enrichment[];
+        total: number;
+        page: number;
+        per_page: number;
+        pages: number;
+      }>("/api/v2/audit/enrichments", { params });
       return {
-        items: [] as Enrichment[],
-        total: 0,
-        pages: 1,
-        page: 1,
-        _isStub: true,
-      } as PaginatedResponse<Enrichment> & { _isStub: boolean };
+        items: res.data.items,
+        total: res.data.total,
+        page: res.data.page,
+        per_page: res.data.per_page,
+        pages: res.data.pages,
+      } as PaginatedResponse<Enrichment>;
     },
-    staleTime: Infinity,
+    staleTime: 30_000,
   });
 }
 
@@ -179,15 +198,24 @@ export function useBulkResolveDiscrepancies() {
 }
 
 /**
- * STUB: Bulk apply enrichments - no-op
- * TODO: Implement /api/v2/audit/enrichments/apply endpoint
+ * Bulk apply enrichments - POST /api/v2/audit/enrichments/bulk-apply
+ * Pass list of Enrichment; sends applications: [{ coin_id, field_name, value }].
  */
 export function useBulkApplyEnrichments() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (ids: number[]) => {
-      // STUB: No-op
-      return { applied: ids.length, _isStub: true };
+    mutationFn: async (enrichments: Enrichment[]) => {
+      const res = await api.post<{ applied: number }>(
+        "/api/v2/audit/enrichments/bulk-apply",
+        {
+          applications: enrichments.map((e) => ({
+            coin_id: e.coin_id,
+            field_name: e.field_name,
+            value: e.suggested_value,
+          })),
+        }
+      );
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["enrichments"] });
@@ -202,15 +230,16 @@ export function useBulkApplyEnrichments() {
 }
 
 /**
- * STUB: Auto-apply all enrichments - no-op
- * TODO: Implement /api/v2/audit/enrichments/auto-apply endpoint
+ * Auto-apply all enrichments - POST /api/v2/audit/enrichments/auto-apply-empty
  */
 export function useAutoApplyAllEnrichments() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      // STUB: No-op
-      return { applied: 0, applied_by_field: {} as Record<string, number>, _isStub: true };
+      const res = await api.post<{ applied: number; applied_by_field?: Record<string, number> }>(
+        "/api/v2/audit/enrichments/auto-apply-empty"
+      );
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["enrichments"] });
@@ -343,14 +372,26 @@ export function useResolveDiscrepancy() {
 }
 
 /**
- * STUB: Apply enrichment - no-op
- * TODO: Implement /api/v2/audit/enrichments/{id}/apply endpoint
+ * Apply one enrichment - POST /api/v2/audit/enrichments/apply
+ * Pass { coin_id, field_name, value } (backend has no id-based apply; use enrichment fields).
  */
 export function useApplyEnrichment() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { id: number }) => {
-      // STUB: No-op
-      return { status: "success", id: params.id, _isStub: true };
+    mutationFn: async (params: ApplyEnrichmentParams) => {
+      const res = await api.post<{ status: string; field: string; new_value: unknown }>(
+        "/api/v2/audit/enrichments/apply",
+        {
+          coin_id: params.coin_id,
+          field_name: params.field_name,
+          value: params.value,
+        }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrichments"] });
+      queryClient.invalidateQueries({ queryKey: ["audit-summary"] });
     },
     onError: (error: Error) => {
       if (import.meta.env.DEV) {

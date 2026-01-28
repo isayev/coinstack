@@ -73,9 +73,9 @@ export function CollectionToolbar() {
                     </Button>
                 </div>
 
-                <Button onClick={() => navigate('/coins/new')} size="sm" className="h-8">
+                <Button onClick={() => navigate('/coins/new')} size="sm" className="h-8" title="Add coin">
                     <Plus className="w-4 h-4 mr-2" />
-                    Add
+                    Add coin
                 </Button>
             </div>
         </div>

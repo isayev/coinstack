@@ -7,6 +7,7 @@ from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinReposi
 from src.infrastructure.repositories.auction_data_repository import SqlAlchemyAuctionDataRepository
 from src.infrastructure.repositories.vocab_repository import SqlAlchemyVocabRepository
 from src.domain.repositories import ICoinRepository, IAuctionDataRepository
+from src.application.services.apply_enrichment import ApplyEnrichmentService
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,11 @@ def get_db() -> Generator[Session, None, None]:
 
 def get_coin_repo(db: Session = Depends(get_db)) -> ICoinRepository:
     return SqlAlchemyCoinRepository(db)
+
+
+def get_apply_enrichment_service(db: Session = Depends(get_db)) -> ApplyEnrichmentService:
+    """Build ApplyEnrichmentService with coin repo for audit/catalog apply flows."""
+    return ApplyEnrichmentService(SqlAlchemyCoinRepository(db))
 
 def get_auction_repo(db: Session = Depends(get_db)) -> IAuctionDataRepository:
     return SqlAlchemyAuctionDataRepository(db)

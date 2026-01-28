@@ -194,9 +194,10 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
         if (suggestion.external_id) {
             const currentRefs = form.getValues("references") || []
             // Check if already exists (simple check)
-            const exists = currentRefs.some(r =>
-                (r.catalog + " " + r.number).toLowerCase() === suggestion.external_id.toLowerCase() ||
-                (r.catalog === suggestion.external_id)
+            const exists = currentRefs.some((r) =>
+                r != null &&
+                ((r.catalog + " " + r.number).toLowerCase() === suggestion.external_id.toLowerCase() ||
+                (r.catalog === suggestion.external_id))
             )
 
             if (!exists) {

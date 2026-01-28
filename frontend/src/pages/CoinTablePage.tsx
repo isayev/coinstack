@@ -1,16 +1,17 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useCoinCollection } from "@/hooks/useCoinCollection";
 import { CoinTableRow, CoinTableHeader } from "@/components/coins/CoinTableRow";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Plus } from "lucide-react";
+import { AlertCircle, Plus, FilterX } from "lucide-react";
 import { useFilterStore, SortField } from "@/stores/filterStore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CollectionLayout } from "@/features/collection/CollectionLayout";
 
 export function CoinTablePage() {
     const navigate = useNavigate();
-    const { sortBy, sortDir, setSort, toggleSortDir } = useFilterStore();
+    const location = useLocation();
+    const { sortBy, sortDir, setSort, toggleSortDir, getActiveFilterCount, reset } = useFilterStore();
 
     const {
         coins,
@@ -24,7 +25,8 @@ export function CoinTablePage() {
         allSelected,
         handleSelect,
         handleSelectAll,
-        isSelected
+        isSelected,
+        refetch,
     } = useCoinCollection();
 
 
@@ -112,21 +114,49 @@ export function CoinTablePage() {
                     <AlertDescription>
                         Failed to load collection: {String(error)}
                     </AlertDescription>
+                    <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+                        Retry
+                    </Button>
                 </Alert>
             </CollectionLayout>
         );
     }
 
     if (coins.length === 0) {
+        const hasFilters = getActiveFilterCount() > 0;
+        const handleClearFilters = () => {
+            reset();
+            navigate(location.pathname, { replace: true });
+        };
         return (
             <CollectionLayout>
                 <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
                     <div className="text-6xl mb-4 text-[var(--text-ghost)]">📦</div>
-                    <h3 className="text-xl font-semibold mb-2">No coins found</h3>
-                    <Button onClick={() => navigate('/coins/new')}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Coin
-                    </Button>
+                    {hasFilters ? (
+                        <>
+                            <h3 className="text-xl font-semibold mb-2">No coins match your filters</h3>
+                            <p className="text-muted-foreground mb-4">Try clearing or changing filters.</p>
+                            <div className="flex gap-3">
+                                <Button onClick={handleClearFilters} variant="default">
+                                    <FilterX className="w-4 h-4 mr-2" />
+                                    Clear filters
+                                </Button>
+                                <Button variant="outline" onClick={() => navigate('/coins/new')}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Coin
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h3 className="text-xl font-semibold mb-2">No coins found</h3>
+                            <p className="text-muted-foreground mb-4">Add your first coin to start your collection.</p>
+                            <Button onClick={() => navigate('/coins/new')}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Coin
+                            </Button>
+                        </>
+                    )}
                 </div>
             </CollectionLayout>
         );

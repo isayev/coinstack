@@ -33,21 +33,14 @@ Kill-Port 3000
 
 Start-Sleep -Seconds 2
 
-# 2. Start Backend (V2 Clean Architecture)
+# 2. Start Backend (V2) via uv
 Write-Host "[2/3] Starting Backend (V2)..." -ForegroundColor Yellow
 $backendPath = Join-Path $PSScriptRoot "backend"
 
-# Detect Python (venv or global)
-$pythonCmd = "python"
-$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-if (Test-Path $venvPython) {
-    $pythonCmd = $venvPython
-    Write-Host "    Using venv: $pythonCmd" -ForegroundColor Cyan
-}
-
-# Note: We use run_server.py which sets Windows event loop policy for Playwright
-$backendArgs = @("run_server.py")
-Start-Process -FilePath $pythonCmd -ArgumentList $backendArgs -WorkingDirectory $backendPath -NoNewWindow
+# Backend uses uv (backend/.venv). Run: uv run run_server.py
+Write-Host "    Using uv (backend)" -ForegroundColor Cyan
+$backendArgs = @("run", "run_server.py")
+Start-Process -FilePath "uv" -ArgumentList $backendArgs -WorkingDirectory $backendPath -NoNewWindow
 
 # Wait for backend to initialize
 Write-Host "    Waiting for API..." -ForegroundColor Gray

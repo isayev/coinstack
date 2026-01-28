@@ -188,6 +188,95 @@ class ImportPreviewResponse(BaseModel):
     raw_data: Optional[Dict[str, Any]] = None
 
 
+# --- Enrich preview (Phase 1 stub; Phase 6 will implement real catalog lookup) ---
+
+class EnrichPreviewRequest(BaseModel):
+    """Request for catalog enrichment preview. Matches frontend useEnrichPreview."""
+    references: List[str] = Field(default_factory=list, description="Reference strings to look up (e.g. RIC I 207)")
+    context: Optional[Dict[str, Any]] = Field(None, description="Optional context (ruler, mint, denomination)")
+
+
+class EnrichPreviewResponse(BaseModel):
+    """Response for enrich-preview. Matches frontend ImportPreviewResponse subset (suggestions, lookup_results)."""
+    success: bool = True
+    suggestions: Dict[str, Any] = Field(default_factory=dict, description="Field -> {field, value, source, confidence}")
+    lookup_results: List[Any] = Field(default_factory=list, description="Per-reference lookup status")
+
+
+# ============================================================================
+# ENRICH PREVIEW (Phase 6: real catalog lookup)
+# ============================================================================
+
+def _payload_to_suggestions(payload: Dict[str, Any], source: str = "catalog", confidence: float = 0.9) -> Dict[str, Any]:
+    """Map CatalogPayload to EnrichmentPanel suggestion keys. Each value is { value, source, confidence }."""
+    out: Dict[str, Any] = {}
+    if payload.get("authority"):
+        out["issuing_authority"] = {"value": payload["authority"], "source": source, "confidence": confidence}
+    if payload.get("mint"):
+        out["mint_name"] = {"value": payload["mint"], "source": source, "confidence": confidence}
+    if payload.get("date_from") is not None:
+        out["mint_year_start"] = {"value": payload["date_from"], "source": source, "confidence": confidence}
+    if payload.get("date_to") is not None:
+        out["mint_year_end"] = {"value": payload["date_to"], "source": source, "confidence": confidence}
+    if payload.get("denomination"):
+        out["denomination"] = {"value": payload["denomination"], "source": source, "confidence": confidence}
+    if payload.get("obverse_legend"):
+        out["obverse_legend"] = {"value": payload["obverse_legend"], "source": source, "confidence": confidence}
+    if payload.get("reverse_legend"):
+        out["reverse_legend"] = {"value": payload["reverse_legend"], "source": source, "confidence": confidence}
+    if payload.get("obverse_description"):
+        out["obverse_description"] = {"value": payload["obverse_description"], "source": source, "confidence": confidence}
+    if payload.get("reverse_description"):
+        out["reverse_description"] = {"value": payload["reverse_description"], "source": source, "confidence": confidence}
+    return out
+
+
+@router.post("/enrich-preview", response_model=EnrichPreviewResponse)
+async def enrich_preview(request: EnrichPreviewRequest):
+    """
+    Look up catalog data for given references and return suggestions for import.
+    Uses CatalogRegistry (OCRE/CRRO/RPC) per reference; merges payload into suggestions.
+    """
+    from src.infrastructure.services.catalogs.registry import CatalogRegistry
+
+    suggestions: Dict[str, Any] = {}
+    lookup_results: List[Any] = []
+
+    for ref in (request.references or []):
+        ref = (ref or "").strip()
+        if not ref:
+            continue
+        system = CatalogRegistry.detect_system(ref) or "ric"
+        try:
+            result = await CatalogRegistry.lookup(system, ref, request.context)
+        except Exception as e:
+            lookup_results.append({
+                "reference": ref,
+                "status": "error",
+                "system": system,
+                "confidence": 0.0,
+                "error": str(e),
+                "external_url": None,
+            })
+            continue
+        lookup_results.append({
+            "reference": ref,
+            "status": result.status,
+            "system": system,
+            "confidence": result.confidence or 0.0,
+            "error": result.error_message,
+            "external_url": result.external_url,
+        })
+        if result.status == "success" and result.payload:
+            for k, v in _payload_to_suggestions(
+                result.payload, source=system.upper(), confidence=result.confidence or 0.9
+            ).items():
+                if k not in suggestions or (suggestions[k].get("confidence") or 0) < (v.get("confidence") or 0):
+                    suggestions[k] = v
+
+    return EnrichPreviewResponse(success=True, suggestions=suggestions, lookup_results=lookup_results)
+
+
 # ============================================================================
 # NGC IMPORT ENDPOINT
 # ============================================================================

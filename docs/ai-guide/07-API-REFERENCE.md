@@ -39,16 +39,18 @@ GET /api/v2/coins
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `skip` | int | 0 | Offset for pagination |
-| `limit` | int | 50 | Max results per page |
+| `page` | int | 1 | Page number (1-based). Frontend uses infinite scroll; no page-number UI. `page`/`per_page` are "chunk"/"offset" semantics. |
+| `per_page` | int | 20 | Items per page (1–1000). |
 | `category` | string | - | Filter by category (imperial, republic, etc.) |
 | `metal` | string | - | Filter by metal (gold, silver, bronze, etc.) |
-| `issuer` | string | - | Search by issuer name (partial match) |
+| `issuer` | string | - | Search by issuer name (partial match). UI "search" uses this parameter. |
 | `mint` | string | - | Filter by mint name |
 | `year_start` | int | - | Minimum year |
 | `year_end` | int | - | Maximum year |
-| `sort_by` | string | `id` | Sort field |
-| `sort_order` | string | `asc` | Sort direction (asc, desc) |
+| `sort_by` | string | - | Sort field |
+| `sort_dir` | string | `asc` | Sort direction (`asc`, `desc`) |
+
+**Search in the UI:** The header and Command Palette "search" are implemented via the `issuer` parameter (partial match). There is no separate full-text `search` or `q` parameter on this endpoint.
 
 **Response**: `List[CoinResponse]`
 
@@ -91,7 +93,7 @@ GET /api/v2/coins
 **Example**:
 
 ```bash
-curl "http://localhost:8000/api/v2/coins?category=imperial&metal=silver&limit=20"
+curl "http://localhost:8000/api/v2/coins?category=imperial&metal=silver&page=1&per_page=20"
 ```
 
 ---
@@ -656,6 +658,96 @@ GET /api/v2/audit/summary
 
 ---
 
+### Audit Enrichments (Enrichment Opportunities)
+
+Enrichment opportunities are computed on the fly from coins that have linked auction_data: where a coin field is empty and auction_data has a value, one opportunity is returned.
+
+#### List Enrichments
+
+```http
+GET /api/v2/audit/enrichments
+```
+
+**Query Parameters**: `status`, `trust_level`, `coin_id`, `auto_applicable`, `page`, `per_page`
+
+**Response**: `{ items: Enrichment[], total, page, per_page, pages }`
+
+#### Bulk Apply Enrichments
+
+```http
+POST /api/v2/audit/enrichments/bulk-apply
+```
+
+**Request Body**: `{ applications: [{ coin_id, field_name, value }] }`
+
+**Response**: `{ applied: number }`
+
+#### Apply One Enrichment
+
+```http
+POST /api/v2/audit/enrichments/apply
+```
+
+**Request Body**: `{ coin_id, field_name, value }`
+
+**Response**: `{ status, field, new_value }`
+
+#### Auto-Apply Empty Fields
+
+```http
+POST /api/v2/audit/enrichments/auto-apply-empty
+```
+
+Applies all pending enrichments where the coin field is empty (server-side).
+
+**Response**: `{ applied: number, applied_by_field?: Record }`
+
+---
+
+## Catalog API (`/api/catalog`)
+
+**Router**: `src/infrastructure/web/routers/catalog.py`
+
+Catalog lookup (OCRE/CRRO/RPC) and bulk enrichment.
+
+### Bulk Enrich
+
+```http
+POST /api/catalog/bulk-enrich
+```
+
+**Request Body**: `{ coin_ids?: number[], missing_fields?: string[], reference_system?: string, category?: string, dry_run?: bool, max_coins?: int }`
+
+**Response**: `{ job_id, total_coins, status, message? }`
+
+### Job Status
+
+```http
+GET /api/catalog/job/{job_id}
+```
+
+**Response**: `{ job_id, status, progress, total, updated, conflicts, not_found, errors, results?, error_message?, started_at?, completed_at? }`
+
+---
+
+## Import API (`/api/v2/import`)
+
+**Router**: `src/infrastructure/web/routers/import_v2.py`
+
+### Enrich Preview (Catalog Lookup for Import)
+
+```http
+POST /api/v2/import/enrich-preview
+```
+
+**Request Body**: `{ references: string[], context?: Record }`
+
+**Response**: `{ success, suggestions: Record<field, { value, source, confidence }>, lookup_results: Array<{ reference, status, system, confidence?, error?, external_url? }> }`
+
+Used by EnrichmentPanel during import to fill fields from OCRE/CRRO/RPC based on detected references.
+
+---
+
 ## LLM API (`/api/v2/llm`)
 
 **Router**: `src/infrastructure/web/routers/llm.py`
@@ -882,16 +974,16 @@ GET /api/v2/stats
 
 ## Query Optimization
 
-### Pagination
+### Pagination (Coins list)
 
-All list endpoints support pagination:
+The coins list uses `page` and `per_page` (not `skip`/`limit`). The frontend uses **infinite scroll**; there is no page-number UI. `page`/`per_page` are "chunk"/"offset" semantics for loading more items.
 
 ```http
-GET /api/v2/coins?skip=0&limit=50
+GET /api/v2/coins?page=1&per_page=50
 ```
 
-- `skip`: Offset (default: 0)
-- `limit`: Max results (default: 50, max: 100)
+- `page`: Page number, 1-based (default: 1)
+- `per_page`: Items per page (default: 20, max: 1000)
 
 ### Filtering
 
@@ -976,7 +1068,7 @@ http://localhost:8000/openapi.json
 
 ```bash
 # List coins
-curl "http://localhost:8000/api/v2/coins?limit=10"
+curl "http://localhost:8000/api/v2/coins?page=1&per_page=10"
 
 # Get coin by ID
 curl "http://localhost:8000/api/v2/coins/1"
@@ -1002,7 +1094,8 @@ import requests
 response = requests.get("http://localhost:8000/api/v2/coins", params={
     "category": "imperial",
     "metal": "silver",
-    "limit": 20
+    "page": 1,
+    "per_page": 20
 })
 coins = response.json()
 

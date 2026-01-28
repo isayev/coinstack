@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Maximize2, X, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
-import { Coin, Image } from '@/domain/schemas';
+import { X, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
+import { Image } from '@/domain/schemas';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 

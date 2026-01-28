@@ -22,11 +22,11 @@ foreach ($port in $ports) {
 
 Start-Sleep -Seconds 1
 
-# 2. Start Backend (V2)
+# 2. Start Backend (V2) via uv
 Write-Host "starting backend (v2)..." -ForegroundColor Yellow
-# Note: We use run_server.py which sets Windows event loop policy for Playwright
-$backendArgs = @("run_server.py")
-Start-Process -FilePath "python" -ArgumentList $backendArgs -WorkingDirectory "$PSScriptRoot\backend" -WindowStyle Hidden
+# Backend uses uv: uv run run_server.py (sets Windows event loop policy for Playwright)
+$backendArgs = @("run", "run_server.py")
+Start-Process -FilePath "uv" -ArgumentList $backendArgs -WorkingDirectory "$PSScriptRoot\backend" -WindowStyle Hidden
 
 # 3. Start Frontend
 Write-Host "starting frontend..." -ForegroundColor Yellow

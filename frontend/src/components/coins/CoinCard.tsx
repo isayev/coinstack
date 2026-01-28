@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo, memo } from 'react';
-import { Coins } from 'lucide-react';
+import { Coins, ImagePlus } from 'lucide-react';
 import { Coin } from '@/domain/schemas';
 import { parseCategory } from '@/components/design-system/colors';
 import { RarityIndicator } from '@/components/design-system/RarityIndicator';
@@ -386,9 +386,11 @@ export interface CoinCardProps {
   onSelect?: (id: number, selected: boolean) => void;
   /** Grid index for keyboard navigation */
   gridIndex?: number;
+  /** Callback to open add-images dialog when obv/rev missing */
+  onAddImages?: (coin: Coin) => void;
 }
 
-export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSelect, gridIndex }: CoinCardProps) {
+export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSelect, gridIndex, onAddImages }: CoinCardProps) {
   const categoryType = parseCategory(coin.category);
   const [isFlipped, setIsFlipped] = React.useState(false);
   const screenSize = useUIStore((s) => s.screenSize);
@@ -407,6 +409,8 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
     obverse: coin.images?.find(img => img.image_type?.toLowerCase() === 'obverse')?.url || coin.images?.[0]?.url,
     reverse: coin.images?.find(img => img.image_type?.toLowerCase() === 'reverse')?.url || coin.images?.[1]?.url,
   }), [coin.images]);
+
+  const showAddImages = (!images.obverse || !images.reverse) && !!onAddImages;
 
   // Memoize year display
   const displayYear = useMemo((): string => {
@@ -584,6 +588,7 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
           {/* 3D Flip Container - Mobile */}
           <div
             style={{
+              position: 'relative',
               width: '100%',
               height: imageHeight,
               perspective: '1000px',
@@ -600,6 +605,34 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
               }
             }}
           >
+            {showAddImages && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddImages?.(coin);
+                }}
+                aria-label="Add images"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  background: 'rgba(0,0,0,0.5)',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              >
+                <ImagePlus style={{ width: '20px', height: '20px' }} />
+                Add images
+              </button>
+            )}
             {images.obverse || images.reverse ? (
               <div
                 style={{
@@ -633,14 +666,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                       }}
                     />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                      }}
+                      aria-label="No obverse image"
+                      role="img"
+                    >
                       <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                      <span className="text-[10px] text-muted-foreground">No image</span>
                     </div>
                   )}
                   <div
@@ -696,14 +736,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                       }}
                     />
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                      }}
+                      aria-label="No reverse image"
+                      role="img"
+                    >
                       <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                      <span className="text-[10px] text-muted-foreground">No image</span>
                     </div>
                   )}
                   <div
@@ -725,14 +772,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                 </div>
               </div>
             ) : (
-              <div style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
+                }}
+                aria-label="No image"
+                role="img"
+              >
                 <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                <span className="text-[10px] text-muted-foreground">No image</span>
               </div>
             )}
           </div>
@@ -765,6 +819,7 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                 {/* 3D Flip Container */}
                 <div
                   style={{
+                    position: 'relative',
                     width: imageWidth,
                     height: imageHeight,
                     perspective: '1000px',
@@ -774,6 +829,34 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                   onMouseEnter={() => images.reverse && setIsFlipped(true)}
                   onMouseLeave={() => setIsFlipped(false)}
                 >
+                  {showAddImages && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddImages?.(coin);
+                      }}
+                      aria-label="Add images"
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        zIndex: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        color: 'var(--text-primary)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <ImagePlus style={{ width: '20px', height: '20px' }} />
+                      Add images
+                    </button>
+                  )}
                   {images.obverse || images.reverse ? (
                     <div
                       style={{
@@ -807,14 +890,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                             }}
                           />
                         ) : (
-                          <div style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                            }}
+                            aria-label="No obverse image"
+                            role="img"
+                          >
                             <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                            <span className="text-[10px] text-muted-foreground">No image</span>
                           </div>
                         )}
                         <div
@@ -870,14 +960,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                             }}
                           />
                         ) : (
-                          <div style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '4px',
+                            }}
+                            aria-label="No reverse image"
+                            role="img"
+                          >
                             <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                            <span className="text-[10px] text-muted-foreground">No image</span>
                           </div>
                         )}
                         <div
@@ -899,14 +996,21 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
                       </div>
                     </div>
                   ) : (
-                    <div style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '4px',
+                      }}
+                      aria-label="No image"
+                      role="img"
+                    >
                       <Coins style={{ width: '64px', height: '64px', color: 'var(--text-ghost)' }} />
+                      <span className="text-[10px] text-muted-foreground">No image</span>
                     </div>
                   )}
                 </div>

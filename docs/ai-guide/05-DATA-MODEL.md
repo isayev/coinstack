@@ -638,6 +638,16 @@ class AuctionLot:
 
 ---
 
+### `enrichment_jobs` (EnrichmentJobModel)
+
+Stores progress and results for catalog bulk-enrich jobs. Used by `POST /api/catalog/bulk-enrich` and `GET /api/catalog/job/{job_id}`.
+
+**ORM Model** (`src/infrastructure/persistence/orm.py`):
+
+- `id` (UUID string, PK), `status` (queued/running/completed/failed), `total`, `progress`, `updated`, `conflicts`, `not_found`, `errors`, `result_summary` (JSON), `error_message`, `started_at`, `completed_at`, `created_at`
+
+---
+
 ## Vocabulary Tables (V3)
 
 ### `vocab_terms` (VocabTermModel)

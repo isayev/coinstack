@@ -22,8 +22,8 @@ Stop-Process -Id <pid1>,<pid2>,... -Force -ErrorAction SilentlyContinue
 - **Frontend**: Port 3000 only (use `--port 3000` flag)
 
 ```powershell
-# Backend (from backend/ directory)
-python -m uvicorn app.main:app --port 8000
+# Backend (from backend/ directory, uses uv)
+uv run run_server.py
 
 # Frontend (from frontend/ directory)  
 npm run dev -- --port 3000

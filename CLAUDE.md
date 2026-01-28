@@ -173,22 +173,26 @@ React 18 + TypeScript + Vite
 
 ## Development Commands
 
-### Backend (Python 3.12+)
+### Backend (Python 3.12+, uv)
 
 ```bash
 cd backend
 
-# Start server (V2 Clean Architecture)
-python -m uvicorn src.infrastructure.web.main:app --host 127.0.0.1 --port 8000 --reload
+# Sync env (first time or after dependency changes)
+uv sync --all-extras
+uv run playwright install chromium   # if scrapers needed
+
+# Start server (V2, uses uv)
+uv run run_server.py
 
 # Tests
-python -m pytest tests -p pytest_asyncio    # All tests
-python -m pytest -m unit                    # Unit only (fast)
-python -m pytest -m integration             # Integration only
+uv run pytest tests -p pytest_asyncio    # All tests
+uv run pytest -m unit                    # Unit only (fast)
+uv run pytest -m integration             # Integration only
 
 # Type checking & linting
-mypy src/
-ruff check src/
+uv run mypy src/
+uv run ruff check src/
 ```
 
 ### Frontend (Node.js 18+)

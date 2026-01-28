@@ -9,7 +9,7 @@
  */
 
 import { memo } from 'react';
-import { Coin, Image } from '@/domain/schemas';
+import { Coin } from '@/domain/schemas';
 import { CoinSidePanel } from './CoinSidePanel';
 import { cn } from '@/lib/utils';
 import { parseIconography } from '@/lib/parsers';
@@ -17,6 +17,8 @@ import { CoinGallery } from './CoinGallery';
 
 interface ObverseReversePanelProps {
   coin: Coin;
+  /** Opens add/attach images dialog; shown on empty side panels when provided */
+  onOpenAddImages?: () => void;
   onEnrichLegend?: (side: 'obverse' | 'reverse') => void;
   isEnrichingObverse?: boolean;
   isEnrichingReverse?: boolean;
@@ -25,6 +27,7 @@ interface ObverseReversePanelProps {
 
 export const ObverseReversePanel = memo(function ObverseReversePanel({
   coin,
+  onOpenAddImages,
   onEnrichLegend,
   isEnrichingObverse = false,
   isEnrichingReverse = false,
@@ -90,6 +93,7 @@ export const ObverseReversePanel = memo(function ObverseReversePanel({
         description={obverseDescription}
         iconography={obverseIconography}
         metal={coin.metal}
+        onAddImage={!obverseImage ? onOpenAddImages : undefined}
         onEnrichLegend={onEnrichLegend ? () => onEnrichLegend('obverse') : undefined}
         isEnriching={isEnrichingObverse}
       />
@@ -103,6 +107,7 @@ export const ObverseReversePanel = memo(function ObverseReversePanel({
         description={reverseDescription}
         iconography={reverseIconography}
         exergue={exergue}
+        onAddImage={!reverseImage ? onOpenAddImages : undefined}
         onEnrichLegend={onEnrichLegend ? () => onEnrichLegend('reverse') : undefined}
         isEnriching={isEnrichingReverse}
       />

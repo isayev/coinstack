@@ -4,13 +4,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, LayoutGrid } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Plus, LayoutGrid, AlertCircle } from "lucide-react"
 
 export function SeriesDashboard() {
-  const { data, isLoading } = useSeries()
-  
+  const { data, isLoading, isError, error, refetch } = useSeries()
+
   if (isLoading) return <div>Loading series...</div>
-  
+
+  if (isError && error) {
+    const status = (error as { response?: { status?: number } })?.response?.status
+    if (status === 404) {
+      return (
+        <div className="container py-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Series unavailable</AlertTitle>
+            <AlertDescription>
+              The series service could not be reached. Check that the backend is running (e.g. <code className="text-xs bg-muted px-1 rounded">uv run run_server.py</code>).
+            </AlertDescription>
+          </Alert>
+        </div>
+      )
+    }
+    return (
+      <div className="container py-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading series</AlertTitle>
+          <AlertDescription>{String(error)}</AlertDescription>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </Alert>
+      </div>
+    )
+  }
+
   const series = data?.items || []
   
   return (
