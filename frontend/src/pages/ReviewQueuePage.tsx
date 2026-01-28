@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 import { ArrowLeft, Check, X, Loader2, RefreshCw, ExternalLink } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,21 +39,31 @@ export function ReviewQueuePage() {
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.post(`/api/v2/vocab/review/${id}/approve`)
+      const res = await api.post(`/api/v2/vocab/review/${id}/approve`, {})
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vocab', 'review'] })
-    }
+      toast.success("Assignment approved")
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? "Failed to approve")
+    },
   })
-  
+
   // Reject mutation
   const rejectMutation = useMutation({
     mutationFn: async (id: number) => {
-      await api.post(`/api/v2/vocab/review/${id}/reject`)
+      const res = await api.post(`/api/v2/vocab/review/${id}/reject`, {})
+      return res.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vocab', 'review'] })
-    }
+      toast.success("Assignment rejected")
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? "Failed to reject")
+    },
   })
   
   const getConfidenceBadge = (confidence: number | null) => {
@@ -178,7 +189,7 @@ export function ReviewQueuePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="min-h-[44px] min-w-[44px] h-11 w-11 hover:opacity-90 [color:var(--text-success)] hover:bg-[var(--bg-success)]"
                           onClick={() => approveMutation.mutate(item.id)}
                           disabled={approveMutation.isPending || rejectMutation.isPending}
                           title="Approve"
@@ -188,7 +199,7 @@ export function ReviewQueuePage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="min-h-[44px] min-w-[44px] h-11 w-11 hover:opacity-90 [color:var(--text-error)] hover:bg-[var(--bg-error)]"
                           onClick={() => rejectMutation.mutate(item.id)}
                           disabled={approveMutation.isPending || rejectMutation.isPending}
                           title="Reject"

@@ -28,13 +28,17 @@ Admin Endpoints:
 
 from __future__ import annotations
 
+import base64
 import json
 import logging
-from typing import Any, Dict, List, Optional
+import re
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile, File
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from src.domain.llm import (
     LLMCapability,
@@ -45,10 +49,73 @@ from src.domain.llm import (
     LLMBudgetExceeded,
     LLMCapabilityNotAvailable,
 )
+from src.infrastructure.web.dependencies import get_db
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2/llm", tags=["LLM"])
+
+
+def _coin_images_dir() -> Path:
+    """Backend data/coin_images directory (same as main.py static mount)."""
+    backend_root = Path(__file__).resolve().parent.parent.parent.parent
+    return backend_root / "data" / "coin_images"
+
+
+async def _resolve_coin_primary_image_b64(session: Session, coin_id: int) -> Optional[str]:
+    """
+    Load coin by id, get primary image URL, return its content as base64.
+    Supports http(s) URLs (fetched) and /images/... paths (read from data/coin_images).
+    """
+    from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+
+    repo = SqlAlchemyCoinRepository(session)
+    coin = repo.get_by_id(coin_id)
+    if not coin or not coin.images:
+        return None
+    primary = coin.primary_image or coin.images[0]
+    url = primary.url
+    if not url or not url.strip():
+        return None
+    url = url.strip()
+    if url.startswith("http://") or url.startswith("https://"):
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                r = await client.get(url)
+                r.raise_for_status()
+                return base64.b64encode(r.content).decode("utf-8")
+        except Exception as e:
+            logger.warning("Failed to fetch coin image URL %s: %s", url[:80], e)
+            return None
+    # Local path: /images/... or relative
+    images_dir = _coin_images_dir()
+    if "/images/" in url:
+        name = url.split("/images/")[-1].lstrip("/")
+        path = images_dir / name
+    elif Path(url).is_absolute():
+        path = Path(url)
+    else:
+        path = images_dir / Path(url).name
+    if not path.exists():
+        logger.warning("Coin image path not found: %s", path)
+        return None
+    try:
+        return base64.b64encode(path.read_bytes()).decode("utf-8")
+    except Exception as e:
+        logger.warning("Failed to read coin image %s: %s", path, e)
+        return None
+
+
+def _parse_date_range(s: Optional[str]) -> Tuple[Optional[int], Optional[int]]:
+    """Parse date_range string like '268–270' or 'ca. 260-268' -> (year_start, year_end)."""
+    if not s or not str(s).strip():
+        return (None, None)
+    text = str(s).strip()
+    numbers = [int(m) for m in re.findall(r"-?\d+", text)]
+    if not numbers:
+        return (None, None)
+    return (numbers[0], numbers[-1] if len(numbers) > 1 else numbers[0])
 
 
 # =============================================================================
@@ -581,6 +648,90 @@ async def identify_coin(
 
 
 @router.post(
+    "/identify/coin/{coin_id}",
+    response_model=CoinIdentifyResponse,
+    summary="Identify coin from its primary image",
+    description="Run identify on the coin's primary image and save attribution + descriptions + refs as suggestions.",
+)
+async def identify_coin_for_coin(
+    coin_id: int,
+    llm_service=Depends(get_llm_service),
+    db: Session = Depends(get_db),
+):
+    """
+    Identify coin from its primary image and store in llm_suggested_attribution,
+    llm_suggested_design (obverse/reverse descriptions), and llm_suggested_references.
+    Sets llm_enriched_at.
+    """
+    from datetime import datetime, timezone
+    from src.infrastructure.persistence.orm import CoinModel
+
+    orm_coin = db.query(CoinModel).filter(CoinModel.id == coin_id).first()
+    if not orm_coin:
+        raise HTTPException(status_code=404, detail=f"Coin {coin_id} not found")
+    image_b64 = await _resolve_coin_primary_image_b64(db, coin_id)
+    if not image_b64:
+        raise HTTPException(
+            status_code=400,
+            detail="Coin has no primary image or image could not be loaded",
+        )
+    result = await llm_service.identify_coin(image_b64=image_b64, hints=None)
+    year_start, year_end = _parse_date_range(result.date_range)
+    attribution = {
+        "issuer": result.ruler,
+        "mint": result.mint,
+        "denomination": result.denomination,
+        "year_start": year_start,
+        "year_end": year_end,
+    }
+    attribution = {k: v for k, v in attribution.items() if v is not None}
+    design_delta = {}
+    if result.obverse_description is not None:
+        design_delta["obverse_description"] = result.obverse_description
+    if result.reverse_description is not None:
+        design_delta["reverse_description"] = result.reverse_description
+    try:
+        orm_coin.llm_suggested_attribution = json.dumps(attribution) if attribution else orm_coin.llm_suggested_attribution
+        if design_delta:
+            existing = {}
+            if orm_coin.llm_suggested_design:
+                try:
+                    existing = json.loads(orm_coin.llm_suggested_design) or {}
+                except json.JSONDecodeError:
+                    pass
+            existing.update(design_delta)
+            orm_coin.llm_suggested_design = json.dumps(existing)
+        if result.suggested_references:
+            existing_refs = []
+            if orm_coin.llm_suggested_references:
+                try:
+                    existing_refs = json.loads(orm_coin.llm_suggested_references) or []
+                except json.JSONDecodeError:
+                    pass
+            merged = list(dict.fromkeys(existing_refs + list(result.suggested_references)))
+            orm_coin.llm_suggested_references = json.dumps(merged)
+        orm_coin.llm_enriched_at = datetime.now(timezone.utc)
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.exception("Failed to save identify suggestions for coin %s: %s", coin_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+    return CoinIdentifyResponse(
+        ruler=result.ruler,
+        denomination=result.denomination,
+        mint=result.mint,
+        date_range=result.date_range,
+        obverse_description=result.obverse_description,
+        reverse_description=result.reverse_description,
+        suggested_references=list(result.suggested_references),
+        confidence=result.confidence,
+        cost_usd=result.cost_usd,
+    )
+
+
+@router.post(
     "/reference/validate",
     response_model=ReferenceValidateResponse,
     summary="Validate catalog reference",
@@ -612,12 +763,6 @@ async def validate_reference(
         )
     except LLMError as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-def get_db():
-    """Get database session."""
-    from src.infrastructure.persistence.database import get_db as _get_db
-    return next(_get_db())
 
 
 @router.post(
@@ -873,6 +1018,64 @@ async def transcribe_legend(
 
 
 @router.post(
+    "/legend/transcribe/coin/{coin_id}",
+    response_model=LegendTranscribeResponse,
+    summary="Transcribe legends for coin",
+    description="Run legend/transcribe on the coin's primary image and save suggestions to llm_suggested_design.",
+)
+async def transcribe_legend_for_coin(
+    coin_id: int,
+    llm_service=Depends(get_llm_service),
+    db: Session = Depends(get_db),
+):
+    """
+    Transcribe legends from the coin's primary image and store in llm_suggested_design.
+    Sets llm_enriched_at. Returns the same shape as POST /legend/transcribe.
+    """
+    from datetime import datetime, timezone
+    from src.infrastructure.persistence.orm import CoinModel
+
+    orm_coin = db.query(CoinModel).filter(CoinModel.id == coin_id).first()
+    if not orm_coin:
+        raise HTTPException(status_code=404, detail=f"Coin {coin_id} not found")
+    image_b64 = await _resolve_coin_primary_image_b64(db, coin_id)
+    if not image_b64:
+        raise HTTPException(
+            status_code=400,
+            detail="Coin has no primary image or image could not be loaded",
+        )
+    result = await llm_service.transcribe_legend(image_b64=image_b64, hints=None)
+    design = {
+        "obverse_legend": result.obverse_legend,
+        "reverse_legend": result.reverse_legend,
+        "exergue": result.exergue,
+        "obverse_legend_expanded": result.obverse_legend_expanded,
+        "reverse_legend_expanded": result.reverse_legend_expanded,
+    }
+    design = {k: v for k, v in design.items() if v is not None}
+    try:
+        orm_coin.llm_suggested_design = json.dumps(design) if design else None
+        orm_coin.llm_enriched_at = datetime.now(timezone.utc)
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.exception("Failed to save transcribe suggestions for coin %s: %s", coin_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+    return LegendTranscribeResponse(
+        obverse_legend=result.obverse_legend,
+        obverse_legend_expanded=result.obverse_legend_expanded,
+        reverse_legend=result.reverse_legend,
+        reverse_legend_expanded=result.reverse_legend_expanded,
+        exergue=result.exergue,
+        uncertain_portions=list(result.uncertain_portions),
+        confidence=result.confidence,
+        cost_usd=result.cost_usd,
+    )
+
+
+@router.post(
     "/catalog/parse",
     response_model=CatalogParseResponse,
     summary="Parse catalog reference",
@@ -1123,6 +1326,26 @@ class CatalogReferenceValidation(BaseModel):
     existing_reference: Optional[str] = None  # If already in DB
 
 
+class LlmSuggestedDesign(BaseModel):
+    """LLM-suggested design fields (legends, exergue, descriptions)."""
+    obverse_legend: Optional[str] = None
+    reverse_legend: Optional[str] = None
+    exergue: Optional[str] = None
+    obverse_description: Optional[str] = None
+    reverse_description: Optional[str] = None
+    obverse_legend_expanded: Optional[str] = None
+    reverse_legend_expanded: Optional[str] = None
+
+
+class LlmSuggestedAttribution(BaseModel):
+    """LLM-suggested attribution (issuer, mint, denomination, dates)."""
+    issuer: Optional[str] = None
+    mint: Optional[str] = None
+    denomination: Optional[str] = None
+    year_start: Optional[int] = None
+    year_end: Optional[int] = None
+
+
 class LLMSuggestionItem(BaseModel):
     """Item in the LLM suggestions review queue."""
     coin_id: int
@@ -1142,6 +1365,8 @@ class LLMSuggestionItem(BaseModel):
     suggested_references: List[str] = Field(default_factory=list)
     validated_references: List[CatalogReferenceValidation] = Field(default_factory=list)
     rarity_info: Optional[RarityInfoResponse] = None
+    suggested_design: Optional[LlmSuggestedDesign] = None
+    suggested_attribution: Optional[LlmSuggestedAttribution] = None
     enriched_at: Optional[str] = None
 
 
@@ -1285,6 +1510,7 @@ def _validate_catalog_reference(
 )
 async def get_llm_review_queue(
     limit: int = Query(100, ge=1, le=500, description="Maximum items to return"),
+    db: Session = Depends(get_db),
 ):
     """
     Get LLM suggestions pending review.
@@ -1294,119 +1520,153 @@ async def get_llm_review_queue(
     and validates suggested catalog references against coin attributes.
     """
     from sqlalchemy import text
-    from src.infrastructure.persistence.database import SessionLocal
     from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
-    
-    db = SessionLocal()
-    try:
-        # Query coins with LLM suggestions - fetch more fields for context
-        result = db.execute(text("""
-            SELECT 
-                id, issuer, denomination, mint, category,
-                year_start, year_end,
-                obverse_legend, reverse_legend,
-                llm_suggested_references, llm_suggested_rarity,
-                llm_enriched_at
-            FROM coins_v2 
-            WHERE llm_suggested_references IS NOT NULL 
-               OR llm_suggested_rarity IS NOT NULL
-            ORDER BY llm_enriched_at DESC
-            LIMIT :limit
-        """), {"limit": limit})
-        
-        rows = result.fetchall()
-        items = []
-        
-        # Get repository for fetching existing references
-        repo = SqlAlchemyCoinRepository(db)
-        
-        for row in rows:
-            (coin_id, issuer, denomination, mint, category,
-             year_start, year_end, obverse_legend, reverse_legend,
-             refs_json, rarity_json, enriched_at) = row
-            
-            # Get existing references from coin
-            coin = repo.get_by_id(coin_id)
-            existing_refs = []
-            if coin and coin.references:
-                existing_refs = [
-                    f"{ref.catalog} {ref.volume or ''} {ref.number}".strip()
-                    for ref in coin.references
-                ]
-            
-            # Parse references JSON
-            suggested_refs = []
-            if refs_json:
-                try:
-                    suggested_refs = json.loads(refs_json)
-                except json.JSONDecodeError:
-                    pass
-            
-            # Validate each suggested reference
-            validated_refs = []
-            for ref_text in suggested_refs:
-                validation = _validate_catalog_reference(
-                    ref_text=ref_text,
-                    coin_issuer=issuer,
-                    coin_mint=mint,
-                    coin_year_start=year_start,
-                    coin_year_end=year_end,
-                    existing_refs=existing_refs,
+
+    # Query coins with LLM suggestions - fetch more fields for context (incl. design/attribution)
+    result = db.execute(text("""
+        SELECT 
+            id, issuer, denomination, mint, category,
+            year_start, year_end,
+            obverse_legend, reverse_legend,
+            llm_suggested_references, llm_suggested_rarity,
+            llm_suggested_design, llm_suggested_attribution,
+            llm_enriched_at
+        FROM coins_v2 
+        WHERE llm_suggested_references IS NOT NULL 
+           OR llm_suggested_rarity IS NOT NULL
+           OR llm_suggested_design IS NOT NULL
+           OR llm_suggested_attribution IS NOT NULL
+        ORDER BY llm_enriched_at DESC
+        LIMIT :limit
+    """), {"limit": limit})
+
+    rows = result.fetchall()
+    items = []
+
+    # Get repository for fetching existing references
+    repo = SqlAlchemyCoinRepository(db)
+
+    for row in rows:
+        (coin_id, issuer, denomination, mint, category,
+         year_start, year_end, obverse_legend, reverse_legend,
+         refs_json, rarity_json, design_json, attribution_json, enriched_at) = row
+
+        # Get existing references from coin
+        coin = repo.get_by_id(coin_id)
+        existing_refs = []
+        if coin and coin.references:
+            existing_refs = [
+                f"{ref.catalog} {ref.volume or ''} {ref.number}".strip()
+                for ref in coin.references
+            ]
+
+        # Parse references JSON
+        suggested_refs = []
+        if refs_json:
+            try:
+                suggested_refs = json.loads(refs_json)
+            except json.JSONDecodeError:
+                pass
+
+        # Validate each suggested reference
+        validated_refs = []
+        for ref_text in suggested_refs:
+            validation = _validate_catalog_reference(
+                ref_text=ref_text,
+                coin_issuer=issuer,
+                coin_mint=mint,
+                coin_year_start=year_start,
+                coin_year_end=year_end,
+                existing_refs=existing_refs,
+            )
+            validated_refs.append(validation)
+
+        # Parse rarity JSON
+        rarity_info = None
+        if rarity_json:
+            try:
+                rarity_data = json.loads(rarity_json)
+                rarity_info = RarityInfoResponse(
+                    rarity_code=rarity_data.get("rarity_code"),
+                    rarity_description=rarity_data.get("rarity_description"),
+                    specimens_known=rarity_data.get("specimens_known"),
+                    source=rarity_data.get("source"),
                 )
-                validated_refs.append(validation)
-            
-            # Parse rarity JSON
-            rarity_info = None
-            if rarity_json:
-                try:
-                    rarity_data = json.loads(rarity_json)
-                    rarity_info = RarityInfoResponse(
-                        rarity_code=rarity_data.get("rarity_code"),
-                        rarity_description=rarity_data.get("rarity_description"),
-                        specimens_known=rarity_data.get("specimens_known"),
-                        source=rarity_data.get("source"),
+            except json.JSONDecodeError:
+                pass
+
+        # Parse design and attribution suggestions
+        suggested_design = None
+        if design_json:
+            try:
+                design_data = json.loads(design_json)
+                if isinstance(design_data, dict) and any(design_data.get(k) for k in ("obverse_legend", "reverse_legend", "exergue", "obverse_description", "reverse_description", "obverse_legend_expanded", "reverse_legend_expanded")):
+                    suggested_design = LlmSuggestedDesign(
+                        obverse_legend=design_data.get("obverse_legend"),
+                        reverse_legend=design_data.get("reverse_legend"),
+                        exergue=design_data.get("exergue"),
+                        obverse_description=design_data.get("obverse_description"),
+                        reverse_description=design_data.get("reverse_description"),
+                        obverse_legend_expanded=design_data.get("obverse_legend_expanded"),
+                        reverse_legend_expanded=design_data.get("reverse_legend_expanded"),
                     )
-                except json.JSONDecodeError:
-                    pass
-            
-            # Only include if there are actual suggestions
-            if suggested_refs or rarity_info:
-                # enriched_at is already a string from the database
-                enriched_at_str = str(enriched_at) if enriched_at else None
-                items.append(LLMSuggestionItem(
-                    coin_id=coin_id,
-                    issuer=issuer,
-                    denomination=denomination,
-                    mint=mint,
-                    year_start=year_start,
-                    year_end=year_end,
-                    category=category,
-                    obverse_legend=obverse_legend,
-                    reverse_legend=reverse_legend,
-                    existing_references=existing_refs,
-                    suggested_references=suggested_refs,
-                    validated_references=validated_refs,
-                    rarity_info=rarity_info,
-                    enriched_at=enriched_at_str,
-                ))
-        
-        return LLMReviewQueueResponse(
-            items=items,
-            total=len(items),
-        )
-    finally:
-        db.close()
+            except (json.JSONDecodeError, TypeError):
+                pass
+        suggested_attribution = None
+        if attribution_json:
+            try:
+                attr_data = json.loads(attribution_json)
+                if isinstance(attr_data, dict) and any(attr_data.get(k) is not None for k in ("issuer", "mint", "denomination", "year_start", "year_end")):
+                    suggested_attribution = LlmSuggestedAttribution(
+                        issuer=attr_data.get("issuer"),
+                        mint=attr_data.get("mint"),
+                        denomination=attr_data.get("denomination"),
+                        year_start=attr_data.get("year_start"),
+                        year_end=attr_data.get("year_end"),
+                    )
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        # Include if there are any suggestions (refs, rarity, design, or attribution)
+        if suggested_refs or rarity_info or suggested_design or suggested_attribution:
+            enriched_at_str = str(enriched_at) if enriched_at else None
+            items.append(LLMSuggestionItem(
+                coin_id=coin_id,
+                issuer=issuer,
+                denomination=denomination,
+                mint=mint,
+                year_start=year_start,
+                year_end=year_end,
+                category=category,
+                obverse_legend=obverse_legend,
+                reverse_legend=reverse_legend,
+                existing_references=existing_refs,
+                suggested_references=suggested_refs,
+                validated_references=validated_refs,
+                rarity_info=rarity_info,
+                suggested_design=suggested_design,
+                suggested_attribution=suggested_attribution,
+                enriched_at=enriched_at_str,
+            ))
+
+    return LLMReviewQueueResponse(
+        items=items,
+        total=len(items),
+    )
 
 
 @router.post(
     "/review/{coin_id}/dismiss",
     summary="Dismiss LLM suggestions",
-    description="Clear LLM suggestions for a coin (reject all).",
+    description="Clear LLM suggestions for a coin (reject all or by type).",
 )
 async def dismiss_llm_suggestions(
     coin_id: int,
     dismiss_references: bool = Query(True, description="Dismiss reference suggestions"),
     dismiss_rarity: bool = Query(True, description="Dismiss rarity suggestions"),
+    dismiss_design: bool = Query(True, description="Dismiss design/legend suggestions"),
+    dismiss_attribution: bool = Query(True, description="Dismiss attribution suggestions"),
+    db: Session = Depends(get_db),
 ):
     """
     Dismiss (reject) LLM suggestions for a coin.
@@ -1414,28 +1674,192 @@ async def dismiss_llm_suggestions(
     Clears the stored suggestions without applying them.
     """
     from sqlalchemy import text
-    from src.infrastructure.persistence.database import SessionLocal
-    
-    db = SessionLocal()
+
+    updates = []
+    if dismiss_references:
+        updates.append("llm_suggested_references = NULL")
+    if dismiss_rarity:
+        updates.append("llm_suggested_rarity = NULL")
+    if dismiss_design:
+        updates.append("llm_suggested_design = NULL")
+    if dismiss_attribution:
+        updates.append("llm_suggested_attribution = NULL")
+
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nothing to dismiss")
+
     try:
-        updates = []
-        if dismiss_references:
-            updates.append("llm_suggested_references = NULL")
-        if dismiss_rarity:
-            updates.append("llm_suggested_rarity = NULL")
-        
-        if not updates:
-            raise HTTPException(status_code=400, detail="Nothing to dismiss")
-        
         db.execute(
             text(f"UPDATE coins_v2 SET {', '.join(updates)} WHERE id = :coin_id"),
             {"coin_id": coin_id}
         )
         db.commit()
-        
         return {"status": "dismissed", "coin_id": coin_id}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        db.close()
+
+
+@router.post(
+    "/review/{coin_id}/approve",
+    summary="Approve and apply LLM suggestions",
+    description="Apply suggested rarity and catalog references to the coin, then clear suggestions.",
+)
+async def approve_llm_suggestions(
+    coin_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Apply LLM-suggested rarity and references to the coin, then clear llm_suggested_*.
+    - Rarity: copy rarity_code or rarity_description into coin.rarity; source into rarity_notes.
+    - References: create reference_types + coin_references for each suggested ref string.
+    """
+    from sqlalchemy.orm import selectinload
+    from src.infrastructure.persistence.orm import CoinModel, ReferenceTypeModel, CoinReferenceModel
+
+    try:
+        coin = (
+            db.query(CoinModel)
+            .options(selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type))
+            .filter(CoinModel.id == coin_id)
+            .first()
+        )
+        if not coin:
+            raise HTTPException(status_code=404, detail=f"Coin {coin_id} not found")
+        has_any = (
+            coin.llm_suggested_rarity or coin.llm_suggested_references
+            or coin.llm_suggested_design or coin.llm_suggested_attribution
+        )
+        if not has_any:
+            raise HTTPException(status_code=400, detail="No pending suggestions to apply")
+
+        applied_rarity = False
+        applied_refs = 0
+        applied_design = False
+        applied_attribution = False
+
+        # Apply rarity from llm_suggested_rarity
+        if coin.llm_suggested_rarity:
+            try:
+                rarity_data = json.loads(coin.llm_suggested_rarity)
+                code = rarity_data.get("rarity_code")
+                desc = rarity_data.get("rarity_description")
+                source = rarity_data.get("source")
+                if code or desc:
+                    coin.rarity = (code or desc) if code else desc
+                    coin.rarity_notes = source or rarity_data.get("rarity_description")
+                    applied_rarity = True
+                coin.llm_suggested_rarity = None
+            except (json.JSONDecodeError, TypeError):
+                coin.llm_suggested_rarity = None
+
+        # Apply references from llm_suggested_references
+        if coin.llm_suggested_references:
+            try:
+                ref_strings = json.loads(coin.llm_suggested_references)
+                if isinstance(ref_strings, list):
+                    existing_local_refs = {
+                        (r.reference_type.system.lower(), (r.reference_type.local_ref or "").strip())
+                        for r in (coin.references or [])
+                        if getattr(r, "reference_type", None)
+                    }
+                    for ref_text in ref_strings:
+                        if not ref_text or not str(ref_text).strip():
+                            continue
+                        ref_text = str(ref_text).strip()
+                        parsed = _parse_catalog_reference(ref_text)
+                        system = (parsed.get("catalog") or "Unknown").lower()
+                        key = (system, ref_text)
+                        if key in existing_local_refs:
+                            continue
+                        ref_type = (
+                            db.query(ReferenceTypeModel)
+                            .filter(
+                                ReferenceTypeModel.system == system,
+                                ReferenceTypeModel.local_ref == ref_text,
+                            )
+                            .first()
+                        )
+                        if not ref_type:
+                            ref_type = ReferenceTypeModel(
+                                system=system,
+                                local_ref=ref_text,
+                                volume=parsed.get("volume"),
+                                number=parsed.get("number"),
+                            )
+                            db.add(ref_type)
+                            db.flush()
+                        link = CoinReferenceModel(
+                            coin_id=coin_id,
+                            reference_type_id=ref_type.id,
+                        )
+                        db.add(link)
+                        existing_local_refs.add(key)
+                        applied_refs += 1
+                coin.llm_suggested_references = None
+            except (json.JSONDecodeError, TypeError):
+                coin.llm_suggested_references = None
+
+        # Apply design from llm_suggested_design (merge with existing)
+        if coin.llm_suggested_design:
+            try:
+                design_data = json.loads(coin.llm_suggested_design)
+                if isinstance(design_data, dict):
+                    if design_data.get("obverse_legend") is not None:
+                        coin.obverse_legend = design_data["obverse_legend"]
+                    if design_data.get("reverse_legend") is not None:
+                        coin.reverse_legend = design_data["reverse_legend"]
+                    if design_data.get("exergue") is not None:
+                        coin.exergue = design_data["exergue"]
+                    if design_data.get("obverse_description") is not None:
+                        coin.obverse_description = design_data["obverse_description"]
+                    if design_data.get("reverse_description") is not None:
+                        coin.reverse_description = design_data["reverse_description"]
+                    if design_data.get("obverse_legend_expanded") is not None:
+                        coin.obverse_legend_expanded = design_data["obverse_legend_expanded"]
+                    if design_data.get("reverse_legend_expanded") is not None:
+                        coin.reverse_legend_expanded = design_data["reverse_legend_expanded"]
+                    applied_design = True
+                coin.llm_suggested_design = None
+            except (json.JSONDecodeError, TypeError):
+                coin.llm_suggested_design = None
+
+        # Apply attribution from llm_suggested_attribution (merge with existing)
+        if coin.llm_suggested_attribution:
+            try:
+                attr_data = json.loads(coin.llm_suggested_attribution)
+                if isinstance(attr_data, dict):
+                    if attr_data.get("issuer") is not None:
+                        coin.issuer = attr_data["issuer"]
+                    if attr_data.get("mint") is not None:
+                        coin.mint = attr_data["mint"]
+                    if attr_data.get("year_start") is not None:
+                        coin.year_start = attr_data["year_start"]
+                    if attr_data.get("year_end") is not None:
+                        coin.year_end = attr_data["year_end"]
+                    if attr_data.get("denomination") is not None:
+                        coin.denomination = attr_data["denomination"]
+                    applied_attribution = True
+                coin.llm_suggested_attribution = None
+            except (json.JSONDecodeError, TypeError):
+                coin.llm_suggested_attribution = None
+
+        db.commit()
+        logger.info(
+            "Applied LLM suggestions for coin %s: rarity=%s, refs=%s, design=%s, attribution=%s",
+            coin_id, applied_rarity, applied_refs, applied_design, applied_attribution,
+        )
+        return {
+            "status": "approved",
+            "coin_id": coin_id,
+            "applied_rarity": applied_rarity,
+            "applied_references": applied_refs,
+            "applied_design": applied_design,
+            "applied_attribution": applied_attribution,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.exception("Approve LLM suggestions failed for coin %s: %s", coin_id, e)
+        raise HTTPException(status_code=500, detail=str(e))

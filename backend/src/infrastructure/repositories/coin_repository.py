@@ -370,12 +370,17 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             # Collection management fields
             storage_location=model.storage_location,
             personal_notes=model.personal_notes,
+            # Rarity
+            rarity=model.rarity,
+            rarity_notes=model.rarity_notes,
             # LLM enrichment fields
             historical_significance=model.historical_significance,
             llm_enriched_at=model.llm_enriched_at.isoformat() if model.llm_enriched_at else None,
             llm_analysis_sections=model.llm_analysis_sections,
             llm_suggested_references=json.loads(model.llm_suggested_references) if model.llm_suggested_references else None,
-            llm_suggested_rarity=json.loads(model.llm_suggested_rarity) if model.llm_suggested_rarity else None
+            llm_suggested_rarity=json.loads(model.llm_suggested_rarity) if model.llm_suggested_rarity else None,
+            llm_suggested_design=json.loads(model.llm_suggested_design) if model.llm_suggested_design else None,
+            llm_suggested_attribution=json.loads(model.llm_suggested_attribution) if model.llm_suggested_attribution else None,
         )
     
     def _reference_to_domain(self, model: CoinReferenceModel) -> CatalogReference:
@@ -486,6 +491,13 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             # Collection management fields
             storage_location=coin.storage_location,
             personal_notes=coin.personal_notes,
+            # Rarity
+            rarity=coin.rarity,
+            rarity_notes=coin.rarity_notes,
             # LLM enrichment fields
-            historical_significance=coin.historical_significance
+            historical_significance=coin.historical_significance,
+            llm_suggested_references=json.dumps(coin.llm_suggested_references) if coin.llm_suggested_references else None,
+            llm_suggested_rarity=json.dumps(coin.llm_suggested_rarity) if coin.llm_suggested_rarity else None,
+            llm_suggested_design=json.dumps(coin.llm_suggested_design) if coin.llm_suggested_design else None,
+            llm_suggested_attribution=json.dumps(coin.llm_suggested_attribution) if coin.llm_suggested_attribution else None,
         )

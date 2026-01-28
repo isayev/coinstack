@@ -46,7 +46,7 @@ async def test_sync_issuers():
     
     # Verify DB calls
     assert mock_session.add.call_count == 2
-    mock_session.commit.assert_called()
+    mock_session.flush.assert_called()
 
 @pytest.mark.asyncio
 async def test_parse_year():

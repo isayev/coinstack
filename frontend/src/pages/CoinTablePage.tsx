@@ -5,7 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Plus, FilterX } from "lucide-react";
 import { useFilterStore, SortField } from "@/stores/filterStore";
-import { Skeleton } from "@/components/ui/skeleton";
+import { TableRowSkeleton } from "@/components/ui/TableRowSkeleton";
 import { CollectionLayout } from "@/features/collection/CollectionLayout";
 
 export function CoinTablePage() {
@@ -98,7 +98,7 @@ export function CoinTablePage() {
                 <div className="space-y-4">
                     <div className="h-10 w-full bg-[var(--bg-elevated)] rounded animate-pulse" />
                     {[...Array(10)].map((_, i) => (
-                        <Skeleton key={i} className="h-14 w-full" />
+                        <TableRowSkeleton key={i} />
                     ))}
                 </div>
             </CollectionLayout>

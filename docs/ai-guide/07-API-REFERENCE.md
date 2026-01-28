@@ -360,14 +360,14 @@ Normalizes vocabulary fields for multiple coins.
 ### Get Review Queue
 
 ```http
-GET /api/v2/vocab/review-queue
+GET /api/v2/vocab/review
 ```
 
-Returns vocabulary assignments that need manual review (low confidence or ambiguous).
+Returns vocabulary assignments that need manual review (low confidence or ambiguous). Data comes from `coin_vocab_assignments` (populated by bulk normalization).
 
 **Query Parameters**:
-- `limit`: Max items (default: 50)
-- `vocab_type`: Filter by type
+- `status`: Filter by status (alias `status`) — `pending_review`, `assigned`, `approved`, `rejected` (default: `pending_review`)
+- `limit`: Max items (default: 50, range 1–200)
 
 **Response**: `List[ReviewQueueItem]`
 
@@ -391,11 +391,11 @@ Returns vocabulary assignments that need manual review (low confidence or ambigu
 ### Approve/Reject Review Item
 
 ```http
-POST /api/v2/vocab/review-queue/{item_id}/approve
-POST /api/v2/vocab/review-queue/{item_id}/reject
+POST /api/v2/vocab/review/{assignment_id}/approve
+POST /api/v2/vocab/review/{assignment_id}/reject
 ```
 
-**Response**: Updated review queue item
+**Response**: `{"status": "approved"|"rejected", "id": <assignment_id>}`
 
 ---
 
@@ -752,31 +752,23 @@ Used by EnrichmentPanel during import to fill fields from OCRE/CRRO/RPC based on
 
 **Router**: `src/infrastructure/web/routers/llm.py`
 
-LLM-powered enrichment endpoints.
+LLM-powered enrichment endpoints. Coins can store pending suggestions in `llm_suggested_design`, `llm_suggested_attribution`, `llm_suggested_references`, and `llm_suggested_rarity`; `llm_enriched_at` records when suggestions were last produced. These fields are returned by **GET /api/v2/coins/{id}** when present.
 
 ### Expand Legend
 
 ```http
-POST /api/v2/llm/expand-legend
+POST /api/v2/llm/legend/expand
 ```
 
 **Request Body**:
 
 ```json
 {
-  "legend": "IMP CAES AVGVSTVS DIVI F"
+  "abbreviation": "IMP CAES AVGVSTVS DIVI F"
 }
 ```
 
-**Response**:
-
-```json
-{
-  "original": "IMP CAES AVGVSTVS DIVI F",
-  "expanded": "Imperator Caesar Augustus Divi Filius",
-  "translation": "Emperor Caesar Augustus, Son of the Divine"
-}
-```
+**Response**: `{ "expanded": "...", "confidence": 0.9, "cost_usd": 0.0, "model_used": "...", "cached": false }`
 
 ---
 
@@ -786,16 +778,89 @@ POST /api/v2/llm/expand-legend
 POST /api/v2/llm/generate-description
 ```
 
-**Request Body**:
-
-```json
-{
-  "coin_id": 23,
-  "include_context": true
-}
-```
+**Request Body**: `{ "coin_id": 23, "include_context": true }`
 
 Generates catalog-style description using LLM based on coin data.
+
+---
+
+### Transcribe legends for coin
+
+```http
+POST /api/v2/llm/legend/transcribe/coin/{coin_id}
+```
+
+Runs legend transcription on the coin’s primary image and **saves** results as suggestions on the coin.
+
+- **Path**: `coin_id` (int).
+- **Behavior**: Resolves primary image (first `is_primary` or first image; supports `http(s)` URLs and local paths under `data/coin_images`). Calls the LLM transcribe capability and writes to `llm_suggested_design` (obverse_legend, reverse_legend, exergue, obverse_legend_expanded, reverse_legend_expanded), sets `llm_enriched_at`, then commits.
+- **Errors**: `404` if the coin does not exist; `400` if the coin has no primary image or the image cannot be loaded.
+- **Response**: Same shape as `POST /api/v2/llm/legend/transcribe` — `LegendTranscribeResponse` (obverse_legend, reverse_legend, exergue, expanded variants, uncertain_portions, confidence, cost_usd).
+
+---
+
+### Identify coin from its primary image
+
+```http
+POST /api/v2/llm/identify/coin/{coin_id}
+```
+
+Runs identify-from-image on the coin’s primary image and **saves** results as suggestions on the coin.
+
+- **Path**: `coin_id` (int).
+- **Behavior**: Resolves primary image as for transcribe. Calls the LLM identify capability; writes ruler→issuer, mint, denomination, and parsed date_range→year_start/year_end into `llm_suggested_attribution`; merges obverse/reverse descriptions into `llm_suggested_design`; merges `suggested_references` into `llm_suggested_references`; sets `llm_enriched_at`, then commits.
+- **Errors**: `404` if the coin does not exist; `400` if the coin has no primary image or the image cannot be loaded.
+- **Response**: Same shape as `POST /api/v2/llm/identify` — `CoinIdentifyResponse` (ruler, denomination, mint, date_range, obverse_description, reverse_description, suggested_references, confidence, cost_usd).
+
+---
+
+### LLM review queue
+
+#### Get LLM suggestions for review
+
+```http
+GET /api/v2/llm/review
+```
+
+**Query**: `limit` (default 100, max 500).
+
+**Response**: `{ "items": LLMSuggestionItem[], "total": number }`
+
+Includes coins where any of `llm_suggested_references`, `llm_suggested_rarity`, `llm_suggested_design`, or `llm_suggested_attribution` is set. Each item includes:
+
+- **Context**: `coin_id`, `issuer`, `denomination`, `mint`, `year_start`, `year_end`, `category`, `obverse_legend`, `reverse_legend`, `existing_references`, `enriched_at`.
+- **Suggestions**: `suggested_references`, `validated_references`, `rarity_info`, **`suggested_design`** (LlmSuggestedDesign: obverse_legend, reverse_legend, exergue, obverse/reverse_description, expanded legends), **`suggested_attribution`** (LlmSuggestedAttribution: issuer, mint, denomination, year_start, year_end).
+
+#### Dismiss LLM suggestions
+
+```http
+POST /api/v2/llm/review/{coin_id}/dismiss
+```
+
+**Query parameters**:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `dismiss_references` | bool | true | Clear `llm_suggested_references` |
+| `dismiss_rarity` | bool | true | Clear `llm_suggested_rarity` |
+| **`dismiss_design`** | bool | true | Clear **`llm_suggested_design`** |
+| **`dismiss_attribution`** | bool | true | Clear **`llm_suggested_attribution`** |
+
+**Response**: `{ "status": "dismissed", "coin_id": number }`. At least one flag must be true.
+
+#### Approve and apply LLM suggestions
+
+```http
+POST /api/v2/llm/review/{coin_id}/approve
+```
+
+Applies all pending suggestions to the coin and clears the suggestion columns.
+
+- **Design**: from `llm_suggested_design` → obverse_legend, reverse_legend, exergue, obverse/reverse_description, obverse/reverse_legend_expanded (merge into coin design fields); then clear `llm_suggested_design`.
+- **Attribution**: from `llm_suggested_attribution` → issuer, mint, denomination, year_start, year_end; then clear `llm_suggested_attribution`.
+- **References / Rarity**: applied as before (references → reference_types + coin_references; rarity → rarity, rarity_notes).
+
+**Response**: `{ "status": "approved", "coin_id": number, "applied_rarity": bool, "applied_references": number, "applied_design": bool, "applied_attribution": bool }`
 
 ---
 

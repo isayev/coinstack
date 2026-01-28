@@ -850,6 +850,21 @@ Vocabulary terms are fetched from `/api/v2/vocab/issuers?search={query}`.
 
 ---
 
+## Sync design tokens
+
+**When:** Adding or changing design tokens (colors, typography, spacing, radius, etc.).
+
+**Canonical source:** `docs/design-tokens.json`. Update it first.
+
+**Then keep in sync:**
+
+1. **`frontend/src/index.css`** — In `:root`, add or change CSS custom properties to match the token values. Semantic tokens (e.g. `--text-primary`, `--font-size-sm`) must reflect the JSON. Numismatic tokens (metals, grades, categories, rarity) live in `index.css` and are documented in [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md); any new ones should be listed in `design-tokens.json` if they are part of the shared system.
+2. **`frontend/tailwind.config.js`** — If the token is used via Tailwind (e.g. `theme.extend.colors`), update the theme to reference the CSS variable or the same value. Shadcn uses `hsl(var(--…))` for many tokens; ensure `index.css` defines those `--` vars.
+
+**Process:** Change `design-tokens.json` → update `index.css` (and Tailwind if needed) → update [10-DESIGN-SYSTEM.md](10-DESIGN-SYSTEM.md) if the change affects the documented spec.
+
+---
+
 ## Key Principles (V2)
 
 ### 1. Clean Architecture Flow

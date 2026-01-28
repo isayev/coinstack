@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useCoinCollection } from "@/hooks/useCoinCollection";
 import { CoinCard, CoinCardV3Skeleton } from "@/components/coins/CoinCard";
 import { AddCoinImagesDialog } from "@/components/coins/AddCoinImagesDialog";
+import { BulkActionsBar } from "@/features/collection/BulkActionsBar";
 import type { Coin } from "@/domain/schemas";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -157,6 +158,9 @@ export function CoinGridPage() {
                     open={!!addImagesCoin}
                     onOpenChange={(open) => !open && setAddImagesCoin(null)}
                     onSuccess={() => setAddImagesCoin(null)}
+                />
+                <BulkActionsBar
+                    onEnrich={(ids) => navigate(`/bulk-enrich?coin_ids=${ids.join(",")}`)}
                 />
             </div>
         </CollectionLayout>

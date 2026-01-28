@@ -125,7 +125,9 @@ class CoinModel(Base):
     llm_analysis_sections: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON string of sections
     llm_suggested_references: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array of suggested refs not in DB
     llm_suggested_rarity: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON object with rarity info from LLM
-    
+    llm_suggested_design: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
+    llm_suggested_attribution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON: issuer, mint, denomination, year_start, year_end
+
     # Collection management fields (migrated from V1)
     storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     personal_notes: Mapped[Optional[str]] = mapped_column(String, nullable=True)

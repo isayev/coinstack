@@ -19,8 +19,8 @@ interface MarkdownContentProps {
   className?: string;
 }
 
-// Section title mappings for prettier display
-const SECTION_TITLES: Record<string, string> = {
+/** Section key → human label. Exported for use in HistoricalContextCard and elsewhere. */
+export const SECTION_TITLES: Record<string, string> = {
   'EPIGRAPHY_AND_TITLES': 'Epigraphy & Titles',
   'ICONOGRAPHY_AND_SYMBOLISM': 'Iconography & Symbolism',
   'ARTISTIC_STYLE': 'Artistic Style & Portraiture',
@@ -33,6 +33,21 @@ const SECTION_TITLES: Record<string, string> = {
   'HISTORICAL_CONTEXT': 'Historical Context',
   'NUMISMATIC_SIGNIFICANCE': 'Numismatic Significance',
 };
+
+/** Preferred display order for analysis sections (single-document flow). */
+export const SECTION_ORDER: string[] = [
+  'HISTORICAL_CONTEXT',
+  'EPIGRAPHY_AND_TITLES',
+  'ICONOGRAPHY_AND_SYMBOLISM',
+  'ARTISTIC_STYLE',
+  'PROPAGANDA_AND_MESSAGING',
+  'ECONOMIC_CONTEXT',
+  'DIE_STUDIES_AND_VARIETIES',
+  'ARCHAEOLOGICAL_CONTEXT',
+  'TYPOLOGICAL_RELATIONSHIPS',
+  'MILITARY_HISTORY',
+  'NUMISMATIC_SIGNIFICANCE',
+];
 
 // Parse markdown into structured sections
 function parseMarkdown(content: string): { title: string; items: string[] }[] {
@@ -54,8 +69,11 @@ function parseMarkdown(content: string): { title: string; items: string[] }[] {
       const prettyTitle = SECTION_TITLES[rawTitle] || rawTitle.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       currentSection = { title: prettyTitle, items: [] };
     }
-    // Bullet point
-    else if (trimmed.startsWith('- ') && currentSection) {
+    // Bullet point (allow bullets even when no ## section yet)
+    else if (trimmed.startsWith('- ')) {
+      if (!currentSection) {
+        currentSection = { title: '', items: [] };
+      }
       currentSection.items.push(trimmed.slice(2));
     }
     // Regular text line (part of current section)
@@ -156,44 +174,75 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
     <div className={cn("space-y-6", className)}>
       {sections.map((section, idx) => (
         <div key={idx} className="space-y-2">
-          {/* Section Header */}
-          <h3 
-            className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            <span 
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'var(--accent-ai, #a855f7)' }}
-            />
-            {section.title}
-          </h3>
+          {/* Section Header (omit when title is implicit, e.g. bullet-only content) */}
+          {section.title ? (
+            <h3 
+              className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              <span 
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: 'var(--accent-ai, #a855f7)' }}
+              />
+              {section.title}
+            </h3>
+          ) : null}
           
-          {/* Section Content */}
-          <div className="pl-4 space-y-1.5">
-            {section.items.map((item, itemIdx) => {
-              // Check if it's an "omitted" note
-              const isOmitted = item.startsWith('*Section omitted') || item.startsWith('*Note:');
-              
-              return (
-                <p
-                  key={itemIdx}
-                  className={cn(
-                    "text-sm leading-relaxed",
-                    isOmitted && "italic text-xs"
-                  )}
-                  style={{ 
-                    color: isOmitted ? 'var(--text-ghost)' : 'var(--text-secondary)' 
-                  }}
-                >
-                  {isOmitted ? (
-                    item.replace(/^\*/, '').replace(/\*$/, '')
-                  ) : (
-                    renderInlineMarkdown(item)
-                  )}
-                </p>
-              );
-            })}
-          </div>
+          {/* Section Content — list when multiple items, single paragraph when one */}
+          {section.items.length > 1 ? (
+            <ul
+              className={cn(
+                'list-disc pl-5 space-y-1.5 text-sm leading-relaxed',
+                section.title && 'pl-6'
+              )}
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {section.items.map((item, itemIdx) => {
+                const isOmitted =
+                  item.startsWith('*Section omitted') || item.startsWith('*Note:');
+                return (
+                  <li
+                    key={itemIdx}
+                    className={cn(isOmitted && 'italic text-xs')}
+                    style={{
+                      color: isOmitted ? 'var(--text-ghost)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {isOmitted ? (
+                      item.replace(/^\*/, '').replace(/\*$/, '')
+                    ) : (
+                      renderInlineMarkdown(item)
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className={section.title ? 'pl-4' : ''}>
+              {section.items.map((item, itemIdx) => {
+                const isOmitted =
+                  item.startsWith('*Section omitted') || item.startsWith('*Note:');
+                return (
+                  <p
+                    key={itemIdx}
+                    className={cn(
+                      'text-sm leading-relaxed',
+                      isOmitted && 'italic text-xs'
+                    )}
+                    style={{
+                      color: isOmitted ? 'var(--text-ghost)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {isOmitted ? (
+                      item.replace(/^\*/, '').replace(/\*$/, '')
+                    ) : (
+                      renderInlineMarkdown(item)
+                    )}
+                  </p>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -14,8 +14,7 @@
 import { useState, useMemo } from 'react';
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw, Clock, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MarkdownContent } from '@/components/ui/MarkdownContent';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarkdownContent, SECTION_TITLES, SECTION_ORDER } from '@/components/ui/MarkdownContent';
 
 interface HistoricalContextCardProps {
   /** Pre-existing historical context from backend */
@@ -73,6 +72,18 @@ export function HistoricalContextCard({
 
   const hasData = !!context || !!parsedSections;
   const [isExpanded, setIsExpanded] = useState(hasData);
+
+  /** Sections in display order for single-document layout */
+  const orderedSections = useMemo(() => {
+    if (!parsedSections?.length) return [];
+    const orderIndex = (key: string) => {
+      const i = SECTION_ORDER.indexOf(key);
+      return i >= 0 ? i : SECTION_ORDER.length;
+    };
+    return [...parsedSections].sort(
+      (a, b) => orderIndex(String(a.title)) - orderIndex(String(b.title))
+    );
+  }, [parsedSections]);
 
   const formatDate = (dateStr: string | null | undefined): string => {
     if (!dateStr) return '';
@@ -158,22 +169,35 @@ export function HistoricalContextCard({
         >
           {hasData ? (
             <div className="space-y-4 pt-4">
-              {parsedSections ? (
-                <Tabs defaultValue={parsedSections[0]?.title}>
-                  <TabsList className="mb-4 flex-wrap h-auto">
-                    {parsedSections.map((s: any, i: number) => (
-                      <TabsTrigger key={i} value={s.title}>{s.title}</TabsTrigger>
-                    ))}
-                    {/* Fallback to legacy context if needed in a tab? No, usually sections cover it */}
-                  </TabsList>
-                  {parsedSections.map((s: any, i: number) => (
-                    <TabsContent key={i} value={s.title}>
-                      <MarkdownContent content={s.content} />
-                    </TabsContent>
-                  ))}
-                </Tabs>
+              {orderedSections.length ? (
+                <article
+                  className="space-y-8"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  {orderedSections.map((s: { title: string; content: string }, i: number) => {
+                    const heading =
+                      SECTION_TITLES[String(s.title)] ??
+                      String(s.title).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                    return (
+                      <section key={i} className="space-y-3">
+                        <h3
+                          className="text-base font-semibold tracking-tight pb-1 border-b"
+                          style={{
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-subtle)',
+                          }}
+                        >
+                          {heading}
+                        </h3>
+                        <div className="text-sm leading-relaxed">
+                          <MarkdownContent content={s.content} />
+                        </div>
+                      </section>
+                    );
+                  })}
+                </article>
               ) : (
-                <MarkdownContent content={context!} />
+                <MarkdownContent content={context ?? ''} />
               )}
 
               {/* Actions */}

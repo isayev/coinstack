@@ -66,7 +66,7 @@ export function Sidebar() {
                   : isActive;
 
                 return cn(
-                  "flex items-center gap-3 px-2.5 py-2 rounded-md transition-all relative",
+                  "flex items-center gap-3 px-2.5 py-2 min-h-[44px] rounded-md transition-all relative",
                   active
                     ? "font-medium"
                     : "hover:bg-[var(--bg-hover)]"
@@ -136,7 +136,7 @@ export function Sidebar() {
           variant="ghost"
           size="sm"
           className={cn(
-            "w-full justify-center",
+            "w-full justify-center min-h-[44px]",
             sidebarOpen ? "px-2" : "px-0"
           )}
           style={{ color: 'var(--text-tertiary)' }}

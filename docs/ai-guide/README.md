@@ -46,6 +46,9 @@ Then load the relevant guide based on your task:
 | **Data & API** |
 | [05-DATA-MODEL.md](05-DATA-MODEL.md) | Database schema, ORM models | Data layer changes |
 | [07-API-REFERENCE.md](07-API-REFERENCE.md) | API endpoints, request/response | API integration |
+| [../LLM-SUGGESTABLE-FIELDS-ANALYSIS.md](../LLM-SUGGESTABLE-FIELDS-ANALYSIS.md) | **LLM-suggestable fields** – column-by-column (review queue, context/generate, auction/parse, identify, etc.); stored vs applied | LLM review queue, approve/dismiss, adding new suggestable columns |
+| [../LLM-LEGENDS-DESCRIPTIONS-IDENTIFY-PLAN.md](../LLM-LEGENDS-DESCRIPTIONS-IDENTIFY-PLAN.md) | **LLM legends/descriptions/identify** – step-by-step plan: transcribe legends, identify coin, store design/attribution, review queue, approve | Implementing transcribe-for-coin, identify-for-coin, and apply design/attribution |
+| [../PLAN-LLM-TESTS-AND-FIX-SERIES-VOCAB.md](../PLAN-LLM-TESTS-AND-FIX-SERIES-VOCAB.md) | **LLM review tests + series/vocab test fixes** – (a) integration tests for GET/POST llm/review, approve, dismiss; (b) fix 9 failing series/vocab router and service tests | Adding test_llm_review_api, fixing 404s and commit→flush assertions |
 | **Workflows** |
 | [06-DATA-FLOWS.md](06-DATA-FLOWS.md) | Request flows, state management | Understanding processes |
 | [08-CODING-PATTERNS.md](08-CODING-PATTERNS.md) | Code conventions and patterns | Writing new code |
@@ -57,6 +60,10 @@ Then load the relevant guide based on your task:
 | [../BROWSER-UX-RECOMMENDATIONS-PLAN.md](../BROWSER-UX-RECOMMENDATIONS-PLAN.md) | Plan for browser findings (header search, palette, empty states, Add, image a11y) | Phased implementation steps, files, acceptance criteria |
 | [../ACCESSIBILITY-CHECKLIST.md](../ACCESSIBILITY-CHECKLIST.md) | a11y checklist (keyboard, screen reader, contrast) | Accessibility audits |
 | [../NUMISMATIC-EDGE-CASE-TEST-PLAN.md](../NUMISMATIC-EDGE-CASE-TEST-PLAN.md) | Numismatic edge cases (BC/AD, refs, die study) | Domain-specific QA |
+| [../DESIGN-AUDIT-REPORT.md](../DESIGN-AUDIT-REPORT.md) | **Design audit** (typography, color, spacing, issues, tokens) | UI/UX consolidation, token migration |
+| [../DESIGN-AUDIT-IMPLEMENTATION-PLAN.md](../DESIGN-AUDIT-IMPLEMENTATION-PLAN.md) | **Step-by-step plan** (quick wins → medium → strategic) | Executing audit fixes in order |
+| [../DESIGN-AUDIT-ISSUE-LOG.md](../DESIGN-AUDIT-ISSUE-LOG.md) | Design audit issue log (severity, IDs) | Tracking design fixes |
+| [../DESIGN-AUDIT-TOKEN-MAP.md](../DESIGN-AUDIT-TOKEN-MAP.md) | Token migration map (current → canonical) | Consolidating tokens |
 
 ## Project at a Glance
 

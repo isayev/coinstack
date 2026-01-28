@@ -9,14 +9,36 @@ interface CollectionLayoutProps {
 }
 
 export function CollectionLayout({ children }: CollectionLayoutProps) {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const setSearch = useFilterStore((s) => s.setSearch);
+    const setCategory = useFilterStore((s) => s.setCategory);
+    const setMetal = useFilterStore((s) => s.setMetal);
+    const search = useFilterStore((s) => s.search);
+    const category = useFilterStore((s) => s.category);
+    const metal = useFilterStore((s) => s.metal);
 
-    // Sync URL ?search= into filterStore so list uses it (Option B: issuer)
+    // URL → filterStore: on load or back/forward, apply ?search=, ?category=, ?metal=
     useEffect(() => {
         const q = searchParams.get("search");
+        const cat = searchParams.get("category");
+        const m = searchParams.get("metal");
         setSearch(q && q.trim() ? q.trim() : null);
-    }, [searchParams, setSearch]);
+        setCategory(cat && cat.trim() ? cat.trim() : null);
+        setMetal(m && m.trim() ? m.trim() : null);
+    }, [searchParams, setSearch, setCategory, setMetal]);
+
+    // filterStore → URL: when filters change in UI, update URL (shareable/bookmarkable)
+    useEffect(() => {
+        const next = new URLSearchParams();
+        if (search?.trim()) next.set("search", search.trim());
+        if (category) next.set("category", category);
+        if (metal) next.set("metal", metal);
+        const nextStr = next.toString();
+        const currStr = new URLSearchParams(searchParams).toString();
+        if (nextStr !== currStr) {
+            setSearchParams(next, { replace: true });
+        }
+    }, [search, category, metal, searchParams, setSearchParams]);
 
     return (
         <div className="flex h-[calc(100vh-3.5rem)]"> {/* Full height minus header */}

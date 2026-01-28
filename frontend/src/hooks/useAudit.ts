@@ -436,17 +436,49 @@ export function useLLMSuggestions() {
 export function useDismissLLMSuggestion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { coinId: number; dismissReferences?: boolean; dismissRarity?: boolean }) => {
-      const response = await api.post(`/api/v2/llm/review/${params.coinId}/dismiss`, null, {
+    mutationFn: async (params: {
+      coinId: number;
+      dismissReferences?: boolean;
+      dismissRarity?: boolean;
+      dismissDesign?: boolean;
+      dismissAttribution?: boolean;
+    }) => {
+      const response = await api.post(`/api/v2/llm/review/${params.coinId}/dismiss`, {}, {
         params: {
           dismiss_references: params.dismissReferences ?? true,
           dismiss_rarity: params.dismissRarity ?? true,
+          dismiss_design: params.dismissDesign ?? true,
+          dismiss_attribution: params.dismissAttribution ?? true,
         },
       });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["llm-suggestions"] });
+    },
+  });
+}
+
+export interface ApproveLLMSuggestionResponse {
+  status: string;
+  coin_id: number;
+  applied_rarity: boolean;
+  applied_references: number;
+  applied_design?: boolean;
+  applied_attribution?: boolean;
+}
+
+export function useApproveLLMSuggestion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { coinId: number }): Promise<ApproveLLMSuggestionResponse> => {
+      const response = await api.post(`/api/v2/llm/review/${params.coinId}/approve`, {});
+      return response.data as ApproveLLMSuggestionResponse;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["llm-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["coins", variables.coinId] });
+      queryClient.invalidateQueries({ queryKey: ["coins"] });
     },
   });
 }

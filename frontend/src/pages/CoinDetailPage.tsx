@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useExpandLegendV2, useGenerateHistoricalContext } from "@/hooks/useLLM"
+import { useExpandLegendV2, useGenerateHistoricalContext, useTranscribeLegendForCoin, useIdentifyCoinForCoin } from "@/hooks/useLLM"
 import { toast } from "sonner"
+import { Link } from "react-router-dom"
+import { ScrollText, Search, Sparkles } from "lucide-react"
 
 export function CoinDetailPage() {
   const { id } = useParams()
@@ -62,6 +64,8 @@ export function CoinDetailPage() {
   const [isGeneratingContext, setIsGeneratingContext] = useState(false)
   const expandLegend = useExpandLegendV2()
   const generateContext = useGenerateHistoricalContext()
+  const transcribeForCoin = useTranscribeLegendForCoin()
+  const identifyForCoin = useIdentifyCoinForCoin()
 
   const handleGenerateContext = async () => {
     if (!coin) return
@@ -241,26 +245,80 @@ export function CoinDetailPage() {
             </TabsList>
 
             <TabsContent value="details" className="mt-0">
-              <CoinDetail
-                coin={coin}
-                onEdit={() => navigate(`/coins/${id}/edit`)}
-                onNavigatePrev={handleNavigatePrev}
-                onNavigateNext={handleNavigateNext}
-                hasPrev={!!coin?.prev_id}
-                hasNext={!!coin?.next_id}
-                onOpenAddImages={() => setAddImagesOpen(true)}
-                onEnrichLegend={handleEnrichLegend}
-                isEnrichingObverse={enrichingSide === 'obverse'}
-                isEnrichingReverse={enrichingSide === 'reverse'}
-                onGenerateContext={handleGenerateContext}
-                isGeneratingContext={isGeneratingContext}
-              />
-              <AddCoinImagesDialog
-                coin={coin}
-                open={addImagesOpen}
-                onOpenChange={setAddImagesOpen}
-                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['coin', coinId] })}
-              />
+              {(() => {
+                const c = coin as { llm_suggested_design?: unknown; llm_suggested_attribution?: unknown } | undefined
+                const hasPending = !!c?.llm_suggested_design || !!c?.llm_suggested_attribution
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3" style={{ background: 'var(--bg-muted)', borderColor: 'var(--border-subtle)' }}>
+                        {hasPending && (
+                          <Link
+                            to="/review?tab=ai"
+                            className="inline-flex items-center gap-1.5 text-sm font-medium"
+                            style={{ color: 'var(--accent-ai)' }}
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            Pending AI suggestions — Review in AI Suggestions →
+                          </Link>
+                        )}
+                        <div className="flex flex-wrap gap-2 ml-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={transcribeForCoin.isPending || identifyForCoin.isPending}
+                            onClick={async () => {
+                              try {
+                                await transcribeForCoin.mutateAsync(coinId)
+                                queryClient.invalidateQueries({ queryKey: ['coin', coinId] })
+                                toast.success("Legends transcribed; suggestions saved. Review in AI Suggestions.")
+                              } catch {
+                                toast.error("Transcribe failed (coin may have no primary image)")
+                              }
+                            }}
+                          >
+                            {transcribeForCoin.isPending ? "..." : <><ScrollText className="h-4 w-4 mr-1" /> Transcribe legends</>}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={transcribeForCoin.isPending || identifyForCoin.isPending}
+                            onClick={async () => {
+                              try {
+                                await identifyForCoin.mutateAsync(coinId)
+                                queryClient.invalidateQueries({ queryKey: ['coin', coinId] })
+                                toast.success("Coin identified; suggestions saved. Review in AI Suggestions.")
+                              } catch {
+                                toast.error("Identify failed (coin may have no primary image)")
+                              }
+                            }}
+                          >
+                            {identifyForCoin.isPending ? "..." : <><Search className="h-4 w-4 mr-1" /> Identify from image</>}
+                          </Button>
+                        </div>
+                    </div>
+                    <CoinDetail
+                      coin={coin}
+                      onEdit={() => navigate(`/coins/${id}/edit`)}
+                      onNavigatePrev={handleNavigatePrev}
+                      onNavigateNext={handleNavigateNext}
+                      hasPrev={!!coin?.prev_id}
+                      hasNext={!!coin?.next_id}
+                      onOpenAddImages={() => setAddImagesOpen(true)}
+                      onEnrichLegend={handleEnrichLegend}
+                      isEnrichingObverse={enrichingSide === 'obverse'}
+                      isEnrichingReverse={enrichingSide === 'reverse'}
+                      onGenerateContext={handleGenerateContext}
+                      isGeneratingContext={isGeneratingContext}
+                    />
+                    <AddCoinImagesDialog
+                      coin={coin}
+                      open={addImagesOpen}
+                      onOpenChange={setAddImagesOpen}
+                      onSuccess={() => queryClient.invalidateQueries({ queryKey: ['coin', coinId] })}
+                    />
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="audit">

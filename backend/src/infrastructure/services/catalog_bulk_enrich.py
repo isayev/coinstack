@@ -67,8 +67,9 @@ async def run_bulk_enrich(
     try:
         job = session.get(EnrichmentJobModel, job_id)
         if not job:
-            logger.warning(f"Enrichment job {job_id} not found")
+            logger.warning("Enrichment job %s not found in DB; ensure job is committed before background task runs", job_id)
             return
+        logger.info("Bulk enrich job %s starting (total=%s)", job_id, getattr(request, "coin_ids", None) or "filter-based")
         now = datetime.now(timezone.utc)
         job.status = "running"
         job.started_at = now
@@ -150,6 +151,10 @@ async def run_bulk_enrich(
         job.errors = error_count
         job.result_summary = json.dumps(results_list)
         session.commit()
+        logger.info(
+            "Bulk enrich job %s completed: updated=%s conflicts=%s not_found=%s errors=%s",
+            job_id, updated_count, conflict_count, not_found_count, error_count,
+        )
     except Exception as e:
         logger.exception(f"Bulk enrich job {job_id} failed: {e}")
         try:

@@ -150,13 +150,18 @@ class CoinResponse(BaseModel):
     # Collection management
     storage_location: Optional[str] = None
     personal_notes: Optional[str] = None
+    # Rarity (numismatic)
+    rarity: Optional[str] = None
+    rarity_notes: Optional[str] = None
     # LLM enrichment
     historical_significance: Optional[str] = None
     llm_enriched_at: Optional[str] = None
     llm_analysis_sections: Optional[str] = None      # JSON-encoded sections
     llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
     llm_suggested_rarity: Optional[dict] = None      # Rarity info from LLM for audit
-    
+    llm_suggested_design: Optional[dict] = None     # Design suggestions: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
+    llm_suggested_attribution: Optional[dict] = None  # Attribution suggestions: issuer, mint, denomination, year_start, year_end
+
     # Research Grade Extensions
     issue_status: str
     die_info: Optional[DieInfoResponse] = None
@@ -241,12 +246,16 @@ class CoinResponse(BaseModel):
             ],
             storage_location=coin.storage_location,
             personal_notes=coin.personal_notes,
+            rarity=coin.rarity,
+            rarity_notes=coin.rarity_notes,
             historical_significance=coin.historical_significance,
             llm_enriched_at=coin.llm_enriched_at,
             llm_analysis_sections=coin.llm_analysis_sections,
             llm_suggested_references=coin.llm_suggested_references,
             llm_suggested_rarity=coin.llm_suggested_rarity,
-            
+            llm_suggested_design=coin.llm_suggested_design,
+            llm_suggested_attribution=coin.llm_suggested_attribution,
+
             # Extensions mapping
             issue_status=coin.issue_status.value,
             die_info=DieInfoResponse(
@@ -538,7 +547,9 @@ def update_coin(
             ) if request.acquisition_price is not None else None,
             storage_location=request.storage_location,
             personal_notes=request.personal_notes,
-            
+            rarity=existing_coin.rarity,
+            rarity_notes=existing_coin.rarity_notes,
+
             # Extensions
             issue_status=IssueStatus(request.issue_status) if request.issue_status else IssueStatus.OFFICIAL,
             die_info=DieInfo(
@@ -565,7 +576,9 @@ def update_coin(
             llm_enriched_at=existing_coin.llm_enriched_at,
             llm_analysis_sections=existing_coin.llm_analysis_sections,
             llm_suggested_references=existing_coin.llm_suggested_references,
-            llm_suggested_rarity=existing_coin.llm_suggested_rarity
+            llm_suggested_rarity=existing_coin.llm_suggested_rarity,
+            llm_suggested_design=existing_coin.llm_suggested_design,
+            llm_suggested_attribution=existing_coin.llm_suggested_attribution,
         )
         
         # Add images manually here since DTO/UseCase flow is pending update

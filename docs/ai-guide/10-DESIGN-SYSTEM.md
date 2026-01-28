@@ -3,6 +3,8 @@
 > Complete design token reference and UI component specifications for CoinStack.
 > **Last Updated**: January 2026 (v3.1)
 
+**Canonical token source:** `docs/design-tokens.json` is the single source of truth for design tokens. When adding or changing tokens, update that file first, then keep `frontend/src/index.css` and `frontend/tailwind.config.js` in sync. See [09-TASK-RECIPES.md — Sync design tokens](09-TASK-RECIPES.md#sync-design-tokens).
+
 ---
 
 ## Quick Reference for AI
@@ -123,23 +125,27 @@ Cold → Hot progression represents increasing quality:
 --grade-fine: #34C759;  /* Fine - Neutral green (🌡️) */
 --grade-vf: #FFD60A;    /* VF - Warm yellow (☀️) */
 --grade-ef: #FF9F0A;    /* EF/XF - Hot orange (🔥) */
---grade-au: #FF6B6B;    /* AU - Fire red (🔥🔥) */
---grade-ms: #DC2626;    /* MS/FDC - Deep red (💎) */
+--grade-au: #FF9F0A;    /* AU - Hot orange (🔥) */
+--grade-ms: #FF6B6B;    /* MS/FDC - Fire red (💎) */
 
-/* Certification services */
---cert-ngc: #1A73E8;    /* NGC blue */
---cert-pcgs: #2E7D32;   /* PCGS green */
+/* Certification services (brand colors — see index.css CERTIFICATION block) */
+--cert-ngc: #003366;    /* NGC navy blue */
+--cert-ngc-subtle: rgba(0, 51, 102, 0.15);
+--cert-pcgs: #00529B;   /* PCGS blue */
+--cert-pcgs-subtle: rgba(0, 82, 155, 0.15);
+--cert-anacs: #8B0000;  /* ANACS dark red */
+--cert-anacs-subtle: rgba(139, 0, 0, 0.15);
 ```
 
 ### 2.5 Rarity Colors (Gemstone Scale)
 
 ```css
---rarity-common: #D1D5DB;   /* Common - Quartz (gray) */
---rarity-scarce: #8B5CF6;   /* Scarce - Amethyst (purple) */
---rarity-r1: #06B6D4;       /* R1 - Sapphire (cyan) */
---rarity-r2: #10B981;       /* R2 - Emerald (green) */
---rarity-r3: #F59E0B;       /* R3 - Topaz (amber) */
---rarity-unique: #EF4444;   /* Unique - Ruby (red) */
+--rarity-common: #D1D5DB;   /* Common (C) - Quartz (gray) */
+--rarity-scarce: #8B5CF6;   /* Scarce (S) - Amethyst (purple) */
+--rarity-r1: #06B6D4;       /* Rare (R1) - Sapphire (cyan) */
+--rarity-r2: #10B981;       /* Very Rare (R2) - Emerald (green) */
+--rarity-r3: #EF4444;       /* Extremely Rare (R3) - Ruby (red) */
+--rarity-unique: #FFFFFF;   /* Unique (U) - Diamond (white) */
 ```
 
 ### 2.6 Performance Colors
@@ -175,16 +181,18 @@ Standardized feedback colors for data entry and AI population:
 
 ## 3. Typography
 
-### Font Scale
+### Font Scale (canonical in `index.css`)
+
+Typography tokens use rem; components should prefer these over raw px/Tailwind where consistency matters:
 
 ```css
---font-size-xs: 8px;    /* Badge text, microcopy */
---font-size-sm: 10px;   /* Legends, small labels */
---font-size-md: 12px;   /* Secondary text */
---font-size-base: 14px; /* Body text */
---font-size-lg: 15px;   /* Ruler names */
---font-size-xl: 17px;   /* Section headers */
---font-size-xxl: 20px;  /* Page titles */
+--font-size-xs: 0.75rem;   /* 12px — badge text, microcopy */
+--font-size-sm: 0.875rem;  /* 14px — legends, small labels, CardDescription */
+--font-size-base: 1rem;    /* 16px — body text */
+--font-size-lg: 1.125rem;  /* 18px — ruler names */
+--font-size-xl: 1.25rem;   /* 20px — section headers */
+--font-size-2xl: 1.5rem;   /* 24px — CardTitle, page subtitles */
+--font-size-3xl: 1.875rem; /* 30px — page titles */
 ```
 
 ### Font Weights
@@ -211,6 +219,50 @@ font-family: monospace;
 font-size: 9px;
 color: var(--text-muted);
 ```
+
+### Empty state
+
+Use for “no results”, “no data”, or “empty list” messages (e.g. collection grid, table, review queue):
+
+- **Title:** `font-size: var(--font-size-xl)` (1.25rem), `font-weight: 600`, color from `var(--text-primary)` or default.
+- **Description:** `font-size: var(--font-size-sm)`, `color: var(--text-muted)` (or Tailwind `text-muted-foreground`).
+
+Example pattern: `className="text-xl font-semibold mb-2"` for title and `className="text-muted-foreground mb-4"` for description, or equivalent tokens.
+
+### Border radius usage (VC-004)
+
+Use a single scale so radius is consistent. Tailwind extends from `--radius: 0.5rem`:
+
+| Token / class | Value | Use for |
+|---------------|-------|---------|
+| `rounded-lg` | `var(--radius)` (0.5rem) | Cards, panels, dialogs, main containers |
+| `rounded-md` | `calc(var(--radius) - 2px)` | Buttons, inputs, dropdowns, badges |
+| `rounded-sm` | `calc(var(--radius) - 4px)` | Small chips, tags, tight corners |
+| `rounded-full` | 9999px | Pills, avatars, circular badges |
+
+**Rule:** Cards and elevated surfaces → `rounded-lg`. Interactive controls (buttons, inputs) → `rounded-md`. Avoid mixing ad-hoc values (e.g. `rounded-[6px]`) unless matching a specific spec (e.g. category bar `8px 0 0 8px`).
+
+### Layout tokens (LS-001, LS-002)
+
+| Token | Value | Use for |
+|-------|-------|---------|
+| `--content-max-width` | 1440px | Main content wrapper (e.g. `max-w-[var(--content-max-width)]` or equivalent) |
+| `--card-content-padding-x` | 14px | Coin card content horizontal padding (spec 12 14 12 16) |
+| `--card-content-padding-y` | 12px | Coin card content vertical padding |
+
+Use `--content-max-width` on page or main-content wrappers so layouts stay consistent. Coin card exact padding remains 12px 14px 12px 16px per spec; these tokens support future adoption.
+
+### Loading / Skeleton (IF-003)
+
+Use a consistent loading pattern so users see recognizable placeholders:
+
+| Context | Component | Notes |
+|---------|-----------|--------|
+| **Grid** | `CoinCardV3Skeleton` | From `@/components/coins/CoinCard`; matches card layout and `--bg-card` / `--bg-elevated`. |
+| **Table** | `TableRowSkeleton` | From `@/components/ui/TableRowSkeleton`; h-14, `--bg-elevated`, `rounded-md`. |
+| **Generic** | `Skeleton` | From `@/components/ui/skeleton`; use `bg-primary/10` or override with `style={{ background: 'var(--bg-elevated)' }}` for dark surfaces. |
+
+Prefer `CoinCardV3Skeleton` for collection grid and `TableRowSkeleton` for table loading so layout matches the loaded content.
 
 ---
 

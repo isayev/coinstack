@@ -63,10 +63,10 @@ const CoinContent = memo(function CoinContent({
   compact = false,
   categoryType,
 }: CoinContentProps) {
-  // Use isMobile for responsive adjustments within content
+  // Use design tokens where they align; fallback to px for breakpoint-specific tweaks
   const fontSize = {
-    title: isMobile ? '16px' : compact ? '15px' : '17px',
-    subtitle: isMobile ? '13px' : compact ? '12px' : '13px',
+    title: isMobile ? 'var(--font-size-base)' : compact ? 'var(--font-size-lg)' : 'var(--font-size-lg)',
+    subtitle: isMobile ? 'var(--font-size-sm)' : compact ? 'var(--font-size-xs)' : 'var(--font-size-sm)',
     legend: isMobile ? '11px' : compact ? '10px' : '11px',
     price: isMobile ? '15px' : compact ? '14px' : '16px',
   };

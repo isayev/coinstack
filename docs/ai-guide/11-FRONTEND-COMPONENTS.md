@@ -205,6 +205,18 @@ const imageHeight = isMobile ? '180px' : '160px'
 </div>
 ```
 
+**Badge usage (VC-003)** — Use design-system badges for numismatic data so tokens stay consistent:
+
+| Use case | Component | Location |
+|----------|-----------|----------|
+| **Metal** (AU, AR, AE, etc.) | `MetalBadge` | `@/components/ui/badges/MetalBadge` or `@/components/design-system/MetalBadge` |
+| **Grade** (VF, AU, MS, etc.) | `GradeBadge` | `@/components/ui/badges/GradeBadge` or `@/components/design-system/GradeBadge` |
+| **Certification** (NGC, PCGS) | `CertBadge` | `@/components/ui/badges/CertBadge` |
+| **Rarity** (dot or label) | `RarityIndicator` | `@/components/design-system/RarityIndicator` |
+| **Generic** (status, method, counts) | shadcn `Badge` | `@/components/ui/badge` — use for non-numismatic labels (e.g. “Pending”, “High”, method names). Prefer variants `outline`, `secondary`, or semantic tokens instead of raw Tailwind colors. |
+
+Use MetalBadge/GradeBadge/CertBadge/RarityIndicator in coin cards, table rows, and detail views. Use generic `Badge` only for non-coin UI (filters, status, confidence).
+
 ### 2.2 CoinTableRowV3 (Table View)
 
 **Location**: `frontend/src/components/coins/CoinTableRowV3.tsx`

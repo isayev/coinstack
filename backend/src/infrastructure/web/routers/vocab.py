@@ -311,22 +311,24 @@ def get_review_queue(
 @router.post("/review/{assignment_id}/approve")
 def approve_review(
     assignment_id: int,
-    repo: SqlAlchemyVocabRepository = Depends(get_vocab_repo)
+    db: Session = Depends(get_db),
+    repo: SqlAlchemyVocabRepository = Depends(get_vocab_repo),
 ):
     """Approve a pending vocabulary assignment."""
     repo.approve_assignment(assignment_id)
-    # Note: Transaction is auto-committed by get_db dependency
+    db.commit()
     return {"status": "approved", "id": assignment_id}
 
 
 @router.post("/review/{assignment_id}/reject")
 def reject_review(
     assignment_id: int,
-    repo: SqlAlchemyVocabRepository = Depends(get_vocab_repo)
+    db: Session = Depends(get_db),
+    repo: SqlAlchemyVocabRepository = Depends(get_vocab_repo),
 ):
     """Reject a pending vocabulary assignment."""
     repo.reject_assignment(assignment_id)
-    # Note: Transaction is auto-committed by get_db dependency
+    db.commit()
     return {"status": "rejected", "id": assignment_id}
 
 

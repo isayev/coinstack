@@ -147,7 +147,8 @@ async def bulk_enrich(
         created_at=datetime.now(timezone.utc),
     )
     db.add(job)
-    db.flush()
+    db.commit()
+    logger.info("Bulk enrich job %s queued (total=%s)", job_id, total)
     background_tasks.add_task(run_bulk_enrich, job_id, request, SessionLocal)
     return BulkEnrichResponse(
         job_id=job_id,

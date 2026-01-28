@@ -90,7 +90,7 @@ Use this checklist for manual and tool-assisted audits. It complements the UX/UI
 
 | # | Check | Pass? | Notes |
 |---|-------|-------|--------|
-| 7.1 | Touch targets ≥ 44×44 px where possible. | | |
+| 7.1 | Touch targets ≥ 44×44 px where possible. | ✓ | Sidebar nav + collapse: min-h-[44px]. Review queue approve/reject: 44×44px. Header icon buttons 40px (desktop-first). |
 | 7.2 | Command Palette or “Search” reachable on mobile (not only ⌘K). | | |
 | 7.3 | No essential actions hidden behind hover-only UI. | | |
 

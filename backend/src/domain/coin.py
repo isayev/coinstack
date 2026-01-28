@@ -198,13 +198,19 @@ class Coin:
     # Collection management
     storage_location: Optional[str] = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
     personal_notes: Optional[str] = None            # Owner notes, observations, research
+    # Rarity (numismatic)
+    rarity: Optional[str] = None                     # RIC-style code: C, S, R1-R5, RR, RRR, UNIQUE
+    rarity_notes: Optional[str] = None              # Source or description
+
     # LLM enrichment
     historical_significance: Optional[str] = None   # LLM-generated historical context
     llm_enriched_at: Optional[str] = None           # Timestamp of last LLM enrichment
     llm_analysis_sections: Optional[str] = None     # JSON-encoded analysis sections
     llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
-    llm_suggested_rarity: Optional[Dict[str, Any]] = None # Rarity info from LLM for audit
-    
+    llm_suggested_rarity: Optional[Dict[str, Any]] = None  # Rarity info from LLM for audit
+    llm_suggested_design: Optional[Dict[str, Any]] = None   # Design suggestions: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
+    llm_suggested_attribution: Optional[Dict[str, Any]] = None  # Attribution suggestions: issuer, mint, denomination, year_start, year_end
+
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None
 

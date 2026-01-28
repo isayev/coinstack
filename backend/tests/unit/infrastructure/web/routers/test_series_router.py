@@ -34,7 +34,7 @@ def test_create_series():
         
         instance.create_series.return_value = mock_series
         
-        response = client.post("/api/series", json={
+        response = client.post("/api/v2/series", json={
             "name": "Test",
             "series_type": "user_defined",
             "target_count": 10
@@ -56,7 +56,7 @@ def test_add_slot():
         
         instance.add_slot.return_value = mock_slot
         
-        response = client.post("/api/series/1/slots", json={
+        response = client.post("/api/v2/series/1/slots", json={
             "slot_number": 1,
             "name": "Slot 1"
         })
@@ -71,7 +71,7 @@ def test_add_coin_to_series():
             id=1, series_id=1, coin_id=1, slot_id=None
         )
         
-        response = client.post("/api/series/1/coins/1")
+        response = client.post("/api/v2/series/1/coins/1")
         assert response.status_code == 201
         assert response.json()["coin_id"] == 1
 
@@ -80,5 +80,5 @@ def test_remove_coin_from_series():
         instance = MockService.return_value
         instance.remove_coin_from_series.return_value = True
         
-        response = client.delete("/api/series/1/coins/1")
+        response = client.delete("/api/v2/series/1/coins/1")
         assert response.status_code == 204

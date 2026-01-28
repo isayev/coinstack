@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from unittest.mock import MagicMock, patch, AsyncMock
 from sqlalchemy.orm import Session
-from src.infrastructure.web.routers.vocab import router
+from src.infrastructure.web.routers.vocab import router, legacy_router
 from src.infrastructure.web.dependencies import get_db
 
 # Mock DB Dependency
@@ -16,6 +16,7 @@ def override_get_db():
 
 app = FastAPI()
 app.include_router(router)
+app.include_router(legacy_router)
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)

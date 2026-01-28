@@ -294,3 +294,35 @@ export function useNormalizeVocab() {
     },
   });
 }
+
+/** Run legend/transcribe on the coin's primary image and save to llm_suggested_design */
+export function useTranscribeLegendForCoin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (coinId: number) => {
+      const response = await api.post(`/api/v2/llm/legend/transcribe/coin/${coinId}`);
+      return response.data as { obverse_legend?: string; reverse_legend?: string; exergue?: string; confidence: number; cost_usd: number };
+    },
+    onSuccess: (_, coinId) => {
+      queryClient.invalidateQueries({ queryKey: ["llm-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["coins", coinId] });
+      queryClient.invalidateQueries({ queryKey: ["coins"] });
+    },
+  });
+}
+
+/** Run identify on the coin's primary image and save to llm_suggested_attribution + design + refs */
+export function useIdentifyCoinForCoin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (coinId: number) => {
+      const response = await api.post(`/api/v2/llm/identify/coin/${coinId}`);
+      return response.data as { ruler?: string; denomination?: string; mint?: string; date_range?: string; confidence: number; cost_usd: number };
+    },
+    onSuccess: (_, coinId) => {
+      queryClient.invalidateQueries({ queryKey: ["llm-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["coins", coinId] });
+      queryClient.invalidateQueries({ queryKey: ["coins"] });
+    },
+  });
+}

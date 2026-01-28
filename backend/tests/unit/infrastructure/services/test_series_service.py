@@ -26,7 +26,7 @@ def test_create_series(mock_session):
     assert series.name == "Twelve Caesars"
     assert series.slug == "twelve-caesars" # Auto-generated
     mock_session.add.assert_called()
-    mock_session.commit.assert_called()
+    mock_session.flush.assert_called()
 
 def test_add_slot(mock_session):
     service = SeriesService(mock_session)

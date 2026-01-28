@@ -1,0 +1,112 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format",
+  "color": {
+    "primitive": {
+      "gray": {
+        "50": { "value": "#fafafa" },
+        "100": { "value": "#f5f5f5" },
+        "200": { "value": "#e5e5e5" },
+        "300": { "value": "#d4d4d4" },
+        "400": { "value": "#a3a3a3" },
+        "500": { "value": "#737373" },
+        "600": { "value": "#525252" },
+        "700": { "value": "#404040" },
+        "800": { "value": "#262626" },
+        "900": { "value": "#171717" }
+      },
+      "brand": {
+        "primary": { "value": "hsl(45 100% 50%)" },
+        "gold": { "value": "#FFD700" }
+      }
+    },
+    "semantic": {
+      "background": {
+        "app": { "value": "#050814" },
+        "elevated": { "value": "#0B1020" },
+        "card": { "value": "#0F1526" },
+        "hover": { "value": "#1A1F35" },
+        "subtle": { "value": "#14192a" }
+      },
+      "text": {
+        "primary": { "value": "#F5F5F7" },
+        "secondary": { "value": "#D1D5DB" },
+        "muted": { "value": "#9CA3AF" },
+        "ghost": { "value": "#6B7280" }
+      },
+      "border": {
+        "subtle": { "value": "rgba(148, 163, 184, 0.18)" },
+        "strong": { "value": "rgba(148, 163, 184, 0.40)" }
+      },
+      "feedback": {
+        "success": { "value": "#22C55E" },
+        "warning": { "value": "#EAB308" },
+        "error": { "value": "#EF4444" },
+        "info": { "value": "#3B82F6" }
+      },
+      "cert": {
+        "ngc": { "value": "#003366" },
+        "pcgs": { "value": "#00529B" },
+        "anacs": { "value": "#8B0000" }
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": { "value": "Inter, -apple-system, BlinkMacSystemFont, sans-serif" },
+      "mono": { "value": "JetBrains Mono, monospace" },
+      "legends": { "value": "Cinzel, serif" }
+    },
+    "fontSize": {
+      "xs": { "value": "0.75rem" },
+      "sm": { "value": "0.875rem" },
+      "base": { "value": "1rem" },
+      "lg": { "value": "1.125rem" },
+      "xl": { "value": "1.25rem" },
+      "2xl": { "value": "1.5rem" },
+      "3xl": { "value": "1.875rem" }
+    },
+    "fontWeight": {
+      "normal": { "value": "400" },
+      "medium": { "value": "500" },
+      "semibold": { "value": "600" },
+      "bold": { "value": "700" }
+    },
+    "lineHeight": {
+      "tight": { "value": "1.25" },
+      "normal": { "value": "1.5" },
+      "relaxed": { "value": "1.75" }
+    }
+  },
+  "spacing": {
+    "0": { "value": "0" },
+    "1": { "value": "0.25rem" },
+    "2": { "value": "0.5rem" },
+    "3": { "value": "0.75rem" },
+    "4": { "value": "1rem" },
+    "6": { "value": "1.5rem" },
+    "8": { "value": "2rem" }
+  },
+  "borderRadius": {
+    "none": { "value": "0" },
+    "sm": { "value": "calc(var(--radius) - 4px)" },
+    "md": { "value": "calc(var(--radius) - 2px)" },
+    "lg": { "value": "var(--radius)" },
+    "full": { "value": "9999px" }
+  },
+  "radius": { "value": "0.5rem" },
+  "shadow": {
+    "sm": { "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)" },
+    "md": { "value": "0 4px 6px -1px rgb(0 0 0 / 0.1)" },
+    "lg": { "value": "0 10px 15px -3px rgb(0 0 0 / 0.1)" }
+  },
+  "transition": {
+    "duration": {
+      "fast": { "value": "150ms" },
+      "normal": { "value": "200ms" },
+      "slow": { "value": "300ms" }
+    },
+    "easing": {
+      "default": { "value": "cubic-bezier(0.4, 0, 0.2, 1)" }
+    }
+  }
+}

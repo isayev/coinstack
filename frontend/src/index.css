@@ -41,6 +41,20 @@
     --border-default: rgba(148, 163, 184, 0.40);
     --border-emphasis: rgba(148, 163, 184, 0.60);
 
+    /* Typography scale (design token — use in components, see 10-DESIGN-SYSTEM) */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+
+    /* Layout (LS-001, LS-002) — content width and card padding */
+    --content-max-width: 1440px;
+    --card-content-padding-x: 14px;
+    --card-content-padding-y: 12px;
+
     /* Shadcn compatibility mapping */
     --background: 0 0% 4%;
     --foreground: 240 5% 96%;
@@ -60,7 +74,8 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 4% 16%;
     --input: 240 4% 16%;
-    --ring: 45 100% 50%;
+    /* Focus/ring — same as focus-visible outline for consistency (imperial purple) */
+    --ring: 263 84% 58%;
     --radius: 0.5rem;
     
     /* ═══════════════════════════════════════════════════════════════
@@ -246,16 +261,11 @@
     /* --grade-au already defined */
     /* --grade-ms already defined */
 
-    /* Certification services (brand colors) */
-    --cert-ngc: #1A73E8;
-    --cert-pcgs: #2E7D32;
-    --cert-anacs: #9C27B0;
-    
-    /* Legacy aliases */
-    --grade-ngc: #1A73E8;
-    --grade-ngc-bg: rgba(26, 115, 232, 0.15);
-    --grade-pcgs: #2E7D32;
-    --grade-pcgs-bg: rgba(46, 125, 50, 0.15);
+    /* Legacy aliases — point to cert vars (defined in CERTIFICATION block below) */
+    --grade-ngc: var(--cert-ngc);
+    --grade-ngc-bg: var(--cert-ngc-subtle);
+    --grade-pcgs: var(--cert-pcgs);
+    --grade-pcgs-bg: var(--cert-pcgs-subtle);
     
     /* ═══════════════════════════════════════════════════════════════
        CATEGORIES — Era-Appropriate, Historically Informed - V3.0 SPEC
@@ -432,7 +442,7 @@
     color-scheme: dark;
   }
   
-  /* Focus-visible styles for accessibility */
+  /* Focus-visible styles for accessibility — use --ring so shadcn and base share one token */
   button:focus-visible,
   a:focus-visible,
   [role="button"]:focus-visible,
@@ -440,7 +450,7 @@
   input:focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    outline: 2px solid var(--cat-imperial);
+    outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
   

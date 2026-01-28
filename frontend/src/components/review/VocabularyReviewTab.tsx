@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -69,44 +70,50 @@ export function VocabularyReviewTab() {
   // Approve mutation
   const approveMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/approve`)));
+      await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/approve`, {})));
     },
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: ["vocab", "review"] });
       queryClient.invalidateQueries({ queryKey: ["review", "counts"] });
+      toast.success(ids.length === 1 ? "Assignment approved" : `${ids.length} assignments approved`);
       pushAction({
         type: "approve",
         itemIds: ids,
         tab: "vocabulary",
         undoFn: async () => {
-          // TODO: Implement reverse approve (reject)
-          await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/reject`)));
+          await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/reject`, {})));
           queryClient.invalidateQueries({ queryKey: ["vocab", "review"] });
         },
       });
       setSelectedIds(new Set());
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? "Failed to approve");
     },
   });
 
   // Reject mutation
   const rejectMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/reject`)));
+      await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/reject`, {})));
     },
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: ["vocab", "review"] });
       queryClient.invalidateQueries({ queryKey: ["review", "counts"] });
+      toast.success(ids.length === 1 ? "Assignment rejected" : `${ids.length} assignments rejected`);
       pushAction({
         type: "reject",
         itemIds: ids,
         tab: "vocabulary",
         undoFn: async () => {
-          // TODO: Implement reverse reject (approve)
-          await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/approve`)));
+          await Promise.all(ids.map((id) => api.post(`/api/v2/vocab/review/${id}/approve`, {})));
           queryClient.invalidateQueries({ queryKey: ["vocab", "review"] });
         },
       });
       setSelectedIds(new Set());
+    },
+    onError: (err: Error) => {
+      toast.error(err?.message ?? "Failed to reject");
     },
   });
 

@@ -280,6 +280,30 @@ export interface CatalogReferenceValidation {
 }
 
 /**
+ * LLM-suggested design (legends, exergue, descriptions)
+ */
+export interface LlmSuggestedDesign {
+  obverse_legend?: string | null;
+  reverse_legend?: string | null;
+  exergue?: string | null;
+  obverse_description?: string | null;
+  reverse_description?: string | null;
+  obverse_legend_expanded?: string | null;
+  reverse_legend_expanded?: string | null;
+}
+
+/**
+ * LLM-suggested attribution (issuer, mint, denomination, dates)
+ */
+export interface LlmSuggestedAttribution {
+  issuer?: string | null;
+  mint?: string | null;
+  denomination?: string | null;
+  year_start?: number | null;
+  year_end?: number | null;
+}
+
+/**
  * LLM suggestion item for review queue
  */
 export interface LLMSuggestionItem {
@@ -300,6 +324,10 @@ export interface LLMSuggestionItem {
   suggested_references: string[];
   validated_references: CatalogReferenceValidation[];
   rarity_info: LLMRarityInfo | null;
+  /** Design suggestions (legends, exergue, descriptions) from transcribe/identify */
+  suggested_design?: LlmSuggestedDesign | null;
+  /** Attribution suggestions (issuer, mint, denomination, dates) from identify */
+  suggested_attribution?: LlmSuggestedAttribution | null;
   enriched_at: string | null;
 }
 
