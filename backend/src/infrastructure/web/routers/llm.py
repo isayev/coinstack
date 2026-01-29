@@ -1333,6 +1333,7 @@ class CatalogReferenceValidation(BaseModel):
     confidence: float = 0.0  # 0.0 to 1.0
     match_reason: Optional[str] = None  # Why it matches/doesn't match
     existing_reference: Optional[str] = None  # If already in DB
+    numismatic_warning: Optional[str] = None  # Category/catalog consistency warning from catalog_validation
 
 
 class LlmSuggestedDesign(BaseModel):
@@ -1387,71 +1388,11 @@ class LLMReviewQueueResponse(BaseModel):
 
 def _parse_catalog_reference(ref_text: str) -> Dict[str, Optional[str]]:
     """
-    Parse a catalog reference string into structured components.
-    
-    Examples:
-        "RIC IV.1 289c" -> {catalog: "RIC", volume: "IV.1", number: "289c"}
-        "Cohen 382" -> {catalog: "Cohen", volume: None, number: "382"}
-        "RSC 382" -> {catalog: "RSC", volume: None, number: "382"}
+    Parse a catalog reference string using the central parser.
+    Delegates to src.infrastructure.services.catalogs.parser.parse_catalog_reference.
     """
-    import re
-    
-    # Catalog patterns with capture groups
-    patterns = [
-        (r'\b(RIC)\s+([IVX]+(?:\.\d+|i)?)\s*,?\s*(\d+[a-z]?)\b', 'RIC'),
-        (r'\b(RSC)\s+(\d+[a-z]?)\b', 'RSC'),
-        (r'\b(Cohen)\s+(\d+[a-z]?)\b', 'Cohen'),
-        (r'\b(Sear)\s+(\d+)\b', 'Sear'),
-        (r'\b(RRC|Crawford)\s+(\d+(?:/\d+)?[a-z]?)\b', 'RRC'),
-        (r'\b(BMC(?:RE)?)\s+([IVXLC]+|\d+)?\s*,?\s*(\d+)\b', 'BMC'),
-        (r'\b(RPC)\s+([IVXLC]+)\s*,?\s*(\d+\??)\b', 'RPC'),
-    ]
-    
-    for pattern, catalog_name in patterns:
-        match = re.search(pattern, ref_text, re.IGNORECASE)
-        if match:
-            groups = match.groups()
-            if catalog_name == 'RIC' and len(groups) >= 3:
-                return {
-                    "catalog": "RIC",
-                    "volume": groups[1],
-                    "number": groups[2],
-                }
-            elif catalog_name in ['RSC', 'Cohen', 'Sear'] and len(groups) >= 2:
-                return {
-                    "catalog": catalog_name,
-                    "volume": None,
-                    "number": groups[1],
-                }
-            elif catalog_name == 'RRC' and len(groups) >= 2:
-                return {
-                    "catalog": "RRC",
-                    "volume": None,
-                    "number": groups[1],
-                }
-            elif catalog_name == 'BMC' and len(groups) >= 2:
-                return {
-                    "catalog": groups[0],
-                    "volume": groups[1] if len(groups) > 2 else None,
-                    "number": groups[-1],
-                }
-            elif catalog_name == 'RPC' and len(groups) >= 3:
-                return {
-                    "catalog": "RPC",
-                    "volume": groups[1],
-                    "number": groups[2],
-                }
-    
-    # Fallback: extract first word as catalog
-    parts = ref_text.split()
-    if parts:
-        return {
-            "catalog": parts[0].upper(),
-            "volume": None,
-            "number": parts[-1] if len(parts) > 1 else None,
-        }
-    
-    return {"catalog": None, "volume": None, "number": None}
+    from src.infrastructure.services.catalogs.parser import parse_catalog_reference as _central_parse
+    return _central_parse(ref_text)
 
 
 def _validate_catalog_reference(
@@ -1460,45 +1401,51 @@ def _validate_catalog_reference(
     coin_mint: Optional[str],
     coin_year_start: Optional[int],
     coin_year_end: Optional[int],
+    coin_category: Optional[str],
     existing_refs: List[str],
 ) -> CatalogReferenceValidation:
     """
     Validate a suggested catalog reference against coin attributes.
-    
-    Returns validation status and confidence score.
+    Includes numismatic consistency (category vs catalog) via catalog_validation service.
     """
     parsed = _parse_catalog_reference(ref_text)
-    
+
+    # Numismatic validation: category vs catalog alignment
+    from src.application.services.catalog_validation import validate_reference_for_coin
+    numismatic_result = validate_reference_for_coin(
+        catalog=parsed.get("catalog"),
+        number=parsed.get("number"),
+        volume=parsed.get("volume"),
+        coin_category=coin_category,
+        year_start=coin_year_start,
+        year_end=coin_year_end,
+        issuer=coin_issuer,
+    )
+    numismatic_warning = numismatic_result.message if numismatic_result.status == "warning" else None
+
     # Check if reference already exists in DB
     normalized_refs = [r.upper().replace(".", " ").replace(",", " ") for r in existing_refs]
-    ref_normalized = ref_text.upper().replace(".", " ").replace(",", " ")
-    
+
     existing_match = None
     for existing in normalized_refs:
         if parsed["catalog"] and parsed["catalog"].upper() in existing:
             if parsed["number"] and parsed["number"] in existing:
                 existing_match = existing
                 break
-    
-    # Validation logic based on catalog type
+
     validation_status = "unknown"
     confidence = 0.5
     match_reason = None
-    
+
     if existing_match:
         validation_status = "matches"
         confidence = 1.0
         match_reason = f"Already exists in database: {existing_match}"
     elif parsed["catalog"]:
-        # Basic validation: if we can parse it, it's at least a valid format
         validation_status = "partial_match"
         confidence = 0.6
         match_reason = f"Parsed as {parsed['catalog']} {parsed['number'] or ''}"
-        
-        # For RIC references, we could check issuer/mint/date ranges
-        # This would require external catalog data or heuristics
-        # For now, we mark as partial_match if parsed successfully
-    
+
     return CatalogReferenceValidation(
         reference_text=ref_text,
         parsed_catalog=parsed["catalog"],
@@ -1508,6 +1455,7 @@ def _validate_catalog_reference(
         confidence=confidence,
         match_reason=match_reason,
         existing_reference=existing_match,
+        numismatic_warning=numismatic_warning,
     )
 
 
@@ -1580,6 +1528,7 @@ async def get_llm_review_queue(
                 coin_mint=mint,
                 coin_year_start=year_start,
                 coin_year_end=year_end,
+                coin_category=category,
                 existing_refs=existing_refs,
             )
             validated_refs.append(validation)
@@ -1767,44 +1716,11 @@ async def approve_llm_suggestions(
             try:
                 ref_strings = json.loads(coin.llm_suggested_references)
                 if isinstance(ref_strings, list):
-                    existing_local_refs = {
-                        (r.reference_type.system.lower(), (r.reference_type.local_ref or "").strip())
-                        for r in (coin.references or [])
-                        if getattr(r, "reference_type", None)
-                    }
-                    for ref_text in ref_strings:
-                        if not ref_text or not str(ref_text).strip():
-                            continue
-                        ref_text = str(ref_text).strip()
-                        parsed = _parse_catalog_reference(ref_text)
-                        system = (parsed.get("catalog") or "Unknown").lower()
-                        key = (system, ref_text)
-                        if key in existing_local_refs:
-                            continue
-                        ref_type = (
-                            db.query(ReferenceTypeModel)
-                            .filter(
-                                ReferenceTypeModel.system == system,
-                                ReferenceTypeModel.local_ref == ref_text,
-                            )
-                            .first()
-                        )
-                        if not ref_type:
-                            ref_type = ReferenceTypeModel(
-                                system=system,
-                                local_ref=ref_text,
-                                volume=parsed.get("volume"),
-                                number=parsed.get("number"),
-                            )
-                            db.add(ref_type)
-                            db.flush()
-                        link = CoinReferenceModel(
-                            coin_id=coin_id,
-                            reference_type_id=ref_type.id,
-                        )
-                        db.add(link)
-                        existing_local_refs.add(key)
-                        applied_refs += 1
+                    ref_strings = [str(r).strip() for r in ref_strings if r and str(r).strip()]
+                    if ref_strings:
+                        from src.application.services.reference_sync import sync_coin_references
+                        sync_coin_references(db, coin_id, ref_strings, "llm_approved", merge=True)
+                        applied_refs = len(ref_strings)
                 coin.llm_suggested_references = None
             except (json.JSONDecodeError, TypeError):
                 coin.llm_suggested_references = None

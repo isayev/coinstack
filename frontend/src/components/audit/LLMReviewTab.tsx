@@ -108,40 +108,50 @@ function ValidationBadge({
   );
 }
 
-function ReferenceBadge({ 
-  ref, 
-  validation 
-}: { 
+function ReferenceBadge({
+  ref,
+  validation,
+}: {
   ref: string;
   validation?: {
     validation_status: "matches" | "partial_match" | "mismatch" | "unknown";
     confidence: number;
     parsed_catalog: string | null;
     match_reason: string | null;
+    numismatic_warning?: string | null;
   };
 }) {
   const status = validation?.validation_status || "unknown";
   const confidence = validation?.confidence || 0;
-  
+  const numismaticWarning = validation?.numismatic_warning;
+
   const statusColors: Record<string, string> = {
     matches: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30",
     partial_match: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30",
     mismatch: "bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30",
     unknown: "bg-slate-500/10 text-slate-700 dark:text-slate-400 border-slate-500/30",
   };
-  
+
   return (
-    <div className="flex items-center gap-2">
-      <Badge 
-        variant="outline" 
-        className={cn("text-xs", statusColors[status])}
-        title={validation?.match_reason || undefined}
-      >
-        <BookOpen className="w-3 h-3 mr-1" />
-        {ref}
-      </Badge>
-      {validation && (
-        <ValidationBadge status={status} confidence={confidence} />
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="outline"
+          className={cn("text-xs", statusColors[status])}
+          title={validation?.match_reason || undefined}
+        >
+          <BookOpen className="w-3 h-3 mr-1" />
+          {ref}
+        </Badge>
+        {validation && (
+          <ValidationBadge status={status} confidence={confidence} />
+        )}
+      </div>
+      {numismaticWarning && (
+        <div className="flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400" role="alert">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span>{numismaticWarning}</span>
+        </div>
       )}
     </div>
   );

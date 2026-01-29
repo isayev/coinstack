@@ -219,6 +219,8 @@ export const CatalogReferenceSchema = z.object({
   plate: z.string().nullable().optional(),
   note_number: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  raw_text: z.string().nullable().optional(),
+  source: z.string().nullable().optional(), // "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
 }).nullable().optional();
 
 export type CatalogReference = z.infer<typeof CatalogReferenceSchema>;

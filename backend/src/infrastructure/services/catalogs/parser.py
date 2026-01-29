@@ -443,6 +443,54 @@ class ReferenceParser:
 # Singleton instance for convenience
 parser = ReferenceParser()
 
+# Display names for API/ORM (system is stored lowercase: ric, crawford, rpc, etc.)
+_SYSTEM_TO_CATALOG: Dict[str, str] = {
+    "ric": "RIC",
+    "crawford": "RRC",
+    "rpc": "RPC",
+    "rsc": "RSC",
+    "bmcre": "BMCRE",
+    "sear": "Sear",
+    "sydenham": "Sydenham",
+}
+
+
+def parse_catalog_reference(raw: str) -> Dict[str, Optional[str]]:
+    """
+    Single entry point for parsing a catalog reference string.
+    Returns dict compatible with LLM router and reference sync: catalog (display), volume, number.
+    Use this from routers, ReferenceSyncService, and scrapers (after extraction) for consistency.
+    """
+    if not raw or not str(raw).strip():
+        return {"catalog": None, "volume": None, "number": None}
+    raw = str(raw).strip()
+    result = parser.parse(raw)
+    if result.system and result.system in _SYSTEM_TO_CATALOG:
+        catalog = _SYSTEM_TO_CATALOG[result.system]
+        number = result.number
+        if number is None and result.main_number is not None:
+            number = (
+                f"{result.main_number}/{result.sub_number}"
+                if result.sub_number
+                else result.main_number
+            )
+        if number and result.subtype:
+            number = f"{number}{result.subtype}"
+        return {
+            "catalog": catalog,
+            "volume": result.volume,
+            "number": number or None,
+        }
+    # Fallback: first word as catalog, last as number (matches legacy llm behavior)
+    parts = raw.split()
+    if parts:
+        return {
+            "catalog": parts[0].upper(),
+            "volume": None,
+            "number": parts[-1] if len(parts) > 1 else None,
+        }
+    return {"catalog": None, "volume": None, "number": None}
+
 
 def parse_references(text: str) -> List[ParseResult]:
     """

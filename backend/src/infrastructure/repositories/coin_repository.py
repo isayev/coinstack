@@ -29,13 +29,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             ))
         orm_coin.images = orm_images
         
-        # Handle References (separate from _to_model because they're complex relationships)
-        # TODO: Implement proper reference handling with reference_types table
-        # For now, skip references as they require complex lookup/creation in reference_types table
-        # References will be stored as JSON in llm_suggested_references field temporarily
-        if coin.references:
-            import json
-            orm_coin.llm_suggested_references = json.dumps([ref.raw_text for ref in coin.references])
+        # References are persisted via ReferenceSyncService from API create/update and LLM approve.
+        # Do not write coin.references into llm_suggested_references; reserve that for pending suggestions only.
 
         # Handle Monograms (Many-to-Many)
         if coin.monograms:
@@ -384,7 +379,12 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         )
     
     def _reference_to_domain(self, model: CoinReferenceModel) -> CatalogReference:
-        """Map CoinReferenceModel + ReferenceTypeModel to domain CatalogReference."""
+        """
+        Map CoinReferenceModel + ReferenceTypeModel to domain CatalogReference.
+
+        Mapping: ReferenceTypeModel.system -> catalog (uppercase); volume, number, local_ref -> raw_text;
+        CoinReferenceModel.is_primary, notes, source -> domain. suffix not stored in V1 schema (None).
+        """
         ref_type = model.reference_type
         if not ref_type:
             # Should not happen if filtered properly, but safety check
@@ -406,7 +406,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             suffix=None,  # Not stored in V1 schema
             raw_text=raw_text,
             is_primary=model.is_primary or False,
-            notes=model.notes
+            notes=model.notes,
+            source=model.source,
         )
     
     def _provenance_to_domain(self, model: ProvenanceEventModel) -> ProvenanceEntry:

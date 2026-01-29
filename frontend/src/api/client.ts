@@ -369,6 +369,7 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
       is_primary: ref?.is_primary,
       plate_coin: ref?.plate_coin,
       notes: ref?.notes,
+      raw_text: ref?.raw_text ?? undefined,
     })),
   }
 }

@@ -22,6 +22,9 @@ export interface CatalogReference {
   is_primary?: boolean;
   notes?: string | null;
   variant_notes?: string | null;
+  raw_text?: string | null;
+  /** Origin: user | import | scraper | llm_approved | catalog_lookup */
+  source?: string | null;
 }
 
 /**

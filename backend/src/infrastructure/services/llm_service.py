@@ -947,12 +947,15 @@ class LLMService(ILLMService):
         """Build LiteLLM model string based on provider."""
         provider = model_cfg.provider
         model_id = model_cfg.model_id
-        
+
         if provider == "anthropic":
             return model_id
         elif provider == "google":
             return f"gemini/{model_id}"
         elif provider == "openrouter":
+            # Avoid double prefix: config may store "openrouter/foo" or "deepseek/bar"
+            if model_id.startswith("openrouter/"):
+                return model_id
             return f"openrouter/{model_id}"
         elif provider == "ollama":
             return f"ollama/{model_id}"

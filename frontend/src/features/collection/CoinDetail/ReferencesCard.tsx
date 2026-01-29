@@ -96,6 +96,15 @@ export const ReferencesCard = memo(function ReferencesCard({ references, categor
           >
             {formatReference(primaryRef)}
           </span>
+          {primaryRef.source && (
+            <span
+              className="text-[10px] uppercase tracking-wider ml-2"
+              style={{ color: 'var(--text-muted)' }}
+              title="Reference origin"
+            >
+              ({primaryRef.source})
+            </span>
+          )}
           {primaryRef.notes && (
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
               {primaryRef.notes}

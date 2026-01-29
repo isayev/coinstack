@@ -9,11 +9,13 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from src.infrastructure.services.catalogs.registry import CatalogRegistry
-from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
-from src.infrastructure.persistence.orm import EnrichmentJobModel
 from src.application.services.apply_enrichment import ApplyEnrichmentService
+from src.application.services.catalog_validation import validate_reference_for_coin
+from src.application.services.reference_sync import sync_coin_references
 from src.domain.enrichment import EnrichmentApplication
+from src.infrastructure.persistence.orm import EnrichmentJobModel
+from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+from src.infrastructure.services.catalogs.registry import CatalogRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +122,17 @@ async def run_bulk_enrich(
                 not_found_count += 1
                 results_list.append({"coin_id": coin.id, "status": "not_found"})
             elif result.status == "success" and result.payload:
+                from src.infrastructure.services.catalogs.parser import parse_catalog_reference
+                parsed = parse_catalog_reference(ref_str)
+                numismatic = validate_reference_for_coin(
+                    catalog=parsed.get("catalog"),
+                    number=parsed.get("number"),
+                    volume=parsed.get("volume"),
+                    coin_category=getattr(coin, "category", None) and getattr(coin.category, "value", None),
+                    year_start=getattr(coin.attribution, "year_start", None) if coin.attribution else None,
+                    year_end=getattr(coin.attribution, "year_end", None) if coin.attribution else None,
+                    issuer=getattr(coin.attribution, "issuer", None) if coin.attribution else None,
+                )
                 fills = _payload_to_fills(result.payload)
                 applied_any = False
                 if fills and not dry_run:
@@ -136,8 +149,27 @@ async def run_bulk_enrich(
                             applied_any = True
                     if applied_any:
                         updated_count += 1
+                # Persist external_id/external_url to ReferenceType for this ref (merge=True to keep existing refs)
+                if getattr(result, "external_id", None) or getattr(result, "external_url", None):
+                    try:
+                        external_ids = {
+                            ref_str: (getattr(result, "external_id", None), getattr(result, "external_url", None)),
+                        }
+                        sync_coin_references(
+                            session,
+                            coin.id,
+                            [ref_str],
+                            "catalog_lookup",
+                            external_ids=external_ids,
+                            merge=True,
+                        )
+                    except Exception as sync_err:
+                        logger.warning("Reference sync (external_id) failed for coin %s: %s", coin.id, sync_err)
                 status_str = "success" if (applied_any or (fills and dry_run)) else ("unchanged" if fills else "no_fills")
-                results_list.append({"coin_id": coin.id, "status": status_str})
+                result_entry: Dict[str, Any] = {"coin_id": coin.id, "status": status_str}
+                if numismatic.status == "warning" and numismatic.message:
+                    result_entry["numismatic_warning"] = numismatic.message
+                results_list.append(result_entry)
             else:
                 results_list.append({"coin_id": coin.id, "status": str(result.status)})
             session.flush()

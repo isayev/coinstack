@@ -348,6 +348,9 @@ class CoinReferenceModel(Base):
     note_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
+    # Origin of this link: "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
+    source: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)
+    
     # Relationships
     coin: Mapped["CoinModel"] = relationship(back_populates="references")
     reference_type: Mapped[Optional["ReferenceTypeModel"]] = relationship(back_populates="coin_references")

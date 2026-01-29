@@ -277,6 +277,8 @@ export interface CatalogReferenceValidation {
   confidence: number;
   match_reason: string | null;
   existing_reference: string | null;
+  /** Category/catalog consistency warning from backend catalog_validation */
+  numismatic_warning?: string | null;
 }
 
 /**

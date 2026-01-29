@@ -1,7 +1,15 @@
 """Catalog registry - routes to correct service by reference system."""
-from typing import Optional, List, Dict
+import time
+from typing import Optional, List, Dict, Tuple, Any
 from src.infrastructure.services.catalogs.base import CatalogService, CatalogResult
 from src.infrastructure.services.catalogs.parser import parser
+
+# In-memory cache TTL (seconds); 24h
+_CACHE_TTL_SEC = 86400
+# Rate limit: max requests per window (per system)
+_RATE_LIMIT_MAX = 30
+_RATE_LIMIT_WINDOW_SEC = 60
+
 
 class CatalogRegistry:
     """
@@ -12,7 +20,50 @@ class CatalogRegistry:
     """
     
     _services: Dict[str, CatalogService] = {}
-    
+    _cache: Dict[Tuple[str, ...], Tuple[Any, float]] = {}
+    _rate_limit_timestamps: List[Tuple[float, str]] = []
+
+    @classmethod
+    def _cache_key_lookup(cls, system: str, reference: str) -> Tuple[str, str, str]:
+        return ("lookup", system.lower().strip(), (reference or "").strip())
+
+    @classmethod
+    def _cache_key_get_by_id(cls, system: str, external_id: str) -> Tuple[str, str, str]:
+        return ("get_by_id", system.lower().strip(), (external_id or "").strip())
+
+    @classmethod
+    def _cache_get(cls, key: Tuple[str, ...]) -> Optional[CatalogResult]:
+        if key not in cls._cache:
+            return None
+        result, expiry = cls._cache[key]
+        if time.monotonic() > expiry:
+            del cls._cache[key]
+            return None
+        return result
+
+    @classmethod
+    def _cache_set(cls, key: Tuple[str, ...], result: CatalogResult) -> None:
+        cls._cache[key] = (result, time.monotonic() + _CACHE_TTL_SEC)
+        # Prune old entries occasionally (when cache is large)
+        if len(cls._cache) > 500:
+            now = time.monotonic()
+            to_del = [k for k, (_, exp) in cls._cache.items() if exp < now]
+            for k in to_del:
+                del cls._cache[k]
+
+    @classmethod
+    def _rate_limit_acquire(cls, system: str) -> bool:
+        """Return True if request allowed, False if rate limited."""
+        now = time.monotonic()
+        cutoff = now - _RATE_LIMIT_WINDOW_SEC
+        cls._rate_limit_timestamps = [(t, s) for t, s in cls._rate_limit_timestamps if t > cutoff]
+        system_lower = system.lower() if system else "default"
+        count = sum(1 for _, s in cls._rate_limit_timestamps if s == system_lower)
+        if count >= _RATE_LIMIT_MAX:
+            return False
+        cls._rate_limit_timestamps.append((now, system_lower))
+        return True
+
     @classmethod
     def get_service(cls, system: str) -> Optional[CatalogService]:
         """
@@ -65,20 +116,24 @@ class CatalogRegistry:
     ) -> CatalogResult:
         """
         Lookup a reference in the appropriate catalog.
-        
-        Args:
-            system: Reference system ("ric", "crawford", "rpc")
-            reference: The reference string
-            context: Optional coin context for disambiguation
-        
-        Returns:
-            CatalogResult with lookup status and data
+        Uses in-memory cache (24h TTL) and per-system rate limit (30/min).
         """
         # Auto-detect system if not forced and reference looks specific
         if not system or system == "unknown" or system == "auto":
             detected = cls.detect_system(reference)
             if detected:
                 system = detected
+
+        cache_key = cls._cache_key_lookup(system, reference)
+        cached = cls._cache_get(cache_key)
+        if cached is not None:
+            return cached
+
+        if not cls._rate_limit_acquire(system):
+            return CatalogResult(
+                status="error",
+                error_message="Catalog rate limit exceeded (30 requests per minute per system). Try again later.",
+            )
         
         service = cls.get_service(system)
         
@@ -101,7 +156,8 @@ class CatalogRegistry:
                     payload = service.parse_payload(jsonld)
                     result.payload = payload.model_dump()
                     result.raw = jsonld
-            
+
+            cls._cache_set(cache_key, result)
             return result
             
         except Exception as e:
@@ -114,12 +170,22 @@ class CatalogRegistry:
     async def get_by_id(cls, system: str, external_id: str) -> CatalogResult:
         """
         Fetch full details for a specific catalog ID.
-        
-        Bypasses reconciliation and directly fetches type data.
+        Uses in-memory cache (24h TTL) and per-system rate limit (30/min).
         """
-        # Validate/clean system
         system = system.lower()
-        if system == "rrc": system = "crawford"
+        if system == "rrc":
+            system = "crawford"
+
+        cache_key = cls._cache_key_get_by_id(system, external_id)
+        cached = cls._cache_get(cache_key)
+        if cached is not None:
+            return cached
+
+        if not cls._rate_limit_acquire(system):
+            return CatalogResult(
+                status="error",
+                error_message="Catalog rate limit exceeded (30 requests per minute per system). Try again later.",
+            )
             
         service = cls.get_service(system)
         if not service:
@@ -129,18 +195,14 @@ class CatalogRegistry:
             )
             
         try:
-            # Generate URL if possible
             url = service.build_url(external_id)
-            
-            # Fetch data
             jsonld = await service.fetch_type_data(external_id)
             payload = None
-            
             if jsonld:
                 parsed = service.parse_payload(jsonld)
                 payload = parsed.model_dump()
                 
-            return CatalogResult(
+            result = CatalogResult(
                 status="success",
                 external_id=external_id,
                 external_url=url,
@@ -148,6 +210,8 @@ class CatalogRegistry:
                 payload=payload,
                 raw=jsonld
             )
+            cls._cache_set(cache_key, result)
+            return result
             
         except Exception as e:
             return CatalogResult(

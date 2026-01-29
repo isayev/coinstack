@@ -130,6 +130,7 @@ class CatalogReference:
     raw_text: str = ""        # Original text as found
     is_primary: bool = False  # Primary reference for this coin
     notes: Optional[str] = None  # Additional notes about this reference
+    source: Optional[str] = None   # "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
 
 @dataclass(frozen=True)
 class ProvenanceEntry:

@@ -708,7 +708,19 @@ Applies all pending enrichments where the coin field is empty (server-side).
 
 **Router**: `src/infrastructure/web/routers/catalog.py`
 
-Catalog lookup (OCRE/CRRO/RPC) and bulk enrichment.
+Catalog lookup (OCRE/CRRO/RPC), bulk enrichment, and reference integrity.
+
+### Reference Integrity
+
+```http
+GET /api/catalog/integrity?orphans=false
+```
+
+**Query**: `orphans` (optional, default false) — when true, include orphan reference_types (no coin links) in the report.
+
+**Response**: `{ coins_with_pending_suggestions, coins_pending_with_zero_applied_refs, coin_ids_pending_not_applied, summary [, orphan_reference_types_count, orphan_reference_types_sample ] }`
+
+Used by dashboard or tooling to report coins with pending LLM reference suggestions but no applied references.
 
 ### Bulk Enrich
 

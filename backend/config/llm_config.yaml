@@ -1,7 +1,7 @@
 # =============================================================================
-# CoinStack LLM Configuration
+# CoinStack LLM Configuration (2026 update)
 # =============================================================================
-# Model routing for P0+P1 capabilities (MVP)
+# Model routing for P0+P1+P2 capabilities
 # Profiles: development, production, offline
 # =============================================================================
 
@@ -17,10 +17,10 @@ settings:
   max_retries: 3
   retry_delay: 1.0
   
-  # Cost tracking
+  # Cost tracking (increased to allow Opus for quality-critical features)
   track_costs: true
   cost_log_path: "data/llm_costs.sqlite"
-  monthly_budget_usd: 5.00
+  monthly_budget_usd: 10.00
   budget_alert_threshold: 0.8  # Alert at 80% of budget
   
   # Caching
@@ -59,7 +59,16 @@ providers:
 # -----------------------------------------------------------------------------
 models:
   # === FRONTIER MODELS ===
-  
+
+  claude-opus:
+    provider: anthropic
+    model_id: claude-opus-4-5-20251101
+    cost_per_1k_input: 0.005
+    cost_per_1k_output: 0.025
+    max_tokens: 8192
+    supports_vision: true
+    supports_json_mode: true
+
   claude-sonnet:
     provider: anthropic
     model_id: claude-sonnet-4-5-20250929
@@ -68,7 +77,7 @@ models:
     max_tokens: 8192
     supports_vision: false
     supports_json_mode: true
-    
+
   claude-haiku:
     provider: anthropic
     model_id: claude-haiku-4-5-20251001
@@ -77,7 +86,7 @@ models:
     max_tokens: 8192
     supports_vision: false
     supports_json_mode: true
-  
+
   gemini-2.5-pro:
     provider: google
     model_id: gemini-2.5-pro
@@ -86,7 +95,7 @@ models:
     max_tokens: 8192
     supports_vision: true
     supports_json_mode: true
-    
+
   gemini-2.5-flash:
     provider: google
     model_id: gemini-2.5-flash
@@ -95,19 +104,19 @@ models:
     max_tokens: 8192
     supports_vision: true
     supports_json_mode: true
-  
-  k2:
-    provider: openrouter
-    model_id: openrouter/k2
+
+  gemini-2.5-flash-lite:
+    provider: google
+    model_id: gemini-2.5-flash-lite
     cost_per_1k_input: 0.0001
-    cost_per_1k_output: 0.0003
-    max_tokens: 4096
-    supports_vision: false
+    cost_per_1k_output: 0.0004
+    max_tokens: 8192
+    supports_vision: true
     supports_json_mode: true
-    
+
   deepseek-v3:
     provider: openrouter
-    model_id: deepseek/deepseek-chat
+    model_id: deepseek/deepseek-chat-v3.2
     cost_per_1k_input: 0.00014
     cost_per_1k_output: 0.00028
     max_tokens: 8192
@@ -158,11 +167,11 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: k2
-        fallback: [deepseek-v3, claude-haiku]
+        primary: deepseek-v3
+        fallback: [claude-haiku]
       development:
         primary: ollama-phi3
-        fallback: [ollama-llama3.2, k2]
+        fallback: [ollama-llama3.2, deepseek-v3]
       offline:
         primary: ollama-phi3
         fallback: []
@@ -177,7 +186,7 @@ capabilities:
     profiles:
       production:
         primary: deepseek-v3
-        fallback: [k2, claude-haiku]
+        fallback: [claude-haiku]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -195,7 +204,7 @@ capabilities:
     profiles:
       production:
         primary: claude-haiku
-        fallback: [k2, deepseek-v3]
+        fallback: [deepseek-v3]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -213,7 +222,7 @@ capabilities:
     profiles:
       production:
         primary: claude-haiku
-        fallback: [k2]
+        fallback: [deepseek-v3]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -234,10 +243,10 @@ capabilities:
     profiles:
       production:
         primary: gemini-2.5-pro
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, claude-opus]
       development:
         primary: ollama-llama3.2-vision
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, gemini-2.5-flash]
       offline:
         primary: ollama-llama3.2-vision
         fallback: []
@@ -252,7 +261,7 @@ capabilities:
     profiles:
       production:
         primary: claude-haiku
-        fallback: [k2]
+        fallback: [deepseek-v3]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -270,8 +279,8 @@ capabilities:
     streaming: false
     profiles:
       production:
-        primary: deepseek-v3
-        fallback: [claude-sonnet]
+        primary: claude-opus
+        fallback: [deepseek-v3, claude-sonnet]
       development:
         primary: deepseek-v3
         fallback: [ollama-llama3.2]
@@ -293,8 +302,8 @@ capabilities:
     cacheable: false  # Each query is unique
     profiles:
       production:
-        primary: claude-sonnet
-        fallback: [deepseek-v3]
+        primary: claude-opus
+        fallback: [deepseek-v3, claude-sonnet]
       development:
         primary: ollama-llama3.2
         fallback: []
@@ -313,10 +322,10 @@ capabilities:
     profiles:
       production:
         primary: gemini-2.5-pro
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, claude-opus]
       development:
         primary: ollama-llama3.2-vision
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, gemini-2.5-flash]
       offline:
         primary: ollama-llama3.2-vision
         fallback: []
@@ -330,8 +339,8 @@ capabilities:
     cacheable: true  # Deterministic parsing
     profiles:
       production:
-        primary: k2
-        fallback: [claude-haiku]
+        primary: claude-haiku
+        fallback: [deepseek-v3]
       development:
         primary: ollama-phi3
         fallback: [ollama-llama3.2]
@@ -350,10 +359,10 @@ capabilities:
     profiles:
       production:
         primary: gemini-2.5-pro
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, claude-opus]
       development:
         primary: ollama-llama3.2-vision
-        fallback: [gemini-2.5-flash]
+        fallback: [gemini-2.5-flash-lite, gemini-2.5-flash]
       offline:
         primary: ollama-llama3.2-vision
         fallback: []

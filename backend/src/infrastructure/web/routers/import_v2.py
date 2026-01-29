@@ -928,17 +928,8 @@ async def confirm_import(
                 exergue=data.get("exergue")
             )
         
-        # Parse references (convert from string array to CatalogReference objects)
-        references = []
-        for ref_str in data.get("references", []):
-            if ref_str:
-                # Simple parsing - just store as raw text for now
-                # TODO: Implement proper reference parsing
-                references.append(CatalogReference(
-                    catalog="Unknown",
-                    number="",
-                    raw_text=ref_str
-                ))
+        # Parse references using central parser (catalog, number, volume)
+        ref_strings = [str(r).strip() for r in data.get("references", []) if r and str(r).strip()]
         
         # Create complete Coin entity
         new_coin = Coin(
@@ -952,7 +943,7 @@ async def confirm_import(
             denomination=data.get("denomination"),
             portrait_subject=data.get("portrait_subject"),
             design=design,
-            references=references,
+            references=[],  # Persisted via ReferenceSyncService after save
             description=data.get("description"),
             personal_notes=data.get("personal_notes"),
             historical_significance=data.get("historical_significance"),
@@ -962,6 +953,22 @@ async def confirm_import(
         
         # Save to database
         saved_coin = coin_repo.save(new_coin)
+
+        if ref_strings and saved_coin.id:
+            from src.application.services.reference_sync import sync_coin_references
+            from src.infrastructure.services.catalogs.registry import CatalogRegistry
+            external_ids: Dict[str, tuple] = {}
+            issuer = (saved_coin.attribution.issuer if saved_coin.attribution else None) or data.get("issuing_authority") or data.get("issuer")
+            for ref_str in ref_strings:
+                try:
+                    system = CatalogRegistry.detect_system(ref_str) or "ric"
+                    result = await CatalogRegistry.lookup(system, ref_str, {"ruler": issuer})
+                    if result.status == "success" and (getattr(result, "external_id", None) or getattr(result, "external_url", None)):
+                        external_ids[ref_str] = (getattr(result, "external_id", None), getattr(result, "external_url", None))
+                except Exception as lookup_err:
+                    logger.debug("Catalog lookup for import ref %s: %s", ref_str, lookup_err)
+            sync_coin_references(db, saved_coin.id, ref_strings, "import", external_ids=external_ids if external_ids else None)
+            saved_coin = coin_repo.get_by_id(saved_coin.id) or saved_coin
         
         logger.info(f"Coin created successfully with ID: {saved_coin.id}")
         

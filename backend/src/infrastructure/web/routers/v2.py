@@ -9,7 +9,8 @@ from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
     Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design
 )
-from src.infrastructure.web.dependencies import get_coin_repo
+from sqlalchemy.orm import Session
+from src.infrastructure.web.dependencies import get_coin_repo, get_db
 
 router = APIRouter(prefix="/api/v2/coins", tags=["coins"])
 
@@ -25,6 +26,18 @@ class DesignRequest(BaseModel):
     reverse_legend: Optional[str] = None
     reverse_description: Optional[str] = None
     exergue: Optional[str] = None
+
+
+class CatalogReferenceInput(BaseModel):
+    """Input for a single catalog reference (create/update)."""
+    catalog: str
+    number: str
+    volume: Optional[str] = None
+    suffix: Optional[str] = None
+    is_primary: bool = False
+    notes: Optional[str] = None
+    raw_text: Optional[str] = None
+
 
 class CreateCoinRequest(BaseModel):
     category: str
@@ -60,6 +73,7 @@ class CreateCoinRequest(BaseModel):
     reverse_die_id: Optional[str] = None
     find_spot: Optional[str] = None
     find_date: Optional[date] = None
+    references: List[CatalogReferenceInput] = []
     # Note: secondary_treatments and monograms not yet supported in simple CREATE
     # They should be added via specific endpoints or future updates
 
@@ -108,6 +122,7 @@ class CatalogReferenceResponse(BaseModel):
     volume: Optional[str] = None
     suffix: Optional[str] = None
     raw_text: str = ""
+    source: Optional[str] = None
 
 class ProvenanceEntryResponse(BaseModel):
     source_type: str
@@ -231,7 +246,8 @@ class CoinResponse(BaseModel):
                     number=ref.number,
                     volume=ref.volume,
                     suffix=ref.suffix,
-                    raw_text=ref.raw_text
+                    raw_text=ref.raw_text,
+                    source=getattr(ref, "source", None),
                 ) for ref in coin.references
             ],
             provenance=[
@@ -280,7 +296,8 @@ class CoinResponse(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_coin(
     request: CreateCoinRequest,
-    repo: ICoinRepository = Depends(get_coin_repo)
+    repo: ICoinRepository = Depends(get_coin_repo),
+    db: Session = Depends(get_db),
 ):
     use_case = CreateCoinUseCase(repo)
     
@@ -330,6 +347,11 @@ def create_coin(
     # Save again with images (or update logic to handle images in UseCase)
     # Since UseCase logic doesn't handle images in DTO yet, we do this:
     saved_coin = repo.save(domain_coin)
+
+    if request.references and saved_coin.id:
+        from src.application.services.reference_sync import sync_coin_references
+        sync_coin_references(db, saved_coin.id, [r.model_dump() for r in request.references], "user")
+        saved_coin = repo.get_by_id(saved_coin.id) or saved_coin
     
     return CoinResponse.from_domain(saved_coin)
 
@@ -492,7 +514,8 @@ def get_coin(
 def update_coin(
     coin_id: int,
     request: CreateCoinRequest,
-    repo: ICoinRepository = Depends(get_coin_repo)
+    repo: ICoinRepository = Depends(get_coin_repo),
+    db: Session = Depends(get_db),
 ):
     existing_coin = repo.get_by_id(coin_id)
     if not existing_coin:
@@ -586,6 +609,10 @@ def update_coin(
             updated_coin.add_image(img.url, img.image_type, img.is_primary)
         
         saved = repo.save(updated_coin)
+        if request.references is not None and saved.id:
+            from src.application.services.reference_sync import sync_coin_references
+            sync_coin_references(db, saved.id, [r.model_dump() for r in request.references], "user")
+            saved = repo.get_by_id(saved.id) or saved
         return CoinResponse.from_domain(saved)
         
     except ValueError as e:

@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from src.application.services.reference_integrity import run_integrity_check
 from src.infrastructure.services.catalogs.registry import CatalogRegistry
 from src.infrastructure.services.catalogs.base import CatalogResult
 from src.infrastructure.web.dependencies import get_db
@@ -115,6 +116,19 @@ async def lookup_catalog(request: CatalogLookupRequest):
     except Exception as e:
         logger.error(f"Catalog lookup failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/integrity",
+    summary="Reference integrity report",
+    description="Report coins with pending LLM reference suggestions but no applied references; optionally orphan reference_types.",
+)
+def get_reference_integrity(
+    db: Session = Depends(get_db),
+    orphans: bool = False,
+):
+    """Return reference integrity summary for dashboard or tooling."""
+    return run_integrity_check(db, include_orphans=orphans)
 
 
 # --- Bulk enrich (Phase 2: real implementation with enrichment_jobs and BackgroundTasks) ---
