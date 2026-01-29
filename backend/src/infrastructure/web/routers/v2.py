@@ -73,7 +73,8 @@ class CreateCoinRequest(BaseModel):
     reverse_die_id: Optional[str] = None
     find_spot: Optional[str] = None
     find_date: Optional[date] = None
-    references: List[CatalogReferenceInput] = []
+    # None = omit/not provided (create: no refs; update: preserve existing). [] = clear on update; [x,y] = set.
+    references: Optional[List[CatalogReferenceInput]] = None
     # Note: secondary_treatments and monograms not yet supported in simple CREATE
     # They should be added via specific endpoints or future updates
 
@@ -348,11 +349,11 @@ def create_coin(
     # Since UseCase logic doesn't handle images in DTO yet, we do this:
     saved_coin = repo.save(domain_coin)
 
-    if request.references and saved_coin.id:
+    if request.references is not None and saved_coin.id:
         from src.application.services.reference_sync import sync_coin_references
         sync_coin_references(db, saved_coin.id, [r.model_dump() for r in request.references], "user")
         saved_coin = repo.get_by_id(saved_coin.id) or saved_coin
-    
+
     return CoinResponse.from_domain(saved_coin)
 
 class PaginatedResponse(BaseModel):
