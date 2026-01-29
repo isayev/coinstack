@@ -116,7 +116,8 @@ models:
 
   deepseek-v3:
     provider: openrouter
-    model_id: deepseek/deepseek-chat-v3.2
+    # OpenRouter: deepseek/deepseek-v3.2 (V3.2, reasoning-capable)
+    model_id: deepseek/deepseek-v3.2
     cost_per_1k_input: 0.00014
     cost_per_1k_output: 0.00028
     max_tokens: 8192
@@ -278,9 +279,10 @@ capabilities:
     cacheable: false
     streaming: false
     profiles:
+      # deepseek-v3 primary to avoid Anthropic credit dependency; Claude as fallback when credits available
       production:
-        primary: claude-opus
-        fallback: [deepseek-v3, claude-sonnet]
+        primary: deepseek-v3
+        fallback: [claude-opus, claude-sonnet]
       development:
         primary: deepseek-v3
         fallback: [ollama-llama3.2]
@@ -290,6 +292,7 @@ capabilities:
     parameters:
       temperature: 0.25          # Slightly higher for richer output while staying factual
       max_tokens: 3000           # Allow fuller multi-section output
+      timeout: 120               # Longer for multi-section output (OpenRouter)
       top_p: 0.9                 # Slight nucleus sampling
       frequency_penalty: 0.0     # Don't penalize technical repetition
       presence_penalty: 0.0      # Allow citing references multiple times

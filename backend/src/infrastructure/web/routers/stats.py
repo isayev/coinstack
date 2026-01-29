@@ -17,6 +17,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, and_, extract
 from src.infrastructure.web.dependencies import get_db
+from src.infrastructure.web.rarity import normalize_rarity_for_api
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel
 
 router = APIRouter(prefix="/api/v2/stats", tags=["stats"])
@@ -138,6 +139,7 @@ METAL_SYMBOLS = {
     "brass": "BR",
     "lead": "PB",
     "ae": "AE",
+    "potin": "Po",
     "ar": "Ag",
     "au": "Au",
 }
@@ -398,16 +400,18 @@ async def get_stats_summary(
         for row in acq_query.all()
     ]
     
-    # --- Rarity Distribution ---
+    # --- Rarity Distribution (canonical keys: c, s, r1, r2, r3, u for frontend filter) ---
     rarity_query = base_query.with_entities(
         CoinModel.rarity,
         func.count().label("count")
     ).filter(CoinModel.rarity.isnot(None), CoinModel.rarity != "").group_by(CoinModel.rarity).order_by(func.count().desc())
 
-    by_rarity = [
-        {"rarity": row.rarity, "count": row.count}
-        for row in rarity_query.all()
-    ]
+    rarity_agg: dict[str, int] = {}
+    for row in rarity_query.all():
+        key = normalize_rarity_for_api(row.rarity) or row.rarity
+        if key:
+            rarity_agg[key] = rarity_agg.get(key, 0) + row.count
+    by_rarity = [{"rarity": k, "count": v} for k, v in sorted(rarity_agg.items(), key=lambda x: -x[1])]
 
     # --- Filter Context ---
     filter_context = None

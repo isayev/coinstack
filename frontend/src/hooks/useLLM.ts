@@ -9,7 +9,7 @@
  * @module hooks/useLLM
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/api/api";
 
 // ============================================================================
@@ -77,6 +77,13 @@ export interface HistoricalContextResponse {
   rarity_info: RarityInfo | null;
 }
 
+/** Which provider API keys are set (presence only; values never exposed). */
+export interface ProviderKeysStatus {
+  anthropic: boolean;
+  openrouter: boolean;
+  google: boolean;
+}
+
 export interface LLMStatusResponse {
   status: string;
   profile: string;
@@ -85,6 +92,15 @@ export interface LLMStatusResponse {
   budget_remaining_usd: number;
   capabilities_available: string[];
   ollama_available: boolean;
+  provider_keys?: ProviderKeysStatus;
+}
+
+/** Cost and usage report from GET /api/v2/llm/cost-report */
+export interface LLMCostReportResponse {
+  period_days: number;
+  total_cost_usd: number;
+  by_capability: Record<string, number>;
+  by_model: Record<string, number>;
 }
 
 // ============================================================================
@@ -168,10 +184,11 @@ export function useGenerateHistoricalContext() {
 }
 
 /**
- * Get LLM service status
- * 
+ * Get LLM service status (mutation - call mutate() to fetch).
+ *
  * @example
- * const { data: status } = useLLMStatus();
+ * const statusMutation = useLLMStatus();
+ * statusMutation.mutate();
  */
 export function useLLMStatus() {
   return useMutation({
@@ -183,6 +200,36 @@ export function useLLMStatus() {
       if (import.meta.env.DEV) {
         console.error('LLM status check failed:', error.message);
       }
+    },
+  });
+}
+
+/**
+ * LLM status query - fetches on mount/refetch. Use on Settings page.
+ */
+export function useLLMStatusQuery() {
+  return useQuery({
+    queryKey: ["llm-status"],
+    queryFn: async (): Promise<LLMStatusResponse> => {
+      const response = await api.get<LLMStatusResponse>("/api/v2/llm/status");
+      return response.data;
+    },
+  });
+}
+
+/**
+ * LLM cost report - usage and cost by capability/model.
+ *
+ * @param days Period in days (1–365), default 30
+ */
+export function useLLMCostReport(days: number = 30) {
+  return useQuery({
+    queryKey: ["llm-cost-report", days],
+    queryFn: async (): Promise<LLMCostReportResponse> => {
+      const response = await api.get<LLMCostReportResponse>("/api/v2/llm/cost-report", {
+        params: { days },
+      });
+      return response.data;
     },
   });
 }

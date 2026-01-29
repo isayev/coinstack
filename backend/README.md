@@ -44,3 +44,15 @@ curl -X POST "http://localhost:8000/api/import/collection?dry_run=false" \
 Once running, visit:
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## LLM / Enrichment
+
+API keys are read from env: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`. Profile and model routing are in `config/llm_config.yaml`.
+
+If you see **"Your credit balance is too low to access the Anthropic API"** or **"All providers failed"** when using historical context or other LLM features:
+
+1. **Anthropic**: Top up credits at [console.anthropic.com → Settings → Billing](https://console.anthropic.com/settings/billing).
+2. **Use another provider**: Set `LLM_PROFILE=development` in `.env` so context_generate uses OpenRouter (e.g. deepseek-v3) as primary; ensure `OPENROUTER_API_KEY` is set and has credits.
+3. **Local**: Use `LLM_PROFILE=offline` and run Ollama for free local models.
+
+See [../docs/PLAN-LLM-SETTINGS-PAGE.md](../docs/PLAN-LLM-SETTINGS-PAGE.md) for full LLM settings and billing plan.

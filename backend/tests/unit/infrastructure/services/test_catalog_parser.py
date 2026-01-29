@@ -232,6 +232,7 @@ def test_parse_doc():
         ("RIC I 207", "RIC", "207"),
         ("ric ii 756", "RIC", "756"),
         ("RIC IV.1 351b", "RIC", "351b"),
+        ("RIC V.II 325", "RIC", "325"),
         ("RIC IV-1 351", "RIC", "351"),
         ("RIC IV/1 351", "RIC", "351"),
         ("RIC 1 207", "RIC", "207"),
@@ -291,6 +292,33 @@ def test_ric_volume_alternatives_same_canonical():
     c2 = canonical(parse_catalog_reference("RIC IV-1 351b"))
     c3 = canonical(parse_catalog_reference("RIC IV/1 351b"))
     assert c1 == c2 == c3 == "RIC IV.1 351b"
+
+
+def test_ric_volume_edition_parenthesized():
+    """RIC I (2) 207 and RIC I(2) 207 parse (parenthesized edition, common in OCRE citations)."""
+    for raw in ("RIC I (2) 207", "RIC I(2) 207"):
+        result = parse_catalog_reference_full(raw)
+        assert result.system == "ric"
+        assert result.volume == "I.2"
+        assert result.number == "207"
+    out = parse_catalog_reference("RIC I (2) 207")
+    assert out.get("catalog") == "RIC"
+    assert out.get("volume") == "I.2"
+    assert out.get("number") == "207"
+
+
+def test_ric_volume_part_roman_numeral():
+    """RIC V.II 325 (Roman part) parses and normalizes to V.2 for canonical/OCRE lookup."""
+    result = parse_catalog_reference_full("RIC V.II 325")
+    assert result.system == "ric"
+    assert result.volume == "V.2"
+    assert result.number == "325"
+    out = parse_catalog_reference("RIC V.II 325")
+    assert out.get("catalog") == "RIC"
+    assert out.get("volume") == "V.2"
+    assert out.get("number") == "325"
+    c = canonical(out)
+    assert c == "RIC V.2 325"
 
 
 def test_ric_edition_superscript():

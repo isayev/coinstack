@@ -141,10 +141,14 @@ export function useCollectionStats() {
         grade_counts[tier] = (grade_counts[tier] || 0) + g.count;
       });
 
-      // Normalize rarity key so "Very Rare" -> "very_rare", "Common" -> "common" (matches RARITY_OPTIONS in CollectionSidebar)
-      const rarityKey = (r: string) => r.toLowerCase().trim().replace(/\s+/g, '_');
+      // Rarity: backend returns canonical lowercase (c, s, r1, r2, r3, u); normalize key for legacy/uppercase
+      const rarityKey = (r: string) => (r ?? '').toLowerCase().trim();
       const rarity_counts = (data.by_rarity || []).reduce(
-        (acc, curr) => ({ ...acc, [rarityKey(curr.rarity)]: (acc[rarityKey(curr.rarity)] ?? 0) + curr.count }),
+        (acc, curr) => {
+          const key = rarityKey(curr.rarity);
+          if (key) acc[key] = (acc[key] ?? 0) + curr.count;
+          return acc;
+        },
         {} as Record<string, number>
       );
 

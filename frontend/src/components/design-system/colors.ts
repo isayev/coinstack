@@ -43,7 +43,7 @@ export const METAL_CONFIG: Record<MetalType, MetalConfig> = {
   brass:      { symbol: 'Br', name: 'Brass',      atomic: undefined, precious: false, cssVar: 'br' },
   bronze:     { symbol: 'Cu', name: 'Bronze',     atomic: undefined, precious: false, cssVar: 'cu' },
   copper:     { symbol: 'Cu', name: 'Copper',     atomic: 29, precious: false, cssVar: 'copper' },
-  ae:         { symbol: 'Æ',  name: 'AE',         atomic: undefined, precious: false, cssVar: 'ae' },
+  ae:         { symbol: 'Æ',  name: 'Bronze (AE)', atomic: undefined, precious: false, cssVar: 'ae' },
   billon:     { symbol: 'Bi', name: 'Billon',     atomic: undefined, precious: false, cssVar: 'bi' },
   potin:      { symbol: 'Po', name: 'Potin',      atomic: undefined, precious: false, cssVar: 'po' },
   lead:       { symbol: 'Pb', name: 'Lead',       atomic: 82, precious: false, cssVar: 'pb' },

@@ -43,7 +43,7 @@ GET /api/v2/coins
 | `page` | int | 1 | Page number (1-based). Frontend uses infinite scroll; no page-number UI. `page`/`per_page` are "chunk"/"offset" semantics. |
 | `per_page` | int | 20 | Items per page (1–1000). |
 | `category` | string | - | Filter by category (imperial, republic, etc.) |
-| `metal` | string | - | Filter by metal (gold, silver, bronze, etc.) |
+| `metal` | string | - | Filter by metal. Values match backend Metal enum: `gold`, `silver`, `bronze`, `copper`, `electrum`, `billon`, `potin`, `orichalcum`, `lead`, `ae`. Note: `ae` is the standard numismatic abbreviation for bronze/copper. |
 | `issuer` | string | - | Search by issuer name (partial match). UI "search" uses this parameter. |
 | `mint` | string | - | Filter by mint name |
 | `year_start` | int | - | Minimum year |
@@ -803,6 +803,14 @@ Used by EnrichmentPanel during import to fill fields from OCRE/CRRO/RPC based on
 
 LLM-powered enrichment endpoints. Coins can store pending suggestions in `llm_suggested_design`, `llm_suggested_attribution`, `llm_suggested_references`, and `llm_suggested_rarity`; `llm_enriched_at` records when suggestions were last produced. These fields are returned by **GET /api/v2/coins/{id}** when present.
 
+**Config and billing**: API keys come from env (`ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`). Profile and model routing are in `backend/config/llm_config.yaml`. For LLM settings UI, provider key status, and billing/usage links, see [PLAN-LLM-SETTINGS-PAGE.md](../../PLAN-LLM-SETTINGS-PAGE.md).
+
+### LLM status and usage (admin)
+
+- **GET /api/v2/llm/status** — Returns `status`, `profile`, `monthly_cost_usd`, `monthly_budget_usd`, `budget_remaining_usd`, `capabilities_available`, `ollama_available`, **`provider_keys`** (`{ anthropic: bool, openrouter: bool, google: bool }` — presence only; keys are never exposed). Used by the Settings page LLM & AI card.
+- **GET /api/v2/llm/cost-report?days=30** — Returns `period_days`, `total_cost_usd`, `by_capability`, `by_model`. Use for usage/billing display.
+- **GET /api/v2/llm/metrics?hours=24** — Returns call counts, latencies, cache hit rate, errors. Optional for diagnostics.
+
 ### Expand Legend
 
 ```http
@@ -1033,12 +1041,12 @@ GET /api/v2/stats
     "provincial": 10,
     "byzantine": 5
   },
-  "by_metal": {
-    "silver": 60,
-    "bronze": 35,
-    "gold": 10,
-    "billon": 5
-  },
+  "by_metal": [
+    { "metal": "silver", "symbol": "Ag", "count": 60 },
+    { "metal": "ae", "symbol": "AE", "count": 35 },
+    { "metal": "gold", "symbol": "Au", "count": 10 },
+    { "metal": "billon", "symbol": "BI", "count": 5 }
+  ],
   "top_issuers": [
     { "name": "Augustus", "count": 15 },
     { "name": "Trajan", "count": 12 }
@@ -1048,6 +1056,8 @@ GET /api/v2/stats
   ]
 }
 ```
+
+**Metal values**: `by_metal` (and the coins `metal` filter) use the backend Metal enum: `gold`, `silver`, `bronze`, `copper`, `electrum`, `billon`, `potin`, `orichalcum`, `lead`, `ae`. The value `ae` is the standard numismatic abbreviation for bronze/copper. The frontend aggregates `by_metal` into `metal_counts` and only shows metals with count &gt; 0 in the collection filter sidebar.
 
 ---
 

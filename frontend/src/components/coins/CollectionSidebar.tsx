@@ -27,7 +27,6 @@ import {
   GradeChip,
   RarityChip,
   PlaceholderSparkline,
-  MetalType,
   CategoryType,
   GradeTier,
 } from "@/components/design-system";
@@ -172,8 +171,13 @@ function FilterSection({
 }
 
 // ============================================================================
-// METAL FILTER
+// METAL FILTER (data-driven: only metals present in collection or selected)
 // ============================================================================
+
+/** Canonical order for metal chips (matches backend Metal enum). Used for sorting only. */
+const CANONICAL_METAL_ORDER: string[] = [
+  'gold', 'silver', 'bronze', 'ae', 'copper', 'electrum', 'billon', 'potin', 'orichalcum', 'lead',
+];
 
 interface MetalFilterProps {
   selected: string | null;
@@ -181,14 +185,25 @@ interface MetalFilterProps {
   counts: Record<string, number>;
 }
 
-const DISPLAY_METALS: MetalType[] = ['gold', 'silver', 'ae', 'bronze', 'billon', 'copper', 'orichalcum', 'lead'];
-
 function MetalFilter({ selected, onSelect, counts }: MetalFilterProps) {
+  const visibleMetals = [
+    ...new Set([
+      ...Object.keys(counts).filter((m) => (counts[m] ?? 0) > 0),
+      ...(selected ? [selected] : []),
+    ]),
+  ].sort((a, b) => {
+    const ia = CANONICAL_METAL_ORDER.indexOf(a.toLowerCase());
+    const ib = CANONICAL_METAL_ORDER.indexOf(b.toLowerCase());
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
   return (
     <div className="flex flex-wrap gap-1.5">
-      {DISPLAY_METALS.map((metal) => {
-        const count = counts[metal] || 0;
-        if (count === 0 && selected !== metal) return null; // Hide metals with no coins
+      {visibleMetals.map((metal) => {
+        const count = counts[metal] ?? 0;
         return (
           <MetalChip
             key={metal}
@@ -196,6 +211,7 @@ function MetalFilter({ selected, onSelect, counts }: MetalFilterProps) {
             count={count}
             selected={selected === metal}
             onClick={() => onSelect(selected === metal ? null : metal)}
+            label="name"
           />
         );
       })}
@@ -278,8 +294,11 @@ function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
 }
 
 // ============================================================================
-// RARITY FILTER (badge chips, same pattern as Metal)
+// RARITY FILTER (canonical keys: c, s, r1, r2, r3, u — match API & stats)
 // ============================================================================
+
+/** Canonical rarity order (matches backend/frontend enum). */
+const CANONICAL_RARITY_ORDER: string[] = ['c', 's', 'r1', 'r2', 'r3', 'u'];
 
 interface RarityFilterProps {
   selected: string | null;
@@ -287,17 +306,25 @@ interface RarityFilterProps {
   counts: Record<string, number>;
 }
 
-const RARITY_OPTIONS = [
-  'common', 'scarce', 'rare', 'very_rare', 'extremely_rare', 'unique',
-];
-
 function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
-  const activeRarities = RARITY_OPTIONS.filter(value => counts[value] > 0 || selected === value);
+  const visibleRarities = [
+    ...new Set([
+      ...Object.keys(counts).filter((r) => (counts[r] ?? 0) > 0),
+      ...(selected ? [selected] : []),
+    ]),
+  ].sort((a, b) => {
+    const ia = CANONICAL_RARITY_ORDER.indexOf(a.toLowerCase());
+    const ib = CANONICAL_RARITY_ORDER.indexOf(b.toLowerCase());
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {activeRarities.map((value) => {
-        const count = counts[value] || 0;
+      {visibleRarities.map((value) => {
+        const count = counts[value] ?? 0;
         return (
           <RarityChip
             key={value}
@@ -308,7 +335,7 @@ function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
           />
         );
       })}
-      {activeRarities.length === 0 && (
+      {visibleRarities.length === 0 && (
         <p className="text-xs text-center py-2 w-full" style={{ color: 'var(--text-tertiary)' }}>
           No rarity data
         </p>

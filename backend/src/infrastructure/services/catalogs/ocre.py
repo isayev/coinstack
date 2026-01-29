@@ -78,18 +78,20 @@ class OCREService(CatalogService):
         if parsed:
             volume = parsed.get("volume_roman") or parsed.get("volume")
             number = parsed["number"]
-            # Default to second edition if not specified (most common)
-            edition = parsed.get("edition") or "2"
-            
-            # Format: "RIC I(2) Augustus 207"
-            vol_str = f"{volume}({edition})"
+            authority = context.get("ruler") or context.get("authority") if context else None
+            # When volume has a dot (e.g. V.2 = Volume V Part 2), use as-is; don't add (edition)
+            # When authority is provided (e.g. Diocletian), OCRE matches "RIC V Diocletian 325" not "RIC V(2) Diocletian 325" - omit edition
+            # Otherwise edition (2)/(3) for single-segment volume (e.g. RIC I(2) 207)
+            if volume and "." in str(volume):
+                vol_str = volume
+            elif authority:
+                vol_str = volume
+            else:
+                edition = parsed.get("edition") or "2"
+                vol_str = f"{volume}({edition})"
             query_str = f"RIC {vol_str} {number}"
-            
-            # Add authority if provided in context
-            if context:
-                authority = context.get("ruler") or context.get("authority")
-                if authority:
-                    query_str = f"RIC {vol_str} {authority} {number}"
+            if authority:
+                query_str = f"RIC {vol_str} {authority} {number}"
         else:
             # Fallback to original reference with authority
             query_str = ref

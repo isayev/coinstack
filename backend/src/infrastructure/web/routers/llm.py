@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -39,6 +40,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from src.infrastructure.web.rarity import normalize_rarity_for_api
 from src.domain.llm import (
     LLMCapability,
     LLMError,
@@ -323,6 +325,13 @@ class FeedbackRequest(BaseModel):
     model_used: str = Field("", description="Model that made suggestion")
 
 
+class ProviderKeysStatus(BaseModel):
+    """Which provider API keys are set (presence only; values never exposed)."""
+    anthropic: bool = False
+    openrouter: bool = False
+    google: bool = False
+
+
 class StatusResponse(BaseModel):
     """LLM service status."""
     status: str
@@ -332,6 +341,7 @@ class StatusResponse(BaseModel):
     budget_remaining_usd: float
     capabilities_available: List[str]
     ollama_available: bool
+    provider_keys: Optional[ProviderKeysStatus] = None
 
 
 class CostReportResponse(BaseModel):
@@ -1191,6 +1201,13 @@ async def get_status(
         ollama_available = resp.status_code == 200
     except Exception:
         pass
+
+    # Provider key presence only (never expose values)
+    provider_keys = ProviderKeysStatus(
+        anthropic=bool(os.environ.get("ANTHROPIC_API_KEY", "").strip()),
+        openrouter=bool(os.environ.get("OPENROUTER_API_KEY", "").strip()),
+        google=bool(os.environ.get("GOOGLE_API_KEY", "").strip()),
+    )
     
     return StatusResponse(
         status="operational",
@@ -1200,6 +1217,7 @@ async def get_status(
         budget_remaining_usd=max(0, budget - monthly_cost),
         capabilities_available=available,
         ollama_available=ollama_available,
+        provider_keys=provider_keys,
     )
 
 
@@ -1705,7 +1723,8 @@ async def approve_llm_suggestions(
                 desc = rarity_data.get("rarity_description")
                 source = rarity_data.get("source")
                 if code or desc:
-                    coin.rarity = (code or desc) if code else desc
+                    raw = (code or desc) if code else desc
+                    coin.rarity = normalize_rarity_for_api(raw)
                     coin.rarity_notes = source or rarity_data.get("rarity_description")
                     applied_rarity = True
                 coin.llm_suggested_rarity = None

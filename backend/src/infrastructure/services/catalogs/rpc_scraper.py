@@ -169,7 +169,8 @@ def build_rpc_type_url(volume: str, number: str) -> str:
     if not num_clean:
         return ""
     try:
-        if vol_clean and vol_clean in "IVXLCDM":
+        # Check that every character is a valid Roman numeral (I,V,X,L,C,D,M)
+        if vol_clean and all(c in "IVXLCDM" for c in vol_clean):
             arabic = roman_to_arabic(vol_clean)
             return f"https://{RPC_BASE_HOST}/coins/{arabic}/{num_clean}"
     except Exception:

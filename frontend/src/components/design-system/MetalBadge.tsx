@@ -63,24 +63,30 @@ export function MetalBadge({
 }
 
 /**
- * MetalChip - Selectable metal filter chip with count
+ * MetalChip - Selectable metal filter chip with count.
+ * Accepts any string (API metal key); unknown metals fall back to AE styling.
+ * Use label="name" in filter sidebars so "ae" displays as "Bronze (AE)".
  */
 export interface MetalChipProps {
-  metal: MetalType;
+  metal: string;
   count?: number;
   selected?: boolean;
   onClick?: () => void;
+  /** 'symbol' (default) shows e.g. Æ, Au; 'name' shows e.g. Bronze (AE), Gold (for filter sidebar) */
+  label?: 'symbol' | 'name';
 }
 
-export function MetalChip({ metal, count, selected, onClick }: MetalChipProps) {
-  const config = METAL_CONFIG[metal];
-  
+export function MetalChip({ metal, count, selected, onClick, label = 'symbol' }: MetalChipProps) {
+  const metalKey = metal?.toLowerCase() as MetalType;
+  const config = METAL_CONFIG[metalKey] ?? METAL_CONFIG.ae;
+  const displayText = label === 'name' ? config.name : config.symbol;
+
   return (
     <button
       onClick={onClick}
       className={cn(
         'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all',
-        'font-mono text-xs font-semibold',
+        label === 'name' ? 'text-xs font-semibold' : 'font-mono text-xs font-semibold',
         selected && 'ring-2 ring-offset-2 scale-105'
       )}
       style={{
@@ -92,7 +98,7 @@ export function MetalChip({ metal, count, selected, onClick }: MetalChipProps) {
       }}
       title={config.name}
     >
-      <span>{config.symbol}</span>
+      <span>{displayText}</span>
       {count !== undefined && (
         <span className="opacity-60 tabular-nums">{count}</span>
       )}

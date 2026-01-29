@@ -7,7 +7,7 @@
 
 | System   | Display | Parser   | Notes |
 |----------|---------|----------|--------|
-| ric      | RIC     | ric.py   | Volume Roman (I–X+), optional mint, edition ²/³ |
+| ric      | RIC     | ric.py   | Volume Roman (I–X+); part Arabic or Roman (IV.1, V.II); optional mint; edition ²/³ |
 | crawford | RRC     | crawford.py | Crawford/Cr/RRC; hyphen→slash, range→first variant |
 | rpc      | RPC     | rpc.py   | Volume Roman, supplement S/S2/S3 |
 | rsc      | RSC     | rsc.py   | Optional volume, warning when missing |
@@ -29,7 +29,7 @@
 ## Edge Cases Covered by Tests
 
 - **Empty/whitespace**: Empty string and whitespace-only → null catalog.
-- **RIC**: IV.1 / IV-1 / IV/1 → same canonical; edition ²/³ → volume .2/.3; unknown mint → title case.
+- **RIC**: IV.1 / IV-1 / IV/1 → same canonical; V.II 325 (Roman part) → volume V.2 for canonical/OCRE; RIC I (2) 207 / RIC I(2) 207 (parenthesized edition) → volume I.2; edition ²/³ → volume .2/.3; unknown mint → title case.
 - **Crawford**: Bare format warnings; no-subnumber (Cr 123); hyphen and range warnings.
 - **RPC**: No-volume (RPC 5678) warning; supplement S/S2 precedence.
 - **RSC**: With and without volume; warning when volume missing.
@@ -59,6 +59,7 @@
 - **Canonical from one source**: `canonical(ref)` accepts either `ParsedRef` or the 7-key dict; used for `local_ref` and dedupe. Display names come from `catalog_systems.SYSTEM_TO_DISPLAY`.
 - **Reference detection**: `_looks_like_reference(raw)` uses `catalog_systems.reference_detection_pattern()` (built from `REFERENCE_DETECTION_WORDS`); add display names and aliases there when adding catalogs.
 - **ParseResult**: Core fields only (system, volume, number, subtype, mint, supplement, collection, raw, normalized, confidence, needs_llm, warnings). CRRO/OCRE derive main_number, sub_number, edition from number/volume.
+- **OCRE query**: When volume has a dot (volume.part, e.g. V.2 from RIC V.II 325), OCRE `build_reconcile_query` sends it as-is ("RIC V.2 325"); edition (2)/(3) is only added for single-segment volume (e.g. "RIC II(2) 756"). When context has ruler/authority (e.g. Diocletian), the query omits edition so "RIC V Diocletian 325" matches (OCRE does not match "RIC V(2) Diocletian 325"). Quick Lookup (IdentityStep) passes issuer and mint as `coinContext` so RIC V 325 with Diocletian selected resolves to RIC V Diocletian 325. See `tests/unit/infrastructure/services/test_ocre.py`.
 - **Shared helpers**: `parsers.base.make_simple_ref(system, number, variant)` for single-pattern catalogs; `crawford._crawford_ref(main_num, sub_num, variant, warnings)` for Crawford.
 
 ## Frontend Integration

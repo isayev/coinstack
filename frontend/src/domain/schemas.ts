@@ -357,7 +357,11 @@ export const DomainCoinSchema = z.object({
   // -------------------------------------------------------------------------
   // Rarity and Condition Notes
   // -------------------------------------------------------------------------
-  rarity: z.enum(['c', 's', 'r1', 'r2', 'r3', 'u']).nullable().optional(),
+  // Backend/LLM may return uppercase (e.g. R2); normalize to lowercase for enum
+  rarity: z.preprocess(
+    (v) => (typeof v === 'string' ? v.toLowerCase().trim() : v),
+    z.enum(['c', 's', 'r1', 'r2', 'r3', 'u']).nullable().optional()
+  ),
   rarity_notes: z.string().nullable().optional(),
   style_notes: z.string().nullable().optional(),
   toning_description: z.string().nullable().optional(),

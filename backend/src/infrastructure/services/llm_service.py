@@ -124,10 +124,12 @@ class ConfigLoader:
     
     def _load(self):
         """Load and parse configuration file."""
-        # Try multiple paths
+        # Prefer path relative to this file so we always load the same config (backend/config/llm_config.yaml)
+        backend_config = Path(__file__).resolve().parent.parent.parent.parent / "config" / "llm_config.yaml"
         paths_to_try = [
+            backend_config,
             self.config_path,
-            Path(__file__).parent.parent.parent.parent / "config" / "llm_config.yaml",
+            Path("config/llm_config.yaml"),
             Path("backend/config/llm_config.yaml"),
         ]
         
@@ -138,7 +140,7 @@ class ConfigLoader:
                     # Expand environment variables
                     content = self._expand_env_vars(content)
                     self._config = yaml.safe_load(content)
-                logger.info(f"Loaded LLM config from {path}")
+                logger.info("Loaded LLM config from %s (profile=%s)", path, self._config.get("settings", {}).get("active_profile", "?"))
                 break
         else:
             logger.warning("LLM config not found, using defaults")
@@ -808,7 +810,12 @@ class LLMService(ILLMService):
         # Try primary then fallbacks
         models_to_try = [primary_model.name] + fallbacks
         providers_tried = []
+        first_error = None
         last_error = None
+        logger.info(
+            "LLM %s: profile=%s, primary=%s, fallbacks=%s",
+            cap_name, self.config.active_profile, primary_model.name, fallbacks,
+        )
         
         for model_name in models_to_try:
             model_cfg = self.config.get_model(model_name)
@@ -842,14 +849,16 @@ class LLMService(ILLMService):
                 return result
                 
             except Exception as e:
-                logger.warning(f"Model {model_name} failed: {e}")
+                logger.warning("Model %s failed: %s", model_name, e)
+                if first_error is None:
+                    first_error = e
                 last_error = e
                 continue
         
-        raise LLMProviderUnavailable(
-            f"All providers failed: {last_error}",
-            providers_tried
-        )
+        err_msg = f"All providers failed: {last_error}"
+        if first_error is not None and first_error is not last_error:
+            err_msg = f"All providers failed (first: {first_error}; last: {last_error})"
+        raise LLMProviderUnavailable(err_msg, providers_tried)
     
     async def _call_model(
         self,
@@ -890,14 +899,15 @@ class LLMService(ILLMService):
         if cap_cfg:
             params = dict(cap_cfg.parameters)
         
-        # Make call
+        # Make call (timeout: capability override > settings default)
+        timeout_sec = params.get("timeout") or self.config.settings.get("default_timeout", 60)
         try:
             response = await acompletion(
                 model=model_str,
                 messages=messages,
                 temperature=params.get("temperature", 0.3),
                 max_tokens=params.get("max_tokens", model_cfg.max_tokens),
-                timeout=self.config.settings.get("default_timeout", 60),
+                timeout=timeout_sec,
             )
         except Exception as e:
             raise LLMError(f"LLM call failed: {e}")

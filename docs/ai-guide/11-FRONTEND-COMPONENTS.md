@@ -39,7 +39,7 @@ frontend/src/
 │   ├── SeriesDashboard.tsx    # Series listing
 │   ├── SeriesDetailPage.tsx   # Series slots view
 │   ├── StatsPageV3.tsx        # Statistics dashboard
-│   └── SettingsPage.tsx       # App settings
+│   └── SettingsPage.tsx       # App settings (includes LLM & AI card)
 │
 ├── components/
 │   ├── layout/                # App shell components
@@ -775,6 +775,8 @@ const handleMetalClick = (metal: string) => {
 
 **Purpose**: Left sidebar on collection page with search, stats, and filter chips. All filters use the same badge-with-count pattern (design tokens).
 
+**Metal filter (data-driven)**: Only metals that appear in the collection (count &gt; 0) or are currently selected are shown. Chips are ordered by a canonical list aligned with the backend Metal enum (gold, silver, bronze, ae, copper, electrum, billon, potin, orichalcum, lead). Metals not present in the data are not displayed. Counts come from `useCollectionStats()` → `metal_counts` (aggregated from stats `by_metal`).
+
 **Filter chips** (from design-system): MetalChip, CategoryChip, GradeChip, RarityChip; Ruler section uses inline chips with `--bg-card`, `--border-subtle`, `--text-secondary`; selected state uses ring + optional gold accent. Ruler section is expanded by default and shows top 12 rulers. Unknown Ruler/Year/Mint and Attributes (Circa, Test Cut) use the same chip size and selected ring. See [10-DESIGN-SYSTEM.md § 4.7](10-DESIGN-SYSTEM.md#47-collection-sidebar-filter-chips).
 
 ---
@@ -1020,14 +1022,28 @@ export function useDeleteCoin() {
 
 **Purpose**: React hooks for LLM-powered numismatic operations.
 
+**Types**: `LLMStatusResponse` includes optional `provider_keys?: ProviderKeysStatus` (`anthropic`, `openrouter`, `google` booleans — presence only). `LLMCostReportResponse`: `period_days`, `total_cost_usd`, `by_capability`, `by_model`.
+
+**Settings / status hooks** (used by Settings page LLM & AI card):
+- **useLLMStatusQuery()** — `useQuery` for `GET /api/v2/llm/status`; fetches on mount. Returns profile, budget, `provider_keys`, `capabilities_available`, `ollama_available`.
+- **useLLMCostReport(days?)** — `useQuery` for `GET /api/v2/llm/cost-report?days=30`; usage and cost by capability/model.
+- **useLLMStatus()** — `useMutation` for one-off status check (call `mutate()`).
+
 ```typescript
 import { 
   useExpandLegendV2, 
   useObserveCondition, 
   useGenerateHistoricalContext,
   useNormalizeVocab,
-  useParseAuction 
+  useParseAuction,
+  useLLMStatusQuery,
+  useLLMCostReport 
 } from '@/hooks/useLLM'
+
+// Settings page: status and cost on load
+const { data: status } = useLLMStatusQuery()
+const { data: costReport } = useLLMCostReport(30)
+// status.provider_keys?.anthropic, status.profile, costReport.total_cost_usd
 
 // Legend expansion
 const expandLegend = useExpandLegendV2()
@@ -1049,10 +1065,14 @@ normalizeVocab.mutate({
 ```
 
 **Backend Endpoints**:
+- `GET /api/v2/llm/status` - Status, profile, budget, `provider_keys` (used by Settings)
+- `GET /api/v2/llm/cost-report?days=30` - Usage/cost breakdown
 - `POST /api/v2/llm/legend/expand` - Expand Latin abbreviations
 - `POST /api/v2/llm/condition/observe` - Describe wear (not grade)
 - `POST /api/v2/llm/vocab/normalize` - Normalize vocabulary
 - `POST /api/v2/llm/auction/parse` - Parse auction descriptions
+
+**Settings page — LLM & AI card**: On `/settings`, the "LLM & AI" card (same style as Vocabulary, Database, Backup) shows: current profile, monthly cost vs budget, provider key status (Anthropic / OpenRouter / Google — configured or not set, no values), optional 30-day cost summary, links to Anthropic and OpenRouter billing, and a troubleshooting line for "credit balance too low" / "All providers failed". Uses `useLLMStatusQuery()` and `useLLMCostReport(30)`.
 
 ### 6.3 useCollectionStats
 

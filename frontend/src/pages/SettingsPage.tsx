@@ -1,16 +1,143 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDatabaseInfo, downloadBackup, downloadCSV } from "@/hooks/useSettings";
+import { useLLMStatusQuery, useLLMCostReport } from "@/hooks/useLLM";
 import { useFilterStore } from "@/stores/filterStore";
 import { useTheme } from "@/components/theme-provider";
 import { 
   Database, Download, FileSpreadsheet, Trash2, 
-  Sun, Moon, Monitor, HardDrive, Info, RefreshCw, Library
+  Sun, Moon, Monitor, HardDrive, Info, RefreshCw, Library, Sparkles, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+
+// -----------------------------------------------------------------------------
+// LLM & AI Settings Card
+// -----------------------------------------------------------------------------
+const ANTHROPIC_BILLING_URL = "https://console.anthropic.com/settings/billing";
+const OPENROUTER_PRICING_URL = "https://openrouter.ai/pricing";
+
+function LLMAISettingsCard() {
+  const { data: status, isLoading: statusLoading, error: statusError } = useLLMStatusQuery();
+  const { data: costReport, isLoading: costLoading } = useLLMCostReport(30);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5" />
+          LLM & AI
+        </CardTitle>
+        <CardDescription>
+          Status, provider keys, usage, and billing for AI enrichment (historical context, legend expansion, etc.)
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {statusLoading && (
+          <p className="text-sm text-muted-foreground">Loading LLM status...</p>
+        )}
+        {statusError && (
+          <p className="text-sm text-destructive">
+            Could not load LLM status. Is the backend running?
+          </p>
+        )}
+        {status && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm text-muted-foreground">Profile</div>
+                <div className="font-medium capitalize">{status.profile}</div>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm text-muted-foreground">Monthly cost</div>
+                <div className="font-medium">${status.monthly_cost_usd.toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm text-muted-foreground">Budget</div>
+                <div className="font-medium">${status.monthly_budget_usd.toFixed(2)}</div>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <div className="text-sm text-muted-foreground">Remaining</div>
+                <div className="font-medium">${status.budget_remaining_usd.toFixed(2)}</div>
+              </div>
+            </div>
+            {status.provider_keys && (
+              <div>
+                <div className="text-sm font-medium mb-2">Provider API keys</div>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>
+                    Anthropic: {status.provider_keys.anthropic ? (
+                      <span className="text-green-600 dark:text-green-400">Configured</span>
+                    ) : (
+                      <span className="text-amber-600 dark:text-amber-400">Not set</span>
+                    )}
+                  </li>
+                  <li>
+                    OpenRouter: {status.provider_keys.openrouter ? (
+                      <span className="text-green-600 dark:text-green-400">Configured</span>
+                    ) : (
+                      <span className="text-amber-600 dark:text-amber-400">Not set</span>
+                    )}
+                  </li>
+                  <li>
+                    Google: {status.provider_keys.google ? (
+                      <span className="text-green-600 dark:text-green-400">Configured</span>
+                    ) : (
+                      <span className="text-amber-600 dark:text-amber-400">Not set</span>
+                    )}
+                  </li>
+                </ul>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Set in backend <code className="bg-muted px-1 rounded">.env</code> (ANTHROPIC_API_KEY, OPENROUTER_API_KEY, GOOGLE_API_KEY). Restart backend after changes.
+                </p>
+              </div>
+            )}
+            {!costLoading && costReport && costReport.total_cost_usd > 0 && (
+              <div>
+                <div className="text-sm font-medium mb-2">Usage (last 30 days)</div>
+                <p className="text-sm text-muted-foreground">
+                  Total: ${costReport.total_cost_usd.toFixed(2)} — see cost report below for breakdown by capability and model.
+                </p>
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-medium mb-2">Billing & credits</div>
+              <ul className="text-sm space-y-2">
+                <li>
+                  <a
+                    href={ANTHROPIC_BILLING_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline inline-flex items-center gap-1"
+                  >
+                    Anthropic Plans & Billing <ExternalLink className="w-3 h-3" />
+                  </a>
+                  — Top up credits or enable auto-reload.
+                </li>
+                <li>
+                  <a
+                    href={OPENROUTER_PRICING_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline inline-flex items-center gap-1"
+                  >
+                    OpenRouter Pricing <ExternalLink className="w-3 h-3" />
+                  </a>
+                  — Check credits and usage (e.g. for DeepSeek).
+                </li>
+              </ul>
+            </div>
+            <div className="rounded-lg border bg-muted/50 p-3 text-sm text-muted-foreground">
+              <strong className="text-foreground">Troubleshooting:</strong> If you see &quot;credit balance too low&quot; or &quot;All providers failed&quot;, top up Anthropic credits or set <code className="bg-muted px-1 rounded">LLM_PROFILE=development</code> in backend <code className="bg-muted px-1 rounded">.env</code> to use OpenRouter (e.g. DeepSeek) as primary, then restart the backend.
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export function SettingsPage() {
   const { data: dbInfo, isLoading } = useDatabaseInfo();
@@ -94,6 +221,9 @@ export function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* LLM & AI */}
+      <LLMAISettingsCard />
 
       {/* Database Info */}
       <Card>
