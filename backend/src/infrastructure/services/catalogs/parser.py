@@ -24,6 +24,9 @@ class ParseResult(BaseModel):
     volume: Optional[str] = None       # Volume (Roman for RIC/RPC)
     number: Optional[str] = None      # Main reference number
     subtype: Optional[str] = None     # Variant/subtype like "a", "b"
+    mint: Optional[str] = None        # RIC mint code, BMCRR/BMC Greek
+    supplement: Optional[str] = None  # RPC S, S2
+    collection: Optional[str] = None  # SNG collection
 
     # Parsing metadata
     raw: str = ""                     # Original input string
@@ -47,7 +50,7 @@ def canonical(ref: Union[ParsedRef, Dict[str, Any]]) -> str:
     """
     if isinstance(ref, ParsedRef):
         display = SYSTEM_TO_DISPLAY.get(ref.system) or ref.system
-        parts = [display, ref.volume, ref.mint, ref.collection, ref.number]
+        parts = [display, ref.volume, ref.supplement, ref.mint, ref.collection, ref.number]
     else:
         d = ref
         catalog = d.get("catalog") or ""
@@ -58,6 +61,7 @@ def canonical(ref: Union[ParsedRef, Dict[str, Any]]) -> str:
         parts = [
             display,
             d.get("volume"),
+            d.get("supplement"),
             d.get("mint"),
             d.get("collection"),
             d.get("number"),
@@ -84,6 +88,9 @@ def _parsed_ref_to_result(parsed: ParsedRef, raw: str) -> ParseResult:
         volume=parsed.volume,
         number=number,
         subtype=subtype,
+        mint=parsed.mint,
+        supplement=parsed.supplement,
+        collection=parsed.collection,
         raw=raw,
         normalized=parsed.normalized,
         confidence=confidence,
@@ -170,35 +177,77 @@ parser = ReferenceParser()
 SYSTEM_TO_DISPLAY_CATALOG = SYSTEM_TO_DISPLAY
 
 
-def parse_catalog_reference(raw: str) -> Dict[str, Optional[str]]:
+def _parse_result_to_dict(result: ParseResult) -> Dict[str, Any]:
     """
-    Single entry point for parsing a catalog reference string.
-    Returns dict compatible with LLM router and reference sync: catalog (display), volume, number.
-    Volume is Roman for RIC/RPC. Use this from routers, ReferenceSyncService, and scrapers.
+    Build dict from ParseResult for canonical() and sync.
+    Returns catalog (display), volume, number, variant, mint, supplement, collection.
     """
-    if not raw or not str(raw).strip():
-        return {"catalog": None, "volume": None, "number": None}
-    text = str(raw).strip()
-    result = parser.parse(text)
     if result.system and result.system in SYSTEM_TO_DISPLAY:
         catalog = SYSTEM_TO_DISPLAY[result.system]
-        number = result.number or ""
-        if result.subtype:
-            number = f"{number}{result.subtype}"
+        number = (result.number or "") + (result.subtype or "")
         return {
             "catalog": catalog,
             "volume": result.volume,
             "number": number.strip() or None,
+            "variant": result.subtype,
+            "mint": result.mint,
+            "supplement": result.supplement,
+            "collection": result.collection,
         }
+    return {
+        "catalog": None,
+        "volume": None,
+        "number": None,
+        "variant": None,
+        "mint": None,
+        "supplement": None,
+        "collection": None,
+    }
+
+
+def parse_catalog_reference(raw: str) -> Dict[str, Optional[str]]:
+    """
+    Single entry point for parsing a catalog reference string.
+    Returns dict with catalog (display), volume, number; may include optional
+    variant, mint, supplement, collection. Volume is Roman for RIC/RPC.
+    Use from routers, ReferenceSyncService, and scrapers. One parse path:
+    delegates to parse_catalog_reference_full then _parse_result_to_dict.
+    """
+    if not raw or not str(raw).strip():
+        return {
+            "catalog": None,
+            "volume": None,
+            "number": None,
+            "variant": None,
+            "mint": None,
+            "supplement": None,
+            "collection": None,
+        }
+    result = parse_catalog_reference_full(str(raw).strip())
+    d = _parse_result_to_dict(result)
+    if d.get("catalog") and d.get("number") is not None:
+        return d
     # Fallback: first word as catalog, last as number (matches legacy llm behavior)
-    parts = text.split()
+    parts = (raw or "").strip().split()
     if parts:
         return {
             "catalog": parts[0].upper(),
             "volume": None,
             "number": parts[-1] if len(parts) > 1 else None,
+            "variant": None,
+            "mint": None,
+            "supplement": None,
+            "collection": None,
         }
-    return {"catalog": None, "volume": None, "number": None}
+    return {
+        "catalog": None,
+        "volume": None,
+        "number": None,
+        "variant": None,
+        "mint": None,
+        "supplement": None,
+        "collection": None,
+    }
 
 
 def parse_catalog_reference_full(raw: str) -> ParseResult:

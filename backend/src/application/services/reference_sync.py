@@ -16,9 +16,9 @@ from src.infrastructure.persistence.orm import (
 )
 from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system
 from src.infrastructure.services.catalogs.parser import (
-    parse_catalog_reference,
-    parse_catalog_reference_full,
+    _parse_result_to_dict,
     canonical,
+    parse_catalog_reference_full,
 )
 
 
@@ -29,17 +29,21 @@ def _normalize_ref_input(
     local_ref is always canonical so that equivalent refs (e.g. 'RIC IV-1 351 b' and dict RIC IV.1 351b) dedupe to one row.
     """
     if isinstance(ref, str):
-        parsed = parse_catalog_reference(ref.strip())
         full = parse_catalog_reference_full(ref.strip())
-        local_ref = canonical(parsed) if (parsed.get("catalog") and parsed.get("number")) else ref.strip()
+        parsed = _parse_result_to_dict(full)
+        local_ref = (
+            canonical(parsed)
+            if (parsed.get("catalog") and parsed.get("number"))
+            else ref.strip()
+        )
         return {
             "catalog": parsed.get("catalog") or "Unknown",
             "number": parsed.get("number") or "",
             "volume": parsed.get("volume"),
-            "variant": full.subtype if full.system else None,
-            "mint": getattr(full, "mint", None),
-            "supplement": getattr(full, "supplement", None),
-            "collection": getattr(full, "collection", None),
+            "variant": parsed.get("variant"),
+            "mint": parsed.get("mint"),
+            "supplement": parsed.get("supplement"),
+            "collection": parsed.get("collection"),
             "local_ref": local_ref,
             "raw_text": ref.strip(),
             "is_primary": False,

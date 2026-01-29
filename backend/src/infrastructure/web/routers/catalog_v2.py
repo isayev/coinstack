@@ -44,6 +44,10 @@ def parse_catalog(request: ParseCatalogRequest) -> ParseCatalogResponse:
             number=number.strip() or "",
             volume=result.volume,
             raw_text=raw,
+            variant=result.subtype,
+            mint=result.mint,
+            supplement=result.supplement,
+            collection=result.collection,
         )
     return ParseCatalogResponse(
         ref=ref_response,

@@ -1,11 +1,12 @@
 """Unit tests for central catalog reference parser (parse_catalog_reference)."""
 import pytest
 from src.infrastructure.services.catalogs.parser import (
+    _parse_result_to_dict,
+    canonical,
     parse_catalog_reference,
     parse_catalog_reference_full,
     parser,
     ParseResult,
-    canonical,
 )
 
 
@@ -85,6 +86,15 @@ def test_canonical_from_dict():
     assert c == "RIC IV.1 351b"
 
 
+def test_canonical_includes_supplement():
+    """canonical() includes supplement so RPC I S 123 and RPC I 123 get distinct local_ref."""
+    c_no_supp = canonical({"catalog": "RPC", "volume": "I", "number": "123"})
+    c_with_supp = canonical({"catalog": "RPC", "volume": "I", "supplement": "S", "number": "123"})
+    assert c_no_supp == "RPC I 123"
+    assert c_with_supp == "RPC I S 123"
+    assert c_no_supp != c_with_supp
+
+
 def test_canonical_equivalent_refs_same_string():
     """Equivalent refs in different forms produce the same canonical string (for dedupe)."""
     parsed1 = parse_catalog_reference("RIC IV-1 351 b")
@@ -113,3 +123,23 @@ def test_parse_catalog_reference_full_returns_parse_result():
     assert result.system == "ric"
     assert result.confidence >= 0.0
     assert hasattr(result, "warnings")
+
+
+def test_parse_catalog_reference_full_returns_subtype():
+    """parse_catalog_reference_full returns ParseResult with subtype (variant) when present."""
+    result = parse_catalog_reference_full("RIC IV.1 351b")
+    assert isinstance(result, ParseResult)
+    assert result.system == "ric"
+    assert result.subtype == "b"
+    assert result.number == "351"
+
+
+def test_parse_catalog_reference_matches_parse_result_to_dict():
+    """parse_catalog_reference(raw) returns same catalog/volume/number as _parse_result_to_dict(full)."""
+    raw = "RIC II 756"
+    full = parse_catalog_reference_full(raw)
+    expected = _parse_result_to_dict(full)
+    out = parse_catalog_reference(raw)
+    assert out.get("catalog") == expected.get("catalog")
+    assert out.get("volume") == expected.get("volume")
+    assert out.get("number") == expected.get("number")

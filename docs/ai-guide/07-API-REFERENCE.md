@@ -764,7 +764,7 @@ POST /api/v2/catalog/parse
 
 **Response**: `{ ref?: CatalogReferenceResponse, confidence: number, warnings: string[], alternatives: CatalogReferenceResponse[] }`
 
-Use for import preview or reference field validation without persisting. Volume in `ref` is Roman for RIC/RPC.
+`ref` includes catalog, number, volume (Roman for RIC/RPC), and when present: variant, mint, supplement, collection. Use for import preview or reference field validation without persisting.
 
 ### List Catalog Systems
 
