@@ -55,6 +55,7 @@ frontend/src/
 │   │   ├── ImageUploadWithSplit.tsx # Upload + 2:1/1:2 split + gallery
 │   │   ├── AddCoinImagesDialog.tsx  # Add obv/rev images from card
 │   │   ├── CoinForm.tsx       # Create/edit form
+│   │   ├── CollectionSidebar.tsx # Collection filters (Metal/Category/Grade/Rarity/Ruler chips)
 │   │   ├── CoinFilters.tsx    # Filter panel
 │   │   └── VocabAutocomplete.tsx # Issuer/mint search
 │   │
@@ -763,6 +764,14 @@ const handleMetalClick = (metal: string) => {
 - View toggle (grid/table)
 - Compact view toggle
 - Items per page
+
+### 3.5 CollectionSidebar
+
+**Location**: `frontend/src/components/coins/CollectionSidebar.tsx`
+
+**Purpose**: Left sidebar on collection page with search, stats, and filter chips. All filters use the same badge-with-count pattern (design tokens).
+
+**Filter chips** (from design-system): MetalChip, CategoryChip, GradeChip, RarityChip; Ruler section uses inline chips with `--bg-card`, `--border-subtle`, `--text-secondary`; selected state uses ring + optional gold accent. Ruler section is expanded by default and shows top 12 rulers. Unknown Ruler/Year/Mint and Attributes (Circa, Test Cut) use the same chip size and selected ring. See [10-DESIGN-SYSTEM.md § 4.7](10-DESIGN-SYSTEM.md#47-collection-sidebar-filter-chips).
 
 ---
 

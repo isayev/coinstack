@@ -398,6 +398,8 @@ def get_coins(
     issuer: Optional[str] = Query(None, description="Filter by issuer name (partial match)"),
     year_start: Optional[int] = Query(None, description="Filter by minimum year (negative for BC)"),
     year_end: Optional[int] = Query(None, description="Filter by maximum year (negative for BC)"),
+    mint_year_gte: Optional[int] = Query(None, description="Alias for year_start (frontend param)"),
+    mint_year_lte: Optional[int] = Query(None, description="Alias for year_end (frontend param)"),
     weight_min: Optional[float] = Query(None, description="Filter by minimum weight in grams"),
     weight_max: Optional[float] = Query(None, description="Filter by maximum weight in grams"),
     # Added filters
@@ -452,6 +454,10 @@ def get_coins(
         filters["year_start"] = year_start
     if year_end is not None:
         filters["year_end"] = year_end
+    if mint_year_gte is not None and "year_start" not in filters:
+        filters["year_start"] = mint_year_gte
+    if mint_year_lte is not None and "year_end" not in filters:
+        filters["year_end"] = mint_year_lte
     if weight_min is not None:
         filters["weight_min"] = weight_min
     if weight_max is not None:

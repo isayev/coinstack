@@ -19,6 +19,9 @@ export type { GradeBadgeProps } from './GradeBadge';
 export { RarityIndicator, RarityLegend } from './RarityIndicator';
 export type { RarityIndicatorProps } from './RarityIndicator';
 
+export { CategoryChip, GradeChip, RarityChip } from './FilterChips';
+export type { CategoryChipProps, GradeChipProps, RarityChipProps } from './FilterChips';
+
 // Trend and chart components
 export { PriceTrend, SimplePriceTrend } from './PriceTrend';
 export type { PriceTrendProps } from './PriceTrend';

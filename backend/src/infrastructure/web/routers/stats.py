@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_, extract
+from sqlalchemy import func, case, and_, extract, or_
 from src.infrastructure.web.dependencies import get_db
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel
 
@@ -159,20 +159,66 @@ GRADE_NUMERIC = {
 }
 
 
+def _grade_tier_condition(tier: str):
+    """Same tier-based grade filter as coin_repository so stats and list stay in sync."""
+    g = tier.lower()
+    if g == "poor":
+        return or_(
+            CoinModel.grade.ilike("%Poor%"),
+            CoinModel.grade.ilike("%Fair%"),
+            CoinModel.grade.ilike("%Basal%"),
+            CoinModel.grade.ilike("AG%"),
+        )
+    if g == "good":
+        return or_(
+            CoinModel.grade.ilike("%Good%"),
+            CoinModel.grade.ilike("%VG%"),
+        )
+    if g == "fine":
+        return or_(
+            CoinModel.grade.ilike("%Fine%"),
+            CoinModel.grade.ilike("%VF%"),
+            CoinModel.grade == "F",
+            CoinModel.grade.ilike("F %"),
+        )
+    if g == "ef":
+        return or_(
+            CoinModel.grade.ilike("%XF%"),
+            CoinModel.grade.ilike("%EF%"),
+            CoinModel.grade.ilike("%Extremely%"),
+        )
+    if g == "au":
+        return or_(
+            CoinModel.grade.ilike("%AU%"),
+            CoinModel.grade.ilike("%About Unc%"),
+        )
+    if g == "ms":
+        return or_(
+            CoinModel.grade.ilike("%MS%"),
+            CoinModel.grade.ilike("%Mint State%"),
+            CoinModel.grade.ilike("%FDC%"),
+            CoinModel.grade.ilike("%Unc%"),
+        )
+    # unknown or other: fallback to ilike
+    return CoinModel.grade.ilike(f"%{tier}%")
+
+
 def _apply_filters(query, filters: dict):
-    """Apply optional filters to query."""
+    """Apply optional filters to query. Grade uses tier-based logic (same as coin list)."""
     if filters.get("category"):
         query = query.filter(func.lower(CoinModel.category) == filters["category"].lower())
     if filters.get("metal"):
         query = query.filter(func.lower(CoinModel.metal) == filters["metal"].lower())
     if filters.get("grade"):
-        query = query.filter(func.upper(CoinModel.grade).like(f"%{filters['grade'].upper()}%"))
+        query = query.filter(_grade_tier_condition(filters["grade"]))
     if filters.get("issuer"):
         query = query.filter(CoinModel.issuer.ilike(f"%{filters['issuer']}%"))
-    if filters.get("year_gte"):
-        query = query.filter(CoinModel.year_start >= filters["year_gte"])
-    if filters.get("year_lte"):
-        query = query.filter(CoinModel.year_start <= filters["year_lte"])
+    year_gte = filters.get("year_gte") or filters.get("mint_year_gte")
+    if year_gte is not None:
+        query = query.filter(CoinModel.year_start >= year_gte)
+    year_lte = filters.get("year_lte") or filters.get("mint_year_lte")
+    if year_lte is not None:
+        query = query.filter(CoinModel.year_start <= year_lte)
     return query
 
 
@@ -182,10 +228,12 @@ async def get_stats_summary(
     # Optional filters
     category: Optional[str] = Query(None, description="Filter by category"),
     metal: Optional[str] = Query(None, description="Filter by metal"),
-    grade: Optional[str] = Query(None, description="Filter by grade"),
+    grade: Optional[str] = Query(None, description="Filter by grade (tier: fine, ef, au, ms, etc.)"),
     issuer: Optional[str] = Query(None, description="Filter by issuer/ruler"),
     year_gte: Optional[int] = Query(None, description="Minimum year"),
     year_lte: Optional[int] = Query(None, description="Maximum year"),
+    mint_year_gte: Optional[int] = Query(None, description="Alias for year_gte (frontend param name)"),
+    mint_year_lte: Optional[int] = Query(None, description="Alias for year_lte (frontend param name)"),
 ):
     """
     Get comprehensive collection statistics for the dashboard.
@@ -204,8 +252,10 @@ async def get_stats_summary(
         "metal": metal,
         "grade": grade,
         "issuer": issuer,
-        "year_gte": year_gte,
-        "year_lte": year_lte,
+        "year_gte": year_gte or mint_year_gte,
+        "year_lte": year_lte or mint_year_lte,
+        "mint_year_gte": mint_year_gte,
+        "mint_year_lte": mint_year_lte,
     }
     has_filters = any(v is not None for v in filters.values())
     

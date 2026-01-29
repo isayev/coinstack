@@ -1,15 +1,12 @@
 /**
  * CollectionSidebar - Unified sidebar with stats, filters, and alerts
- * 
- * Design spec includes:
- * - Search with keyboard shortcut
- * - Collection stats with real data
- * - Metal chips with counts
- * - Category bars with distribution
- * - Grade bars with temperature colors
- * - Year range slider with histogram
- * - Alerts section (muted placeholders)
- * 
+ *
+ * All filters use the same badge-with-count pattern (design tokens):
+ * - Metal, Category, Grade, Rarity: MetalChip / CategoryChip / GradeChip / RarityChip
+ * - Ruler: expanded by default, top 12 rulers as design-token chips
+ * - Unknown Ruler/Year/Mint and Attributes (Circa, Test Cut): same chip style
+ * - Search, collection stats, year range slider, alerts (muted placeholders)
+ *
  * @module coins/CollectionSidebar
  */
 
@@ -26,9 +23,11 @@ import {
 import { cn } from "@/lib/utils";
 import {
   MetalChip,
+  CategoryChip,
+  GradeChip,
+  RarityChip,
   PlaceholderSparkline,
   MetalType,
-  CATEGORY_CONFIG,
   CategoryType,
   GradeTier,
 } from "@/components/design-system";
@@ -138,24 +137,27 @@ function FilterSection({
 
   return (
     <div style={{ borderBottom: '1px solid var(--border-subtle)' }} className="pb-3">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full py-2 text-sm font-medium transition-colors"
-        style={{ color: 'var(--text-primary)' }}
-      >
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between py-2">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 flex-1 min-w-0 text-left text-sm font-medium transition-colors"
+          style={{ color: 'var(--text-primary)' }}
+          aria-expanded={isOpen}
+        >
           {isOpen ? (
-            <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+            <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
           ) : (
-            <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
+            <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
           )}
           <span>{title}</span>
-        </div>
-        <div className="flex items-center gap-2">
+        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {badge}
           {onClear && (
             <button
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              type="button"
+              onClick={onClear}
               className="text-xs hover:opacity-80"
               style={{ color: 'var(--text-tertiary)' }}
             >
@@ -163,7 +165,7 @@ function FilterSection({
             </button>
           )}
         </div>
-      </button>
+      </div>
       {isOpen && <div className="pt-2 space-y-3">{children}</div>}
     </div>
   );
@@ -202,7 +204,7 @@ function MetalFilter({ selected, onSelect, counts }: MetalFilterProps) {
 }
 
 // ============================================================================
-// CATEGORY FILTER WITH DISTRIBUTION BARS
+// CATEGORY FILTER (badge chips, same pattern as Metal)
 // ============================================================================
 
 interface CategoryFilterProps {
@@ -214,74 +216,24 @@ interface CategoryFilterProps {
 const DISPLAY_CATEGORIES: CategoryType[] = ['imperial', 'provincial', 'republic', 'greek', 'celtic', 'byzantine', 'late', 'judaea', 'eastern'];
 
 function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
-  const maxCount = Math.max(...Object.values(counts), 1);
-
-  // Filter to only show categories with coins
   const activeCategories = DISPLAY_CATEGORIES.filter(cat => counts[cat] > 0 || selected === cat);
 
   return (
-    <div className="space-y-1.5">
+    <div className="flex flex-wrap gap-1.5">
       {activeCategories.map((cat) => {
-        const config = CATEGORY_CONFIG[cat];
         const count = counts[cat] || 0;
-        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
-        const isSelected = selected === cat;
-
         return (
-          <button
+          <CategoryChip
             key={cat}
-            onClick={() => onSelect(isSelected ? null : cat)}
-            className={cn(
-              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
-              isSelected && "ring-1"
-            )}
-            style={{
-              background: isSelected ? `var(--category-${config.cssVar}-subtle)` : 'transparent',
-            }}
-          >
-            {/* Color indicator */}
-            <div
-              className="w-3 h-3 rounded-sm flex-shrink-0"
-              style={{
-                background: `var(--category-${config.cssVar})`,
-                opacity: isSelected ? 1 : 0.7,
-              }}
-            />
-
-            {/* Label */}
-            <span
-              className="text-sm flex-1 text-left"
-              style={{ color: isSelected ? `var(--category-${config.cssVar})` : 'var(--text-secondary)' }}
-            >
-              {config.label}
-            </span>
-
-            {/* Count */}
-            <span
-              className="text-xs tabular-nums"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {count}
-            </span>
-
-            {/* Distribution bar */}
-            <div
-              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
-              style={{ background: 'var(--bg-surface)' }}
-            >
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${barWidth}%`,
-                  background: `var(--category-${config.cssVar})`
-                }}
-              />
-            </div>
-          </button>
+            category={cat}
+            count={count}
+            selected={selected === cat}
+            onClick={() => onSelect(selected === cat ? null : cat)}
+          />
         );
       })}
       {activeCategories.length === 0 && (
-        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="text-xs text-center py-2 w-full" style={{ color: 'var(--text-tertiary)' }}>
           No categories found
         </p>
       )}
@@ -290,7 +242,7 @@ function CategoryFilter({ selected, onSelect, counts }: CategoryFilterProps) {
 }
 
 // ============================================================================
-// GRADE FILTER WITH TEMPERATURE BARS (Similar to Category)
+// GRADE FILTER (badge chips, same pattern as Metal)
 // ============================================================================
 
 interface GradeFilterProps {
@@ -300,73 +252,24 @@ interface GradeFilterProps {
 }
 
 function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
-  const maxCount = Math.max(...Object.values(counts), 1);
-
-  // Filter to only show grades with coins
   const activeGrades = GRADE_FILTER_CONFIG.filter(g => counts[g.tier] > 0 || selected === g.tier);
 
   return (
-    <div className="space-y-1.5">
-      {activeGrades.map(({ tier, label, cssVar }) => {
+    <div className="flex flex-wrap gap-1.5">
+      {activeGrades.map(({ tier }) => {
         const count = counts[tier] || 0;
-        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
-        const isSelected = selected === tier;
-
         return (
-          <button
+          <GradeChip
             key={tier}
-            onClick={() => onSelect(isSelected ? null : tier)}
-            className={cn(
-              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
-              isSelected && "ring-1"
-            )}
-            style={{
-              background: isSelected ? `var(--grade-${cssVar}-bg)` : 'transparent',
-            }}
-          >
-            {/* Temperature color indicator */}
-            <div
-              className="w-3 h-3 rounded-sm flex-shrink-0"
-              style={{
-                background: `var(--grade-${cssVar})`,
-                opacity: isSelected ? 1 : 0.7,
-              }}
-            />
-
-            {/* Label */}
-            <span
-              className="text-sm flex-1 text-left"
-              style={{ color: isSelected ? `var(--grade-${cssVar})` : 'var(--text-secondary)' }}
-            >
-              {label}
-            </span>
-
-            {/* Count */}
-            <span
-              className="text-xs tabular-nums"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {count}
-            </span>
-
-            {/* Distribution bar */}
-            <div
-              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
-              style={{ background: 'var(--bg-surface)' }}
-            >
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${barWidth}%`,
-                  background: `var(--grade-${cssVar})`
-                }}
-              />
-            </div>
-          </button>
+            tier={tier}
+            count={count}
+            selected={selected === tier}
+            onClick={() => onSelect(selected === tier ? null : tier)}
+          />
         );
       })}
       {activeGrades.length === 0 && (
-        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="text-xs text-center py-2 w-full" style={{ color: 'var(--text-tertiary)' }}>
           No graded coins
         </p>
       )}
@@ -375,7 +278,7 @@ function GradeFilter({ selected, onSelect, counts }: GradeFilterProps) {
 }
 
 // ============================================================================
-// RARITY FILTER
+// RARITY FILTER (badge chips, same pattern as Metal)
 // ============================================================================
 
 interface RarityFilterProps {
@@ -385,79 +288,28 @@ interface RarityFilterProps {
 }
 
 const RARITY_OPTIONS = [
-  { value: 'common', label: 'Common', code: 'C', cssVar: 'c' },
-  { value: 'scarce', label: 'Scarce', code: 'S', cssVar: 's' },
-  { value: 'rare', label: 'Rare', code: 'R1', cssVar: 'r1' },
-  { value: 'very_rare', label: 'Very Rare', code: 'R2', cssVar: 'r2' },
-  { value: 'extremely_rare', label: 'Extremely Rare', code: 'R3', cssVar: 'r3' },
-  { value: 'unique', label: 'Unique', code: 'U', cssVar: 'u' },
+  'common', 'scarce', 'rare', 'very_rare', 'extremely_rare', 'unique',
 ];
 
 function RarityFilter({ selected, onSelect, counts }: RarityFilterProps) {
-  const maxCount = Math.max(...Object.values(counts), 1);
-
-  // Filter to only show rarities with coins
-  const activeRarities = RARITY_OPTIONS.filter(r => counts[r.value] > 0 || selected === r.value);
+  const activeRarities = RARITY_OPTIONS.filter(value => counts[value] > 0 || selected === value);
 
   return (
-    <div className="space-y-1.5">
-      {activeRarities.map(({ value, label, code, cssVar }) => {
+    <div className="flex flex-wrap gap-1.5">
+      {activeRarities.map((value) => {
         const count = counts[value] || 0;
-        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
-        const isSelected = selected === value;
-
         return (
-          <button
+          <RarityChip
             key={value}
-            onClick={() => onSelect(isSelected ? null : value)}
-            className={cn(
-              "w-full flex items-center gap-2 py-1.5 px-2 rounded transition-all",
-              isSelected && "ring-1"
-            )}
-            style={{
-              background: isSelected ? `var(--rarity-${cssVar}-bg)` : 'transparent',
-            }}
-          >
-            {/* Rarity dot */}
-            <div
-              className={cn("w-2 h-2 rounded-full flex-shrink-0", value === 'unique' && 'animate-pulse')}
-              style={{ background: `var(--rarity-${cssVar})` }}
-            />
-
-            {/* Code + Label */}
-            <span
-              className="text-sm flex-1 text-left"
-              style={{ color: isSelected ? `var(--rarity-${cssVar})` : 'var(--text-secondary)' }}
-            >
-              <span className="font-semibold">{code}</span> {label}
-            </span>
-
-            {/* Count */}
-            <span
-              className="text-xs tabular-nums"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {count}
-            </span>
-
-            {/* Distribution bar */}
-            <div
-              className="w-16 h-1.5 rounded-full overflow-hidden flex-shrink-0"
-              style={{ background: 'var(--bg-surface)' }}
-            >
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${barWidth}%`,
-                  background: `var(--rarity-${cssVar})`
-                }}
-              />
-            </div>
-          </button>
+            value={value}
+            count={count}
+            selected={selected === value}
+            onClick={() => onSelect(selected === value ? null : value)}
+          />
         );
       })}
       {activeRarities.length === 0 && (
-        <p className="text-xs text-center py-2" style={{ color: 'var(--text-tertiary)' }}>
+        <p className="text-xs text-center py-2 w-full" style={{ color: 'var(--text-tertiary)' }}>
           No rarity data
         </p>
       )}
@@ -745,32 +597,34 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               Negative = BC, Positive = AD
             </p>
 
-            {/* Unknown Year option */}
+            {/* Unknown Year chip - aligned with other filter chips (flex-wrap, selected ring) */}
             {yearRange.unknown_count > 0 && (
-              <button
-                onClick={() => filters.setIsYearUnknown(filters.is_year_unknown ? null : true)}
-                className={cn(
-                  "w-full mt-3 flex items-center justify-between py-1.5 px-2 rounded transition-all",
-                  filters.is_year_unknown && "ring-1"
-                )}
-                style={{
-                  background: 'var(--unknown-subtle)',
-                  color: filters.is_year_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
-                  borderColor: filters.is_year_unknown ? 'var(--unknown)' : 'transparent',
-                  boxShadow: filters.is_year_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
-                }}
-              >
-                <span className="text-xs">Unknown Year</span>
-                <span className="text-xs tabular-nums opacity-60">{yearRange.unknown_count}</span>
-              </button>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <button
+                  onClick={() => filters.setIsYearUnknown(filters.is_year_unknown ? null : true)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold",
+                    filters.is_year_unknown && "ring-2 ring-offset-2 scale-105"
+                  )}
+                  style={{
+                    background: 'var(--unknown-subtle)',
+                    color: filters.is_year_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                    border: '1px solid var(--unknown)',
+                    boxShadow: filters.is_year_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
+                  }}
+                >
+                  <span>Unknown Year</span>
+                  <span className="opacity-60 tabular-nums">{yearRange.unknown_count}</span>
+                </button>
+              </div>
             )}
           </div>
         </FilterSection>
 
-        {/* Ruler */}
+        {/* Ruler - expanded by default, design-token chips */}
         <FilterSection
           title="Ruler"
-          defaultOpen={false}
+          defaultOpen={true}
           onClear={(filters.issuing_authority || filters.is_ruler_unknown) ? () => {
             filters.setIssuingAuthority(null);
             filters.setIsRulerUnknown(null);
@@ -786,23 +640,32 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               disabled={filters.is_ruler_unknown === true}
             />
 
-            {/* Top Rulers */}
+            {/* Top Rulers - badge chips with design tokens */}
             {stats?.top_rulers && stats.top_rulers.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {stats.top_rulers.slice(0, 8).map(r => (
-                  <button
-                    key={r.ruler}
-                    onClick={() => filters.setIssuingAuthority(filters.issuing_authority === r.ruler ? null : r.ruler)}
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded transition-colors border",
-                      filters.issuing_authority === r.ruler
-                        ? "bg-stone-100 dark:bg-stone-800 border-yellow-500/50 text-yellow-700 dark:text-yellow-500"
-                        : "bg-transparent border-transparent hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
-                    )}
-                  >
-                    {r.ruler} <span className="opacity-50 ml-0.5">{r.count}</span>
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-1.5">
+                {stats.top_rulers.slice(0, 12).map(r => {
+                  const isSelected = filters.issuing_authority === r.ruler;
+                  return (
+                    <button
+                      key={r.ruler}
+                      onClick={() => filters.setIssuingAuthority(isSelected ? null : r.ruler)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold max-w-[140px] truncate",
+                        isSelected && "ring-2 ring-offset-2 scale-105"
+                      )}
+                      style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-subtle)',
+                        color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        boxShadow: isSelected ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--metal-au)' : undefined,
+                      }}
+                      title={r.ruler}
+                    >
+                      <span className="truncate">{r.ruler}</span>
+                      <span className="opacity-60 tabular-nums flex-shrink-0">{r.count}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -810,17 +673,18 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               <button
                 onClick={() => filters.setIsRulerUnknown(filters.is_ruler_unknown ? null : true)}
                 className={cn(
-                  "w-full flex items-center justify-between py-1.5 px-2 rounded transition-all",
-                  filters.is_ruler_unknown && "ring-1"
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold",
+                  filters.is_ruler_unknown && "ring-2 ring-offset-2 scale-105"
                 )}
                 style={{
                   background: 'var(--unknown-subtle)',
                   color: filters.is_ruler_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                  border: '1px solid var(--unknown)',
                   boxShadow: filters.is_ruler_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
                 }}
               >
-                <span className="text-xs">Unknown Ruler</span>
-                <span className="text-xs tabular-nums opacity-60">{unknownCounts.ruler}</span>
+                <span>Unknown Ruler</span>
+                <span className="opacity-60 tabular-nums">{unknownCounts.ruler}</span>
               </button>
             )}
           </div>
@@ -845,50 +709,61 @@ export function CollectionSidebar({ totalCoins: propTotalCoins }: CollectionSide
               disabled={filters.is_mint_unknown === true}
             />
             {unknownCounts.mint > 0 && (
-              <button
-                onClick={() => filters.setIsMintUnknown(filters.is_mint_unknown ? null : true)}
-                className={cn(
-                  "w-full flex items-center justify-between py-1.5 px-2 rounded transition-all",
-                  filters.is_mint_unknown && "ring-1"
-                )}
-                style={{
-                  background: 'var(--unknown-subtle)',
-                  color: filters.is_mint_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
-                  boxShadow: filters.is_mint_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
-                }}
-              >
-                <span className="text-xs">Unknown Mint</span>
-                <span className="text-xs tabular-nums opacity-60">{unknownCounts.mint}</span>
-              </button>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => filters.setIsMintUnknown(filters.is_mint_unknown ? null : true)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold",
+                    filters.is_mint_unknown && "ring-2 ring-offset-2 scale-105"
+                  )}
+                  style={{
+                    background: 'var(--unknown-subtle)',
+                    color: filters.is_mint_unknown ? 'var(--unknown-text)' : 'var(--text-tertiary)',
+                    border: '1px solid var(--unknown)',
+                    boxShadow: filters.is_mint_unknown ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--unknown)' : undefined,
+                  }}
+                >
+                  <span>Unknown Mint</span>
+                  <span className="opacity-60 tabular-nums">{unknownCounts.mint}</span>
+                </button>
+              </div>
             )}
           </div>
         </FilterSection>
 
-        {/* Attributes */}
+        {/* Attributes - chip style aligned with other filters (selected boxShadow matches Metal/Ruler) */}
         <FilterSection title="Attributes" defaultOpen={false}>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             <button
               onClick={() => filters.setIsCirca(filters.is_circa === true ? null : true)}
-              className={cn("px-2 py-1 rounded text-xs transition-colors")}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold",
+                filters.is_circa === true && "ring-2 ring-offset-2 scale-105"
+              )}
               style={{
                 background: filters.is_circa === true ? 'var(--grade-fine-bg)' : 'var(--bg-card)',
                 color: filters.is_circa === true ? 'var(--grade-fine)' : 'var(--text-tertiary)',
-                border: `1px solid ${filters.is_circa === true ? 'var(--grade-fine)' : 'var(--border-subtle)'}`
+                border: `1px solid ${filters.is_circa === true ? 'var(--grade-fine)' : 'var(--border-subtle)'}`,
+                boxShadow: filters.is_circa === true ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--grade-fine)' : undefined,
               }}
             >
-              <Calendar className="w-3 h-3 inline mr-1" />
+              <Calendar className="w-3 h-3 flex-shrink-0" />
               Circa
             </button>
             <button
               onClick={() => filters.setIsTestCut(filters.is_test_cut === true ? null : true)}
-              className={cn("px-2 py-1 rounded text-xs transition-colors")}
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all text-xs font-semibold",
+                filters.is_test_cut === true && "ring-2 ring-offset-2 scale-105"
+              )}
               style={{
                 background: filters.is_test_cut === true ? 'var(--rarity-r3-bg)' : 'var(--bg-card)',
                 color: filters.is_test_cut === true ? 'var(--rarity-r3)' : 'var(--text-tertiary)',
-                border: `1px solid ${filters.is_test_cut === true ? 'var(--rarity-r3)' : 'var(--border-subtle)'}`
+                border: `1px solid ${filters.is_test_cut === true ? 'var(--rarity-r3)' : 'var(--border-subtle)'}`,
+                boxShadow: filters.is_test_cut === true ? '0 0 0 2px var(--bg-surface), 0 0 0 4px var(--rarity-r3)' : undefined,
               }}
             >
-              <Scissors className="w-3 h-3 inline mr-1" />
+              <Scissors className="w-3 h-3 flex-shrink-0" />
               Test Cut
             </button>
           </div>

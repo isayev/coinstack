@@ -362,6 +362,26 @@ Left accent indicating coin category.
 - Always show grade and metal
 - Rarity dot only if rarity data exists
 
+### 4.7 Collection sidebar filter chips
+
+The collection sidebar (CollectionSidebar) uses a **unified badge-with-count pattern** for Metal, Category, Grade, Rarity, and Ruler filters. All follow the same visual language:
+
+- **Layout**: `flex flex-wrap gap-1.5` of chips.
+- **Chip**: Rounded button with label/symbol + count; background and text/border from design tokens; selected state = ring (`ring-2 ring-offset-2`) and optional accent ring (e.g. `var(--metal-au)` for consistency with Metal).
+- **No** distribution bars; counts only on the chip.
+
+**Components** (design-system):
+
+| Filter   | Component   | Tokens |
+|----------|-------------|--------|
+| Metal    | MetalChip   | `--metal-{cssVar}-subtle`, `--metal-{cssVar}-text`, `--metal-{cssVar}-border` |
+| Category | CategoryChip| `--category-{cssVar}-subtle`, `--category-{cssVar}` (text + border) |
+| Grade    | GradeChip    | `--grade-{tier}-bg`, `--grade-{tier}` |
+| Rarity   | RarityChip  | `--rarity-{cssVar}-bg`, `--rarity-{cssVar}` |
+| Ruler    | Inline chips| `--bg-card`, `--border-subtle`, `--text-secondary`; selected ring as above |
+
+Ruler section is expanded by default and shows top 12 rulers as design-token chips; Unknown Ruler, Unknown Year, Unknown Mint, and Attributes (Circa, Test Cut) use the same chip size and selected ring pattern. Use design tokens only (no raw Tailwind colors like `stone-*`, `yellow-*`).
+
 ---
 
 ## 5. Coin Card Layout (v3.1)

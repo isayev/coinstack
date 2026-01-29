@@ -141,7 +141,12 @@ export function useCollectionStats() {
         grade_counts[tier] = (grade_counts[tier] || 0) + g.count;
       });
 
-      const rarity_counts = (data.by_rarity || []).reduce((acc, curr) => ({ ...acc, [curr.rarity.toLowerCase()]: curr.count }), {});
+      // Normalize rarity key so "Very Rare" -> "very_rare", "Common" -> "common" (matches RARITY_OPTIONS in CollectionSidebar)
+      const rarityKey = (r: string) => r.toLowerCase().trim().replace(/\s+/g, '_');
+      const rarity_counts = (data.by_rarity || []).reduce(
+        (acc, curr) => ({ ...acc, [rarityKey(curr.rarity)]: (acc[rarityKey(curr.rarity)] ?? 0) + curr.count }),
+        {} as Record<string, number>
+      );
 
       const top_rulers = data.by_ruler.map(r => ({ ruler: r.ruler, count: r.count }));
 
