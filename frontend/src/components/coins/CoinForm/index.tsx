@@ -113,6 +113,8 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
             mintmark: coin?.mintmark || "",
             officina: coin?.officina || "",
             field_marks: coin?.field_marks || "",
+            denomination: coin?.denomination ?? "",
+            portrait_subject: coin?.portrait_subject ?? "",
             design: coin?.design || {
                 obverse_legend: "",
                 obverse_description: "",
@@ -163,8 +165,6 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
 
     const handleReferenceSelect = (suggestion: any) => {
         const payload = suggestion.payload
-        if (!payload) return
-
         const newTentative = new Set(tentativeFields)
         const updateField = (path: any, value: any) => {
             if (value !== undefined && value !== null && value !== "") {
@@ -173,59 +173,73 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
             }
         }
 
-        if (payload.authority) updateField("attribution.issuer", payload.authority)
-        if (payload.mint) updateField("attribution.mint", payload.mint)
-        if (payload.date_from) updateField("attribution.year_start", payload.date_from)
-        if (payload.date_to) updateField("attribution.year_end", payload.date_to)
+        if (payload) {
+            if (payload.authority) updateField("attribution.issuer", payload.authority)
+            if (payload.mint) updateField("attribution.mint", payload.mint)
+            if (payload.date_from) updateField("attribution.year_start", payload.date_from)
+            if (payload.date_to) updateField("attribution.year_end", payload.date_to)
 
-        if (payload.metal) {
-            const metalMap: any = { 'gold': 'gold', 'silver': 'silver', 'bronze': 'bronze', 'ae': 'bronze', 'billon': 'billon', 'copper': 'copper' }
-            if (metalMap[payload.metal.toLowerCase()]) {
-                updateField("metal", metalMap[payload.metal.toLowerCase()])
+            if (payload.metal) {
+                const metalMap: any = { 'gold': 'gold', 'silver': 'silver', 'bronze': 'bronze', 'ae': 'bronze', 'billon': 'billon', 'copper': 'copper' }
+                if (metalMap[payload.metal.toLowerCase()]) {
+                    updateField("metal", metalMap[payload.metal.toLowerCase()])
+                }
             }
+
+            if (payload.obverse_description) updateField("design.obverse_description", payload.obverse_description)
+            if (payload.reverse_description) updateField("design.reverse_description", payload.reverse_description)
+            if (payload.obverse_legend) updateField("design.obverse_legend", payload.obverse_legend)
+            if (payload.reverse_legend) updateField("design.reverse_legend", payload.reverse_legend)
         }
 
-        if (payload.obverse_description) updateField("design.obverse_description", payload.obverse_description)
-        if (payload.reverse_description) updateField("design.reverse_description", payload.reverse_description)
-        if (payload.obverse_legend) updateField("design.obverse_legend", payload.obverse_legend)
-        if (payload.reverse_legend) updateField("design.reverse_legend", payload.reverse_legend)
-
-        // Add to Reference List
+        // Add to Reference List (works for success, ambiguous, and deferred e.g. RPC)
         if (suggestion.external_id) {
             const currentRefs = form.getValues("references") || []
-            // Check if already exists (simple check)
+
+            // Parse catalog + number: "RIC III 42" -> catalog="RIC III", number="42"; "rpc-1-4374" -> "RPC I", "4374"
+            let catalog: string
+            let number: string
+            const rpcMatch = suggestion.external_id.match(/^rpc-([IVX\d]+)-(\d+)$/i)
+            if (rpcMatch) {
+                const vol = rpcMatch[1]
+                number = rpcMatch[2]
+                catalog = /^\d+$/.test(vol) ? `RPC ${vol}` : `RPC ${vol.toUpperCase()}`
+            } else {
+                const parts = suggestion.external_id.split(" ")
+                number = parts.pop() || ""
+                catalog = parts.join(" ") || suggestion.external_id
+            }
+
             const exists = currentRefs.some((r) =>
                 r != null &&
-                ((r.catalog + " " + r.number).toLowerCase() === suggestion.external_id.toLowerCase() ||
+                ((r.catalog + " " + r.number).toLowerCase() === (catalog + " " + number).toLowerCase() ||
                 (r.catalog === suggestion.external_id))
             )
 
             if (!exists) {
-                // heuristic split: "RIC III 42" -> catalog="RIC III", number="42"
-                const parts = suggestion.external_id.split(" ")
-                const number = parts.pop() || ""
-                const catalog = parts.join(" ")
-
                 const newRef = {
                     catalog: catalog || suggestion.external_id,
                     number: number,
                     is_primary: currentRefs.length === 0,
-                    notes: "Auto-linked"
-                } as any // Cast to any to avoid strict typing issues with incomplete objects if Schema is strict, but CatalogReference should support this.
+                    notes: payload ? "Auto-linked" : "Manual lookup"
+                } as any
 
-                // Append to form value
                 setValue("references", [...currentRefs, newRef], { shouldDirty: true })
-                toast.info(`Added ${suggestion.external_id} to references list`)
+                toast.info(`Added ${catalog} ${number} to references list`)
             }
         }
 
-        setTentativeFields(newTentative)
-        toast.success(`Populated details from ${suggestion.external_id}`, {
-            description: "Fields marked in yellow are tentative suggestions."
-        })
-
-        // Clear tentative status after 5 seconds or on interaction (optional, keeping it simple for now)
-        setTimeout(() => setTentativeFields(new Set()), 10000)
+        if (payload) {
+            setTentativeFields(newTentative)
+            toast.success(`Populated details from ${suggestion.external_id}`, {
+                description: "Fields marked in yellow are tentative suggestions."
+            })
+            setTimeout(() => setTentativeFields(new Set()), 10000)
+        } else if (suggestion.external_id) {
+            toast.success(`Added reference ${suggestion.external_id}`, {
+                description: "RPC has no API — use the link to look up details manually."
+            })
+        }
     }
 
     const [validationErrors, setValidationErrors] = useState<string[]>([])

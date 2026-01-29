@@ -110,6 +110,8 @@ frontend/src/
     └── schemas.ts             # Type definitions
 ```
 
+**Attribution display utility** (`lib/formatters.ts`): `getAttributionTitle(coin)` returns `{ primary, secondary, isPortraitSubject }` so cards and detail headers show portrait subject as primary and "Struck under {issuer}" as secondary when `portrait_subject` is set; otherwise issuer is primary. Use this helper wherever coin attribution is displayed to keep wording consistent.
+
 ---
 
 ## 2. Core Components
@@ -122,6 +124,7 @@ frontend/src/
 
 **Key Features**:
 - Horizontal layout (desktop) / vertical stack (mobile)
+- **Attribution title**: When `portrait_subject` is set, it is the primary title and the issuer is shown as "Struck under {issuer}" below; otherwise the issuer is the primary title. Implemented via `getAttributionTitle()` in `lib/formatters.ts` (numismatic convention for empress/deified/deity on obverse).
 - 3D flip animation on hover to show reverse
 - Category bar with matching border-radius
 - Compact badge row: [Cert] [Grade] [Metal] [Rarity●]
@@ -389,7 +392,7 @@ interface IdentityHeaderProps {
 **Key Features**:
 - 6px category bar (left border) using `var(--cat-${category})`
 - Category label uppercase with category color
-- Ruler name with reign dates
+- **Attribution title**: Same convention as CoinCard via `getAttributionTitle()` — when `portrait_subject` is set, primary title is portrait subject and secondary line is "Struck under {issuer}" with reign dates; otherwise issuer with reign dates is the primary title.
 - Type line: Denomination · Mint · Date
 - References inline (RIC II 118 · RSC 240)
 - Physical specs: 3.42g · 19mm · ↑6h
@@ -431,12 +434,14 @@ interface CoinSidePanelProps {
   description?: string | null
   iconography?: string[] | null
   metal?: string
+  portraitSubject?: string | null   // Person/deity on obverse (when different from issuer); obverse panel only
   onAddImage?: () => void   // Opens add-images dialog when this side has no image
   onEnrichLegend?: () => void
 }
 ```
 
 **Key Features**:
+- Obverse panel shows **Portrait subject** section when `portraitSubject` is set (person/deity depicted on obverse when different from issuer).
 - Zoomable image (uses ImageZoom component)
 - When `!image && onAddImage`: shows “Add obverse/reverse image” button that calls `onAddImage` (opens AddCoinImagesDialog).
 - Legend with copy-to-clipboard button

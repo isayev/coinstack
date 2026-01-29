@@ -93,6 +93,7 @@ export const ObverseReversePanel = memo(function ObverseReversePanel({
         description={obverseDescription}
         iconography={obverseIconography}
         metal={coin.metal}
+        portraitSubject={coin.portrait_subject?.trim() || undefined}
         onAddImage={!obverseImage ? onOpenAddImages : undefined}
         onEnrichLegend={onEnrichLegend ? () => onEnrichLegend('obverse') : undefined}
         isEnriching={isEnrichingObverse}

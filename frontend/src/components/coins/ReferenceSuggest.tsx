@@ -47,7 +47,7 @@ export function ReferenceSuggest({
         {
           onSuccess: (result) => {
             setSuggestions(result);
-            if (result.status === "success" || result.status === "ambiguous") {
+            if (result.status === "success" || result.status === "ambiguous" || result.status === "deferred" || result.status === "error") {
               setOpen(true);
             }
           },
@@ -149,8 +149,14 @@ export function ReferenceSuggest({
 
             {!lookupMutation.isPending && suggestions?.status === "deferred" && (
               <CommandGroup heading="Manual Lookup Required">
-                <CommandItem className="cursor-pointer" value="manual_lookup_required">
-                  <div className="flex items-center gap-2">
+                <CommandItem
+                  className="cursor-pointer"
+                  value="deferred_add_ref"
+                  onSelect={() => {
+                    if (onSelectSuggestion && suggestions) onSelectSuggestion(suggestions);
+                  }}
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm text-muted-foreground">
                       {suggestions.error_message || "API not available"}
                     </span>
@@ -166,7 +172,18 @@ export function ReferenceSuggest({
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
+                    <span className="text-xs text-muted-foreground">— Click to add reference to list</span>
                   </div>
+                </CommandItem>
+              </CommandGroup>
+            )}
+
+            {!lookupMutation.isPending && suggestions?.status === "error" && (
+              <CommandGroup heading="Lookup failed">
+                <CommandItem className="cursor-pointer" value="lookup_error" disabled>
+                  <span className="text-sm text-destructive">
+                    {suggestions.error_message || "Unknown error"}
+                  </span>
                 </CommandItem>
               </CommandGroup>
             )}

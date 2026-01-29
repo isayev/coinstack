@@ -28,6 +28,8 @@ interface CoinSidePanelProps {
   iconography?: string[] | null;
   exergue?: string | null;
   metal?: string;
+  /** Person/deity depicted on obverse (when different from issuer); obverse panel only */
+  portraitSubject?: string | null;
   /** Opens add-images dialog when this side has no image */
   onAddImage?: () => void;
   onEnrichLegend?: () => void;
@@ -44,6 +46,7 @@ export const CoinSidePanel = memo(function CoinSidePanel({
   iconography,
   exergue,
   metal,
+  portraitSubject,
   onAddImage,
   onEnrichLegend,
   isEnriching = false,
@@ -127,6 +130,20 @@ export const CoinSidePanel = memo(function CoinSidePanel({
 
       {/* Content sections */}
       <div className="p-4 space-y-4">
+        {/* Portrait subject (obverse only): person/deity depicted when different from issuer */}
+        {side === 'obverse' && portraitSubject && (
+          <div className="coin-side-panel__section">
+            <span
+              className="text-[10px] font-bold tracking-[0.5px] uppercase"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              PORTRAIT SUBJECT
+            </span>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+              {portraitSubject}
+            </p>
+          </div>
+        )}
         {/* Legend section */}
         {legend && (
           <div className="coin-side-panel__section">

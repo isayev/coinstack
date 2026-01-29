@@ -8,7 +8,7 @@ import { Coins, ImagePlus } from 'lucide-react';
 import { Coin } from '@/domain/schemas';
 import { parseCategory } from '@/components/design-system/colors';
 import { RarityIndicator } from '@/components/design-system/RarityIndicator';
-import { formatYear } from '@/lib/formatters';
+import { formatYear, getAttributionTitle } from '@/lib/formatters';
 import { useUIStore } from '@/stores/uiStore';
 import { getGradeColor } from '@/utils/gradeUtils';
 
@@ -46,9 +46,10 @@ const CoinContent = memo(function CoinContent({
     legend: isMobile ? '11px' : compact ? '10px' : '11px',
     price: isMobile ? '15px' : compact ? '14px' : '16px',
   };
+  const { primary, secondary } = getAttributionTitle(coin);
   return (
     <>
-      {/* Ruler Name - Design spec: 17px */}
+      {/* Title: portrait subject when present, else issuer (numismatic convention) */}
       <h3
         style={{
           fontSize: fontSize.title,
@@ -59,10 +60,26 @@ const CoinContent = memo(function CoinContent({
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}
-        title={coin.attribution.issuer || undefined}
+        title={primary}
       >
-        {coin.attribution.issuer || 'Unknown Ruler'}
+        {primary}
       </h3>
+      {secondary && (
+        <div
+          style={{
+            fontSize: fontSize.subtitle,
+            lineHeight: 1.25,
+            color: 'var(--text-muted)',
+            fontWeight: 500,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={coin.attribution?.issuer || undefined}
+        >
+          {secondary}
+        </div>
+      )}
 
       {/* Denomination, Mint, Date - Design spec: 13px */}
       <div

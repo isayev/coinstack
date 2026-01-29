@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge'
+import { Badge, type BadgeProps } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { getGradeTier } from '@/utils/gradeUtils'
 
@@ -9,7 +9,7 @@ interface GradeBadgeProps {
 }
 
 /** Badge variant: grade-{tier} for known tiers, outline for unknown */
-const TIER_TO_VARIANT: Record<string, string> = {
+const TIER_TO_VARIANT: Record<string, NonNullable<BadgeProps['variant']>> = {
   ms: 'grade-ms',
   au: 'grade-au',
   ef: 'grade-ef',

@@ -194,6 +194,8 @@ erDiagram
 
 Central coin entity using SQLAlchemy 2.0 `Mapped[T]` syntax.
 
+**Issuer vs portrait subject:** The **issuer** (ruling authority under whom the coin was minted) is stored in `issuer` / `issuer_id` / `issuer_term_id`. The **portrait subject** is the person, deity, or object actually depicted on the obverse; it often differs from the issuer (e.g. empress, deified predecessor, DIVVS ANTONINVS). When different, store it in `portrait_subject` (free text). Cards and detail pages show both: issuer as primary title, portrait subject when present and different.
+
 **ORM Model** (`src/infrastructure/persistence/orm.py`):
 
 ```python
@@ -259,6 +261,10 @@ class CoinModel(Base):
     reverse_legend: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     reverse_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     exergue: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    # Denomination and portrait subject (attribution extensions)
+    denomination: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Denarius, Aureus, etc.
+    portrait_subject: Mapped[Optional[str]] = mapped_column(String, nullable=True)  # Person/deity on obverse when different from issuer
 
     # Collection Management
     storage_location: Mapped[Optional[str]] = mapped_column(String, nullable=True)

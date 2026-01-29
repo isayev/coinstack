@@ -282,7 +282,7 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
     category: coin.category,
     sub_category: coin.sub_category,
     metal: coin.metal,
-    denomination: coin.denomination,
+    denomination: coin.denomination?.trim() || null,
     series: coin.series,
 
     // Physical dimensions
@@ -321,6 +321,9 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
     reverse_legend: coin.design?.reverse_legend,
     reverse_description: coin.design?.reverse_description,
     exergue: coin.design?.exergue,
+
+    // Attribution extensions (send null when empty so backend can clear on update)
+    portrait_subject: coin.portrait_subject?.trim() || null,
 
     // Research Extensions
     issue_status: coin.issue_status,

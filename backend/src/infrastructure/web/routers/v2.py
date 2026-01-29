@@ -65,6 +65,9 @@ class CreateCoinRequest(BaseModel):
     acquisition_date: Optional[date] = None
     acquisition_url: Optional[str] = None
     images: List[ImageRequest] = []
+    # Attribution extensions: issuer = ruling authority; portrait_subject = person/deity on obverse (may differ)
+    denomination: Optional[str] = None
+    portrait_subject: Optional[str] = None
     # Design
     design: Optional[DesignRequest] = None
     # Collection management
@@ -359,6 +362,12 @@ def create_coin(
             exergue=request.design.exergue
         )
 
+    # Attribution extensions: denomination and portrait subject (obverse may show different person/deity than issuer)
+    if request.denomination is not None:
+        domain_coin.denomination = request.denomination
+    if request.portrait_subject is not None:
+        domain_coin.portrait_subject = request.portrait_subject
+
     # Save again with images (or update logic to handle images in UseCase)
     # Since UseCase logic doesn't handle images in DTO yet, we do this:
     saved_coin = repo.save(domain_coin)
@@ -613,12 +622,13 @@ def update_coin(
             # Design - Updated
             design=design_obj,
 
+            # Preserve or update attribution extensions (allow clearing when explicitly sent)
+            denomination=request.denomination if "denomination" in request.model_fields_set else existing_coin.denomination,
+            portrait_subject=request.portrait_subject if "portrait_subject" in request.model_fields_set else existing_coin.portrait_subject,
             # Preserve existing fields that aren't in simple update request
             monograms=existing_coin.monograms,
             secondary_treatments=existing_coin.secondary_treatments,
             description=existing_coin.description,
-            denomination=existing_coin.denomination,
-            portrait_subject=existing_coin.portrait_subject,
             references=existing_coin.references,
             provenance=existing_coin.provenance,
             historical_significance=existing_coin.historical_significance,

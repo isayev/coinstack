@@ -110,6 +110,28 @@ export function IdentityStep({ form, onReferenceSelect, tentativeFields }: Ident
                     </div>
 
                     <div className="space-y-2">
+                        <label htmlFor="denomination" className="text-sm font-semibold">Denomination</label>
+                        <Input
+                            id="denomination"
+                            {...register("denomination")}
+                            placeholder="e.g. Denarius, Aureus, Sestertius, Follis"
+                            className="h-11 bg-background"
+                        />
+                        <p className="text-xs text-muted-foreground">Coin type (official mint product).</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label htmlFor="portrait-subject" className="text-sm font-semibold">Portrait Subject</label>
+                        <Input
+                            id="portrait-subject"
+                            {...register("portrait_subject")}
+                            placeholder="Person/deity on obverse (e.g. Faustina the Elder, DIVVS ANTONINVS)"
+                            className="h-11 bg-background"
+                        />
+                        <p className="text-xs text-muted-foreground">When the obverse portrait is not the issuing ruler (empress, deified predecessor, deity).</p>
+                    </div>
+
+                    <div className="space-y-2">
                         <label htmlFor="mint-autocomplete" className="text-sm font-semibold flex justify-between">
                             Mint
                             {isTentative("attribution.mint") && <span className="text-xs text-yellow-600 font-normal animate-pulse">Auto-Populated</span>}

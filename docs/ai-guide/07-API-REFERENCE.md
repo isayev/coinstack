@@ -176,10 +176,13 @@ POST /api/v2/coins
   "storage_location": "SlabBox1",
   "personal_notes": "Fine patina",
   "issue_status": "official",
+  "denomination": "denarius",
+  "portrait_subject": null,
   "obverse_die_id": "O-Aug-1",
   "reverse_die_id": "R-Aug-1",
   "find_spot": "Tetbury Hoard",
   "find_date": "2024-01-01",
+  "design": { "obverse_legend": null, "obverse_description": null, "reverse_legend": null, "reverse_description": null, "exergue": null },
   "images": [
     {
       "url": "/images/coins/1/obverse.jpg",
@@ -201,6 +204,8 @@ PUT /api/v2/coins/{id}
 ```
 
 **Request Body**: `UpdateCoinRequest` (all fields optional, partial update supported)
+
+To **clear** an optional string field (e.g. `portrait_subject`, `denomination`), send it explicitly as `null`. Omitting the key leaves the existing value unchanged.
 
 ```json
 {

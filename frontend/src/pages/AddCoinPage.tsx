@@ -60,6 +60,8 @@ export function AddCoinPage() {
           year_start: null,
           year_end: null
         },
+        denomination: initialData.denomination ?? '',
+        portrait_subject: initialData.portrait_subject ?? '',
         grading: {
           grading_state: 'raw' as const,
           grade: initialData.grade || '',
@@ -97,6 +99,8 @@ export function AddCoinPage() {
           year_start: null,
           year_end: null
         },
+        denomination: initialData.denomination ?? '',
+        portrait_subject: initialData.portrait_subject ?? '',
         description: `${initialData.obverse_description || ''} ${initialData.reverse_description || ''}`.trim()
       }
     }

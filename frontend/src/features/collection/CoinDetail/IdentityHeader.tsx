@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Coin } from '@/domain/schemas';
 import { parseCategory, CATEGORY_CONFIG } from '@/components/design-system/colors';
-import { formatYear } from '@/lib/formatters';
+import { formatYear, getAttributionTitle } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
 
 interface IdentityHeaderProps {
@@ -281,21 +281,45 @@ export const IdentityHeader = memo(function IdentityHeader({
             </div>
           </div>
 
-          {/* Ruler name with reign dates */}
-          <h1
-            className="text-2xl font-bold mb-1"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {coin.attribution?.issuer || coin.issuing_authority || 'Unknown Issuer'}
-            {(coin.reign_start || coin.reign_end) && (
-              <span
-                className="font-normal ml-2 text-lg"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                ({formatDateRange(coin.reign_start, coin.reign_end)})
-              </span>
-            )}
-          </h1>
+          {/* Title: portrait subject when present, else issuer (numismatic convention) */}
+          {(() => {
+            const { primary, secondary } = getAttributionTitle(coin);
+            const reignSpan = (coin.reign_start || coin.reign_end)
+              ? ` (${formatDateRange(coin.reign_start, coin.reign_end)})`
+              : '';
+            return (
+              <>
+                <h1
+                  className="text-2xl font-bold mb-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {primary}
+                  {!secondary && reignSpan && (
+                    <span
+                      className="font-normal ml-2 text-lg"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {reignSpan}
+                    </span>
+                  )}
+                </h1>
+                {secondary && (
+                  <p
+                    className="text-base mb-1"
+                    style={{ color: 'var(--text-muted)' }}
+                    title="Issuing authority"
+                  >
+                    {secondary}
+                    {reignSpan && (
+                      <span className="ml-1" style={{ color: 'var(--text-secondary)' }}>
+                        {reignSpan}
+                      </span>
+                    )}
+                  </p>
+                )}
+              </>
+            );
+          })()}
 
           {/* Type line: Denomination · Mint · Date */}
           {typeParts.length > 0 && (
