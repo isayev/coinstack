@@ -44,10 +44,11 @@ export function PhysicalStep({ form, tentativeFields }: PhysicalStepProps) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold">Weight (g) *</label>
+                            <label className="text-sm font-semibold">Weight (g)</label>
                             <Input
                                 type="number"
                                 step="0.01"
+                                placeholder="Optional (e.g. slabbed)"
                                 {...register("dimensions.weight_g", {
                                     valueAsNumber: true,
                                     setValueAs: (v) => v === "" ? null : parseFloat(v)

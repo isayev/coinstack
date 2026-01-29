@@ -84,7 +84,7 @@ erDiagram
         int id PK
         string category
         string metal
-        decimal weight_g
+        decimal weight_g nullable  # Optional (e.g. slabbed coins cannot be weighed)
         decimal diameter_mm
         decimal thickness_mm
         int die_axis
@@ -214,8 +214,8 @@ class CoinModel(Base):
     category: Mapped[str] = mapped_column(String, index=True)
     metal: Mapped[str] = mapped_column(String, index=True)
 
-    # Physical Dimensions (required)
-    weight_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Physical Dimensions; weight_g optional (e.g. slabbed coins)
+    weight_g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     diameter_mm: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     die_axis: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
@@ -1276,6 +1276,8 @@ def get_coin(coin_id: int, db: Session = Depends(get_db)):
 ### Database Safety (MANDATORY)
 - REQUIRED: Timestamped backup to `backend/backups/` BEFORE schema changes
 - Format: `coinstack_YYYYMMDD_HHMMSS.db`
+
+**Existing DBs and `weight_g` nullable:** If your database was created before `weight_g` was made optional, run the one-off migration (backup is automatic): from `backend/`, `uv run python scripts/migrations/make_weight_g_nullable.py`. New databases created via `create_all()` get the nullable column automatically.
 
 ### Architecture Rules (MANDATORY)
 - Domain entities have NO SQLAlchemy imports

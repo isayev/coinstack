@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { ThemeProvider } from '@/components/theme-provider'
 
 const queryClient = new QueryClient({
@@ -14,9 +15,11 @@ const queryClient = new QueryClient({
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="coinstack-test-theme">
-        {children}
-      </ThemeProvider>
+      <MemoryRouter>
+        <ThemeProvider defaultTheme="dark" storageKey="coinstack-test-theme">
+          {children}
+        </ThemeProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }

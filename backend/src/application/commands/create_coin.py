@@ -13,11 +13,11 @@ from src.domain.repositories import ICoinRepository
 class CreateCoinDTO:
     category: str
     metal: str
-    weight_g: Decimal
     diameter_mm: Decimal
     issuer: str
     grading_state: str
     grade: str
+    weight_g: Optional[Decimal] = None
     mint: Optional[str] = None
     year_start: Optional[int] = None
     year_end: Optional[int] = None

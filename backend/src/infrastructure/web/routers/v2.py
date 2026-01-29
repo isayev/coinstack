@@ -47,7 +47,7 @@ class CatalogReferenceInput(BaseModel):
 class CreateCoinRequest(BaseModel):
     category: str
     metal: str
-    weight_g: Decimal
+    weight_g: Optional[Decimal] = None
     diameter_mm: Decimal
     issuer: str
     grading_state: str
@@ -84,7 +84,7 @@ class CreateCoinRequest(BaseModel):
     # They should be added via specific endpoints or future updates
 
 class DimensionsResponse(BaseModel):
-    weight_g: Decimal
+    weight_g: Optional[Decimal] = None
     diameter_mm: Decimal
     die_axis: Optional[int] = None
     specific_gravity: Optional[Decimal] = None

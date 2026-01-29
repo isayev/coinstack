@@ -270,7 +270,7 @@ def audit_coin(
             lot_number="12345",
             grade="XF", 
             issuer="Augustus",
-            weight_g=3.85 if coin.dimensions.weight_g == 0 else coin.dimensions.weight_g + 1
+            weight_g=3.85 if (coin.dimensions.weight_g is None or coin.dimensions.weight_g == 0) else coin.dimensions.weight_g + 1
         ))
 
     engine = AuditEngine([

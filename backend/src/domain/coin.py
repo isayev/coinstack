@@ -64,13 +64,13 @@ class IssueStatus(str, Enum):
 
 @dataclass(frozen=True)
 class Dimensions:
-    weight_g: Decimal
     diameter_mm: Decimal
+    weight_g: Optional[Decimal] = None  # Optional e.g. slabbed coins where weight cannot be measured
     die_axis: Optional[int] = None
     specific_gravity: Optional[Decimal] = None
 
     def __post_init__(self):
-        if self.weight_g < 0:
+        if self.weight_g is not None and self.weight_g < 0:
             raise ValueError("Weight must be positive")
         if self.diameter_mm < 0:
             raise ValueError("Diameter must be positive")

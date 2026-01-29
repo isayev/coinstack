@@ -46,8 +46,8 @@ describe('CoinDetail', () => {
 
   it('renders physics data', () => {
     render(<CoinDetail coin={mockCoin} />)
-    expect(screen.getByText('3.52 g')).toBeInTheDocument()
-    expect(screen.getByText('18.5 mm')).toBeInTheDocument()
+    expect(screen.getByText('3.52g')).toBeInTheDocument()
+    expect(screen.getByText('18.5mm')).toBeInTheDocument()
   })
 
   it('renders grading', () => {

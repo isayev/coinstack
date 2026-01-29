@@ -64,10 +64,10 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
             issue_status: coin?.issue_status || "official",
             series: coin?.series || "",
             dimensions: {
-                weight_g: coin?.dimensions.weight_g || null,
-                diameter_mm: coin?.dimensions.diameter_mm || null,
-                die_axis: coin?.dimensions.die_axis || null,
-                specific_gravity: coin?.dimensions.specific_gravity || null,
+                weight_g: coin?.dimensions?.weight_g ?? null,
+                diameter_mm: coin?.dimensions?.diameter_mm ?? null,
+                die_axis: coin?.dimensions?.die_axis ?? null,
+                specific_gravity: coin?.dimensions?.specific_gravity ?? null,
             },
             die_info: {
                 obverse_die_id: coin?.die_info?.obverse_die_id || "",

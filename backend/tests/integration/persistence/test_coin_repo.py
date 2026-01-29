@@ -46,3 +46,28 @@ def test_repository_full_persistence(db_session):
     assert fetched_coin.grading.grade == "Ch XF"
     assert fetched_coin.grading.strike == "5/5"
     assert fetched_coin.acquisition.source == "Heritage Auctions"
+
+
+def test_repository_coin_without_weight(db_session):
+    """Create and persist a coin with no weight (e.g. slabbed)."""
+    repo = SqlAlchemyCoinRepository(db_session)
+    new_coin = Coin(
+        id=None,
+        category=Category.ROMAN_IMPERIAL,
+        metal=Metal.SILVER,
+        dimensions=Dimensions(diameter_mm=Decimal("18.0"), weight_g=None),
+        attribution=Attribution(issuer="Augustus", year_start=-27, year_end=14),
+        grading=GradingDetails(
+            grading_state=GradingState.SLABBED,
+            service=GradeService.NGC,
+            grade="VF",
+            certification_number="123456"
+        ),
+    )
+    saved_coin = repo.save(new_coin)
+    assert saved_coin.id is not None
+    assert saved_coin.dimensions.weight_g is None
+    assert saved_coin.dimensions.diameter_mm == Decimal("18.0")
+    fetched_coin = repo.get_by_id(saved_coin.id)
+    assert fetched_coin is not None
+    assert fetched_coin.dimensions.weight_g is None

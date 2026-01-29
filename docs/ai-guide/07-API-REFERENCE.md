@@ -152,7 +152,7 @@ GET /api/v2/coins/{id}
 POST /api/v2/coins
 ```
 
-**Request Body**: `CreateCoinRequest`
+**Request Body**: `CreateCoinRequest`. `weight_g` is optional (e.g. slabbed coins cannot be weighed).
 
 ```json
 {

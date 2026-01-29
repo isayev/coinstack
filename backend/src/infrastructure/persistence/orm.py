@@ -33,8 +33,8 @@ class CoinModel(Base):
     category: Mapped[str] = mapped_column(String, index=True)
     metal: Mapped[str] = mapped_column(String, index=True)
 
-    # Dimensions (Embedded)
-    weight_g: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Dimensions (Embedded); weight_g optional (e.g. slabbed coins cannot be weighed)
+    weight_g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
     diameter_mm: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     die_axis: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
