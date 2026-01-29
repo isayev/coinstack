@@ -60,7 +60,7 @@ export function IdentityStep({ form, onReferenceSelect, tentativeFields }: Ident
                             onSelectSuggestion={(s) => {
                                 onReferenceSelect(s)
                             }}
-                            placeholder="Type catalog ID (e.g. RIC III 712)..."
+                            placeholder="Type catalog ID (e.g. RIC III 712, RPC I 4374)..."
                         />
                         <p className="text-xs text-muted-foreground italic">
                             Select a match to auto-fill Issuer, Mint, Date, and Metal.

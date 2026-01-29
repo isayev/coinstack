@@ -48,6 +48,45 @@ export interface CatalogReference {
   collection?: string | null;  // SNG collection
 }
 
+/** RPC volume Roman numeral to Arabic (I–X) for direct type URLs. */
+const RPC_VOLUME_ROMAN_TO_ARABIC: Record<string, number> = {
+  I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10,
+};
+
+/**
+ * Returns the best direct type URL for a single reference, or null.
+ * RPC: direct /coins/{arabic_vol}/{number} when volume+number present.
+ * RRC/Crawford: direct CRRO id URL.
+ * RIC: null (search-only).
+ */
+export function getReferenceUrl(ref: CatalogReference): string | null {
+  if (!ref?.catalog || !ref?.number) return null;
+  const catalog = (ref.catalog || "").toUpperCase();
+
+  if (catalog === "RPC") {
+    const vol = (ref.volume || "").toString().trim().toUpperCase();
+    const num = (ref.number || "").trim().split("/")[0].split(" ")[0];
+    if (!num) return null;
+    let arabic: number;
+    if (/^\d+$/.test(vol)) {
+      arabic = parseInt(vol, 10);
+    } else if (vol && RPC_VOLUME_ROMAN_TO_ARABIC[vol] != null) {
+      arabic = RPC_VOLUME_ROMAN_TO_ARABIC[vol];
+    } else {
+      return null;
+    }
+    return `https://rpc.ashmus.ox.ac.uk/coins/${arabic}/${num}`;
+  }
+
+  if (catalog === "RRC" || catalog === "CRAWFORD") {
+    const number = (ref.number || "").replace(/\//g, "-").trim();
+    if (!number) return null;
+    return `https://numismatics.org/crro/id/rrc-${number}`;
+  }
+
+  return null;
+}
+
 /**
  * Build external links for a set of references.
  * Returns only links that are valid for the given reference types.
@@ -84,11 +123,12 @@ export function buildExternalLinks(references: CatalogReference[]): ExternalLink
       addedLinks.add("CRRO");
     }
 
-    // RPC Online - Roman Provincial Coinage
+    // RPC Online - Roman Provincial Coinage (direct type URL when volume+number present)
     if (catalog === "RPC" && !addedLinks.has("RPC")) {
+      const directUrl = getReferenceUrl(ref);
       links.push({
         name: "RPC Online",
-        url: `https://rpc.ashmus.ox.ac.uk/search?q=${encodeURIComponent(refString)}`,
+        url: directUrl ?? `https://rpc.ashmus.ox.ac.uk/search?q=${encodeURIComponent(refString)}`,
         validated: true,
       });
       addedLinks.add("RPC");

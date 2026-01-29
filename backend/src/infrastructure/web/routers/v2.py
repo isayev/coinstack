@@ -687,9 +687,9 @@ class ReferenceSearchResponse(BaseModel):
 
 @router.get("/by-reference", response_model=ReferenceSearchResponse)
 def get_coins_by_reference(
-    catalog: str = Query(..., description="Catalog system (e.g., RIC, Crawford, Sear, RSC, RPC, BMC)"),
+    catalog: str = Query(..., description="Catalog system (e.g., RIC, Crawford, Sear, RSC, RPC, BMC). May include volume: 'RPC I' -> RPC vol I"),
     number: str = Query(..., description="Reference number (e.g., 756, 44/5, 1234a)"),
-    volume: Optional[str] = Query(None, description="Volume (e.g., II, V.1) - optional"),
+    volume: Optional[str] = Query(None, description="Volume (e.g., II, V.1) - optional; also parsed from catalog if e.g. 'RPC I'"),
     repo: ICoinRepository = Depends(get_coin_repo)
 ):
     """
@@ -698,19 +698,20 @@ def get_coins_by_reference(
     Examples:
     - /api/v2/coins/by-reference?catalog=RIC&number=756
     - /api/v2/coins/by-reference?catalog=RIC&volume=II&number=756
+    - /api/v2/coins/by-reference?catalog=RPC%20I&number=4374  (RPC I 4374)
     - /api/v2/coins/by-reference?catalog=Crawford&number=44/5
     
     Note: This endpoint requires the coin_references table to be populated.
-    Currently returns coins where the reference matches in the coin_references table.
     """
-    # Use repository method to find coins by reference
-    # This will be implemented in the repository update (Phase 6)
-    coins = repo.get_by_reference(catalog=catalog, number=number, volume=volume)
+    from src.infrastructure.services.catalogs.catalog_systems import split_catalog_and_volume
+    catalog_display, volume_from_catalog = split_catalog_and_volume(catalog)
+    effective_volume = volume or volume_from_catalog
+    coins = repo.get_by_reference(catalog=catalog_display, number=number, volume=effective_volume)
     
     return ReferenceSearchResponse(
         coins=[CoinResponse.from_domain(c) for c in coins],
         total=len(coins),
-        catalog=catalog,
+        catalog=catalog_display,
         number=number,
-        volume=volume
+        volume=effective_volume
     )

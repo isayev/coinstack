@@ -39,6 +39,11 @@ class Settings(BaseSettings):
         "agora": 2.0,     # Agora Auctions - moderate rate
         "default": 2.0    # Fallback for unknown sources
     }
+
+    # Catalog scrapers (no-API catalogs like RPC Online)
+    CATALOG_SCRAPER_RPC_ENABLED: bool = False  # Set True to fetch type data from RPC HTML
+    CATALOG_SCRAPER_RPC_RATE_LIMIT_SEC: float = 10.0  # Seconds between RPC requests
+    CATALOG_SCRAPER_USER_AGENT: str = "CoinStack/1.0 (Numismatic collection manager; catalog lookup)"
     
     # Logging
     LOG_LEVEL: str = "INFO"

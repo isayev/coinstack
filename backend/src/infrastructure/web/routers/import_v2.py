@@ -218,6 +218,9 @@ def _payload_to_suggestions(payload: Dict[str, Any], source: str = "catalog", co
         out["mint_year_start"] = {"value": payload["date_from"], "source": source, "confidence": confidence}
     if payload.get("date_to") is not None:
         out["mint_year_end"] = {"value": payload["date_to"], "source": source, "confidence": confidence}
+    # RPC often returns date_string (e.g. "AD 14/15") without date_from/date_to
+    if payload.get("date_string") and payload.get("date_from") is None and payload.get("date_to") is None:
+        out["dating_notes"] = {"value": payload["date_string"], "source": source, "confidence": confidence}
     if payload.get("denomination"):
         out["denomination"] = {"value": payload["denomination"], "source": source, "confidence": confidence}
     if payload.get("obverse_legend"):

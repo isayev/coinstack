@@ -716,6 +716,8 @@ Applies all pending enrichments where the coin field is empty (server-side).
 
 Catalog lookup (OCRE/CRRO/RPC), bulk enrichment, and reference integrity.
 
+**RPC scraper (optional):** RPC Online has no public API. When `CATALOG_SCRAPER_RPC_ENABLED=true`, the backend fetches the RPC type page (e.g. `/coins/1/4374`) via HTTP, parses the HTML table into `CatalogPayload`, and returns `status: "success"` with payload (authority, mint, date_string, obverse/reverse text, etc.). When disabled or when fetch fails (robots.txt disallow, timeout, structure change), lookup returns `status: "deferred"` with `external_url` for manual lookup. The frontend uses `external_url` from the lookup response for the "Open catalog" link and uses direct type URLs (via `getReferenceUrl`) in reference links (ReferencesCard, IdentityHeader, CoinCard). Config: `CATALOG_SCRAPER_RPC_ENABLED` (bool, default false), `CATALOG_SCRAPER_RPC_RATE_LIMIT_SEC` (float, default 10), `CATALOG_SCRAPER_USER_AGENT` (string). See `docs/PLAN-CATALOG-SCRAPERS-POLITE.md`.
+
 ### Reference Integrity
 
 ```http

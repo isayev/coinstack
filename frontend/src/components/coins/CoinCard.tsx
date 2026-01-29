@@ -4,11 +4,12 @@
  */
 
 import React, { useMemo, memo } from 'react';
-import { Coins, ImagePlus } from 'lucide-react';
+import { Coins, ImagePlus, ExternalLink } from 'lucide-react';
 import { Coin } from '@/domain/schemas';
 import { parseCategory } from '@/components/design-system/colors';
 import { RarityIndicator } from '@/components/design-system/RarityIndicator';
 import { formatYear, getAttributionTitle } from '@/lib/formatters';
+import { getReferenceUrl } from '@/lib/referenceLinks';
 import { useUIStore } from '@/stores/uiStore';
 import { getGradeColor } from '@/utils/gradeUtils';
 
@@ -20,6 +21,7 @@ interface CoinContentProps {
   coin: Coin;
   displayYear: string;
   reference: string | null;
+  referenceUrl: string | null;
   currentValue: number | null | undefined;
   paidPrice: number | null | undefined;
   performance: number | null;
@@ -32,6 +34,7 @@ const CoinContent = memo(function CoinContent({
   coin,
   displayYear,
   reference,
+  referenceUrl,
   currentValue,
   paidPrice,
   performance,
@@ -205,7 +208,7 @@ const CoinContent = memo(function CoinContent({
           </div>
         )}
 
-        {/* Catalog Reference - Always shown if available */}
+        {/* Catalog Reference - Always shown if available; link when URL known */}
         {reference && (
           <div
             style={{
@@ -216,7 +219,19 @@ const CoinContent = memo(function CoinContent({
               letterSpacing: '0.5px',
             }}
           >
-            {reference}
+            {referenceUrl ? (
+              <a
+                href={referenceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 hover:underline"
+              >
+                {reference}
+                <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+              </a>
+            ) : (
+              reference
+            )}
           </div>
         )}
       </div>
@@ -428,12 +443,13 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
 
   const { currentValue, paidPrice, performance } = financials;
 
-  // Memoize reference
-  const reference = useMemo(() => {
-    const references = coin.references;
-    return references?.[0]
-      ? `${references[0].catalog || 'Ref'} ${references[0].number || ''}`
-      : null;
+  // Memoize reference and optional direct type URL
+  const { reference, referenceUrl } = useMemo(() => {
+    const ref0 = coin.references?.[0];
+    if (!ref0) return { reference: null, referenceUrl: null };
+    const reference = `${ref0.catalog || 'Ref'} ${ref0.number || ''}`;
+    const referenceUrl = getReferenceUrl(ref0);
+    return { reference, referenceUrl };
   }, [coin.references]);
 
   // Create a render helper that uses the extracted CoinContent component
@@ -442,6 +458,7 @@ export const CoinCard = memo(function CoinCard({ coin, onClick, selected, onSele
       coin={coin}
       displayYear={displayYear}
       reference={reference}
+      referenceUrl={referenceUrl}
       currentValue={currentValue}
       paidPrice={paidPrice}
       performance={performance}

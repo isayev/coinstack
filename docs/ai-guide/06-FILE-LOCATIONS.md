@@ -90,7 +90,16 @@ infrastructure/
 ├── services/
 │   ├── vocab_sync.py          # VocabSyncService
 │   ├── series_service.py      # SeriesService
-│   └── llm_service.py         # LLMService (AI enrichment)
+│   ├── llm_service.py         # LLMService (AI enrichment)
+│   └── catalogs/              # Catalog integrations (OCRE, CRRO, RPC)
+│       ├── base.py            # CatalogService, CatalogResult, CatalogPayload
+│       ├── registry.py        # CatalogRegistry.lookup / get_by_id
+│       ├── ocre.py            # OCRE (RIC) API
+│       ├── crro.py            # CRRO (Crawford) API
+│       ├── rpc.py             # RPC service + optional HTML scraper
+│       ├── rpc_scraper.py     # RPC Online HTML fetcher/parser (polite)
+│       ├── robots_cache.py    # robots.txt cache and can_fetch
+│       └── parsers/           # Reference parsers (RIC, RPC, Crawford, etc.)
 │
 ├── scripts/
 │   ├── add_indexes.py         # Add database indexes

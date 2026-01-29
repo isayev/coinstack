@@ -28,6 +28,7 @@ import {
 import { Coin } from '@/domain/schemas';
 import { parseCategory, CATEGORY_CONFIG } from '@/components/design-system/colors';
 import { formatYear, getAttributionTitle } from '@/lib/formatters';
+import { getReferenceUrl, formatReference } from '@/lib/referenceLinks';
 import { cn } from '@/lib/utils';
 
 interface IdentityHeaderProps {
@@ -87,11 +88,10 @@ export const IdentityHeader = memo(function IdentityHeader({
     return `${formatYear(start!)}–${formatYear(end)}`;
   };
 
-  // Build references string
-  const referencesString = coin.references
-    ?.filter(ref => ref?.catalog && ref?.number)
-    .map(ref => `${ref!.catalog} ${ref!.number}`)
-    .join(' · ') || '';
+  // Valid references for display (with optional links)
+  const validRefs = (coin.references || []).filter(
+    (ref): ref is NonNullable<typeof ref> => ref != null && !!ref.catalog && !!ref.number
+  );
 
   // Build type line parts
   const typeParts: string[] = [];
@@ -332,12 +332,34 @@ export const IdentityHeader = memo(function IdentityHeader({
           )}
 
           {/* References line */}
-          {referencesString && (
+          {validRefs.length > 0 && (
             <p
               className="font-mono text-[13px] mb-2"
               style={{ color: 'var(--text-muted)' }}
             >
-              {referencesString}
+              {validRefs.map((ref, i) => {
+                const url = getReferenceUrl(ref);
+                const text = formatReference(ref);
+                return (
+                  <span key={i}>
+                    {i > 0 && ' · '}
+                    {url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {text}
+                        <ExternalLink className="w-3 h-3 inline-block ml-0.5 align-middle" />
+                      </a>
+                    ) : (
+                      text
+                    )}
+                  </span>
+                );
+              })}
             </p>
           )}
 

@@ -70,14 +70,20 @@ class CatalogRegistry:
         Get the catalog service for a given reference system.
         
         Args:
-            system: Reference system identifier ("ric", "crawford", "rpc")
+            system: Reference system identifier ("ric", "crawford", "rpc").
+                    Normalizes "rpc i", "ric ii" etc. to "rpc", "ric".
         
         Returns:
             CatalogService instance or None if not supported
         """
-        system = system.lower()
-        if system == "rrc":
-            system = "crawford"
+        from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system
+        raw = (system or "").strip().lower()
+        if raw == "rrc":
+            raw = "crawford"
+        # Normalize "rpc i", "ric ii" etc. to base system so lookup finds the service
+        system = catalog_to_system(raw) or raw
+        if not system:
+            return None
         
         if system not in cls._services:
             cls._services[system] = cls._load_service(system)
@@ -148,9 +154,9 @@ class CatalogRegistry:
             query = await service.build_reconcile_query(reference, context)
             result = await service.reconcile(query)
             
-            # If successful, fetch full type data (Supported by OCRE, CRRO)
-            # RPC doesn't support fetch_type_data but implements it returning None
-            if result.status == "success" and result.external_id:
+            # If successful, fetch full type data (OCRE, CRRO, or RPC scraper)
+            # Skip fetch when payload already set (e.g. RPC scraper in reconcile)
+            if result.status == "success" and result.external_id and result.payload is None:
                 jsonld = await service.fetch_type_data(result.external_id)
                 if jsonld:
                     payload = service.parse_payload(jsonld)

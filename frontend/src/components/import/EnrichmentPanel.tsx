@@ -48,6 +48,7 @@ const FIELD_LABELS: Record<string, string> = {
   mint_name: "Mint",
   mint_year_start: "Mint Year Start",
   mint_year_end: "Mint Year End",
+  dating_notes: "Dating (catalog)",
   obverse_description: "Obverse Description",
   obverse_legend: "Obverse Legend",
   reverse_description: "Reverse Description",
@@ -60,6 +61,7 @@ const STATUS_STYLES: Record<string, { color: string; bg: string; border: string 
   success: { color: "text-green-600", bg: "bg-green-500/10", border: "border-green-500/30" },
   ambiguous: { color: "text-yellow-600", bg: "bg-yellow-500/10", border: "border-yellow-500/30" },
   not_found: { color: "text-gray-500", bg: "bg-gray-500/10", border: "border-gray-500/30" },
+  deferred: { color: "text-slate-600", bg: "bg-slate-500/10", border: "border-slate-500/30" },
   error: { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30" },
   parse_error: { color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30" },
 };
@@ -199,7 +201,10 @@ export function EnrichmentPanel({
                     <TooltipContent>
                       {result ? (
                         <div className="text-xs">
-                          <p>Status: {result.status}</p>
+                          <p>Status: {result.status === "deferred" ? "Manual lookup" : result.status}</p>
+                          {result.status === "deferred" && result.external_url && (
+                            <p>Open catalog link to look up details</p>
+                          )}
                           {result.system && <p>System: {result.system.toUpperCase()}</p>}
                           {result.confidence && <p>Confidence: {Math.round(result.confidence * 100)}%</p>}
                           {result.error && <p className="text-red-400">{result.error}</p>}

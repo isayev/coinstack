@@ -1,12 +1,13 @@
-"""RPC (Roman Provincial Coins) service - URL builder only (no API)."""
+"""RPC (Roman Provincial Coins) service - URL builder; optional HTML scraper."""
 import re
 import logging
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from src.infrastructure.services.catalogs.base import (
     CatalogService, CatalogResult, CatalogPayload
 )
+from src.infrastructure.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,27 +79,24 @@ class RPCService(CatalogService):
     
     async def reconcile(self, query: Dict) -> CatalogResult:
         """
-        RPC doesn't have a reconciliation API.
-        
-        Returns deferred status with URL for manual lookup.
+        RPC has no reconciliation API. When scraper is enabled, fetches type page
+        and returns success with payload; otherwise returns deferred with URL.
         """
         parsed = query.get("parsed")
-        
+
         if not parsed:
             return CatalogResult(
                 status="error",
                 error_message="Could not parse RPC reference"
             )
-        
-        # Build URL for manual lookup
+
         volume = parsed.get("volume")
         number = parsed.get("number")
-        
+
         if volume and number:
             external_id = f"rpc-{volume}-{number}"
             external_url = self.build_url_from_parts(volume, number)
         elif number:
-            # No volume - try generic search URL
             external_id = f"rpc-{number}"
             external_url = f"{self.BASE_URL}/search?q={number}"
         else:
@@ -106,31 +104,88 @@ class RPCService(CatalogService):
                 status="error",
                 error_message="Missing RPC number"
             )
-        
+
+        settings = get_settings()
+        if settings.CATALOG_SCRAPER_RPC_ENABLED and volume and number:
+            from src.infrastructure.services.catalogs.rpc_scraper import (
+                build_rpc_type_url,
+                fetch_rpc_type_page,
+            )
+            url = build_rpc_type_url(volume, number)
+            scrape = await fetch_rpc_type_page(
+                url,
+                user_agent=settings.CATALOG_SCRAPER_USER_AGENT,
+                rate_limit_sec=settings.CATALOG_SCRAPER_RPC_RATE_LIMIT_SEC,
+            )
+            if scrape.status in ("full", "partial") and scrape.payload:
+                confidence = 0.9 if scrape.status == "full" else 0.6
+                return CatalogResult(
+                    status="success",
+                    external_id=external_id,
+                    external_url=external_url,
+                    confidence=confidence,
+                    payload=scrape.payload.model_dump(),
+                    error_message=scrape.message,
+                    lookup_timestamp=datetime.utcnow(),
+                )
+            # disallowed, failed, or no payload: fall back to deferred
+            msg = scrape.message or "RPC Online has no API - URL provided for manual lookup"
+            return CatalogResult(
+                status="deferred",
+                external_id=external_id,
+                external_url=external_url,
+                confidence=0.0,
+                error_message=msg,
+                lookup_timestamp=datetime.utcnow(),
+            )
+
         return CatalogResult(
             status="deferred",
             external_id=external_id,
             external_url=external_url,
-            confidence=0.0,  # No confidence since we can't verify
+            confidence=0.0,
             error_message="RPC Online has no API - URL provided for manual lookup",
-            lookup_timestamp=datetime.utcnow()
+            lookup_timestamp=datetime.utcnow(),
         )
     
-    async def fetch_type_data(self, external_id: str) -> Optional[Dict]:
+    async def fetch_type_data(self, external_id: str) -> Optional[Dict[str, Any]]:
         """
-        RPC doesn't have a JSON API.
-        
-        Returns None - data cannot be fetched automatically.
+        RPC has no JSON API. When scraper is enabled, fetches type page and returns
+        payload dict for parse_payload; otherwise returns None.
         """
-        logger.info(f"RPC fetch not available for {external_id} - manual lookup required")
+        settings = get_settings()
+        if not settings.CATALOG_SCRAPER_RPC_ENABLED:
+            logger.info("RPC fetch not available for %s - scraper disabled", external_id)
+            return None
+        match = re.match(r"rpc-([^-]+)-(\d+)", external_id, re.IGNORECASE)
+        if not match:
+            logger.info("RPC fetch: invalid external_id %s", external_id)
+            return None
+        volume, number = match.group(1), match.group(2)
+        from src.infrastructure.services.catalogs.rpc_scraper import (
+            build_rpc_type_url,
+            fetch_rpc_type_page,
+        )
+        url = build_rpc_type_url(volume, number)
+        scrape = await fetch_rpc_type_page(
+            url,
+            user_agent=settings.CATALOG_SCRAPER_USER_AGENT,
+            rate_limit_sec=settings.CATALOG_SCRAPER_RPC_RATE_LIMIT_SEC,
+        )
+        if scrape.payload:
+            return scrape.payload.model_dump()
         return None
-    
-    def parse_payload(self, jsonld: Dict) -> CatalogPayload:
+
+    def parse_payload(self, jsonld: Dict[str, Any]) -> CatalogPayload:
         """
-        RPC doesn't return JSON-LD.
-        
-        Returns empty payload.
+        RPC has no JSON-LD. Accepts scraper payload dict (CatalogPayload-shaped)
+        or returns empty payload.
         """
+        if not isinstance(jsonld, dict):
+            return CatalogPayload()
+        allowed = {k: jsonld[k] for k in CatalogPayload.model_fields if k in jsonld}
+        if allowed:
+            return CatalogPayload(**allowed)
         return CatalogPayload()
     
     def build_url(self, external_id: str) -> str:
@@ -151,6 +206,11 @@ class RPCService(CatalogService):
         return f"{self.BASE_URL}/search?q={number}"
     
     def build_url_from_parts(self, volume: str, number: str) -> str:
-        """Generate RPC URL from volume and number."""
-        # RPC Online URL pattern
-        return f"{self.BASE_URL}/coins/{volume}/{number}"
+        """Generate RPC URL from volume and number (volume can be Roman or Arabic)."""
+        vol_upper = (volume or "").strip().upper()
+        num_clean = (number or "").strip().split("/")[0].split(" ")[0]
+        if vol_upper in self.RPC_VOLUMES:
+            vol_str = str(self.RPC_VOLUMES[vol_upper]["arabic"])
+        else:
+            vol_str = volume
+        return f"{self.BASE_URL}/coins/{vol_str}/{num_clean}"

@@ -687,7 +687,7 @@ export function CoinPreviewEditor({
               <Label>Add Reference</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="e.g., RIC IV.1 289c, Crawford 335/1, Sear 6846"
+                  placeholder="e.g., RIC IV.1 289c, RPC I 4374, Crawford 335/1, Sear 6846"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       const input = e.currentTarget;

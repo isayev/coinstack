@@ -179,6 +179,14 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
             if (payload.date_from) updateField("attribution.year_start", payload.date_from)
             if (payload.date_to) updateField("attribution.year_end", payload.date_to)
 
+            // RPC often returns date_string (e.g. "AD 14/15") without date_from/date_to
+            if (payload.date_string && payload.date_from == null && payload.date_to == null) {
+                const existing = form.getValues("personal_notes") || ""
+                const datingNote = `Dating (catalog): ${payload.date_string}`
+                setValue("personal_notes", existing ? `${datingNote}\n${existing}` : datingNote, { shouldDirty: true })
+                newTentative.add("personal_notes")
+            }
+
             if (payload.metal) {
                 const metalMap: any = { 'gold': 'gold', 'silver': 'silver', 'bronze': 'bronze', 'ae': 'bronze', 'billon': 'billon', 'copper': 'copper' }
                 if (metalMap[payload.metal.toLowerCase()]) {

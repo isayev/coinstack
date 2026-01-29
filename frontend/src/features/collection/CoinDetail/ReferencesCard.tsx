@@ -12,7 +12,7 @@
 
 import { memo } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { buildExternalLinks, formatReference, type CatalogReference } from '@/lib/referenceLinks';
+import { buildExternalLinks, formatReference, getReferenceUrl, type CatalogReference } from '@/lib/referenceLinks';
 import { cn } from '@/lib/utils';
 
 interface ReferencesCardProps {
@@ -90,12 +90,25 @@ export const ReferencesCard = memo(function ReferencesCard({ references, categor
               Primary
             </span>
           </div>
-          <span
-            className="font-mono text-base font-semibold"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {formatReference(primaryRef)}
-          </span>
+          {getReferenceUrl(primaryRef) ? (
+            <a
+              href={getReferenceUrl(primaryRef)!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-base font-semibold inline-flex items-center gap-1 hover:underline"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {formatReference(primaryRef)}
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+            </a>
+          ) : (
+            <span
+              className="font-mono text-base font-semibold"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {formatReference(primaryRef)}
+            </span>
+          )}
           {primaryRef.source && (
             <span
               className="text-[10px] uppercase tracking-wider ml-2"
@@ -125,7 +138,27 @@ export const ReferencesCard = memo(function ReferencesCard({ references, categor
               className="font-mono text-sm"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {secondaryRefs.map(ref => formatReference(ref)).join(' · ')}
+              {secondaryRefs.map((ref, i) => {
+                const url = getReferenceUrl(ref);
+                const text = formatReference(ref);
+                return (
+                  <span key={i}>
+                    {i > 0 && ' · '}
+                    {url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >
+                        {text}
+                      </a>
+                    ) : (
+                      text
+                    )}
+                  </span>
+                );
+              })}
             </p>
           </div>
         )}

@@ -463,11 +463,10 @@ interface ReferencesCardProps {
 ```
 
 **Key Features**:
-- Primary reference highlighted
-- Concordance (secondary references)
-- Validated external links (OCRE, CRRO, RPC)
-- General search links (ACSearch, CoinArchives, Wildwinds)
-- Uses `lib/referenceLinks.ts` for link generation
+- Primary reference highlighted; primary and concordance references are clickable when a direct type URL is available (RPC with volume+number, RRC).
+- Validated external links (OCRE, CRRO, RPC) use direct type URLs where possible (e.g. RPC `/coins/1/4374`, CRRO `/id/rrc-335-1c`).
+- General search links (ACSearch, CoinArchives, Wildwinds).
+- Uses `lib/referenceLinks.ts` (`buildExternalLinks`, `getReferenceUrl`) for link generation.
 
 #### ProvenanceTimeline
 
@@ -1222,17 +1221,20 @@ function formatPrice(price: number | null, currency = 'USD'): string {
 **Purpose**: Format references, build validated external links, and (optionally) parse reference strings. Authoritative parsing is backend `POST /api/v2/catalog/parse`; client `parseReference` is best-effort.
 
 ```typescript
-import { buildExternalLinks, formatReference, parseReference, SUPPORTED_CATALOGS_FALLBACK } from '@/lib/referenceLinks'
+import { buildExternalLinks, formatReference, getReferenceUrl, parseReference, SUPPORTED_CATALOGS_FALLBACK } from '@/lib/referenceLinks'
 import { useCatalogSystems, useParseCatalogReference } from '@/hooks/useCatalog'
 
 // Format for display (includes volume, supplement, mint, collection when present)
 formatReference({ catalog: 'RPC', volume: 'I', supplement: 'S', number: '123' }) // "RPC I S 123"
 formatReference({ catalog: 'SNG', collection: 'Cop', number: '123' })           // "SNG Cop 123"
 
+// Direct type URL for a single reference (RPC with volume+number, RRC/CRRO); null for RIC or incomplete refs
+const url = getReferenceUrl(ref)  // e.g. "https://rpc.ashmus.ox.ac.uk/coins/1/4374"
+
 // Best-effort client parse; use API for validation
 const parsed = parseReference('RIC II 118')  // { catalog: 'RIC', volume: 'II', number: '118' }
 
-// Build links (uses ref.catalog for RIC/RRC/RPC detection; search query uses formatReference)
+// Build links (RPC uses direct type URL when volume+number present; RRC/CRRO direct; RIC search)
 const links = buildExternalLinks(references)
 
 // Catalog list: from API or fallback
@@ -1240,7 +1242,7 @@ const { data: systems } = useCatalogSystems()  // GET /api/v2/catalog/systems
 // Fallback: SUPPORTED_CATALOGS_FALLBACK when API unavailable
 ```
 
-**Validated Links** (by `ref.catalog`): OCRE (RIC), CRRO (RRC), RPC Online (RPC). General search links (ACSearch, Wildwinds, CoinArchives) use `formatReference(primaryRef)` for the query.
+**Validated Links** (by `ref.catalog`): OCRE (RIC, search), CRRO (RRC direct type URL), RPC Online (RPC direct type URL when volume+number present, else search). General search links (ACSearch, Wildwinds, CoinArchives) use `formatReference(primaryRef)` for the query.
 
 **Catalog Parse API**: `useParseCatalogReference().mutateAsync({ raw })` returns `{ ref, confidence, warnings }`; use for import validation or inline feedback.
 

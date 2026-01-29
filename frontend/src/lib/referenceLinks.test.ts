@@ -3,6 +3,7 @@ import {
   formatReference,
   parseReference,
   buildExternalLinks,
+  getReferenceUrl,
   SUPPORTED_CATALOGS_FALLBACK,
   type CatalogReference,
 } from "./referenceLinks";
@@ -147,14 +148,23 @@ describe("buildExternalLinks", () => {
     expect(crro!.url).toContain("numismatics.org/crro");
   });
 
-  it("adds RPC Online link for RPC references", () => {
+  it("adds RPC Online direct type link when volume+number present", () => {
     const links = buildExternalLinks([
-      { catalog: "RPC", volume: "I", number: "1234" },
+      { catalog: "RPC", volume: "I", number: "4374" },
     ]);
     const rpc = links.find((l) => l.name === "RPC Online");
     expect(rpc).toBeDefined();
     expect(rpc!.validated).toBe(true);
-    expect(rpc!.url).toContain("rpc.ashmus.ox.ac.uk");
+    expect(rpc!.url).toContain("rpc.ashmus.ox.ac.uk/coins/1/4374");
+  });
+
+  it("adds RPC Online search URL when volume missing", () => {
+    const links = buildExternalLinks([
+      { catalog: "RPC", number: "4374" },
+    ]);
+    const rpc = links.find((l) => l.name === "RPC Online");
+    expect(rpc).toBeDefined();
+    expect(rpc!.url).toContain("rpc.ashmus.ox.ac.uk/search");
   });
 
   it("includes general search links when references exist", () => {
@@ -165,12 +175,46 @@ describe("buildExternalLinks", () => {
     expect(links.some((l) => l.name === "Wildwinds")).toBe(true);
   });
 
-  it("uses formatReference for search query (RPC I S 123)", () => {
+  it("uses direct type URL for RPC I S 123 (volume+number present)", () => {
     const links = buildExternalLinks([
       { catalog: "RPC", volume: "I", supplement: "S", number: "123" },
     ]);
     const rpc = links.find((l) => l.name === "RPC Online");
-    expect(rpc!.url).toContain(encodeURIComponent("RPC I S 123"));
+    expect(rpc!.url).toContain("rpc.ashmus.ox.ac.uk/coins/1/123");
+  });
+});
+
+describe("getReferenceUrl", () => {
+  it("returns RPC direct type URL when volume and number present", () => {
+    const url = getReferenceUrl({ catalog: "RPC", volume: "I", number: "4374" });
+    expect(url).toBe("https://rpc.ashmus.ox.ac.uk/coins/1/4374");
+  });
+
+  it("returns RPC direct URL for Roman volumes II–X", () => {
+    expect(getReferenceUrl({ catalog: "RPC", volume: "II", number: "100" })).toContain("/coins/2/100");
+    expect(getReferenceUrl({ catalog: "RPC", volume: "X", number: "99" })).toContain("/coins/10/99");
+  });
+
+  it("returns null for RPC without volume", () => {
+    expect(getReferenceUrl({ catalog: "RPC", number: "4374" })).toBeNull();
+  });
+
+  it("returns null for RPC without number", () => {
+    expect(getReferenceUrl({ catalog: "RPC", volume: "I" } as CatalogReference)).toBeNull();
+  });
+
+  it("returns CRRO direct URL for RRC", () => {
+    const url = getReferenceUrl({ catalog: "RRC", number: "335/1c" });
+    expect(url).toBe("https://numismatics.org/crro/id/rrc-335-1c");
+  });
+
+  it("returns CRRO direct URL for Crawford", () => {
+    const url = getReferenceUrl({ catalog: "CRAWFORD", number: "494/43" });
+    expect(url).toContain("numismatics.org/crro/id/rrc-494-43");
+  });
+
+  it("returns null for RIC (search-only)", () => {
+    expect(getReferenceUrl({ catalog: "RIC", volume: "II", number: "118" })).toBeNull();
   });
 });
 
