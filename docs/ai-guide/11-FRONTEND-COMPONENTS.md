@@ -1215,35 +1215,34 @@ function formatPrice(price: number | null, currency = 'USD'): string {
 }
 ```
 
-### 8.4 Reference Links Utility
+### 8.4 Reference Links and Catalog Parse
 
-**Location**: `frontend/src/lib/referenceLinks.ts`
+**Location**: `frontend/src/lib/referenceLinks.ts`, `frontend/src/hooks/useCatalog.ts`
 
-**Purpose**: Build validated external links for numismatic references.
+**Purpose**: Format references, build validated external links, and (optionally) parse reference strings. Authoritative parsing is backend `POST /api/v2/catalog/parse`; client `parseReference` is best-effort.
 
 ```typescript
-import { buildExternalLinks, formatReference } from '@/lib/referenceLinks'
+import { buildExternalLinks, formatReference, parseReference, SUPPORTED_CATALOGS_FALLBACK } from '@/lib/referenceLinks'
+import { useCatalogSystems, useParseCatalogReference } from '@/hooks/useCatalog'
 
-// Build links for references
-const links = buildExternalLinks([
-  { catalog: 'RIC', number: '118', volume: 'II' },
-  { catalog: 'RSC', number: '240' }
-])
+// Format for display (includes volume, supplement, mint, collection when present)
+formatReference({ catalog: 'RPC', volume: 'I', supplement: 'S', number: '123' }) // "RPC I S 123"
+formatReference({ catalog: 'SNG', collection: 'Cop', number: '123' })           // "SNG Cop 123"
 
-// Returns:
-// - OCRE (validated for RIC)
-// - ACSearch, Wildwinds, CoinArchives (general search)
+// Best-effort client parse; use API for validation
+const parsed = parseReference('RIC II 118')  // { catalog: 'RIC', volume: 'II', number: '118' }
+
+// Build links (uses ref.catalog for RIC/RRC/RPC detection; search query uses formatReference)
+const links = buildExternalLinks(references)
+
+// Catalog list: from API or fallback
+const { data: systems } = useCatalogSystems()  // GET /api/v2/catalog/systems
+// Fallback: SUPPORTED_CATALOGS_FALLBACK when API unavailable
 ```
 
-**Validated Links**:
-- `OCRE` - Only for RIC references
-- `CRRO` - Only for Crawford/RRC references
-- `RPC Online` - Only for RPC references
+**Validated Links** (by `ref.catalog`): OCRE (RIC), CRRO (RRC), RPC Online (RPC). General search links (ACSearch, Wildwinds, CoinArchives) use `formatReference(primaryRef)` for the query.
 
-**General Search Links** (always included):
-- ACSearch
-- Wildwinds
-- CoinArchives
+**Catalog Parse API**: `useParseCatalogReference().mutateAsync({ raw })` returns `{ ref, confidence, warnings }`; use for import validation or inline feedback.
 
 ### 8.5 Grade Color Helper
 

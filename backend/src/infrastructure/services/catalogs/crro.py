@@ -55,12 +55,16 @@ class CRROService(CatalogService):
         result = parser.parse(raw)
         if result.system != "crawford":
             return None
-            
+        # Derive main/sub from number (e.g. "335/1" -> 335, 1)
+        number = result.number or ""
+        parts = number.split("/")
+        main_number = parts[0] if parts else None
+        sub_number = parts[1] if len(parts) > 1 else None
         return {
             "system": "crawford",
             "number": result.number,
-            "main_number": result.main_number,
-            "sub_number": result.sub_number,
+            "main_number": main_number,
+            "sub_number": sub_number,
             "subtype": result.subtype,
         }
     

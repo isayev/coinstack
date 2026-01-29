@@ -4,7 +4,7 @@ Sydenham reference parser.
 import re
 from typing import Optional
 
-from .base import ParsedRef
+from .base import ParsedRef, make_simple_ref
 
 
 _PATTERN = re.compile(
@@ -20,15 +20,4 @@ def parse(raw: str) -> Optional[ParsedRef]:
     m = _PATTERN.match(raw.strip())
     if not m:
         return None
-    number = m.group(1)
-    variant = m.group(2)
-    num_str = f"{number}{variant}" if variant else number
-    norm = f"sydenham.{number}"
-    if variant:
-        norm += variant
-    return ParsedRef(
-        system="sydenham",
-        number=num_str,
-        variant=variant,
-        normalized=norm.lower(),
-    )
+    return make_simple_ref("sydenham", m.group(1), m.group(2))

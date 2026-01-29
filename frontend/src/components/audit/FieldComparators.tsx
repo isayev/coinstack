@@ -10,6 +10,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { formatReference, parseReference as parseRefString } from "@/lib/referenceLinks";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { GradeBadge } from "@/components/design-system";
@@ -367,25 +368,16 @@ interface ParsedReference {
 
 function parseReference(ref: string): ParsedReference {
   const trimmed = ref.trim();
-  
-  // Common patterns: "RIC II 45", "RSC 123", "Sear 5432"
-  const match = trimmed.match(/^([A-Za-z]+)\s*(\d+(?:\.\d+)?(?:\s*\w+)?)/);
-  
-  if (match) {
+  const parsed = parseRefString(trimmed);
+  if (parsed) {
     return {
-      catalog: match[1].toUpperCase(),
-      number: match[2],
-      normalized: `${match[1].toUpperCase()} ${match[2]}`.trim(),
+      catalog: parsed.catalog,
+      number: parsed.number,
+      normalized: formatReference(parsed),
       raw: trimmed,
     };
   }
-  
-  return {
-    catalog: '',
-    number: '',
-    normalized: trimmed,
-    raw: trimmed,
-  };
+  return { catalog: "", number: "", normalized: trimmed, raw: trimmed };
 }
 
 function diffReferences(

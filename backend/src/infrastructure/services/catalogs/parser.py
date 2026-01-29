@@ -8,12 +8,18 @@ import re
 from typing import List, Dict, Optional, Union, Any
 from pydantic import BaseModel
 
-from src.infrastructure.services.catalogs.catalog_systems import SYSTEM_TO_DISPLAY
+from src.infrastructure.services.catalogs.catalog_systems import (
+    SYSTEM_TO_DISPLAY,
+    reference_detection_pattern,
+)
 from src.infrastructure.services.catalogs.parsers import (
     SYSTEM_PARSERS,
     ParsedRef,
     normalize_whitespace,
 )
+
+# Compiled once at import for _looks_like_reference
+_REF_DETECTION_PATTERN = reference_detection_pattern()
 
 
 class ParseResult(BaseModel):
@@ -34,12 +40,6 @@ class ParseResult(BaseModel):
     confidence: float = 0.0            # 0-1, how confident we are in the parse
     needs_llm: bool = False          # True if LLM disambiguation needed
     warnings: List[str] = []          # Numismatic/validation warnings
-
-    # Legacy/optional
-    edition: Optional[str] = None
-    main_number: Optional[str] = None
-    sub_number: Optional[str] = None
-    llm_reason: Optional[str] = None
 
 
 def canonical(ref: Union[ParsedRef, Dict[str, Any]]) -> str:
@@ -71,14 +71,13 @@ def canonical(ref: Union[ParsedRef, Dict[str, Any]]) -> str:
 
 
 def _parsed_ref_to_result(parsed: ParsedRef, raw: str) -> ParseResult:
-    """Convert ParsedRef to ParseResult for backward compatibility."""
+    """Convert ParsedRef to ParseResult."""
     confidence = 0.7 if parsed.warnings else 1.0
     needs_llm = any(
         "confirm" in w.lower() or "without volume" in w.lower()
         for w in parsed.warnings
     )
-    llm_reason = parsed.warnings[0] if parsed.warnings else None
-    # ParseResult historically has number without variant, subtype separate (e.g. 289 + c)
+    # number without variant, subtype separate (e.g. 289 + c) for dict/API
     number = parsed.number
     subtype = parsed.variant
     if subtype and number and number.endswith(subtype):
@@ -96,17 +95,13 @@ def _parsed_ref_to_result(parsed: ParsedRef, raw: str) -> ParseResult:
         confidence=confidence,
         needs_llm=needs_llm,
         warnings=parsed.warnings.copy(),
-        llm_reason=llm_reason,
     )
 
 
 def _looks_like_reference(raw: str) -> bool:
     """Check if string looks like it could be a catalog reference."""
     has_numbers = bool(re.search(r"\d", raw))
-    has_ref_words = bool(re.search(
-        r"\b(RIC|RPC|Crawford|Cr|RSC|BMC|BMCRE|Sear|SCV|Sydenham|Syd)\b",
-        raw, re.IGNORECASE
-    ))
+    has_ref_words = _REF_DETECTION_PATTERN.search(raw) is not None
     return has_numbers and (has_ref_words or "/" in raw)
 
 
@@ -125,7 +120,6 @@ class ReferenceParser:
             return ParseResult(
                 raw=raw or "",
                 needs_llm=False,
-                llm_reason="Empty reference",
             )
         text = normalize_whitespace(raw)
         # Attach trailing single-letter variant to number (e.g. "351 b" -> "351b") for canonical consistency
@@ -139,13 +133,11 @@ class ReferenceParser:
                 raw=raw,
                 confidence=0.2,
                 needs_llm=True,
-                llm_reason="Unrecognized reference format - may need disambiguation",
             )
         return ParseResult(
             raw=raw,
             confidence=0.0,
             needs_llm=False,
-            llm_reason="Does not appear to be a catalog reference",
         )
 
     def parse_multiple(self, raw: str) -> List[ParseResult]:
@@ -224,30 +216,7 @@ def parse_catalog_reference(raw: str) -> Dict[str, Optional[str]]:
             "collection": None,
         }
     result = parse_catalog_reference_full(str(raw).strip())
-    d = _parse_result_to_dict(result)
-    if d.get("catalog") and d.get("number") is not None:
-        return d
-    # Fallback: first word as catalog, last as number (matches legacy llm behavior)
-    parts = (raw or "").strip().split()
-    if parts:
-        return {
-            "catalog": parts[0].upper(),
-            "volume": None,
-            "number": parts[-1] if len(parts) > 1 else None,
-            "variant": None,
-            "mint": None,
-            "supplement": None,
-            "collection": None,
-        }
-    return {
-        "catalog": None,
-        "volume": None,
-        "number": None,
-        "variant": None,
-        "mint": None,
-        "supplement": None,
-        "collection": None,
-    }
+    return _parse_result_to_dict(result)
 
 
 def parse_catalog_reference_full(raw: str) -> ParseResult:
@@ -256,7 +225,7 @@ def parse_catalog_reference_full(raw: str) -> ParseResult:
     Use for UI preview or when confidence/warnings are needed without persisting.
     """
     if not raw or not str(raw).strip():
-        return ParseResult(raw=raw or "", needs_llm=False, llm_reason="Empty reference")
+        return ParseResult(raw=raw or "", needs_llm=False)
     return parser.parse(str(raw).strip())
 
 

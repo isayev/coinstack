@@ -71,3 +71,31 @@ def test_sync_dedupe_equivalent_refs_one_reference_type_row(db_session):
         select(CoinReferenceModel).where(CoinReferenceModel.coin_id == coin.id)
     ).all()
     assert len(links) == 1, "Sync dedupes by (system, local_ref) so one link to the single reference_type"
+
+
+@pytest.mark.integration
+def test_sync_new_catalog_sng_round_trip(db_session):
+    """New catalog SNG (with collection) persists and round-trips via reference_sync."""
+    repo = SqlAlchemyCoinRepository(db_session)
+    coin = repo.save(_make_coin(issuer="Test"))
+    db_session.flush()
+
+    refs = ["SNG Cop 123"]
+    sync_coin_references(db_session, coin.id, refs, "user")
+    db_session.flush()
+
+    rts = db_session.scalars(
+        select(ReferenceTypeModel).where(
+            ReferenceTypeModel.system == "sng",
+            ReferenceTypeModel.local_ref == "SNG Cop 123",
+        )
+    ).all()
+    assert len(rts) == 1
+    assert rts[0].number == "123"
+    assert rts[0].collection == "Cop"
+
+    links = db_session.scalars(
+        select(CoinReferenceModel).where(CoinReferenceModel.coin_id == coin.id)
+    ).all()
+    assert len(links) == 1
+    assert links[0].reference_type_id == rts[0].id

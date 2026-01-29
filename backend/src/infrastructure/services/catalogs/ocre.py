@@ -47,13 +47,17 @@ class OCREService(CatalogService):
         
         if result.system != "ric":
             return None
-            
+        # Derive edition from volume (e.g. "I.2" or "II.3" for ²/³)
+        edition = None
+        if result.volume and "." in result.volume:
+            tail = result.volume.split(".")[-1]
+            edition = tail if tail in ("2", "3") else None
         return {
             "system": "ric",
             "volume": result.volume,
             "volume_roman": self._arabic_to_roman(int(result.volume)) if result.volume and result.volume.isdigit() else None,
             "number": result.number,
-            "edition": result.edition,
+            "edition": edition,
         }
     
     async def build_reconcile_query(

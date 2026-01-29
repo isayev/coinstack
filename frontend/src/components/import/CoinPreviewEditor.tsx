@@ -31,7 +31,42 @@ import {
   FieldConfidence,
   CONFIDENCE_CONFIG
 } from "@/hooks/useImport";
+import { useCatalogSystems } from "@/hooks/useCatalog";
+import { SUPPORTED_CATALOGS_FALLBACK } from "@/lib/referenceLinks";
 import { cn } from "@/lib/utils";
+
+/** Catalog quick-add buttons: uses API systems when available, fallback list otherwise. */
+function CommonCatalogsQuickAdd() {
+  const { data: systems, isSuccess } = useCatalogSystems();
+  const catalogs = isSuccess && systems && Object.keys(systems).length > 0
+    ? [...new Set(Object.values(systems))].sort((a, b) => a.localeCompare(b))
+    : SUPPORTED_CATALOGS_FALLBACK;
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs text-muted-foreground">Common Catalogs</Label>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {catalogs.map((catalog) => (
+          <Button
+            key={catalog}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            onClick={() => {
+              const input = document.querySelector('input[placeholder*="RIC"]') as HTMLInputElement;
+              if (input) {
+                input.value = `${catalog} `;
+                input.focus();
+              }
+            }}
+          >
+            {catalog}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface CoinPreviewEditorProps {
   data: CoinPreviewData;
@@ -643,7 +678,7 @@ export function CoinPreviewEditor({
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Catalog References</CardTitle>
             <CardDescription className="text-xs">
-              Add catalog references like RIC, RPC, Crawford, Sear, etc.
+              Add catalog references (RIC, RPC, RRC, DOC, SNG, Cohen, etc.).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -690,30 +725,8 @@ export function CoinPreviewEditor({
               </p>
             </div>
 
-            {/* Common reference types */}
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Common Catalogs</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {['RIC', 'RPC', 'Crawford', 'RSC', 'Cohen', 'Sear', 'BMC', 'BMCRE'].map((catalog) => (
-                  <Button
-                    key={catalog}
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => {
-                      const input = document.querySelector('input[placeholder*="RIC"]') as HTMLInputElement;
-                      if (input) {
-                        input.value = `${catalog} `;
-                        input.focus();
-                      }
-                    }}
-                  >
-                    {catalog}
-                  </Button>
-                ))}
-              </div>
-            </div>
+            {/* Common reference types - from API or fallback */}
+            <CommonCatalogsQuickAdd />
 
             {/* Current references */}
             {data.references && data.references.length > 0 && (

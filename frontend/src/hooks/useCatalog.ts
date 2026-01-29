@@ -1,6 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
+// Catalog Parse API (POST /api/v2/catalog/parse, GET /api/v2/catalog/systems)
+export interface ParsedCatalogRef {
+  catalog: string;
+  number: string;
+  volume?: string | null;
+  raw_text?: string;
+  variant?: string | null;
+  mint?: string | null;
+  supplement?: string | null;
+  collection?: string | null;
+}
+
+export interface ParseCatalogResponse {
+  ref: ParsedCatalogRef | null;
+  confidence: number;
+  warnings: string[];
+  alternatives: ParsedCatalogRef[];
+}
+
+export type CatalogSystemsMap = Record<string, string>;
+
 // Types
 export interface CatalogCandidate {
   external_id: string;
@@ -173,6 +194,16 @@ async function getReferenceTypes(params?: {
   return response.data;
 }
 
+async function parseCatalogReference(raw: string): Promise<ParseCatalogResponse> {
+  const response = await api.post<ParseCatalogResponse>("/api/v2/catalog/parse", { raw: (raw || "").trim() });
+  return response.data;
+}
+
+async function getCatalogSystems(): Promise<CatalogSystemsMap> {
+  const response = await api.get<CatalogSystemsMap>("/api/v2/catalog/systems");
+  return response.data;
+}
+
 // Hooks
 export function useLookupReference() {
   return useMutation({
@@ -225,5 +256,19 @@ export function useReferenceTypes(params?: {
   return useQuery({
     queryKey: ["reference-types", params],
     queryFn: () => getReferenceTypes(params),
+  });
+}
+
+export function useParseCatalogReference() {
+  return useMutation({
+    mutationFn: parseCatalogReference,
+  });
+}
+
+export function useCatalogSystems() {
+  return useQuery({
+    queryKey: ["catalog-systems"],
+    queryFn: getCatalogSystems,
+    staleTime: 5 * 60 * 1000, // 5 min - systems change rarely
   });
 }

@@ -72,3 +72,17 @@ def volume_hyphen_slash_to_dot(vol: str) -> str:
     if not vol:
         return vol
     return re.sub(r"[-/]", ".", vol.strip())
+
+
+def make_simple_ref(system: str, number: str, variant: Optional[str] = None) -> ParsedRef:
+    """Build ParsedRef for single-pattern catalogs (number + optional variant)."""
+    num_str = f"{number}{variant}" if variant else number
+    norm = f"{system}.{number}"
+    if variant:
+        norm += variant
+    return ParsedRef(
+        system=system,
+        number=num_str,
+        variant=variant,
+        normalized=norm.lower(),
+    )

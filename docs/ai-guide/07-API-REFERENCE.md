@@ -752,7 +752,8 @@ GET /api/catalog/job/{job_id}
 
 **Router**: `src/infrastructure/web/routers/catalog_v2.py`
 
-Parser expansion: parse reference strings and list supported catalog systems (no persistence).
+Parser expansion: parse reference strings and list supported catalog systems (no persistence).  
+**Parser behavior and edge cases**: [CATALOG-PARSER-REVIEW.md](CATALOG-PARSER-REVIEW.md).
 
 ### Parse Reference
 
@@ -764,7 +765,7 @@ POST /api/v2/catalog/parse
 
 **Response**: `{ ref?: CatalogReferenceResponse, confidence: number, warnings: string[], alternatives: CatalogReferenceResponse[] }`
 
-`ref` includes catalog, number, volume (Roman for RIC/RPC), and when present: variant, mint, supplement, collection. Use for import preview or reference field validation without persisting.
+`ref` includes catalog, number, volume (Roman for RIC/RPC/DOC), and when present: variant, mint, supplement, collection. Use for import preview or reference field validation without persisting.
 
 ### List Catalog Systems
 
@@ -772,7 +773,7 @@ POST /api/v2/catalog/parse
 GET /api/v2/catalog/systems
 ```
 
-**Response**: `{ "ric": "RIC", "crawford": "RRC", "rpc": "RPC", ... }` — system key → display name for all supported catalogs.
+**Response**: `{ "ric": "RIC", "crawford": "RRC", "rpc": "RPC", "rsc": "RSC", "doc": "DOC", "bmcrr": "BMCRR", "bmcre": "BMCRE", "sng": "SNG", "cohen": "Cohen", "calico": "Calicó", "sear": "Sear", "sydenham": "Sydenham" }` — system key → display name for all supported catalogs.
 
 ---
 
