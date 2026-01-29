@@ -25,12 +25,23 @@ async def test_ric_iv_1_query_no_edition_suffix():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_ric_ii_single_volume_gets_edition():
-    """RIC II 756 (no part): single volume gets (2) edition for OCRE."""
+async def test_ric_ii_iii_no_default_edition():
+    """RIC II 756 and RIC III 303: no (2) edition when not explicit. Defaulting to (2) made 'RIC III(2) 303' match RIC II Part 3."""
     svc = OCREService()
-    query = await svc.build_reconcile_query("RIC II 756", None)
-    assert "II(2)" in query["q0"]["query"] or "II(2) 756" == query["q0"]["query"]
-    assert query["q0"]["query"] == "RIC II(2) 756"
+    q2 = await svc.build_reconcile_query("RIC II 756", None)
+    assert q2["q0"]["query"] == "RIC II 756"
+    q3 = await svc.build_reconcile_query("RIC III, 303", None)
+    assert q3["q0"]["query"] == "RIC III 303"
+    assert "(2)" not in q2["q0"]["query"] and "(2)" not in q3["q0"]["query"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ric_i_2_explicit_edition():
+    """RIC I (2) 207: explicit edition produces I.2; OCRE query uses volume.part (no extra (2))."""
+    svc = OCREService()
+    query = await svc.build_reconcile_query("RIC I (2) 207", None)
+    assert query["q0"]["query"] == "RIC I.2 207"
 
 
 @pytest.mark.unit
@@ -51,3 +62,12 @@ async def test_ric_v_325_with_authority_no_edition_suffix():
     query = await svc.build_reconcile_query("RIC V 325", {"ruler": "Diocletian"})
     assert query["q0"]["query"] == "RIC V Diocletian 325"
     assert "(2)" not in query["q0"]["query"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ric_iii_303_antoninus_pius_extract_ruler():
+    """'RIC III, 303 - Antoninus Pius': trailing ' - Ruler' is extracted and used as authority for OCRE query."""
+    svc = OCREService()
+    query = await svc.build_reconcile_query("RIC III, 303 - Antoninus Pius", None)
+    assert query["q0"]["query"] == "RIC III Antoninus Pius 303"

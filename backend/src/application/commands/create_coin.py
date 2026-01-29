@@ -24,6 +24,8 @@ class CreateCoinDTO:
     die_axis: Optional[int] = None
     grade_service: Optional[str] = None
     certification: Optional[str] = None
+    strike: Optional[str] = None
+    surface: Optional[str] = None
     acquisition_price: Optional[Decimal] = None
     acquisition_source: Optional[str] = None
     acquisition_date: Optional[date] = None
@@ -53,7 +55,9 @@ class CreateCoinUseCase:
             grading_state=grading_state,
             grade=dto.grade,
             service=grade_service,
-            certification_number=dto.certification
+            certification_number=dto.certification,
+            strike=dto.strike,
+            surface=dto.surface,
         )
 
         acquisition = None

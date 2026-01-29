@@ -41,7 +41,7 @@ export interface CoinTableRowProps {
   className?: string;
 }
 
-const TABLE_GRID_LAYOUT = "4px 40px 50px 48px minmax(120px, 1.5fr) 110px 90px 40px minmax(90px, 1.2fr) 90px minmax(100px, 2fr) minmax(100px, 2fr) minmax(100px, 2fr) minmax(100px, 2fr) 60px 60px 60px 40px minmax(100px, 1.2fr) 60px minmax(60px, 80px) 50px 90px";
+const TABLE_GRID_LAYOUT = "4px 40px 50px 48px minmax(120px, 1.5fr) 110px 90px 40px minmax(90px, 1.2fr) 90px minmax(100px, 2fr) minmax(100px, 2fr) minmax(100px, 2fr) minmax(100px, 2fr) 60px 60px 60px 40px minmax(100px, 1.2fr) 60px 50px minmax(60px, 80px) 50px 90px";
 
 export function CoinTableRow({
   coin,
@@ -245,7 +245,14 @@ export function CoinTableRow({
         <GradeBadge grade={coin.grading?.grade ?? '?'} size="sm" />
       </div>
 
-      {/* 16b. Storage [NEW] */}
+      {/* 16b. Strike / Surface (NGC/PCGS) */}
+      <div className="flex justify-center items-center hidden 2xl:flex text-[10px] text-muted-foreground" title={coin.grading?.strike || coin.grading?.surface ? `Strike ${coin.grading?.strike ?? '—'}/5 · Surface ${coin.grading?.surface ?? '—'}/5` : undefined}>
+        {(coin.grading?.strike || coin.grading?.surface)
+          ? [coin.grading?.strike && `${coin.grading.strike}/5`, coin.grading?.surface && `${coin.grading.surface}/5`].filter(Boolean).join(' · ')
+          : '—'}
+      </div>
+
+      {/* 16c. Storage */}
       <div className="text-[10px] text-muted-foreground truncate hidden 2xl:block px-1" title={coin.storage_location || ''}>
         {coin.storage_location || '—'}
       </div>
@@ -381,6 +388,7 @@ export function CoinTableHeader({
 
       <HeaderCell label="Ref" sortKey="reference" className="hidden xl:flex" />
       <HeaderCell label="Grd" sortKey="grade" align="center" />
+      <HeaderCell label="St/Sf" align="center" className="hidden 2xl:flex" />
       <HeaderCell label="Loc" sortKey="storage_location" className="hidden 2xl:block" />
       <HeaderCell label="Rty" sortKey="rarity" align="center" className="hidden 2xl:flex" />
       <HeaderCell label="Value" sortKey="value" align="right" className="pr-2" />

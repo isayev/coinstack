@@ -71,35 +71,46 @@ class OCREService(CatalogService):
         OCRE reconciliation works best with queries like:
         - "RIC I(2) Augustus 207" (with edition and authority)
         - "RIC VII Rome 207" (with volume and mint)
+        - "RIC III, 303 - Antoninus Pius": trailing " - Ruler" is extracted and used as authority.
         """
-        # Parse reference to get components
-        parsed = self.parse_reference(ref)
-        
+        ref_clean = (ref or "").strip()
+        authority_from_ref: Optional[str] = None
+        m = re.match(r"^(.+?)\s+-\s+(.+)$", ref_clean)
+        if m:
+            pre, suf = m.group(1).strip(), m.group(2).strip()
+            if suf and not re.search(r"\d", suf):
+                ref_clean = pre
+                authority_from_ref = suf
+        authority = None
+        if context:
+            authority = context.get("ruler") or context.get("authority")
+        if not authority and authority_from_ref:
+            authority = authority_from_ref
+
+        parsed = self.parse_reference(ref_clean)
         if parsed:
             volume = parsed.get("volume_roman") or parsed.get("volume")
             number = parsed["number"]
-            authority = context.get("ruler") or context.get("authority") if context else None
             # When volume has a dot (e.g. V.2 = Volume V Part 2), use as-is; don't add (edition)
             # When authority is provided (e.g. Diocletian), OCRE matches "RIC V Diocletian 325" not "RIC V(2) Diocletian 325" - omit edition
-            # Otherwise edition (2)/(3) for single-segment volume (e.g. RIC I(2) 207)
+            # Add (edition) only when explicitly parsed (e.g. RIC I², RIC I(2) 207). Do NOT default to (2):
+            # "RIC III 303" must stay "RIC III 303"; "RIC III(2) 303" is interpreted as RIC II Part 3 (2nd ed) and returns wrong matches.
             if volume and "." in str(volume):
                 vol_str = volume
             elif authority:
                 vol_str = volume
+            elif parsed.get("edition"):
+                vol_str = f"{volume}({parsed['edition']})"
             else:
-                edition = parsed.get("edition") or "2"
-                vol_str = f"{volume}({edition})"
+                vol_str = volume
             query_str = f"RIC {vol_str} {number}"
             if authority:
                 query_str = f"RIC {vol_str} {authority} {number}"
         else:
-            # Fallback to original reference with authority
-            query_str = ref
-            if context:
-                authority = context.get("ruler") or context.get("authority")
-                if authority and authority.lower() not in ref.lower():
-                    query_str = f"{ref} {authority}"
-        
+            query_str = ref_clean
+            if authority and authority.lower() not in ref_clean.lower():
+                query_str = f"{ref_clean} {authority}"
+
         return {"q0": {"query": query_str}}
     
     async def reconcile(self, query: Dict) -> CatalogResult:

@@ -49,6 +49,8 @@ _PATTERNS = [
     (r"RIC\s+([IVX]+)[.\-/]" + _PART_GROUP + r"\s+([A-Za-z]+)\s+(\d+)([a-z])?", "roman_volume_part_mint"),
     # RIC I (2) 207, RIC I(2) 207 (parenthesized edition - common in OCRE citations)
     (r"RIC\s+([IVX]+)\s*\(\s*([23])\s*\)\s+(\d+)([a-z])?", "roman_volume_edition_paren"),
+    # RIC III, 303 or RIC III, 303 - Antoninus Pius (comma form; trailing " - ruler" ignored)
+    (r"RIC\s+([IVX]+)\s*,\s*(\d+)([a-z])?", "roman_volume_comma"),
     # RIC I 207, RIC II³ 430, RIC I² 207a
     (r"RIC\s+([IVX]+)([²³]|[23])?\s+(\d+)([a-z])?", "roman_volume"),
     # RIC IV.1 351b, RIC V.II 325, RIC IV-1 351, RIC IV/1 351 (volume with part Arabic or Roman)
@@ -121,6 +123,23 @@ def parse(raw: str) -> Optional[ParsedRef]:
             number = m.group(3)
             variant = m.group(4) if m.lastindex >= 4 else None
             vol_canon = f"{roman_vol}.{edition}"
+            num_str = f"{number}{variant}" if variant else number
+            arabic_vol = roman_to_arabic(roman_vol)
+            norm = f"ric.{arabic_vol}.{number}"
+            if variant:
+                norm += variant
+            return ParsedRef(
+                system="ric",
+                volume=vol_canon,
+                number=num_str,
+                variant=variant,
+                normalized=norm.lower(),
+            )
+        if kind == "roman_volume_comma":
+            roman_vol = m.group(1).upper()
+            number = m.group(2)
+            variant = m.group(3) if m.lastindex >= 3 else None
+            vol_canon = volume_hyphen_slash_to_dot(roman_vol)
             num_str = f"{number}{variant}" if variant else number
             arabic_vol = roman_to_arabic(roman_vol)
             norm = f"ric.{arabic_vol}.{number}"

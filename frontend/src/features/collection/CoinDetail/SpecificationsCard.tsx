@@ -245,15 +245,19 @@ export const SpecificationsCard = memo(function SpecificationsCard({
               }
             />
 
-            {/* Strike and Surface on same row if both exist */}
+            {/* Strike and Surface: show as X/5; single value gets explicit label */}
             {(coin.grading?.strike || coin.grading?.surface) && (
-              <SpecRow
-                label="Strike / Surface"
-                value={[
-                  coin.grading?.strike ? `${coin.grading.strike}/5` : null,
-                  coin.grading?.surface ? `${coin.grading.surface}/5` : null
-                ].filter(Boolean).join(' · ') || null}
-              />
+              (() => {
+                const hasStrike = !!coin.grading?.strike
+                const hasSurface = !!coin.grading?.surface
+                const strikeVal = hasStrike ? `${coin.grading!.strike}/5` : null
+                const surfaceVal = hasSurface ? `${coin.grading!.surface}/5` : null
+                const label = hasStrike && hasSurface ? 'Strike / Surface' : hasStrike ? 'Strike' : 'Surface'
+                const value = hasStrike && hasSurface
+                  ? `${strikeVal} · ${surfaceVal}`
+                  : (strikeVal ?? surfaceVal)
+                return <SpecRow label={label} value={value} />
+              })()
             )}
 
             {/* Rarity */}

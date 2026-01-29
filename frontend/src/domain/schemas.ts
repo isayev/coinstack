@@ -105,13 +105,27 @@ export const SeriesSchema = z.object({
   coin_count: z.number().optional(),  // Computed field
 })
 
+/** Normalize strike/surface: "4/5" -> "4", only "1"-"5" or null. */
+const strikeSurfaceSchema = z.preprocess(
+  (v) => {
+    if (v == null || v === '') return null
+    const s = String(v).trim()
+    if (!s) return null
+    const normalized = s.includes('/') ? s.split('/')[0].trim() : s
+    const n = parseInt(normalized, 10)
+    if (Number.isNaN(n) || n < 1 || n > 5) return null
+    return String(n)
+  },
+  z.union([z.enum(['1', '2', '3', '4', '5']), z.null()]).optional()
+)
+
 export const GradingDetailsSchema = z.object({
   grading_state: GradingStateSchema.optional(),
   grade: z.string().nullable().optional(),
   service: GradeServiceSchema.nullable().optional(),
   certification_number: z.string().nullable().optional(),
-  strike: z.string().nullable().optional(),
-  surface: z.string().nullable().optional(),
+  strike: strikeSurfaceSchema,
+  surface: strikeSurfaceSchema,
   eye_appeal: z.number().nullable().optional(),
   toning_description: z.string().nullable().optional(),
 })

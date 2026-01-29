@@ -31,6 +31,20 @@ def test_parse_rpc():
     assert out["number"] == "4122"
 
 
+def test_rpc_number_includes_variant():
+    """RPC I 3622C: parse dict and RPC parse_reference both expose number 3622C; external_id uses it."""
+    out = parse_catalog_reference("RPC I 3622C")
+    assert out["catalog"] == "RPC"
+    assert out["number"] == "3622C"
+    from src.infrastructure.services.catalogs.rpc import RPCService
+    svc = RPCService()
+    parsed = svc.parse_reference("RPC I 3622C")
+    assert parsed["number"] == "3622C"
+    eid = f"rpc-{parsed['volume']}-{parsed['number']}"
+    assert eid == "rpc-I-3622C"
+    assert "3622C" in svc.build_url_from_parts(parsed["volume"], parsed["number"])
+
+
 def test_parse_rsc():
     out = parse_catalog_reference("RSC 162")
     assert out["catalog"] == "RSC"
@@ -305,6 +319,21 @@ def test_ric_volume_edition_parenthesized():
     assert out.get("catalog") == "RIC"
     assert out.get("volume") == "I.2"
     assert out.get("number") == "207"
+
+
+def test_ric_volume_comma():
+    """RIC III, 303 and RIC III, 303 - Antoninus Pius parse (comma form; trailing ruler ignored)."""
+    for raw in ("RIC III, 303", "RIC III, 303 - Antoninus Pius"):
+        result = parse_catalog_reference_full(raw)
+        assert result.system == "ric"
+        assert result.volume == "III"
+        assert result.number == "303"
+    out = parse_catalog_reference("RIC III, 303 - Antoninus Pius")
+    assert out.get("catalog") == "RIC"
+    assert out.get("volume") == "III"
+    assert out.get("number") == "303"
+    c = canonical(out)
+    assert c == "RIC III 303"
 
 
 def test_ric_volume_part_roman_numeral():

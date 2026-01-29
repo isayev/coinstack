@@ -67,8 +67,8 @@ export function AddCoinPage() {
           grade: initialData.grade || '',
           service: null,
           certification_number: '',
-          strike: '',
-          surface: '',
+          strike: null,
+          surface: null,
           eye_appeal: null,
           toning_description: null
         },

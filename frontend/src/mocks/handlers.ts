@@ -55,8 +55,8 @@ const mockCoins: Coin[] = [
       grade: 'MS 65',
       service: 'ngc',
       certification_number: '123456-001',
-      strike: '5/5',
-      surface: '5/5'
+      strike: '5',
+      surface: '5'
     },
     acquisition: {
       price: 2500,

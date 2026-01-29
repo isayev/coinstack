@@ -89,6 +89,42 @@ export function CommercialStep({ form }: CommercialStepProps) {
                             <Input {...register("grading.certification_number")} className="h-11 font-mono" />
                         </div>
                     </div>
+                    {(gradeService === "ngc" || gradeService === "pcgs") && (
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold">Strike (1–5)</label>
+                                <Select
+                                    value={form.watch("grading.strike") ?? "__none__"}
+                                    onValueChange={(v) => setValue("grading.strike", v === "__none__" ? null : (v as "1" | "2" | "3" | "4" | "5"))}
+                                >
+                                    <SelectTrigger className="h-11"><SelectValue placeholder="—" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__none__">—</SelectItem>
+                                        {['1', '2', '3', '4', '5'].map((n) => (
+                                            <SelectItem key={n} value={n}>{n}/5</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">NGC/PCGS strike quality</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold">Surface (1–5)</label>
+                                <Select
+                                    value={form.watch("grading.surface") ?? "__none__"}
+                                    onValueChange={(v) => setValue("grading.surface", v === "__none__" ? null : (v as "1" | "2" | "3" | "4" | "5"))}
+                                >
+                                    <SelectTrigger className="h-11"><SelectValue placeholder="—" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__none__">—</SelectItem>
+                                        {['1', '2', '3', '4', '5'].map((n) => (
+                                            <SelectItem key={n} value={n}>{n}/5</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">NGC/PCGS surface quality</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
 
