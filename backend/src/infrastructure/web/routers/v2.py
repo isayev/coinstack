@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date
 from src.domain.repositories import ICoinRepository
 from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
+from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
     Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design
@@ -37,6 +38,10 @@ class CatalogReferenceInput(BaseModel):
     is_primary: bool = False
     notes: Optional[str] = None
     raw_text: Optional[str] = None
+    variant: Optional[str] = None   # e.g. "a", "b" (RIC, Crawford)
+    mint: Optional[str] = None     # RIC mint code
+    supplement: Optional[str] = None  # RPC S, S2
+    collection: Optional[str] = None  # SNG collection
 
 
 class CreateCoinRequest(BaseModel):
@@ -124,6 +129,10 @@ class CatalogReferenceResponse(BaseModel):
     suffix: Optional[str] = None
     raw_text: str = ""
     source: Optional[str] = None
+    variant: Optional[str] = None
+    mint: Optional[str] = None
+    supplement: Optional[str] = None
+    collection: Optional[str] = None
 
 class ProvenanceEntryResponse(BaseModel):
     source_type: str
@@ -249,6 +258,10 @@ class CoinResponse(BaseModel):
                     suffix=ref.suffix,
                     raw_text=ref.raw_text,
                     source=getattr(ref, "source", None),
+                    variant=getattr(ref, "variant", None),
+                    mint=getattr(ref, "mint", None),
+                    supplement=getattr(ref, "supplement", None),
+                    collection=getattr(ref, "collection", None),
                 ) for ref in coin.references
             ],
             provenance=[
@@ -302,6 +315,7 @@ def create_coin(
 ):
     use_case = CreateCoinUseCase(repo)
     
+    grade = normalize_grade_for_storage(request.grade) or "Unknown"
     dto = CreateCoinDTO(
         category=request.category,
         metal=request.metal,
@@ -309,7 +323,7 @@ def create_coin(
         diameter_mm=request.diameter_mm,
         issuer=request.issuer,
         grading_state=request.grading_state,
-        grade=request.grade,
+        grade=grade,
         mint=request.mint,
         year_start=request.year_start,
         year_end=request.year_end,
@@ -351,7 +365,12 @@ def create_coin(
 
     if request.references is not None and saved_coin.id:
         from src.application.services.reference_sync import sync_coin_references
-        sync_coin_references(db, saved_coin.id, [r.model_dump() for r in request.references], "user")
+        # Skip refs with no catalog or number to avoid persisting "Unknown" / empty rows
+        valid_refs = [
+            r.model_dump() for r in request.references
+            if (r.catalog and r.catalog.strip()) and (r.number and r.number.strip())
+        ]
+        sync_coin_references(db, saved_coin.id, valid_refs, "user")
         saved_coin = repo.get_by_id(saved_coin.id) or saved_coin
 
     return CoinResponse.from_domain(saved_coin)
@@ -556,7 +575,7 @@ def update_coin(
             ),
             grading=GradingDetails(
                 grading_state=GradingState(request.grading_state),
-                grade=request.grade,
+                grade=normalize_grade_for_storage(request.grade) or existing_coin.grading.grade,
                 service=GradeService(request.grade_service) if request.grade_service else None,
                 certification_number=request.certification,
                 strike=request.strike,
@@ -612,7 +631,11 @@ def update_coin(
         saved = repo.save(updated_coin)
         if request.references is not None and saved.id:
             from src.application.services.reference_sync import sync_coin_references
-            sync_coin_references(db, saved.id, [r.model_dump() for r in request.references], "user")
+            valid_refs = [
+                r.model_dump() for r in request.references
+                if (r.catalog and r.catalog.strip()) and (r.number and r.number.strip())
+            ]
+            sync_coin_references(db, saved.id, valid_refs, "user")
             saved = repo.get_by_id(saved.id) or saved
         return CoinResponse.from_domain(saved)
         

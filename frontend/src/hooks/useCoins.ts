@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, type PaginatedCoinsResponse } from "@/api/client";
 import { Coin } from "@/domain/schemas";
 import { useFilterStore } from "@/stores/filterStore";
+import { getGradeTier } from "@/utils/gradeUtils";
 
 export interface YearBucket {
   start: number;
@@ -98,21 +99,6 @@ export function useDeleteCoin() {
   });
 }
 
-// Helper to map raw grade string to GradeTier bucket
-function mapGradeToTier(grade: string | null | undefined): string {
-  if (!grade) return 'unknown';
-  const g = grade.toLowerCase().replace(/[^a-z]/g, ''); // simplified
-
-  if (g.startsWith('ms') || g.startsWith('fdc') || g === 'mintstate' || g.includes('unc')) return 'ms';
-  if (g.startsWith('au') || g.includes('aboutun')) return 'au';
-  if (g.startsWith('xf') || g.startsWith('ef') || g.includes('extremely')) return 'ef';
-  if (g.startsWith('vf') || g.startsWith('f') || g.includes('fine')) return 'fine'; // Matches F, VF, Fine, Very Fine
-  if (g.startsWith('vg') || g.startsWith('g') || g.includes('good')) return 'good';
-  if (g.startsWith('ag') || g.startsWith('fr') || g.startsWith('p') || g.includes('poor') || g.includes('fair')) return 'poor';
-
-  return 'unknown';
-}
-
 function mapCategoryToKey(cat: string): string {
   const c = cat.toLowerCase();
   if (c.includes('provincial')) return 'provincial';
@@ -148,10 +134,10 @@ export function useCollectionStats() {
         category_counts[key] = (category_counts[key] || 0) + c.count;
       });
 
-      // Aggregate Grades into Tiers
+      // Aggregate Grades into Tiers (shared tier logic from gradeUtils)
       const grade_counts: Record<string, number> = {};
       data.by_grade.forEach(g => {
-        const tier = mapGradeToTier(g.grade);
+        const tier = getGradeTier(g.grade);
         grade_counts[tier] = (grade_counts[tier] || 0) + g.count;
       });
 

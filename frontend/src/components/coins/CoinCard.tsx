@@ -10,31 +10,7 @@ import { parseCategory } from '@/components/design-system/colors';
 import { RarityIndicator } from '@/components/design-system/RarityIndicator';
 import { formatYear } from '@/lib/formatters';
 import { useUIStore } from '@/stores/uiStore';
-
-// ============================================================================
-// Constants (moved outside component to prevent recreation)
-// ============================================================================
-
-const GRADE_COLORS: Record<string, string> = {
-  'MS': 'var(--grade-ms)',
-  'AU': 'var(--grade-au)',
-  'XF': 'var(--grade-xf)',
-  'EF': 'var(--grade-xf)',
-  'VF': 'var(--grade-vf)',
-  'F': 'var(--grade-f)',
-  'VG': 'var(--grade-vg)',
-  'G': 'var(--grade-g)',
-  'AG': 'var(--grade-ag)',
-  'FR': 'var(--grade-fr)',
-  'P': 'var(--grade-fr)',
-  'CHOICE': 'var(--grade-au)',
-};
-
-function getGradeColor(grade: string | null | undefined): string {
-  if (!grade) return 'var(--text-secondary)';
-  const prefix = grade.toString().replace(/[0-9\s]/g, '').toUpperCase();
-  return GRADE_COLORS[prefix] || 'var(--text-secondary)';
-}
+import { getGradeColor } from '@/utils/gradeUtils';
 
 // ============================================================================
 // CoinContent - Extracted component (memoized to prevent recreation)

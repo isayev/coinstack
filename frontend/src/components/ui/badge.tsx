@@ -20,11 +20,13 @@ const badgeVariants = cva(
         silver: "border-metal-silver/40 bg-metal-silver/15 text-metal-silver hover:bg-metal-silver/20",
         bronze: "border-metal-bronze/40 bg-metal-bronze/15 text-metal-bronze hover:bg-metal-bronze/20",
         
-        // Grade variants
-        "grade-ms": "border-grade-ms/40 bg-grade-ms/15 text-grade-ms",
-        "grade-au": "border-grade-au/40 bg-grade-au/15 text-grade-au",
-        "grade-ef": "border-grade-ef/40 bg-grade-ef/15 text-grade-ef",
+        // Grade variants (temperature scale: poor → good → fine → ef → au → ms)
+        "grade-poor": "border-grade-poor/40 bg-grade-poor/15 text-grade-poor",
+        "grade-good": "border-grade-good/40 bg-grade-good/15 text-grade-good",
         "grade-fine": "border-grade-fine/40 bg-grade-fine/15 text-grade-fine",
+        "grade-ef": "border-grade-ef/40 bg-grade-ef/15 text-grade-ef",
+        "grade-au": "border-grade-au/40 bg-grade-au/15 text-grade-au",
+        "grade-ms": "border-grade-ms/40 bg-grade-ms/15 text-grade-ms",
       },
     },
     defaultVariants: {

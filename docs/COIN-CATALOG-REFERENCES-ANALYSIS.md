@@ -249,4 +249,25 @@ So: **references are read from DB and returned; they are only written to `coin_r
 
 ---
 
+## 7. Deep Analysis and Parser Implementations
+
+**Full deep analysis**: [NUMISMATIC-CATALOG-REFERENCE-PARSER-ANALYSIS.md](NUMISMATIC-CATALOG-REFERENCE-PARSER-ANALYSIS.md)
+
+### Parser implementations (three places)
+
+1. **Central rule-based parser** (`backend/src/infrastructure/services/catalogs/parser.py`): Single entry point `parse_catalog_reference(raw)` → `{catalog, volume, number}`. Used by LLM router, ReferenceSyncService, bulk enrich, and catalog services (OCRE/CRRO). Supports RIC, Crawford, RPC, RSC, BMCRE, Sear, Sydenham with regex patterns and `ParseResult` (system, volume, number, subtype, normalized, confidence, needs_llm).
+2. **Scraper extraction** (`backend/src/infrastructure/scrapers/shared/reference_patterns.py`): `extract_references(text)` returns scraper `CatalogReference` list; broader catalog set (SNG, MIR, DOC, SB, Babelon, etc.). When refs are persisted (e.g. import), strings are normalized via central parser.
+3. **Frontend** (`frontend/src/lib/referenceLinks.ts`): `parseReference(refString)` for display/link building only; backend is source of truth for create/update and validation.
+
+### Implementation notes (fixed 2026-01-29)
+
+- **get_by_reference**: Catalog normalized to system via `catalog_to_system(catalog)` from `catalog_systems.py` (RRC/Crawford → crawford); query uses `rt.system = :system`. Eager-load added for references and provenance.
+- **API response**: `_reference_to_domain` uses `SYSTEM_TO_DISPLAY` from `catalog_systems.py` so catalog is "RRC"/"RIC"/"RPC".
+- **Create/update**: Empty refs (no catalog or number) filtered before `sync_coin_references`.
+- **Parser expansion (Phase 0–1)**: Single source of truth for catalog/system in `catalog_systems.py`. Per-catalog parsers in `parsers/` (ric, crawford, rpc, rsc, bmcre, sear, sydenham) return `ParsedRef` with volume in Roman for RIC/RPC. Orchestration in `parser.py`: `parse_catalog_reference`, `parse_catalog_reference_full`, `canonical(ref)`. Reference sync uses `local_ref = canonical(parsed)` so equivalent refs dedupe to one `reference_types` row. Domain `CatalogReference` and ORM `ReferenceTypeModel` have optional `variant`, `mint`, `supplement`, `collection`. API request/response and frontend schemas include these optional fields. Migration: `scripts/migrations/add_reference_type_variant_mint_supplement_collection.py`.
+
+**Trace and cohesiveness**: [REFERENCE-BACKEND-FRONTEND-COHESIVENESS.md](REFERENCE-BACKEND-FRONTEND-COHESIVENESS.md).
+
+---
+
 *Generated from codebase analysis. Last updated: 2026-01-29.*

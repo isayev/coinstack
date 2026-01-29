@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { getGradeTier } from '@/utils/gradeUtils'
 
 interface GradeBadgeProps {
   grade: string
@@ -7,26 +8,24 @@ interface GradeBadgeProps {
   className?: string
 }
 
-// Map common grade strings to our design system tiers
-function getGradeTier(grade: string): string {
-  const g = grade.toLowerCase()
-  
-  if (g.includes('ms') || g.includes('unc') || g.includes('fdc') || g.includes('bu')) return 'grade-ms'
-  if (g.includes('au')) return 'grade-au'
-  if (g.includes('ef') || g.includes('xf')) return 'grade-ef'
-  if (g.includes('vf') || g.includes('f')) return 'grade-fine' // Catch-all for Fine/VF
-  if (g.includes('vg') || g.includes('g') || g.includes('good')) return 'grade-good'
-  if (g.includes('poor') || g.includes('fair') || g.includes('ag')) return 'grade-poor'
-  
-  return 'outline'
+/** Badge variant: grade-{tier} for known tiers, outline for unknown */
+const TIER_TO_VARIANT: Record<string, string> = {
+  ms: 'grade-ms',
+  au: 'grade-au',
+  ef: 'grade-ef',
+  fine: 'grade-fine',
+  good: 'grade-good',
+  poor: 'grade-poor',
+  unknown: 'outline',
 }
 
 export function GradeBadge({ grade, service, className }: GradeBadgeProps) {
   const tier = getGradeTier(grade)
-  
+  const variant = TIER_TO_VARIANT[tier] ?? 'outline'
+
   return (
     <div className={cn("flex items-center gap-1", className)}>
-      <Badge variant={tier as any} className="font-mono font-bold tracking-tight">
+      <Badge variant={variant} className="font-mono font-bold tracking-tight">
         {grade}
       </Badge>
       {service && service !== 'none' && (

@@ -21,6 +21,7 @@ export function ReferenceListEditor({ form }: ReferenceListProps) {
         append({
             catalog: "",
             number: "",
+            volume: null,
             is_primary: false,
         } as CatalogReference)
     }
@@ -39,17 +40,21 @@ export function ReferenceListEditor({ form }: ReferenceListProps) {
                 {fields.map((field, index) => (
                     <div key={field.id} className="relative group border rounded-lg p-3 bg-card hover:bg-muted/30 transition-colors flex gap-2 items-start">
                         <div className="grid grid-cols-12 gap-2 flex-1">
-                            <div className="col-span-4 space-y-1">
+                            <div className="col-span-3 space-y-1">
                                 <label className="text-[10px] uppercase text-muted-foreground font-semibold">Catalog</label>
-                                <Input {...register(`references.${index}.catalog`)} placeholder="e.g. RPC" className="h-8 text-sm" />
+                                <Input {...register(`references.${index}.catalog`)} placeholder="e.g. RIC, RPC, RRC" className="h-8 text-sm" />
+                            </div>
+                            <div className="col-span-2 space-y-1">
+                                <label className="text-[10px] uppercase text-muted-foreground font-semibold">Vol</label>
+                                <Input {...register(`references.${index}.volume`)} placeholder="e.g. II, I" className="h-8 text-sm" />
                             </div>
                             <div className="col-span-3 space-y-1">
                                 <label className="text-[10px] uppercase text-muted-foreground font-semibold">Number</label>
-                                <Input {...register(`references.${index}.number`)} placeholder="e.g. 1234" className="h-8 text-sm" />
+                                <Input {...register(`references.${index}.number`)} placeholder="e.g. 756, 44/5" className="h-8 text-sm" />
                             </div>
-                            <div className="col-span-5 space-y-1">
-                                <label className="text-[10px] uppercase text-muted-foreground font-semibold">Notes / Vol / Page</label>
-                                <Input {...register(`references.${index}.notes`)} placeholder="Vol 1, p. 23" className="h-8 text-sm" />
+                            <div className="col-span-4 space-y-1">
+                                <label className="text-[10px] uppercase text-muted-foreground font-semibold">Notes</label>
+                                <Input {...register(`references.${index}.notes`)} placeholder="Page, plate, etc." className="h-8 text-sm" />
                             </div>
                         </div>
                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground mt-5" onClick={() => remove(index)}>

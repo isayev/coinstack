@@ -14,19 +14,33 @@ from src.infrastructure.persistence.orm import (
     CoinReferenceModel,
     ReferenceTypeModel,
 )
-from src.infrastructure.services.catalogs.parser import parse_catalog_reference
+from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system
+from src.infrastructure.services.catalogs.parser import (
+    parse_catalog_reference,
+    parse_catalog_reference_full,
+    canonical,
+)
 
 
 def _normalize_ref_input(
     ref: Union[str, Dict[str, Any]]
 ) -> Dict[str, Any]:
-    """Normalize a ref (string or dict) to dict with catalog, number, volume, raw_text, is_primary, notes."""
+    """Normalize a ref (string or dict) to dict with catalog, number, volume, local_ref, raw_text, is_primary, notes.
+    local_ref is always canonical so that equivalent refs (e.g. 'RIC IV-1 351 b' and dict RIC IV.1 351b) dedupe to one row.
+    """
     if isinstance(ref, str):
-        parsed = parse_catalog_reference(ref)
+        parsed = parse_catalog_reference(ref.strip())
+        full = parse_catalog_reference_full(ref.strip())
+        local_ref = canonical(parsed) if (parsed.get("catalog") and parsed.get("number")) else ref.strip()
         return {
             "catalog": parsed.get("catalog") or "Unknown",
             "number": parsed.get("number") or "",
             "volume": parsed.get("volume"),
+            "variant": full.subtype if full.system else None,
+            "mint": getattr(full, "mint", None),
+            "supplement": getattr(full, "supplement", None),
+            "collection": getattr(full, "collection", None),
+            "local_ref": local_ref,
             "raw_text": ref.strip(),
             "is_primary": False,
             "notes": None,
@@ -35,21 +49,18 @@ def _normalize_ref_input(
         "catalog": (ref.get("catalog") or "Unknown").strip(),
         "number": (ref.get("number") or "").strip(),
         "volume": ref.get("volume"),
+        "variant": ref.get("variant"),
+        "mint": ref.get("mint"),
+        "supplement": ref.get("supplement"),
+        "collection": ref.get("collection"),
         "raw_text": (ref.get("raw_text") or "").strip(),
         "is_primary": bool(ref.get("is_primary")),
         "notes": ref.get("notes"),
     }
     if not out["raw_text"] and (out["catalog"] or out["number"]):
         out["raw_text"] = f"{out['catalog']} {out.get('volume') or ''} {out['number']}".strip()
+    out["local_ref"] = canonical(out) if (out["catalog"] and out["catalog"] != "Unknown" and out["number"]) else out["raw_text"]
     return out
-
-
-def _system_from_catalog(catalog: str) -> str:
-    """Map display catalog to reference_types.system (lowercase). RRC -> crawford."""
-    c = (catalog or "").strip().lower()
-    if c == "rrc":
-        return "crawford"
-    return c or "unknown"
 
 
 def sync_coin_references(
@@ -80,12 +91,12 @@ def sync_coin_references(
         return
 
     normalized = [_normalize_ref_input(r) for r in refs]
-    # Deduplicate by (system, local_ref) keeping first occurrence
+    # Deduplicate by (system, local_ref) keeping first occurrence; local_ref is canonical
     seen: set = set()
     unique_refs: List[Dict[str, Any]] = []
     for n in normalized:
-        system = _system_from_catalog(n["catalog"])
-        local_ref = n["raw_text"] or f"{n['catalog']} {n.get('volume') or ''} {n['number']}".strip()
+        system = catalog_to_system(n["catalog"])
+        local_ref = n.get("local_ref") or n["raw_text"] or f"{n['catalog']} {n.get('volume') or ''} {n['number']}".strip()
         key = (system, local_ref)
         if key in seen:
             continue
@@ -100,8 +111,8 @@ def sync_coin_references(
     ref_meta: List[Dict[str, Any]] = []  # is_primary, notes per ref
 
     for n in unique_refs:
-        system = _system_from_catalog(n["catalog"])
-        local_ref = n["raw_text"] or f"{n['catalog']} {n.get('volume') or ''} {n['number']}".strip()
+        system = catalog_to_system(n["catalog"])
+        local_ref = n.get("local_ref") or n["raw_text"] or f"{n['catalog']} {n.get('volume') or ''} {n['number']}".strip()
         volume = n.get("volume")
         number = n.get("number") or ""
 
@@ -119,6 +130,10 @@ def sync_coin_references(
                 local_ref=local_ref,
                 volume=volume,
                 number=number,
+                variant=n.get("variant"),
+                mint=n.get("mint"),
+                supplement=n.get("supplement"),
+                collection=n.get("collection"),
             )
             session.add(rt)
             session.flush()

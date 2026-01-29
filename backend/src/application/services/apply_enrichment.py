@@ -8,6 +8,7 @@ from dataclasses import replace
 from typing import Any, List, Optional
 
 from src.domain.coin import Coin, Attribution, GradingDetails, Design
+from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.enrichment import (
     ALLOWED_FIELDS,
     EnrichmentApplication,
@@ -57,7 +58,7 @@ def _apply_field(coin: Coin, field_name: str, new_value: Any) -> Coin:
         g = coin.grading
         updated_grading = GradingDetails(
             grading_state=g.grading_state,
-            grade=val,
+            grade=normalize_grade_for_storage(val) or val or g.grade,
             service=g.service,
             certification_number=g.certification_number,
             strike=g.strike,

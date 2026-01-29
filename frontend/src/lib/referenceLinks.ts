@@ -25,6 +25,10 @@ export interface CatalogReference {
   raw_text?: string | null;
   /** Origin: user | import | scraper | llm_approved | catalog_lookup */
   source?: string | null;
+  variant?: string | null;   // e.g. "a", "b" (RIC, Crawford)
+  mint?: string | null;     // RIC mint code
+  supplement?: string | null;  // RPC S, S2
+  collection?: string | null;  // SNG collection
 }
 
 /**

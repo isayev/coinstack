@@ -11,6 +11,7 @@ from . import die_study
 from . import stats
 from . import review
 from . import catalog
+from . import catalog_v2
 
 __all__ = [
     "v2",
@@ -25,4 +26,5 @@ __all__ = [
     "stats",
     "review",
     "catalog",
+    "catalog_v2",
 ]

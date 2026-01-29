@@ -124,13 +124,18 @@ class Design:
 class CatalogReference:
     """A single catalog reference for a coin."""
     catalog: str              # "RIC", "Crawford", "Sear", "RSC", "RPC", "BMC", "SNG"
-    number: str               # "756", "44/5", "1234a"
-    volume: Optional[str] = None   # "II", "V.1", etc.
+    number: str               # "756", "44/5", "1234a" (may include variant e.g. 351b)
+    volume: Optional[str] = None   # "II", "V.1", etc. (Roman for RIC/RPC)
     suffix: Optional[str] = None   # Additional qualifiers
     raw_text: str = ""        # Original text as found
     is_primary: bool = False  # Primary reference for this coin
     notes: Optional[str] = None  # Additional notes about this reference
     source: Optional[str] = None   # "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
+    # Optional catalog-specific fields (backward compatible)
+    variant: Optional[str] = None   # e.g. "a", "b" (RIC, Crawford, DOC)
+    mint: Optional[str] = None     # RIC VI+ mint code, BMCRR/BMC Greek
+    supplement: Optional[str] = None  # RPC "S", "S2"
+    collection: Optional[str] = None  # SNG collection (e.g. "Copenhagen", "ANS")
 
 @dataclass(frozen=True)
 class ProvenanceEntry:

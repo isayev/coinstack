@@ -9,6 +9,7 @@ from src.domain.coin import (
 )
 from src.domain.repositories import ICoinRepository
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
+from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system, SYSTEM_TO_DISPLAY
 
 class SqlAlchemyCoinRepository(ICoinRepository):
     def __init__(self, session: Session):
@@ -157,22 +158,28 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         Find coins by catalog reference.
         
         Searches the coin_references table and returns matching coins.
+        catalog: Display name (RIC, Crawford, RRC, RPC, etc.) — normalized to
+        reference_types.system (ric, crawford, rpc) before query.
         """
         from sqlalchemy import text
         
+        # Normalize API catalog to reference_types.system (lowercase; RRC/Crawford -> crawford)
+        system = catalog_to_system(catalog)
+        if not system or not number:
+            return []
+
         # Build query to find coin IDs from coin_references via reference_types
-        # The V1 schema uses: coin_references -> reference_types (with system, volume, number)
         if volume:
             result = self.session.execute(
                 text("""
                     SELECT DISTINCT cr.coin_id 
                     FROM coin_references cr
                     JOIN reference_types rt ON cr.reference_type_id = rt.id
-                    WHERE UPPER(rt.system) = UPPER(:catalog)
+                    WHERE rt.system = :system
                       AND rt.number = :number
                       AND rt.volume = :volume
                 """),
-                {"catalog": catalog, "number": number, "volume": volume}
+                {"system": system, "number": number, "volume": volume}
             )
         else:
             result = self.session.execute(
@@ -180,10 +187,10 @@ class SqlAlchemyCoinRepository(ICoinRepository):
                     SELECT DISTINCT cr.coin_id 
                     FROM coin_references cr
                     JOIN reference_types rt ON cr.reference_type_id = rt.id
-                    WHERE UPPER(rt.system) = UPPER(:catalog)
+                    WHERE rt.system = :system
                       AND rt.number = :number
                 """),
-                {"catalog": catalog, "number": number}
+                {"system": system, "number": number}
             )
         
         coin_ids = [row[0] for row in result.fetchall()]
@@ -191,18 +198,15 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         if not coin_ids:
             return []
         
-        # Fetch the actual coins
+        # Fetch coins with references eager-loaded to avoid N+1 when serializing
         orm_coins = self.session.query(CoinModel).options(
-            selectinload(CoinModel.images)
+            selectinload(CoinModel.images),
+            selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),
+            selectinload(CoinModel.provenance_events),
         ).filter(CoinModel.id.in_(coin_ids)).all()
         
         return [self._to_domain(c) for c in orm_coins]
-    
-        if conditions:
-            query = query.filter(and_(*conditions))
-        
-        return query
-        
+
     def _apply_filters(self, query, filters: Optional[Dict[str, Any]]):
         """Apply filter conditions to a query."""
         from sqlalchemy import and_, or_, func
@@ -398,9 +402,11 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         
         # Build raw text from local_ref or construct from parts
         raw_text = ref_type.local_ref or f"{ref_type.system.upper()} {ref_type.volume or ''} {ref_type.number or ''}".strip()
+        # Use display catalog (e.g. RRC for crawford) for API consistency
+        catalog_display = SYSTEM_TO_DISPLAY.get(ref_type.system) or ref_type.system.upper()
         
         return CatalogReference(
-            catalog=ref_type.system.upper(),
+            catalog=catalog_display,
             number=ref_type.number or "",
             volume=ref_type.volume,
             suffix=None,  # Not stored in V1 schema
@@ -408,6 +414,10 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             is_primary=model.is_primary or False,
             notes=model.notes,
             source=model.source,
+            variant=getattr(ref_type, "variant", None),
+            mint=getattr(ref_type, "mint", None),
+            supplement=getattr(ref_type, "supplement", None),
+            collection=getattr(ref_type, "collection", None),
         )
     
     def _provenance_to_domain(self, model: ProvenanceEventModel) -> ProvenanceEntry:

@@ -221,6 +221,10 @@ export const CatalogReferenceSchema = z.object({
   notes: z.string().nullable().optional(),
   raw_text: z.string().nullable().optional(),
   source: z.string().nullable().optional(), // "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
+  variant: z.string().nullable().optional(),   // e.g. "a", "b" (RIC, Crawford)
+  mint: z.string().nullable().optional(),       // RIC mint code
+  supplement: z.string().nullable().optional(),  // RPC S, S2
+  collection: z.string().nullable().optional(), // SNG collection
 }).nullable().optional();
 
 export type CatalogReference = z.infer<typeof CatalogReferenceSchema>;

@@ -310,13 +310,18 @@ class ReferenceTypeModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     system: Mapped[str] = mapped_column(String(20))  # ric, crawford, sear, rpc, etc.
-    local_ref: Mapped[str] = mapped_column(String(100))  # "RIC I 207", original text
+    local_ref: Mapped[str] = mapped_column(String(100))  # canonical form e.g. "RIC I 207"
     local_ref_normalized: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # "I", "II", etc.
+    volume: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # Roman for RIC/RPC
     number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "207", "335/1c"
     external_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     external_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    
+    # Optional catalog-specific (backward compatible; add columns with NULL for existing DBs)
+    variant: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)   # e.g. "a", "b"
+    mint: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)       # RIC mint code
+    supplement: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # RPC S, S2
+    collection: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # SNG collection
+
     # Relationships
     coin_references: Mapped[List["CoinReferenceModel"]] = relationship(back_populates="reference_type")
 

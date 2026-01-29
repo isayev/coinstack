@@ -22,6 +22,7 @@
 - LLM: `src/infrastructure/web/routers/llm.py`
 - Provenance: `src/infrastructure/web/routers/provenance.py`
 - Die Study: `src/infrastructure/web/routers/die_study.py`
+- Catalog Parse: `src/infrastructure/web/routers/catalog_v2.py` (`/api/v2/catalog`)
 
 ---
 
@@ -739,6 +740,34 @@ GET /api/catalog/job/{job_id}
 ```
 
 **Response**: `{ job_id, status, progress, total, updated, conflicts, not_found, errors, results?, error_message?, started_at?, completed_at? }`
+
+---
+
+## Catalog Parse API (`/api/v2/catalog`)
+
+**Router**: `src/infrastructure/web/routers/catalog_v2.py`
+
+Parser expansion: parse reference strings and list supported catalog systems (no persistence).
+
+### Parse Reference
+
+```http
+POST /api/v2/catalog/parse
+```
+
+**Request Body**: `{ "raw": "RIC IV.1 351b" }`
+
+**Response**: `{ ref?: CatalogReferenceResponse, confidence: number, warnings: string[], alternatives: CatalogReferenceResponse[] }`
+
+Use for import preview or reference field validation without persisting. Volume in `ref` is Roman for RIC/RPC.
+
+### List Catalog Systems
+
+```http
+GET /api/v2/catalog/systems
+```
+
+**Response**: `{ "ric": "RIC", "crawford": "RRC", "rpc": "RPC", ... }` — system key → display name for all supported catalogs.
 
 ---
 

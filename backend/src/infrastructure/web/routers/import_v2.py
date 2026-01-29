@@ -866,6 +866,7 @@ async def confirm_import(
         # ============================================================================
         # BUILD COMPLETE COIN ENTITY - Handle ALL fields from frontend
         # ============================================================================
+        from src.application.services.grade_normalizer import normalize_grade_for_storage
         from src.domain.coin import (
             Coin, Dimensions, Attribution, Category, Metal, 
             GradingDetails, GradingState, GradeService, AcquisitionDetails,
@@ -897,7 +898,7 @@ async def confirm_import(
         
         grading = GradingDetails(
             grading_state=grading_state_enum,
-            grade=data.get("grade") or "Unknown",
+            grade=normalize_grade_for_storage(data.get("grade")) or "Unknown",
             service=grade_service_enum,
             certification_number=data.get("certification_number")
         )
