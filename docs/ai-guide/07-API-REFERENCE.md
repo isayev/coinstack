@@ -203,7 +203,9 @@ POST /api/v2/coins
 PUT /api/v2/coins/{id}
 ```
 
-**Request Body**: `UpdateCoinRequest` (all fields optional, partial update supported)
+**Request Body**: Same shape as create (`CreateCoinRequest`). Required fields (e.g. `category`, `metal`, `diameter_mm`, `issuer`, `grading_state`, `grade`) must be present; optional fields can be omitted for partial update.
+
+**Design / legends**: The backend expects **`design` as a nested object** with `obverse_legend`, `obverse_description`, `reverse_legend`, `reverse_description`, `exergue`. Sending these as top-level keys will not update design.
 
 To **clear** an optional string field (e.g. `portrait_subject`, `denomination`), send it explicitly as `null`. Omitting the key leaves the existing value unchanged.
 

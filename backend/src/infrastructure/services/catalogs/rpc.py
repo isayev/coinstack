@@ -53,12 +53,11 @@ class RPCService(CatalogService):
         
         if result.system != "rpc":
             return None
-        # Unified parser stores variant as subtype; RPC external_id uses number+variant (e.g. 3622C)
-        number = (result.number or "") + (result.subtype or "")
+            
         return {
             "system": "rpc",
             "volume": result.volume,
-            "number": number or result.number,
+            "number": result.number,
         }
     
     async def build_reconcile_query(

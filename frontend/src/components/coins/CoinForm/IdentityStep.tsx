@@ -60,7 +60,6 @@ export function IdentityStep({ form, onReferenceSelect, tentativeFields }: Ident
                             onSelectSuggestion={(s) => {
                                 onReferenceSelect(s)
                             }}
-                            coinContext={issuer || mint ? { ruler: issuer ?? undefined, mint: mint ?? undefined } : undefined}
                             placeholder="Type catalog ID (e.g. RIC III 712, RPC I 4374)..."
                         />
                         <p className="text-xs text-muted-foreground italic">

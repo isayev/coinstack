@@ -315,12 +315,16 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
     acquisition_url: coin.acquisition?.url,
     acquisition_currency: coin.acquisition?.currency,
 
-    // Design
-    obverse_legend: coin.design?.obverse_legend,
-    obverse_description: coin.design?.obverse_description,
-    reverse_legend: coin.design?.reverse_legend,
-    reverse_description: coin.design?.reverse_description,
-    exergue: coin.design?.exergue,
+    // Design (backend expects nested object; flat keys are ignored by CreateCoinRequest)
+    design: coin.design
+      ? {
+          obverse_legend: coin.design.obverse_legend ?? null,
+          obverse_description: coin.design.obverse_description ?? null,
+          reverse_legend: coin.design.reverse_legend ?? null,
+          reverse_description: coin.design.reverse_description ?? null,
+          exergue: coin.design.exergue ?? null,
+        }
+      : null,
 
     // Attribution extensions (send null when empty so backend can clear on update)
     portrait_subject: coin.portrait_subject?.trim() || null,
