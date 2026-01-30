@@ -21,16 +21,14 @@ import { useFilterStore, SortField } from '@/stores/filterStore';
 import { useSelection } from '@/stores/selectionStore';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, useCallback, forwardRef } from 'react';
+import { Virtuoso, VirtuosoGrid } from 'react-virtuoso';
 
 export function CoinList() {
   const { viewMode, setViewMode } = useUIStore();
   const { toParams, sortBy, sortDir, setSort, toggleSortDir } = useFilterStore();
   const { selectedIds, toggle, selectAll, clear, isSelected } = useSelection();
   const navigate = useNavigate();
-
-  // Use generic for the observer ref to avoid TS errors
-  const observerTarget = useRef<HTMLDivElement>(null);
 
   // Memoize query params to prevent stale closure issues in queryFn
   const queryParams = useMemo(() => toParams(), [toParams]);
@@ -70,24 +68,6 @@ export function CoinList() {
 
   const allIds = coins.map((coin) => coin.id).filter((id): id is number => id !== null);
   const allSelected = coins.length > 0 && allIds.every((id) => selectedIds.has(id));
-
-  // Intersection Observer for Infinite Scroll
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage, viewMode]);
 
   // Selection handlers
   const handleSelect = (coinId: number) => {
@@ -138,11 +118,8 @@ export function CoinList() {
   };
 
   // Shared Sentinel Component
-  const Sentinel = (
-    <div
-      ref={observerTarget}
-      className="h-20 flex items-center justify-center p-4 w-full"
-    >
+  const Sentinel = useCallback(() => (
+    <div className="h-24 flex items-center justify-center p-4 w-full">
       {isFetchingNextPage ? (
         <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground animate-pulse">
           <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -154,7 +131,18 @@ export function CoinList() {
         <span className="text-xs text-muted-foreground">All {total} coins loaded</span>
       ) : null}
     </div>
-  );
+  ), [isFetchingNextPage, hasNextPage, coins.length, total]);
+
+  // Grid list component for VirtuosoGrid
+  const GridList = useMemo(() => forwardRef<HTMLDivElement, any>(({ children, ...props }, ref) => (
+    <div
+      ref={ref}
+      {...props}
+      className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5 gap-4"
+    >
+      {children}
+    </div>
+  )), []);
 
   // Loading state (initial)
   if (status === 'pending') {
@@ -236,7 +224,7 @@ export function CoinList() {
     <div className="space-y-4">
       {/* Toolbar - Modern 2026 Design */}
       <div className="flex justify-between items-center gap-4">
-        {/* Left: Selection indicator (Sort is now in headers) */}
+        {/* Left: Selection indicator */}
         <div className="flex items-center gap-3">
           {selectedIds.size > 0 && (
             <div
@@ -277,27 +265,30 @@ export function CoinList() {
         </div>
       </div>
 
-      {/* Content: Grid or Table */}
+      {/* Content: Virtualized Grid or Table */}
       {viewMode === 'grid' ? (
-        /* Grid View - Fewer columns for wider cards */
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 3xl:grid-cols-4 4xl:grid-cols-5 gap-4">
-            {coins.map((coin, index) => (
-              <CoinCard
-                key={`${coin.id}-${index}`} // Use index fallback to prevent duplicate key errors during refetch
-                coin={coin}
-                onClick={() => handleCoinClick(coin.id)}
-                selected={coin.id !== null && isSelected(coin.id)}
-                onSelect={handleSelect}
-                gridIndex={index}
-              />
-            ))}
-          </div>
-          {/* Detailed Sentinel for Grid View */}
-          {Sentinel}
-        </>
+        <VirtuosoGrid
+          useWindowScroll
+          data={coins}
+          endReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
+          components={{
+            List: GridList,
+            Footer: Sentinel
+          }}
+          itemContent={(index, coin) => (
+            <CoinCard
+              key={coin.id || index}
+              coin={coin}
+              onClick={() => handleCoinClick(coin.id)}
+              selected={coin.id !== null && isSelected(coin.id)}
+              onSelect={handleSelect}
+              gridIndex={index}
+            />
+          )}
+        />
       ) : (
-        /* Table View - Clean grid without outer container */
         <div className="w-full">
           <CoinTableHeader
             allSelected={allSelected}
@@ -306,21 +297,28 @@ export function CoinList() {
             sortDirection={sortDir as 'asc' | 'desc'}
             onSort={handleSort}
           />
-          <div className="pb-20"> {/* Add padding for bottom scroll */}
-            {coins.map((coin, index) => (
+          <Virtuoso
+            useWindowScroll
+            data={coins}
+            endReached={() => {
+              if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+            }}
+            components={{
+              Footer: Sentinel
+            }}
+            itemContent={(index, coin) => (
               <CoinTableRow
-                key={`${coin.id}-${index}`}
+                key={coin.id || index}
                 coin={coin}
                 selected={coin.id !== null && isSelected(coin.id)}
                 onSelect={handleSelect}
                 onClick={() => handleCoinClick(coin.id)}
               />
-            ))}
-            {/* Detailed Sentinel inside Table View container */}
-            {Sentinel}
-          </div>
+            )}
+          />
         </div>
       )}
     </div>
   );
 }
+

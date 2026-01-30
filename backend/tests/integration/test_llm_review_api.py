@@ -245,7 +245,7 @@ def test_llm_review_approve_applies_rarity_and_refs(client: TestClient, db_sessi
     orm_coin = db_session.get(CoinModel, saved.id)
     assert orm_coin.llm_suggested_references is None
     assert orm_coin.llm_suggested_rarity is None
-    assert orm_coin.rarity in ("C", "Common")
+    assert orm_coin.rarity in ("c", "Common")
     assert orm_coin.rarity_notes is not None
 
 

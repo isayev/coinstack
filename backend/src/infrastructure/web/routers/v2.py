@@ -281,13 +281,13 @@ class CoinResponse(BaseModel):
             personal_notes=coin.personal_notes,
             rarity=coin.rarity,
             rarity_notes=coin.rarity_notes,
-            historical_significance=coin.historical_significance,
-            llm_enriched_at=coin.llm_enriched_at,
-            llm_analysis_sections=coin.llm_analysis_sections,
-            llm_suggested_references=coin.llm_suggested_references,
-            llm_suggested_rarity=coin.llm_suggested_rarity,
-            llm_suggested_design=coin.llm_suggested_design,
-            llm_suggested_attribution=coin.llm_suggested_attribution,
+            historical_significance=coin.enrichment.historical_significance if coin.enrichment else None,
+            llm_enriched_at=coin.enrichment.enriched_at if coin.enrichment else None,
+            llm_analysis_sections=coin.enrichment.analysis_sections if coin.enrichment else None,
+            llm_suggested_references=coin.enrichment.suggested_references if coin.enrichment else None,
+            llm_suggested_rarity=coin.enrichment.suggested_rarity if coin.enrichment else None,
+            llm_suggested_design=coin.enrichment.suggested_design if coin.enrichment else None,
+            llm_suggested_attribution=coin.enrichment.suggested_attribution if coin.enrichment else None,
 
             # Extensions mapping
             issue_status=coin.issue_status.value,
@@ -631,13 +631,7 @@ def update_coin(
             description=existing_coin.description,
             references=existing_coin.references,
             provenance=existing_coin.provenance,
-            historical_significance=existing_coin.historical_significance,
-            llm_enriched_at=existing_coin.llm_enriched_at,
-            llm_analysis_sections=existing_coin.llm_analysis_sections,
-            llm_suggested_references=existing_coin.llm_suggested_references,
-            llm_suggested_rarity=existing_coin.llm_suggested_rarity,
-            llm_suggested_design=existing_coin.llm_suggested_design,
-            llm_suggested_attribution=existing_coin.llm_suggested_attribution,
+            enrichment=existing_coin.enrichment,
         )
         
         # Add images manually here since DTO/UseCase flow is pending update

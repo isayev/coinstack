@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
-from datetime import date
+from typing import List, Dict, Any, Self
+from datetime import date as DateType
 from decimal import Decimal
 from enum import Enum
 
@@ -62,12 +62,12 @@ class IssueStatus(str, Enum):
 
 # --- Value Objects ---
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Dimensions:
     diameter_mm: Decimal
-    weight_g: Optional[Decimal] = None  # Optional e.g. slabbed coins where weight cannot be measured
-    die_axis: Optional[int] = None
-    specific_gravity: Optional[Decimal] = None
+    weight_g: Decimal | None = None  # Optional e.g. slabbed coins where weight cannot be measured
+    die_axis: int | None = None
+    specific_gravity: Decimal | None = None
 
     def __post_init__(self):
         if self.weight_g is not None and self.weight_g < 0:
@@ -77,145 +77,150 @@ class Dimensions:
         if self.die_axis is not None and not (0 <= self.die_axis <= 12):
             raise ValueError("Die axis must be between 0 and 12")
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Attribution:
     issuer: str
-    issuer_id: Optional[int] = None
-    mint: Optional[str] = None
-    mint_id: Optional[int] = None
-    year_start: Optional[int] = None
-    year_end: Optional[int] = None
+    issuer_id: int | None = None
+    mint: str | None = None
+    mint_id: int | None = None
+    year_start: int | None = None
+    year_end: int | None = None
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GradingDetails:
     grading_state: GradingState
     grade: str
-    service: Optional[GradeService] = None
-    certification_number: Optional[str] = None
-    strike: Optional[str] = None
-    surface: Optional[str] = None
+    service: GradeService | None = None
+    certification_number: str | None = None
+    strike: str | None = None
+    surface: str | None = None
 
     def __post_init__(self):
         if self.grading_state == GradingState.SLABBED and not self.service:
             raise ValueError("Slabbed coins must have a grading service specified")
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AcquisitionDetails:
     price: Decimal
     currency: str
     source: str
-    date: Optional[date] = None
-    url: Optional[str] = None
+    date: DateType | None = None
+    url: str | None = None
 
     def __post_init__(self):
         if self.price < 0:
             raise ValueError("Price cannot be negative")
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Design:
     """Coin design details - legends, descriptions, and exergue text."""
-    obverse_legend: Optional[str] = None       # "IMP CAES DOMIT AVG GERM COS XVI..."
-    obverse_description: Optional[str] = None  # "laureate head of Domitian right"
-    reverse_legend: Optional[str] = None       # "MONETA AVGVSTI"
-    reverse_description: Optional[str] = None  # "Moneta standing left, holding scales"
-    exergue: Optional[str] = None              # Text below main reverse design
+    obverse_legend: str | None = None       # "IMP CAES DOMIT AVG GERM COS XVI..."
+    obverse_description: str | None = None  # "laureate head of Domitian right"
+    reverse_legend: str | None = None       # "MONETA AVGVSTI"
+    reverse_description: str | None = None  # "Moneta standing left, holding scales"
+    exergue: str | None = None              # Text below main reverse design
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CatalogReference:
     """A single catalog reference for a coin."""
     catalog: str              # "RIC", "Crawford", "Sear", "RSC", "RPC", "BMC", "SNG"
     number: str               # "756", "44/5", "1234a" (may include variant e.g. 351b)
-    volume: Optional[str] = None   # "II", "V.1", etc. (Roman for RIC/RPC)
-    suffix: Optional[str] = None   # Additional qualifiers
+    volume: str | None = None   # "II", "V.1", etc. (Roman for RIC/RPC)
+    suffix: str | None = None   # Additional qualifiers
     raw_text: str = ""        # Original text as found
     is_primary: bool = False  # Primary reference for this coin
-    notes: Optional[str] = None  # Additional notes about this reference
-    source: Optional[str] = None   # "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
+    notes: str | None = None  # Additional notes about this reference
+    source: str | None = None   # "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
     # Optional catalog-specific fields (backward compatible)
-    variant: Optional[str] = None   # e.g. "a", "b" (RIC, Crawford, DOC)
-    mint: Optional[str] = None     # RIC VI+ mint code, BMCRR/BMC Greek
-    supplement: Optional[str] = None  # RPC "S", "S2"
-    collection: Optional[str] = None  # SNG collection (e.g. "Copenhagen", "ANS")
+    variant: str | None = None   # e.g. "a", "b" (RIC, Crawford, DOC)
+    mint: str | None = None     # RIC VI+ mint code, BMCRR/BMC Greek
+    supplement: str | None = None  # RPC "S", "S2"
+    collection: str | None = None  # SNG collection (e.g. "Copenhagen", "ANS")
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ProvenanceEntry:
     """A single provenance event in a coin's ownership history."""
     source_type: str          # "collection", "auction", "dealer", "private_sale"
     source_name: str          # "Hunt Collection", "Heritage", "CNG"
-    event_date: Optional[date] = None
-    lot_number: Optional[str] = None
-    notes: Optional[str] = None
+    event_date: DateType | None = None
+    lot_number: str | None = None
+    notes: str | None = None
     raw_text: str = ""
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CoinImage:
     """Represents an image of the coin."""
     url: str
     image_type: str # 'obverse', 'reverse', 'slab', etc.
     is_primary: bool = False
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Monogram:
     """Represents a Monogram linked to a coin."""
-    id: Optional[int]
+    id: int | None
     label: str
-    image_url: Optional[str] = None
-    vector_data: Optional[str] = None
+    image_url: str | None = None
+    vector_data: str | None = None
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DieInfo:
     """Research-grade die study information."""
-    obverse_die_id: Optional[str] = None
-    reverse_die_id: Optional[str] = None
+    obverse_die_id: str | None = None
+    reverse_die_id: str | None = None
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FindData:
     """Archaeological context or find data."""
-    find_spot: Optional[str] = None
-    find_date: Optional[date] = None
+    find_spot: str | None = None
+    find_date: DateType | None = None
+
+@dataclass(frozen=True, slots=True)
+class EnrichmentData:
+    """LLM-generated enrichment data and suggestions."""
+    historical_significance: str | None = None
+    enriched_at: str | None = None
+    analysis_sections: str | None = None     # JSON-encoded analysis sections
+    suggested_references: List[str] | None = None
+    suggested_rarity: Dict[str, Any] | None = None
+    suggested_design: Dict[str, Any] | None = None
+    suggested_attribution: Dict[str, Any] | None = None
 
 # --- Aggregate Root ---
 
 @dataclass
 class Coin:
-    id: Optional[int]
+    id: int | None
     category: Category
     metal: Metal
     dimensions: Dimensions
     attribution: Attribution
     grading: GradingDetails
-    acquisition: Optional[AcquisitionDetails] = None
-    description: Optional[str] = None
+    acquisition: AcquisitionDetails | None = None
+    description: str | None = None
     images: List[CoinImage] = field(default_factory=list)
     # New fields from expert review
-    denomination: Optional[str] = None              # "denarius", "antoninianus", "sestertius"
-    portrait_subject: Optional[str] = None          # When different from issuer (e.g., heir, empress)
-    design: Optional[Design] = None                 # Legends and descriptions
+    denomination: str | None = None              # "denarius", "antoninianus", "sestertius"
+    portrait_subject: str | None = None          # When different from issuer (e.g., heir, empress)
+    design: Design | None = None                 # Legends and descriptions
     references: List[CatalogReference] = field(default_factory=list)  # RIC, Crawford, etc.
     provenance: List[ProvenanceEntry] = field(default_factory=list)   # Ownership history
     
     # --- Research Grade Extensions ---
     issue_status: IssueStatus = IssueStatus.OFFICIAL
-    die_info: Optional[DieInfo] = None
+    die_info: DieInfo | None = None
     monograms: List[Monogram] = field(default_factory=list)
-    secondary_treatments: Optional[List[Dict[str, Any]]] = None # JSON structure
-    find_data: Optional[FindData] = None
+    secondary_treatments: List[Dict[str, Any]] | None = None # JSON structure
+    find_data: FindData | None = None
 
     # Collection management
-    storage_location: Optional[str] = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
-    personal_notes: Optional[str] = None            # Owner notes, observations, research
+    storage_location: str | None = None          # Physical location (e.g., "SlabBox1", "Velv2-5-1")
+    personal_notes: str | None = None            # Owner notes, observations, research
     # Rarity (numismatic)
-    rarity: Optional[str] = None                     # RIC-style code: C, S, R1-R5, RR, RRR, UNIQUE
-    rarity_notes: Optional[str] = None              # Source or description
+    rarity: str | None = None                     # RIC-style code: C, S, R1-R5, RR, RRR, UNIQUE
+    rarity_notes: str | None = None              # Source or description
 
     # LLM enrichment
-    historical_significance: Optional[str] = None   # LLM-generated historical context
-    llm_enriched_at: Optional[str] = None           # Timestamp of last LLM enrichment
-    llm_analysis_sections: Optional[str] = None     # JSON-encoded analysis sections
-    llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
-    llm_suggested_rarity: Optional[Dict[str, Any]] = None  # Rarity info from LLM for audit
-    llm_suggested_design: Optional[Dict[str, Any]] = None   # Design suggestions: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
-    llm_suggested_attribution: Optional[Dict[str, Any]] = None  # Attribution suggestions: issuer, mint, denomination, year_start, year_end
+    enrichment: EnrichmentData | None = None
 
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None
@@ -234,7 +239,7 @@ class Coin:
         self.images.append(CoinImage(url, image_type, is_primary))
     
     @property
-    def primary_image(self) -> Optional[CoinImage]:
+    def primary_image(self) -> CoinImage | None:
         for img in self.images:
             if img.is_primary:
                 return img

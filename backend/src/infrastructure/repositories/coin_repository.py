@@ -2,14 +2,11 @@ import json
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import and_
-from src.domain.coin import (
-    Coin, Dimensions, Attribution, Category, Metal, 
-    GradingDetails, AcquisitionDetails, GradingState, GradeService, CoinImage,
-    Design, CatalogReference, ProvenanceEntry, IssueStatus, DieInfo, Monogram, FindData
-)
+from src.domain.coin import Coin, CoinImage
 from src.domain.repositories import ICoinRepository
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
 from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system, SYSTEM_TO_DISPLAY
+from src.infrastructure.mappers.coin_mapper import CoinMapper
 
 class SqlAlchemyCoinRepository(ICoinRepository):
     def __init__(self, session: Session):
@@ -17,18 +14,45 @@ class SqlAlchemyCoinRepository(ICoinRepository):
 
     def save(self, coin: Coin) -> Coin:
         # Map Domain -> ORM using the helper method
-        orm_coin = self._to_model(coin)
+        orm_coin = CoinMapper.to_model(coin)
         
-        # Handle Images (separate from _to_model because images are value objects)
-        # For simplicity, we clear and recreate images on save.
-        orm_images = []
-        for img in coin.images:
-            orm_images.append(CoinImageModel(
-                url=img.url,
-                image_type=img.image_type,
-                is_primary=img.is_primary
-            ))
-        orm_coin.images = orm_images
+        # Handle Images with diffing logic to prevent ID churn and unnecessary DB writes
+        if coin.id:
+            # Load existing images to allow for stable merging
+            existing_orm = self.session.query(CoinModel).options(
+                selectinload(CoinModel.images)
+            ).filter(CoinModel.id == coin.id).first()
+            
+            if existing_orm:
+                existing_images_map = {img.url: img for img in existing_orm.images}
+                final_images = []
+                for img in coin.images:
+                    if img.url in existing_images_map:
+                        # Reuse existing ORM object and update its attributes
+                        orm_img = existing_images_map[img.url]
+                        orm_img.image_type = img.image_type
+                        orm_img.is_primary = img.is_primary
+                        final_images.append(orm_img)
+                    else:
+                        # Create new ORM object for new URL
+                        final_images.append(CoinImageModel(
+                            url=img.url,
+                            image_type=img.image_type,
+                            is_primary=img.is_primary
+                        ))
+                orm_coin.images = final_images
+            else:
+                # Coin has an ID but not found in DB, treat as new images
+                orm_coin.images = [
+                    CoinImageModel(url=img.url, image_type=img.image_type, is_primary=img.is_primary)
+                    for img in coin.images
+                ]
+        else:
+            # New coin without ID
+            orm_coin.images = [
+                CoinImageModel(url=img.url, image_type=img.image_type, is_primary=img.is_primary)
+                for img in coin.images
+            ]
         
         # References are persisted via ReferenceSyncService from API create/update and LLM approve.
         # Do not write coin.references into llm_suggested_references; reserve that for pending suggestions only.
@@ -53,7 +77,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         self.session.flush()  # Get ID
         
         # Map ORM -> Domain (return updated entity with ID)
-        return self._to_domain(merged_coin)
+        return CoinMapper.to_domain(merged_coin)
 
     def get_by_id(self, coin_id: int) -> Optional[Coin]:
         orm_coin = self.session.query(CoinModel).options(
@@ -64,7 +88,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         ).filter(CoinModel.id == coin_id).first()
         if not orm_coin:
             return None
-        return self._to_domain(orm_coin)
+        return CoinMapper.to_domain(orm_coin)
 
     def get_all(
         self, 
@@ -141,7 +165,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             query = query.order_by(CoinModel.id.desc())
 
         orm_coins = query.offset(skip).limit(limit).all()
-        return [self._to_domain(c) for c in orm_coins]
+        return [CoinMapper.to_domain(c) for c in orm_coins]
 
     def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
         query = self.session.query(CoinModel)
@@ -205,7 +229,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             selectinload(CoinModel.provenance_events),
         ).filter(CoinModel.id.in_(coin_ids)).all()
         
-        return [self._to_domain(c) for c in orm_coins]
+        return [CoinMapper.to_domain(c) for c in orm_coins]
 
     def _apply_filters(self, query, filters: Optional[Dict[str, Any]]):
         """Apply filter conditions to a query."""
@@ -285,230 +309,3 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             self.session.delete(orm_coin)
             return True
         return False
-
-    def _to_domain(self, model: CoinModel) -> Coin:
-        # Build Design value object if any design fields are present
-        design = None
-        if any([model.obverse_legend, model.obverse_description, 
-                model.reverse_legend, model.reverse_description, model.exergue]):
-            design = Design(
-                obverse_legend=model.obverse_legend,
-                obverse_description=model.obverse_description,
-                reverse_legend=model.reverse_legend,
-                reverse_description=model.reverse_description,
-                exergue=model.exergue
-            )
-        
-        return Coin(
-            id=model.id,
-            category=Category(model.category),
-            metal=Metal(model.metal),
-            dimensions=Dimensions(
-                weight_g=model.weight_g,
-                diameter_mm=model.diameter_mm,
-                die_axis=model.die_axis,
-                specific_gravity=model.specific_gravity
-            ),
-            attribution=Attribution(
-                issuer=model.issuer,
-                issuer_id=model.issuer_id,
-                mint=model.mint,
-                mint_id=model.mint_id,
-                year_start=model.year_start,
-                year_end=model.year_end
-            ),
-            grading=GradingDetails(
-                grading_state=GradingState(model.grading_state),
-                grade=model.grade,
-                service=GradeService(model.grade_service) if model.grade_service else None,
-                certification_number=model.certification_number,
-                strike=model.strike_quality,
-                surface=model.surface_quality
-            ),
-            acquisition=AcquisitionDetails(
-                price=model.acquisition_price,
-                currency=model.acquisition_currency,
-                source=model.acquisition_source,
-                date=model.acquisition_date,
-                url=model.acquisition_url
-            ) if model.acquisition_price is not None else None,
-            description=model.description,
-            images=[
-                CoinImage(url=img.url, image_type=img.image_type, is_primary=img.is_primary)
-                for img in model.images
-            ],
-            denomination=model.denomination,
-            portrait_subject=model.portrait_subject,
-            design=design,
-            # Map references from coin_references -> reference_types
-            references=[
-                self._reference_to_domain(ref) for ref in model.references
-                if ref.reference_type is not None
-            ],
-            # Map provenance events from ORM to domain value objects
-            provenance=[
-                self._provenance_to_domain(p) for p in model.provenance_events
-            ] if model.provenance_events else [],
-            
-            # --- Research Grade Extensions ---
-            issue_status=IssueStatus(model.issue_status) if model.issue_status else IssueStatus.OFFICIAL,
-            die_info=DieInfo(
-                obverse_die_id=model.obverse_die_id,
-                reverse_die_id=model.reverse_die_id
-            ) if (model.obverse_die_id or model.reverse_die_id) else None,
-            monograms=[
-                Monogram(id=m.id, label=m.label, image_url=m.image_url, vector_data=m.vector_data)
-                for m in model.monograms
-            ] if model.monograms else [],
-            secondary_treatments=json.loads(model.secondary_treatments) if model.secondary_treatments else None,
-            find_data=FindData(
-                find_spot=model.find_spot,
-                find_date=model.find_date
-            ) if (model.find_spot or model.find_date) else None,
-
-            # Collection management fields
-            storage_location=model.storage_location,
-            personal_notes=model.personal_notes,
-            # Rarity
-            rarity=model.rarity,
-            rarity_notes=model.rarity_notes,
-            # LLM enrichment fields
-            historical_significance=model.historical_significance,
-            llm_enriched_at=model.llm_enriched_at.isoformat() if model.llm_enriched_at else None,
-            llm_analysis_sections=model.llm_analysis_sections,
-            llm_suggested_references=json.loads(model.llm_suggested_references) if model.llm_suggested_references else None,
-            llm_suggested_rarity=json.loads(model.llm_suggested_rarity) if model.llm_suggested_rarity else None,
-            llm_suggested_design=json.loads(model.llm_suggested_design) if model.llm_suggested_design else None,
-            llm_suggested_attribution=json.loads(model.llm_suggested_attribution) if model.llm_suggested_attribution else None,
-        )
-    
-    def _reference_to_domain(self, model: CoinReferenceModel) -> CatalogReference:
-        """
-        Map CoinReferenceModel + ReferenceTypeModel to domain CatalogReference.
-
-        Mapping: ReferenceTypeModel.system -> catalog (uppercase); volume, number, local_ref -> raw_text;
-        CoinReferenceModel.is_primary, notes, source -> domain. suffix not stored in V1 schema (None).
-        """
-        ref_type = model.reference_type
-        if not ref_type:
-            # Should not happen if filtered properly, but safety check
-            return CatalogReference(
-                catalog="unknown",
-                number="",
-                volume=None,
-                suffix=None,
-                raw_text=""
-            )
-        
-        # Build raw text from local_ref or construct from parts
-        raw_text = ref_type.local_ref or f"{ref_type.system.upper()} {ref_type.volume or ''} {ref_type.number or ''}".strip()
-        # Use display catalog (e.g. RRC for crawford) for API consistency
-        catalog_display = SYSTEM_TO_DISPLAY.get(ref_type.system) or ref_type.system.upper()
-        
-        return CatalogReference(
-            catalog=catalog_display,
-            number=ref_type.number or "",
-            volume=ref_type.volume,
-            suffix=None,  # Not stored in V1 schema
-            raw_text=raw_text,
-            is_primary=model.is_primary or False,
-            notes=model.notes,
-            source=model.source,
-            variant=getattr(ref_type, "variant", None),
-            mint=getattr(ref_type, "mint", None),
-            supplement=getattr(ref_type, "supplement", None),
-            collection=getattr(ref_type, "collection", None),
-        )
-    
-    def _provenance_to_domain(self, model: ProvenanceEventModel) -> ProvenanceEntry:
-        """Map ProvenanceEventModel to domain ProvenanceEntry."""
-        # Determine source name based on event type
-        source_name = ""
-        if model.event_type == "auction":
-            source_name = model.auction_house or ""
-        elif model.event_type == "dealer":
-            source_name = model.dealer_name or ""
-        elif model.event_type == "collection":
-            source_name = model.collection_name or ""
-        else:
-            source_name = model.auction_house or model.dealer_name or model.collection_name or ""
-        
-        # Build raw text representation
-        raw_parts = []
-        if source_name:
-            raw_parts.append(source_name)
-        if model.event_date:
-            raw_parts.append(str(model.event_date.year))
-        if model.lot_number:
-            raw_parts.append(f"lot {model.lot_number}")
-        raw_text = ", ".join(raw_parts) if raw_parts else ""
-        
-        return ProvenanceEntry(
-            source_type=model.event_type,
-            source_name=source_name,
-            event_date=model.event_date,
-            lot_number=model.lot_number,
-            notes=model.notes,
-            raw_text=raw_text
-        )
-
-    def _to_model(self, coin: Coin) -> CoinModel:
-        return CoinModel(
-            id=coin.id,
-            category=coin.category.value,
-            metal=coin.metal.value,
-            weight_g=coin.dimensions.weight_g,
-            diameter_mm=coin.dimensions.diameter_mm,
-            die_axis=coin.dimensions.die_axis,
-            specific_gravity=coin.dimensions.specific_gravity,
-            
-            issuer=coin.attribution.issuer,
-            issuer_id=coin.attribution.issuer_id,
-            mint=coin.attribution.mint,
-            mint_id=coin.attribution.mint_id,
-            year_start=coin.attribution.year_start,
-            year_end=coin.attribution.year_end,
-            
-            grading_state=coin.grading.grading_state.value,
-            grade=coin.grading.grade,
-            grade_service=coin.grading.service.value if coin.grading.service else None,
-            certification_number=coin.grading.certification_number,
-            strike_quality=coin.grading.strike,
-            surface_quality=coin.grading.surface,
-            
-            acquisition_price=coin.acquisition.price if coin.acquisition else None,
-            acquisition_currency=coin.acquisition.currency if coin.acquisition else None,
-            acquisition_source=coin.acquisition.source if coin.acquisition else None,
-            acquisition_date=coin.acquisition.date if coin.acquisition else None,
-            acquisition_url=coin.acquisition.url if coin.acquisition else None,
-            
-            description=coin.description,
-            denomination=coin.denomination,
-            portrait_subject=coin.portrait_subject,
-            obverse_legend=coin.design.obverse_legend if coin.design else None,
-            obverse_description=coin.design.obverse_description if coin.design else None,
-            reverse_legend=coin.design.reverse_legend if coin.design else None,
-            reverse_description=coin.design.reverse_description if coin.design else None,
-            exergue=coin.design.exergue if coin.design else None,
-            
-            # --- Research Grade Extensions ---
-            issue_status=coin.issue_status.value,
-            obverse_die_id=coin.die_info.obverse_die_id if coin.die_info else None,
-            reverse_die_id=coin.die_info.reverse_die_id if coin.die_info else None,
-            secondary_treatments=json.dumps(coin.secondary_treatments) if coin.secondary_treatments else None,
-            find_spot=coin.find_data.find_spot if coin.find_data else None,
-            find_date=coin.find_data.find_date if coin.find_data else None,
-            
-            # Collection management fields
-            storage_location=coin.storage_location,
-            personal_notes=coin.personal_notes,
-            # Rarity
-            rarity=coin.rarity,
-            rarity_notes=coin.rarity_notes,
-            # LLM enrichment fields
-            historical_significance=coin.historical_significance,
-            llm_suggested_references=json.dumps(coin.llm_suggested_references) if coin.llm_suggested_references else None,
-            llm_suggested_rarity=json.dumps(coin.llm_suggested_rarity) if coin.llm_suggested_rarity else None,
-            llm_suggested_design=json.dumps(coin.llm_suggested_design) if coin.llm_suggested_design else None,
-            llm_suggested_attribution=json.dumps(coin.llm_suggested_attribution) if coin.llm_suggested_attribution else None,
-        )

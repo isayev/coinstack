@@ -1,8 +1,24 @@
 import { render, screen, waitFor } from '@/test-utils'
 import { CoinList } from './CoinList'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/mocks/server'
+
+// Mock react-virtuoso
+vi.mock('react-virtuoso', () => {
+  return {
+    Virtuoso: ({ data, itemContent }: any) => (
+      <div>
+        {data.map((item: any, index: number) => itemContent(index, item))}
+      </div>
+    ),
+    VirtuosoGrid: ({ data, itemContent }: any) => (
+      <div className="grid">
+        {data.map((item: any, index: number) => itemContent(index, item))}
+      </div>
+    ),
+  }
+})
 
 describe('CoinList', () => {
   it('renders coins from API', async () => {

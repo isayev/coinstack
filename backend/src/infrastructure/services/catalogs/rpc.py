@@ -57,7 +57,7 @@ class RPCService(CatalogService):
         return {
             "system": "rpc",
             "volume": result.volume,
-            "number": result.number,
+            "number": (result.number or "") + (result.subtype or ""),
         }
     
     async def build_reconcile_query(
