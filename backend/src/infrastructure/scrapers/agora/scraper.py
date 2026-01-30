@@ -7,7 +7,7 @@ import logging
 import random
 from typing import Optional
 
-from src.domain.services.scraper_service import IScraper
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
 from src.domain.auction import AuctionLot
 from src.infrastructure.scrapers.base_playwright import PlaywrightScraperBase
 
@@ -31,33 +31,23 @@ class AgoraScraper(PlaywrightScraperBase, IScraper):
     def can_handle(self, url: str) -> bool:
         return "agoraauctions.com" in url or "agora-auctions" in url
     
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
+    async def scrape(self, url: str) -> ScrapeResult:
         """Scrape an Agora lot URL with automatic rate limiting and retry."""
-        if not await self.ensure_browser():
-            return None
-
-        # Enforce rate limiting (handled by base class: 2.0s for Agora)
-        await self._enforce_rate_limit()
-
-        page = await self.context.new_page()
         try:
             logger.info(f"Fetching Agora URL: {url}")
-            response = await page.goto(url, wait_until='domcontentloaded', timeout=30000)
             
-            if not response or response.status >= 400:
-                logger.error(f"Agora returned status {response.status if response else 'None'}")
-                return None
+            # Use fetch_page (no special wait logic needed usually for Agora, but wait_until=domcontentloaded is default)
+            html = await self.fetch_page(url)
             
-            html = await page.content()
             data = self.parser.parse(html, url)
-            
-            return self._map_to_domain(data)
+            lot = self._map_to_domain(data)
+            return ScrapeResult(status=ScrapeStatus.SUCCESS, data=lot)
             
         except Exception as e:
             logger.exception(f"Error scraping Agora URL {url}: {e}")
-            return None
-        finally:
-            await page.close()
+            if "blocked" in str(e).lower() or "403" in str(e):
+                return ScrapeResult(status=ScrapeStatus.BLOCKED, error_message=str(e))
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message=str(e))
 
     def _map_to_domain(self, data: AgoraCoinData) -> AuctionLot:
         """Map Agora model to generic Domain AuctionLot."""

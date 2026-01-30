@@ -5,9 +5,23 @@ from datetime import date
 from src.domain.coin import (
     Coin, Dimensions, Attribution, Category, Metal, 
     GradingDetails, GradingState, GradeService, AcquisitionDetails,
-    IssueStatus, DieInfo, FindData
+    IssueStatus, DieInfo, FindData, Design, CoinImage
 )
 from src.domain.repositories import ICoinRepository
+
+@dataclass
+class ImageDTO:
+    url: str
+    image_type: str
+    is_primary: bool = False
+
+@dataclass
+class DesignDTO:
+    obverse_legend: Optional[str] = None
+    obverse_description: Optional[str] = None
+    reverse_legend: Optional[str] = None
+    reverse_description: Optional[str] = None
+    exergue: Optional[str] = None
 
 @dataclass
 class CreateCoinDTO:
@@ -29,6 +43,13 @@ class CreateCoinDTO:
     acquisition_price: Optional[Decimal] = None
     acquisition_source: Optional[str] = None
     acquisition_date: Optional[date] = None
+    acquisition_url: Optional[str] = None
+    
+    # Extensions & New Fields
+    denomination: Optional[str] = None
+    portrait_subject: Optional[str] = None
+    design: Optional[DesignDTO] = None
+    
     # Research Grade Extensions
     specific_gravity: Optional[Decimal] = None
     issue_status: str = "official"
@@ -36,6 +57,9 @@ class CreateCoinDTO:
     reverse_die_id: Optional[str] = None
     find_spot: Optional[str] = None
     find_date: Optional[date] = None
+    
+    # Lists
+    images: List[ImageDTO] = field(default_factory=list)
 
 class CreateCoinUseCase:
     def __init__(self, repository: ICoinRepository):
@@ -66,8 +90,26 @@ class CreateCoinUseCase:
                 price=dto.acquisition_price,
                 currency="USD", # Default for now
                 source=dto.acquisition_source or "Unknown",
-                date=dto.acquisition_date
+                date=dto.acquisition_date,
+                url=dto.acquisition_url
             )
+
+        # Build Design value object
+        design = None
+        if dto.design:
+            design = Design(
+                obverse_legend=dto.design.obverse_legend,
+                obverse_description=dto.design.obverse_description,
+                reverse_legend=dto.design.reverse_legend,
+                reverse_description=dto.design.reverse_description,
+                exergue=dto.design.exergue
+            )
+
+        # Map Images
+        images = [
+            CoinImage(url=img.url, image_type=img.image_type, is_primary=img.is_primary)
+            for img in dto.images
+        ]
 
         new_coin = Coin(
             id=None,
@@ -87,6 +129,12 @@ class CreateCoinUseCase:
             ),
             grading=grading,
             acquisition=acquisition,
+            
+            # New Fields
+            denomination=dto.denomination,
+            portrait_subject=dto.portrait_subject,
+            design=design,
+            images=images,
             
             # Extensions
             issue_status=issue_status,

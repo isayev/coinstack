@@ -9,7 +9,7 @@ import re
 from typing import Optional
 from pathlib import Path
 
-from src.domain.services.scraper_service import IScraper
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
 from src.domain.auction import AuctionLot
 from src.infrastructure.scrapers.base_playwright import PlaywrightScraperBase
 
@@ -34,27 +34,36 @@ class HeritageScraper(PlaywrightScraperBase, IScraper):
     def can_handle(self, url: str) -> bool:
         return "coins.ha.com" in url or "heritage" in url.lower()
     
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
+    async def scrape(self, url: str) -> ScrapeResult:
         """Scrape a Heritage lot URL with automatic rate limiting and retry."""
         if not await self.ensure_browser():
-            logger.error("Failed to start browser")
-            return None
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message="Failed to start browser")
 
         # Enforce rate limiting (handled by base class)
         await self._enforce_rate_limit()
 
         page = await self.context.new_page()
         try:
-            # Stealth already handled by base? No, base handles minimal.
-            # We trust the base fetch_page or do it manually here for more control
-            # Heritage needs strict stealth usually
-            
+            # Set extra headers for Heritage
+            await page.set_extra_http_headers({
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Referer': 'https://coins.ha.com/',
+            })
+
             logger.info(f"Fetching Heritage URL: {url}")
             response = await page.goto(url, wait_until='domcontentloaded', timeout=45000)
             
-            if not response or response.status >= 400:
-                logger.error(f"Heritage returned status {response.status if response else 'None'}")
-                return None
+            if not response:
+                return ScrapeResult(status=ScrapeStatus.ERROR, error_message="No response received")
+
+            if response.status == 404:
+                return ScrapeResult(status=ScrapeStatus.NOT_FOUND, error_message="Lot not found")
+            
+            if response.status in (403, 429):
+                return ScrapeResult(status=ScrapeStatus.BLOCKED, error_message=f"Blocked (HTTP {response.status})")
+            
+            if response.status >= 400:
+                return ScrapeResult(status=ScrapeStatus.ERROR, error_message=f"HTTP Error {response.status}")
             
             # Wait for key elements
             try:
@@ -100,11 +109,12 @@ class HeritageScraper(PlaywrightScraperBase, IScraper):
                     data.auction.estimate_low_usd = js_data['estimate_low']
                     data.auction.estimate_high_usd = js_data['estimate_high']
             
-            return self._map_to_domain(data)
+            lot = self._map_to_domain(data)
+            return ScrapeResult(status=ScrapeStatus.SUCCESS, data=lot)
             
         except Exception as e:
             logger.exception(f"Error scraping Heritage URL {url}: {e}")
-            return None
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message=str(e))
         finally:
             await page.close()
 

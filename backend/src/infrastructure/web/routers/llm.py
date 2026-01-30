@@ -865,10 +865,16 @@ async def generate_context(
         
         result = await llm_service.generate_context(coin_data)
         
-        # Extract citation and enrichment data from result
-        llm_found_refs = result.get("llm_citations", [])
-        suggested_refs = result.get("suggested_references", [])
-        matched_refs = result.get("matched_references", [])
+        # Parse content string back to dict
+        try:
+            content_dict = json.loads(result.content)
+        except json.JSONDecodeError:
+            content_dict = {"raw_content": result.content, "sections": {}}
+
+        # Extract citation and enrichment data from parsed content
+        llm_found_refs = content_dict.get("llm_citations", [])
+        suggested_refs = content_dict.get("suggested_references", [])
+        matched_refs = content_dict.get("matched_references", [])
         
         # Save to database (raw content for backward compat, sections as JSON)
         db = SessionLocal()
@@ -876,9 +882,9 @@ async def generate_context(
             coin = db.query(CoinModel).filter(CoinModel.id == request.coin_id).first()
             if coin:
                 # Store raw content for backward compatibility
-                coin.historical_significance = result["raw_content"]
+                coin.historical_significance = content_dict.get("raw_content", "")
                 # Store sections as JSON string
-                coin.llm_analysis_sections = json.dumps(result["sections"])
+                coin.llm_analysis_sections = json.dumps(content_dict.get("sections", {}))
                 coin.llm_enriched_at = datetime.now(timezone.utc)
                 
                 # Store suggested references for audit (new citations not in DB)
@@ -897,13 +903,13 @@ async def generate_context(
                     logger.info(f"Coin {request.coin_id}: LLM suggested {len(suggested_refs)} new reference(s): {suggested_refs}")
                 
                 # Store rarity info if found
-                rarity_info = result.get("rarity_info", {})
+                rarity_info = content_dict.get("rarity_info", {})
                 if rarity_info and (rarity_info.get("rarity_code") or rarity_info.get("rarity_description")):
                     coin.llm_suggested_rarity = json.dumps(rarity_info)
                     logger.info(f"Coin {request.coin_id}: LLM identified rarity: {rarity_info.get('rarity_code')} ({rarity_info.get('rarity_description')})")
                 
                 db.commit()
-                logger.info(f"Saved historical context ({len(result['sections'])} sections) for coin {request.coin_id}")
+                logger.info(f"Saved historical context ({len(content_dict.get('sections', {}))} sections) for coin {request.coin_id}")
         except Exception as db_err:
             logger.error(f"Failed to save historical context: {db_err}")
             db.rollback()
@@ -917,11 +923,11 @@ async def generate_context(
                 title=SECTION_TITLES.get(key, key.replace("_", " ").title()),
                 content=content
             )
-            for key, content in result["sections"].items()
+            for key, content in content_dict.get("sections", {}).items()
         ]
         
         # Build rarity response if found
-        rarity_info = result.get("rarity_info", {})
+        rarity_info = content_dict.get("rarity_info", {})
         rarity_response = None
         if rarity_info and (rarity_info.get("rarity_code") or rarity_info.get("rarity_description")):
             rarity_response = RarityInfoResponse(
@@ -933,10 +939,10 @@ async def generate_context(
         
         return ContextGenerateResponse(
             sections=sections_list,
-            raw_content=result["raw_content"],
-            confidence=result["confidence"],
-            cost_usd=result["cost_usd"],
-            model_used=result["model_used"],
+            raw_content=content_dict.get("raw_content", ""),
+            confidence=result.confidence,
+            cost_usd=result.cost_usd,
+            model_used=result.model_used,
             existing_references=existing_references,
             all_llm_citations=llm_found_refs,
             suggested_references=suggested_refs,

@@ -22,6 +22,7 @@ class ParsedRef:
     collection: Optional[str] = None  # SNG collection
     normalized: Optional[str] = None  # Internal normalized form e.g. "ric.4.1.351b"
     warnings: List[str] = field(default_factory=list)
+    needs_llm: bool = False  # Flag if parsing was partial/uncertain
 
 
 # --- Roman / Arabic conversion (shared) ---

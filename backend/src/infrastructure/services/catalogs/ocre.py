@@ -49,15 +49,22 @@ class OCREService(CatalogService):
             return None
         # Derive edition from volume (e.g. "I.2" or "II.3" for ²/³)
         edition = None
+        vol_main = result.volume
         if result.volume and "." in result.volume:
-            tail = result.volume.split(".")[-1]
-            edition = tail if tail in ("2", "3") else None
+            parts = result.volume.split(".")
+            tail = parts[-1]
+            if tail in ("2", "3"):
+                edition = tail
+                vol_main = parts[0] # "I" from "I.2"
+        
         return {
             "system": "ric",
-            "volume": result.volume,
+            "volume": result.volume, # Keep canonical "I.2"
+            "volume_main": vol_main, # "I"
             "volume_roman": self._arabic_to_roman(int(result.volume)) if result.volume and result.volume.isdigit() else None,
             "number": result.number,
             "edition": edition,
+            "mint": result.mint, # Include mint
         }
     
     async def build_reconcile_query(
@@ -67,45 +74,50 @@ class OCREService(CatalogService):
     ) -> Dict:
         """
         Build OpenRefine reconciliation query for OCRE.
-        
-        OCRE reconciliation works best with queries like:
-        - "RIC I(2) Augustus 207" (with edition and authority)
-        - "RIC VII Rome 207" (with volume and mint)
-        - "RIC III, 303 - Antoninus Pius": trailing " - Ruler" is extracted and used as authority.
         """
         ref_clean = (ref or "").strip()
+        
+        # Extract authority from trailing " - Ruler"
         authority_from_ref: Optional[str] = None
         m = re.match(r"^(.+?)\s+-\s+(.+)$", ref_clean)
         if m:
             pre, suf = m.group(1).strip(), m.group(2).strip()
+            # Only if suffix doesn't look like a part number
             if suf and not re.search(r"\d", suf):
                 ref_clean = pre
                 authority_from_ref = suf
+        
+        # Extract context overrides
         authority = None
         if context:
             authority = context.get("ruler") or context.get("authority")
-        if not authority and authority_from_ref:
+        
+        # Fallback to extracted authority
+        if not authority:
             authority = authority_from_ref
 
         parsed = self.parse_reference(ref_clean)
         if parsed:
-            volume = parsed.get("volume_roman") or parsed.get("volume")
+            # Construct OCRE-friendly query string
+            # Format: "RIC [Vol][(Ed)] [Authority] [Mint] [Number]"
+            
+            vol_str = parsed.get("volume_main") or parsed.get("volume")
+            edition = parsed.get("edition")
+            mint = parsed.get("mint")
             number = parsed["number"]
-            # When volume has a dot (e.g. V.2 = Volume V Part 2), use as-is; don't add (edition)
-            # When authority is provided (e.g. Diocletian), OCRE matches "RIC V Diocletian 325" not "RIC V(2) Diocletian 325" - omit edition
-            # Add (edition) only when explicitly parsed (e.g. RIC I², RIC I(2) 207). Do NOT default to (2):
-            # "RIC III 303" must stay "RIC III 303"; "RIC III(2) 303" is interpreted as RIC II Part 3 (2nd ed) and returns wrong matches.
-            if volume and "." in str(volume):
-                vol_str = volume
-            elif authority:
-                vol_str = volume
-            elif parsed.get("edition"):
-                vol_str = f"{volume}({parsed['edition']})"
-            else:
-                vol_str = volume
-            query_str = f"RIC {vol_str} {number}"
+            
+            # Format volume with edition: I(2) instead of I.2
+            if edition:
+                vol_str = f"{vol_str}({edition})"
+            
+            parts = ["RIC", vol_str]
             if authority:
-                query_str = f"RIC {vol_str} {authority} {number}"
+                parts.append(authority)
+            if mint:
+                parts.append(mint)
+            parts.append(number)
+            
+            query_str = " ".join(p for p in parts if p)
         else:
             query_str = ref_clean
             if authority and authority.lower() not in ref_clean.lower():

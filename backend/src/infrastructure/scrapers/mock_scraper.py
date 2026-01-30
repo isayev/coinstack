@@ -2,7 +2,7 @@ import asyncio
 from typing import Optional
 from decimal import Decimal
 from src.domain.auction import AuctionLot
-from src.domain.services.scraper_service import IScraper
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
 
 class MockScraper(IScraper):
     """Mock scraper for testing."""
@@ -10,14 +10,14 @@ class MockScraper(IScraper):
     def can_handle(self, url: str) -> bool:
         return "mock-auction.com" in url
 
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
+    async def scrape(self, url: str) -> ScrapeResult:
         # Simulate network delay
         await asyncio.sleep(0.01)
         
         if "not-found" in url:
-            return None
+            return ScrapeResult(status=ScrapeStatus.NOT_FOUND, error_message="Lot not found")
             
-        return AuctionLot(
+        lot = AuctionLot(
             source="MockAuction",
             lot_id="12345",
             url=url,
@@ -28,3 +28,4 @@ class MockScraper(IScraper):
             grade="VF",
             weight_g=Decimal("3.50")
         )
+        return ScrapeResult(status=ScrapeStatus.SUCCESS, data=lot)

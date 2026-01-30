@@ -8,7 +8,7 @@ import random
 import re
 from typing import Optional
 
-from src.domain.services.scraper_service import IScraper
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
 from src.domain.auction import AuctionLot
 from src.infrastructure.scrapers.base_playwright import PlaywrightScraperBase
 
@@ -32,43 +32,24 @@ class CNGScraper(PlaywrightScraperBase, IScraper):
     def can_handle(self, url: str) -> bool:
         return "cngcoins.com" in url or "cng" in url.lower()
     
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
+    async def scrape(self, url: str) -> ScrapeResult:
         """Scrape a CNG lot URL with automatic rate limiting and retry."""
-        if not await self.ensure_browser():
-            return None
-
-        # Enforce rate limiting (handled by base class: 3.0s for CNG)
-        await self._enforce_rate_limit()
-
-        page = await self.context.new_page()
         try:
             logger.info(f"Fetching CNG URL: {url}")
-            response = await page.goto(url, wait_until='domcontentloaded', timeout=30000)
             
-            if not response or response.status >= 400:
-                logger.error(f"CNG returned status {response.status if response else 'None'}")
-                return None
-            
-            # Wait for Angular content
-            try:
-                await page.wait_for_selector('[class*="lot"]', timeout=10000)
-            except TimeoutError:
-                logger.warning(f"Timeout waiting for lot selector on {url}")
-            except Exception as e:
-                logger.error(f"Error waiting for lot selector on {url}: {type(e).__name__}: {str(e)}")
-            
-            html = await page.content()
+            # Use fetch_page with selector wait for Angular content
+            html = await self.fetch_page(url, wait_selector='[class*="lot"]')
             
             # Parse
             data: CNGCoinData = self.parser.parse(html, url)
-            
-            return self._map_to_domain(data)
+            lot = self._map_to_domain(data)
+            return ScrapeResult(status=ScrapeStatus.SUCCESS, data=lot)
             
         except Exception as e:
             logger.exception(f"Error scraping CNG URL {url}: {e}")
-            return None
-        finally:
-            await page.close()
+            if "blocked" in str(e).lower() or "403" in str(e):
+                return ScrapeResult(status=ScrapeStatus.BLOCKED, error_message=str(e))
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message=str(e))
 
     def _map_to_domain(self, data: CNGCoinData) -> AuctionLot:
         """Map CNG-specific model to generic Domain AuctionLot."""

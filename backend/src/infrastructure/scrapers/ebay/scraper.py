@@ -8,7 +8,7 @@ import random
 import hashlib
 from typing import Optional
 
-from src.domain.services.scraper_service import IScraper
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
 from src.domain.auction import AuctionLot
 from src.infrastructure.scrapers.base_playwright import PlaywrightScraperBase
 
@@ -16,13 +16,6 @@ from .parser import EbayParser
 from .models import EbayCoinData
 
 logger = logging.getLogger(__name__)
-
-# Realistic user agents
-USER_AGENTS = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-]
 
 class EbayScraper(PlaywrightScraperBase, IScraper):
     """
@@ -39,24 +32,10 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
     def can_handle(self, url: str) -> bool:
         return "ebay.com" in url or "ebay" in url.lower()
     
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
+    async def scrape(self, url: str) -> ScrapeResult:
         """Scrape an eBay listing URL with automatic rate limiting and retry."""
-        with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-            f.write(f"\n=== eBay Scraper Called ===\n")
-            f.write(f"URL: {url}\n")
-        
-        logger.info(f"eBay scraper: Starting scrape for {url}")
-        browser_ok = await self.ensure_browser()
-        logger.info(f"eBay scraper: Browser ensure result: {browser_ok}")
-        
-        with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-            f.write(f"Browser OK: {browser_ok}\n")
-        
-        if not browser_ok:
-            logger.error("eBay scraper: Failed to ensure browser")
-            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                f.write("FAILED: Browser not OK\n")
-            return None
+        if not await self.ensure_browser():
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message="Failed to start browser")
 
         # Enforce rate limiting (handled by base class: 5.0s for eBay)
         await self._enforce_rate_limit()
@@ -68,12 +47,8 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
                 logger.debug("Establishing eBay session...")
                 await session_page.goto("https://www.ebay.com", wait_until='domcontentloaded', timeout=15000)
                 await asyncio.sleep(random.uniform(1.5, 3.0))  # Human-like pause
-                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                    f.write("Session established\n")
             except Exception as e:
                 logger.warning(f"Failed to visit eBay main site (continuing anyway): {e}")
-                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                    f.write(f"Session failed: {e}\n")
             finally:
                 await session_page.close()
         except Exception as e:
@@ -86,18 +61,15 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
             # Navigate with longer timeout
             response = await page.goto(url, wait_until='domcontentloaded', timeout=60000)
             
-            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                f.write(f"Response status: {response.status if response else 'None'}\n")
+            if not response:
+                return ScrapeResult(status=ScrapeStatus.ERROR, error_message="No response received")
             
-            if not response or response.status >= 400:
-                logger.error(f"eBay returned status {response.status if response else 'None'}")
-                # Check if we got the "Checking your browser" page
+            if response.status >= 400:
                 html = await page.content()
                 if "Checking your browser" in html or "Pardon Our Interruption" in html:
                     logger.error("eBay anti-bot protection detected - blocking automated access")
-                    with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                        f.write("FAILED: Anti-bot detected\n")
-                return None
+                    return ScrapeResult(status=ScrapeStatus.BLOCKED, error_message="Anti-bot detection triggered")
+                return ScrapeResult(status=ScrapeStatus.ERROR, error_message=f"HTTP Error {response.status}")
             
             # Human-like wait
             await asyncio.sleep(random.uniform(2.0, 4.0))
@@ -110,32 +82,20 @@ class EbayScraper(PlaywrightScraperBase, IScraper):
             # Check again for anti-bot page after waiting
             if "Checking your browser" in html or "Pardon Our Interruption" in html:
                 logger.error("eBay anti-bot protection detected after page load")
-                with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                    f.write("FAILED: Anti-bot detected after load\n")
-                return None
-            
-            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                f.write(f"HTML length: {len(html)}\n")
-                f.write("Calling parser...\n")
+                return ScrapeResult(status=ScrapeStatus.BLOCKED, error_message="Anti-bot detection triggered (post-load)")
             
             # Parse
             data: EbayCoinData = self.parser.parse(html, url)
             
-            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                f.write(f"Parse result: {data is not None}\n")
-                if data:
-                    f.write(f"Issuer: {data.ruler}\n")
-            
-            result = self._map_to_domain(data)
-            
-            with open("c:/vibecode/coinstack/backend/ebay_scraper_debug.log", "a") as f:
-                f.write(f"Map result: {result is not None}\n")
-            
-            return result
+            if not data:
+                 return ScrapeResult(status=ScrapeStatus.ERROR, error_message="Parser returned no data")
+
+            lot = self._map_to_domain(data)
+            return ScrapeResult(status=ScrapeStatus.SUCCESS, data=lot)
             
         except Exception as e:
             logger.exception(f"Error scraping eBay URL {url}: {e}")
-            return None
+            return ScrapeResult(status=ScrapeStatus.ERROR, error_message=str(e))
         finally:
             await page.close()
 

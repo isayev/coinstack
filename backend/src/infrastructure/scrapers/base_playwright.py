@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
-from abc import ABC, abstractmethod
-from typing import Optional, Callable, TypeVar, Any, Dict
+import random
+from abc import ABC
+from typing import Optional, Callable, TypeVar, Dict, List
 from functools import wraps
 from playwright.async_api import async_playwright, Browser, BrowserContext, TimeoutError as PlaywrightTimeoutError
 from src.infrastructure.config import get_settings
@@ -12,6 +13,15 @@ settings = get_settings()
 
 T = TypeVar('T')
 
+# Common User Agents for rotation
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0"
+]
+
 def retry_with_exponential_backoff(
     max_retries: int = 3,
     base_delay: float = 1.0,
@@ -19,17 +29,6 @@ def retry_with_exponential_backoff(
 ):
     """
     Decorator that retries a function with exponential backoff.
-
-    Args:
-        max_retries: Maximum number of retry attempts (default: 3)
-        base_delay: Initial delay in seconds (default: 1.0)
-        retry_on: Tuple of exception types to retry on
-
-    Retry pattern:
-        - Attempt 1: No delay
-        - Attempt 2: 1 second delay
-        - Attempt 3: 2 second delay
-        - Attempt 4: 4 second delay
     """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
@@ -43,12 +42,11 @@ def retry_with_exponential_backoff(
                     last_exception = e
 
                     if attempt < max_retries:
-                        # Exponential backoff: 2^attempt * base_delay
-                        delay = (2 ** attempt) * base_delay
+                        delay = (2 ** attempt) * base_delay + random.uniform(0, 0.5) # Add jitter
                         logger.warning(
                             f"Retry {attempt + 1}/{max_retries} for {func.__name__} "
                             f"after {type(e).__name__}: {str(e)}. "
-                            f"Waiting {delay}s before retry..."
+                            f"Waiting {delay:.2f}s before retry..."
                         )
                         await asyncio.sleep(delay)
                     else:
@@ -58,7 +56,6 @@ def retry_with_exponential_backoff(
                         )
                         raise
 
-            # Should never reach here, but for type safety
             if last_exception:
                 raise last_exception
 
@@ -66,20 +63,12 @@ def retry_with_exponential_backoff(
     return decorator
 
 class PlaywrightScraperBase(ABC):
-    """Base class for Playwright-based scrapers with rate limiting."""
+    """Base class for Playwright-based scrapers with rate limiting and anti-bot measures."""
 
     # Class-level tracking of last request time per source
-    # Format: {"heritage": timestamp, "cng": timestamp, ...}
     _last_request_times: Dict[str, float] = {}
 
     def __init__(self, headless: bool = True, source: str = "default"):
-        """
-        Initialize the scraper.
-
-        Args:
-            headless: Whether to run browser in headless mode
-            source: Source name for rate limiting (e.g., "heritage", "cng", "ebay")
-        """
         self.headless = headless
         self.source = source.lower()
         self._playwright = None
@@ -87,19 +76,46 @@ class PlaywrightScraperBase(ABC):
         self._context: Optional[BrowserContext] = None
 
     async def start(self):
-        """Start the Playwright browser."""
+        """Start the Playwright browser with stealth configurations."""
         if self._playwright:
             return
 
         self._playwright = await async_playwright().start()
+        
+        # Launch options for stealth
+        launch_args = [
+            '--disable-blink-features=AutomationControlled',
+            '--no-sandbox',
+            '--disable-infobars',
+            '--disable-dev-shm-usage',
+            '--disable-browser-side-navigation',
+            '--disable-features=VizDisplayCompositor',
+        ]
+        
         self._browser = await self._playwright.chromium.launch(
             headless=self.headless,
-            args=['--disable-blink-features=AutomationControlled', '--no-sandbox']
+            args=launch_args
         )
+        
+        # Rotate UA
+        user_agent = random.choice(USER_AGENTS)
+        
         self._context = await self._browser.new_context(
             viewport={'width': 1920, 'height': 1080},
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            user_agent=user_agent,
+            locale='en-US',
+            timezone_id='America/New_York',
+            # basic permissions to look more real
+            permissions=['geolocation'],
+            geolocation={'latitude': 40.7128, 'longitude': -74.0060},
         )
+        
+        # Inject stealth scripts to mask webdriver
+        await self._context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """)
 
     async def stop(self):
         """Stop the browser."""
@@ -112,12 +128,7 @@ class PlaywrightScraperBase(ABC):
         self._playwright = None
 
     async def ensure_browser(self) -> bool:
-        """
-        Ensure browser is started. Returns True if successful.
-        
-        This method should be called before any scraping operation
-        to ensure the browser and context are initialized.
-        """
+        """Ensure browser is started."""
         try:
             if not self._browser or not self._context:
                 await self.start()
@@ -132,53 +143,31 @@ class PlaywrightScraperBase(ABC):
         return self._context
 
     async def _enforce_rate_limit(self):
-        """
-        Enforce rate limiting before making a request.
-
-        Uses per-source rate limits from configuration.
-        Sleeps if necessary to respect the minimum time between requests.
-        """
-        # Get rate limit for this source (or use default)
+        """Enforce rate limiting with jitter."""
         rate_limit = settings.SCRAPER_RATE_LIMITS.get(
             self.source,
             settings.SCRAPER_RATE_LIMITS.get("default", 2.0)
         )
 
-        # Check last request time for this source
         last_request = self._last_request_times.get(self.source, 0)
         current_time = time.time()
         time_since_last_request = current_time - last_request
 
-        # If we need to wait, do so
         if time_since_last_request < rate_limit:
             wait_time = rate_limit - time_since_last_request
+            # Add random jitter (0.1s to 0.5s) to look organic
+            wait_time += random.uniform(0.1, 0.5)
+            
             logger.debug(
-                f"Rate limiting {self.source}: waiting {wait_time:.2f}s "
-                f"(limit: {rate_limit}s between requests)"
+                f"Rate limiting {self.source}: waiting {wait_time:.2f}s"
             )
             await asyncio.sleep(wait_time)
 
-        # Update last request time for this source
         self._last_request_times[self.source] = time.time()
 
     @retry_with_exponential_backoff(max_retries=3, base_delay=1.0)
     async def fetch_page(self, url: str, wait_selector: str = None) -> str:
-        """
-        Fetch a page and return its HTML content.
-
-        Features:
-        - Automatic rate limiting per source (respects configured delays)
-        - Automatic retries on transient errors (timeout, connection issues)
-        - Exponential backoff: 1s, 2s, 4s (max 3 retries)
-
-        Args:
-            url: The URL to fetch
-            wait_selector: Optional CSS selector to wait for before returning content
-
-        Returns:
-            HTML content of the page
-        """
-        # Enforce rate limiting before making request
+        """Fetch a page and return its HTML content."""
         await self._enforce_rate_limit()
 
         if not self._context:
@@ -186,7 +175,22 @@ class PlaywrightScraperBase(ABC):
 
         page = await self._context.new_page()
         try:
-            await page.goto(url, wait_until='domcontentloaded', timeout=45000)
+            # Set extra headers
+            await page.set_extra_http_headers({
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            })
+            
+            response = await page.goto(url, wait_until='domcontentloaded', timeout=45000)
+            
+            if not response:
+                raise ConnectionError("No response received")
+                
+            if response.status >= 400:
+                # Specific check for 403/429 which usually means blocked
+                if response.status in (403, 429):
+                    logger.warning(f"Likely blocked by {self.source} (HTTP {response.status})")
+                
             if wait_selector:
                 try:
                     await page.wait_for_selector(wait_selector, timeout=10000)

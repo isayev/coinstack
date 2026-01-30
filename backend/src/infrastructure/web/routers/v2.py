@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from datetime import date
 from src.domain.repositories import ICoinRepository
-from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO
+from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO, ImageDTO, DesignDTO
 from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
@@ -319,6 +319,23 @@ def create_coin(
     use_case = CreateCoinUseCase(repo)
     
     grade = normalize_grade_for_storage(request.grade) or "Unknown"
+    
+    # Map sub-objects
+    images_dto = [
+        ImageDTO(url=img.url, image_type=img.image_type, is_primary=img.is_primary)
+        for img in request.images
+    ]
+    
+    design_dto = None
+    if request.design:
+        design_dto = DesignDTO(
+            obverse_legend=request.design.obverse_legend,
+            obverse_description=request.design.obverse_description,
+            reverse_legend=request.design.reverse_legend,
+            reverse_description=request.design.reverse_description,
+            exergue=request.design.exergue
+        )
+
     dto = CreateCoinDTO(
         category=request.category,
         metal=request.metal,
@@ -336,6 +353,7 @@ def create_coin(
         acquisition_price=request.acquisition_price,
         acquisition_source=request.acquisition_source,
         acquisition_date=request.acquisition_date,
+        acquisition_url=request.acquisition_url,
         
         # Extensions
         specific_gravity=request.specific_gravity,
@@ -343,34 +361,16 @@ def create_coin(
         obverse_die_id=request.obverse_die_id,
         reverse_die_id=request.reverse_die_id,
         find_spot=request.find_spot,
-        find_date=request.find_date
+        find_date=request.find_date,
+        
+        # New Fields
+        denomination=request.denomination,
+        portrait_subject=request.portrait_subject,
+        images=images_dto,
+        design=design_dto
     )
     
-    domain_coin = use_case.execute(dto)
-    
-    # Handle initial images
-    for img in request.images:
-        domain_coin.add_image(img.url, img.image_type, img.is_primary)
-     
-    # Handle initial design if provided
-    if request.design:
-        domain_coin.design = Design(
-            obverse_legend=request.design.obverse_legend,
-            obverse_description=request.design.obverse_description,
-            reverse_legend=request.design.reverse_legend,
-            reverse_description=request.design.reverse_description,
-            exergue=request.design.exergue
-        )
-
-    # Attribution extensions: denomination and portrait subject (obverse may show different person/deity than issuer)
-    if request.denomination is not None:
-        domain_coin.denomination = request.denomination
-    if request.portrait_subject is not None:
-        domain_coin.portrait_subject = request.portrait_subject
-
-    # Save again with images (or update logic to handle images in UseCase)
-    # Since UseCase logic doesn't handle images in DTO yet, we do this:
-    saved_coin = repo.save(domain_coin)
+    saved_coin = use_case.execute(dto)
 
     if request.references is not None and saved_coin.id:
         from src.application.services.reference_sync import sync_coin_references

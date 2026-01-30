@@ -1,6 +1,8 @@
 from typing import List, Optional
-from src.domain.services.scraper_service import IScraper
-from src.domain.auction import AuctionLot
+import logging
+from src.domain.services.scraper_service import IScraper, ScrapeResult, ScrapeStatus
+
+logger = logging.getLogger(__name__)
 
 class ScraperOrchestrator:
     """Selects the correct scraper for a URL."""
@@ -14,28 +16,25 @@ class ScraperOrchestrator:
                 return scraper
         return None
 
-    async def scrape(self, url: str) -> Optional[AuctionLot]:
-        with open("c:/vibecode/coinstack/backend/orchestrator_debug.log", "a") as f:
-            f.write(f"\n=== Orchestrator.scrape() called ===\n")
-            f.write(f"URL: {url}\n")
-            f.write(f"Available scrapers: {[type(s).__name__ for s in self.scrapers]}\n")
+    async def scrape(self, url: str) -> ScrapeResult:
+        """
+        Orchestrate the scraping of a URL.
+        Returns a structured ScrapeResult.
+        """
+        logger.info(f"Orchestrating scrape for: {url}")
         
         scraper = self.get_scraper(url)
-        
-        with open("c:/vibecode/coinstack/backend/orchestrator_debug.log", "a") as f:
-            f.write(f"Selected scraper: {type(scraper).__name__ if scraper else 'None'}\n")
-        
         if not scraper:
-            with open("c:/vibecode/coinstack/backend/orchestrator_debug.log", "a") as f:
-                f.write("ERROR: No scraper found!\n")
-            raise ValueError(f"No scraper found for URL: {url}")
+            return ScrapeResult(
+                status=ScrapeStatus.ERROR,
+                error_message=f"No scraper found for URL: {url}"
+            )
         
-        with open("c:/vibecode/coinstack/backend/orchestrator_debug.log", "a") as f:
-            f.write("Calling scraper.scrape()...\n")
-        
-        result = await scraper.scrape(url)
-        
-        with open("c:/vibecode/coinstack/backend/orchestrator_debug.log", "a") as f:
-            f.write(f"Scraper returned: {result is not None}\n")
-        
-        return result
+        try:
+            return await scraper.scrape(url)
+        except Exception as e:
+            logger.exception(f"Unhandled error in scraper {type(scraper).__name__}: {e}")
+            return ScrapeResult(
+                status=ScrapeStatus.ERROR,
+                error_message=str(e)
+            )

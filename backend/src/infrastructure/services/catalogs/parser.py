@@ -73,7 +73,7 @@ def canonical(ref: Union[ParsedRef, Dict[str, Any]]) -> str:
 def _parsed_ref_to_result(parsed: ParsedRef, raw: str) -> ParseResult:
     """Convert ParsedRef to ParseResult."""
     confidence = 0.7 if parsed.warnings else 1.0
-    needs_llm = any(
+    needs_llm = parsed.needs_llm or any(
         "confirm" in w.lower() or "without volume" in w.lower()
         for w in parsed.warnings
     )
