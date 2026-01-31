@@ -11,10 +11,11 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from src.domain.coin import CensusSnapshot
+from src.domain.repositories import ICensusSnapshotRepository
 from src.infrastructure.persistence.orm import CensusSnapshotModel
 
 
-class SqlAlchemyCensusSnapshotRepository:
+class SqlAlchemyCensusSnapshotRepository(ICensusSnapshotRepository):
     """
     Repository for managing census snapshots.
 

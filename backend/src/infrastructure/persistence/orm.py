@@ -676,6 +676,7 @@ class LLMEnrichmentModel(Base):
     __table_args__ = (
         Index("ix_llm_enrichments_capability_input_hash", "capability", "input_hash"),
         Index("ix_llm_enrichments_coin_capability", "coin_id", "capability"),
+        Index("ix_llm_enrichments_coin_review_status", "coin_id", "review_status"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -818,6 +819,9 @@ class MarketPriceModel(Base):
 class MarketDataPointModel(Base):
     """Individual price observations."""
     __tablename__ = "market_data_points"
+    __table_args__ = (
+        Index("ix_market_data_points_price_date", "market_price_id", "date"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     market_price_id: Mapped[int] = mapped_column(Integer, ForeignKey("market_prices.id", ondelete="CASCADE"), index=True)
@@ -891,6 +895,9 @@ class CoinValuationModel(Base):
 class WishlistItemModel(Base):
     """Acquisition targets."""
     __tablename__ = "wishlist_items"
+    __table_args__ = (
+        Index("ix_wishlist_items_status_priority", "status", "priority"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -935,6 +942,9 @@ class WishlistItemModel(Base):
 class PriceAlertModel(Base):
     """User alert configurations."""
     __tablename__ = "price_alerts"
+    __table_args__ = (
+        Index("ix_price_alerts_status_trigger_type", "status", "trigger_type"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 

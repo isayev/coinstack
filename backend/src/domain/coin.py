@@ -71,6 +71,10 @@ class AuthorityType(str, Enum):
     STRATEGOS = "strategos"
     ARCHON = "archon"
     EPISTATES = "epistates"
+    # Additional authority types for broader coverage
+    PROCONSUL = "proconsul"        # Roman provincial governors (e.g., Cicero in Cilicia)
+    TYRANT = "tyrant"              # Greek tyrants (e.g., Polycrates of Samos)
+    BASILEUS = "basileus"          # Hellenistic kings using Greek title
 
 
 class PortraitRelationship(str, Enum):
@@ -87,13 +91,22 @@ class PortraitRelationship(str, Enum):
 
 class WeightStandard(str, Enum):
     """Ancient weight standards for coinage."""
-    ATTIC = "attic"
-    AEGINETAN = "aeginetan"
-    CORINTHIAN = "corinthian"
-    PHOENICIAN = "phoenician"
-    DENARIUS_EARLY = "denarius_early"
-    DENARIUS_REFORMED = "denarius_reformed"
-    ANTONINIANUS = "antoninianus"
+    # Greek weight standards
+    ATTIC = "attic"                          # 4.3g drachm (Athens, Alexander)
+    AEGINETAN = "aeginetan"                  # 6.1g drachm (older Greek standard)
+    CORINTHIAN = "corinthian"                # 8.6g stater
+    PHOENICIAN = "phoenician"                # 7.0g shekel/didrachm
+    ALEXANDRINE = "alexandrine"              # Ptolemaic Egyptian standard (~28g tetradrachm)
+    # Roman Republican weight standards
+    LIBRAL = "libral"                        # Early Roman as-libral (~324g as)
+    SEXTANTAL = "sextantal"                  # Reduced Republican (~54g as)
+    DENARIUS_EARLY = "denarius_early"        # ~4.5g (211 BC)
+    DENARIUS_REFORMED = "denarius_reformed"  # ~3.9g (Nero onward)
+    ANTONINIANUS = "antoninianus"            # ~5.0g double denarius
+    # Byzantine weight standards
+    HISTAMENON = "histamenon"                # Standard Byzantine solidus (~4.4g)
+    TETARTERON = "tetarteron"                # Light solidus (~4.1g, 10th c. onward)
+    HYPERPYRON = "hyperpyron"                # Late Byzantine gold (~4.3g)
 
 
 class FlanShape(str, Enum):
@@ -111,6 +124,16 @@ class FlanType(str, Enum):
     STRUCK = "struck"
     CUT_FROM_BAR = "cut_from_bar"
     HAMMERED = "hammered"
+
+
+class FlanEdge(str, Enum):
+    """Edge treatment of the flan (separate from manufacturing type)."""
+    PLAIN = "plain"                # Smooth, untreated edge
+    REEDED = "reeded"              # Vertical serrations (anti-clipping, rare in ancients)
+    LETTERED = "lettered"          # Edge inscription
+    SERRATED = "serrated"          # Saw-tooth edge (Republican denarii, Seleucid)
+    BEVELED = "beveled"            # Angled/sloping edge
+    INCUSE = "incuse"              # Punched squares (archaic Greek)
 
 
 class ToolingExtent(str, Enum):

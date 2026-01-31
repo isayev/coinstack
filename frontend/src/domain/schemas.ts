@@ -650,7 +650,8 @@ export interface LegendExpansionResponse {
 // =============================================================================
 
 export const AuthorityTypeSchema = z.enum([
-  'magistrate', 'satrap', 'dynast', 'strategos', 'archon', 'epistates'
+  'magistrate', 'satrap', 'dynast', 'strategos', 'archon', 'epistates',
+  'proconsul', 'tyrant', 'basileus'
 ]);
 
 // --- Phase 1 Value Object Schemas (nested representation) ---
@@ -725,8 +726,12 @@ export const PortraitRelationshipSchema = z.enum([
 ]);
 
 export const WeightStandardSchema = z.enum([
-  'attic', 'aeginetan', 'corinthian', 'phoenician', 'denarius_early',
-  'denarius_reformed', 'antoninianus', 'solidus'
+  // Greek weight standards
+  'attic', 'aeginetan', 'corinthian', 'phoenician', 'alexandrine',
+  // Roman Republican weight standards
+  'libral', 'sextantal', 'denarius_early', 'denarius_reformed', 'antoninianus',
+  // Byzantine weight standards
+  'histamenon', 'tetarteron', 'hyperpyron', 'solidus'
 ]);
 
 export const FlanShapeSchema = z.enum([
@@ -735,6 +740,10 @@ export const FlanShapeSchema = z.enum([
 
 export const FlanTypeSchema = z.enum([
   'cast', 'struck', 'cut_from_bar', 'hammered'
+]);
+
+export const FlanEdgeSchema = z.enum([
+  'plain', 'reeded', 'lettered', 'serrated', 'beveled', 'incuse'
 ]);
 
 export const ToolingExtentSchema = z.enum([
@@ -1189,6 +1198,7 @@ export type PortraitRelationship = z.infer<typeof PortraitRelationshipSchema>;
 export type WeightStandard = z.infer<typeof WeightStandardSchema>;
 export type FlanShape = z.infer<typeof FlanShapeSchema>;
 export type FlanType = z.infer<typeof FlanTypeSchema>;
+export type FlanEdge = z.infer<typeof FlanEdgeSchema>;
 export type ToolingExtent = z.infer<typeof ToolingExtentSchema>;
 export type CenteringQuality = z.infer<typeof CenteringSchema>;
 export type DieState = z.infer<typeof DieStateSchema>;

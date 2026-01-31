@@ -608,6 +608,8 @@ from fastapi import Depends
 from src.domain.repositories import (
     ICoinRepository, IMarketPriceRepository, ICoinValuationRepository,
     IPriceAlertRepository, IWishlistItemRepository, IWishlistMatchRepository,
+    ILLMEnrichmentRepository, IPromptTemplateRepository, ILLMFeedbackRepository,
+    ILLMUsageRepository, IMarketDataPointRepository, ICensusSnapshotRepository,
 )
 from src.infrastructure.persistence.database import SessionLocal
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository

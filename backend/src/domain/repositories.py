@@ -5,7 +5,8 @@ from src.domain.coin import (
     RarityAssessment, ReferenceConcordance, ExternalCatalogLink,
     LLMEnrichment, PromptTemplate, LLMFeedback, LLMUsageDaily,
     MarketPrice, MarketDataPoint, CoinValuation, WishlistItem,
-    PriceAlert, WishlistMatch, Collection, CollectionCoin, CollectionStatistics
+    PriceAlert, WishlistMatch, Collection, CollectionCoin, CollectionStatistics,
+    CensusSnapshot,
 )
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
@@ -1075,6 +1076,78 @@ class IWishlistMatchRepository(Protocol):
 
     def delete(self, match_id: int) -> bool:
         """Delete a match by ID."""
+        ...
+
+
+# --- Census Snapshots Repository ---
+
+class ICensusSnapshotRepository(Protocol):
+    """
+    Repository interface for census snapshot management.
+
+    Tracks NGC/PCGS population census data over time for TPG-graded coins.
+    """
+
+    def get_by_id(self, snapshot_id: int) -> Optional["CensusSnapshot"]:
+        """Get a specific census snapshot by ID."""
+        ...
+
+    def get_by_coin_id(
+        self,
+        coin_id: int,
+        service: Optional[str] = None,
+    ) -> List["CensusSnapshot"]:
+        """
+        Get all census snapshots for a coin, optionally filtered by service.
+
+        Returns snapshots ordered by date desc (newest first).
+        """
+        ...
+
+    def get_latest(
+        self,
+        coin_id: int,
+        service: Optional[str] = None,
+    ) -> Optional["CensusSnapshot"]:
+        """
+        Get the most recent census snapshot for a coin.
+
+        Optionally filter by service (ngc, pcgs).
+        """
+        ...
+
+    def create(self, coin_id: int, snapshot: "CensusSnapshot") -> "CensusSnapshot":
+        """Create a new census snapshot. Returns snapshot with ID assigned."""
+        ...
+
+    def update(
+        self,
+        snapshot_id: int,
+        snapshot: "CensusSnapshot"
+    ) -> Optional["CensusSnapshot"]:
+        """Update an existing census snapshot."""
+        ...
+
+    def delete(self, snapshot_id: int) -> bool:
+        """Delete a census snapshot by ID."""
+        ...
+
+    def list_by_service(
+        self,
+        service: str,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List["CensusSnapshot"]:
+        """List all snapshots for a service with pagination."""
+        ...
+
+    def list_by_date_range(
+        self,
+        coin_id: int,
+        start_date: date,
+        end_date: date,
+    ) -> List["CensusSnapshot"]:
+        """Get snapshots within a date range for trend analysis."""
         ...
 
 

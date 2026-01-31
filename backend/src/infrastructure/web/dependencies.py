@@ -13,10 +13,17 @@ from src.infrastructure.repositories.price_alert_repository import SqlAlchemyPri
 from src.infrastructure.repositories.wishlist_item_repository import SqlAlchemyWishlistItemRepository
 from src.infrastructure.repositories.wishlist_match_repository import SqlAlchemyWishlistMatchRepository
 from src.infrastructure.repositories.llm_enrichment_repository import SqlAlchemyLLMEnrichmentRepository
+from src.infrastructure.repositories.prompt_template_repository import SqlAlchemyPromptTemplateRepository
+from src.infrastructure.repositories.llm_feedback_repository import SqlAlchemyLLMFeedbackRepository
+from src.infrastructure.repositories.llm_usage_repository import SqlAlchemyLLMUsageRepository
+from src.infrastructure.repositories.market_data_point_repository import SqlAlchemyMarketDataPointRepository
+from src.infrastructure.repositories.census_snapshot_repository import SqlAlchemyCensusSnapshotRepository
 from src.domain.repositories import (
     ICoinRepository, IAuctionDataRepository, ICollectionRepository,
     IMarketPriceRepository, ICoinValuationRepository, IPriceAlertRepository,
     IWishlistItemRepository, IWishlistMatchRepository, ILLMEnrichmentRepository,
+    IPromptTemplateRepository, ILLMFeedbackRepository, ILLMUsageRepository,
+    IMarketDataPointRepository, ICensusSnapshotRepository,
 )
 from src.domain.vocab import IVocabRepository
 from src.application.services.apply_enrichment import ApplyEnrichmentService
@@ -111,3 +118,28 @@ def get_save_llm_enrichment_use_case(db: Session = Depends(get_db)) -> SaveLLMEn
     return SaveLLMEnrichmentUseCase(
         enrichment_repo=SqlAlchemyLLMEnrichmentRepository(db),
     )
+
+
+def get_prompt_template_repo(db: Session = Depends(get_db)) -> IPromptTemplateRepository:
+    """Build PromptTemplateRepository for LLM prompt template management."""
+    return SqlAlchemyPromptTemplateRepository(db)
+
+
+def get_llm_feedback_repo(db: Session = Depends(get_db)) -> ILLMFeedbackRepository:
+    """Build LLMFeedbackRepository for user feedback on LLM outputs."""
+    return SqlAlchemyLLMFeedbackRepository(db)
+
+
+def get_llm_usage_repo(db: Session = Depends(get_db)) -> ILLMUsageRepository:
+    """Build LLMUsageRepository for LLM usage metrics and cost tracking."""
+    return SqlAlchemyLLMUsageRepository(db)
+
+
+def get_market_data_point_repo(db: Session = Depends(get_db)) -> IMarketDataPointRepository:
+    """Build MarketDataPointRepository for individual price observations."""
+    return SqlAlchemyMarketDataPointRepository(db)
+
+
+def get_census_snapshot_repo(db: Session = Depends(get_db)) -> ICensusSnapshotRepository:
+    """Build CensusSnapshotRepository for TPG census population tracking."""
+    return SqlAlchemyCensusSnapshotRepository(db)

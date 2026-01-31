@@ -11,10 +11,11 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from src.domain.coin import MarketDataPoint
+from src.domain.repositories import IMarketDataPointRepository
 from src.infrastructure.persistence.orm import MarketDataPointModel
 
 
-class SqlAlchemyMarketDataPointRepository:
+class SqlAlchemyMarketDataPointRepository(IMarketDataPointRepository):
     """
     Repository for managing market data points.
 

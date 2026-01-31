@@ -91,7 +91,8 @@ infrastructure/
 │       ├── price_alert_repository.py # SqlAlchemyPriceAlertRepository (Phase 5)
 │       ├── wishlist_item_repository.py # SqlAlchemyWishlistItemRepository (Phase 5)
 │       ├── wishlist_match_repository.py # SqlAlchemyWishlistMatchRepository (Phase 5)
-│       └── collection_repository.py # SqlAlchemyCollectionRepository (Phase 6)
+│       ├── collection_repository.py # SqlAlchemyCollectionRepository (Phase 6)
+│       └── census_snapshot_repository.py # SqlAlchemyCensusSnapshotRepository (Phase 5)
 │
 ├── scrapers/
 │   ├── base_playwright.py     # Base scraper with Playwright
