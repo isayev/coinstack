@@ -57,10 +57,42 @@ class ContextService:
             
         parsed = content if isinstance(content, dict) else {"raw_content": str(content), "sections": {}}
         
+        # Handle flat JSON response (where keys are sections)
+        if isinstance(parsed, dict) and not parsed.get("sections"):
+            sections = {}
+            known_sections = [
+                "EPIGRAPHY_AND_TITLES", "ICONOGRAPHY_AND_SYMBOLISM", "ARTISTIC_STYLE",
+                "PROPAGANDA_AND_MESSAGING", "ECONOMIC_CONTEXT", "DIE_STUDIES_AND_VARIETIES",
+                "ARCHAEOLOGICAL_CONTEXT", "TYPOLOGICAL_RELATIONSHIPS", "MILITARY_HISTORY",
+                "HISTORICAL_CONTEXT", "NUMISMATIC_SIGNIFICANCE", "RARITY_ASSESSMENT"
+            ]
+            for key in list(parsed.keys()):
+                if key in known_sections:
+                    sections[key] = parsed.pop(key)
+            if sections:
+                parsed["sections"] = sections
+
+        # Handle Markdown/Plain text response (extract sections from headers)
+        if not parsed.get("sections") and isinstance(parsed.get("raw_content"), str):
+            sections = {}
+            raw = parsed["raw_content"]
+            # Pattern to match ## SECTION_NAME followed by content
+            # Matches from header to next header or end
+            header_pattern = r'##\s+([A-Z_]+)\s*([\s\S]*?)(?=\n##|$)'
+            matches = re.finditer(header_pattern, raw)
+            for match in matches:
+                key = match.group(1).strip()
+                content_text = match.group(2).strip()
+                if content_text:
+                    sections[key] = content_text
+            if sections:
+                parsed["sections"] = sections
+
         # Extract Citations
         raw_content = parsed.get("raw_content", "")
         if not raw_content and parsed.get("sections"):
             raw_content = "\n\n".join(parsed["sections"].values())
+            parsed["raw_content"] = raw_content  # Ensure it's in the dict for the router to save
             
         llm_citations = self._parse_citations(raw_content)
         existing = coin_data.get("references", [])

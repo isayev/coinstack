@@ -1,7 +1,7 @@
 import httpx
 import asyncio
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://127.0.0.1:8000"
 
 async def test_lookup(ref):
     print(f"\n--- Testing: '{ref}' ---")

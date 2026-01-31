@@ -68,6 +68,6 @@ $frontendPath = Join-Path $PSScriptRoot "frontend"
 Start-Process -FilePath "npm" -ArgumentList "run", "dev", "--", "--port", "3000" -WorkingDirectory $frontendPath -NoNewWindow
 
 Write-Host "`n=== Deployment Complete ===" -ForegroundColor Green
-Write-Host "Frontend: " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Cyan
-Write-Host "Backend:  " -NoNewline; Write-Host "http://localhost:8000/docs" -ForegroundColor Cyan
-Write-Host "API V2:   " -NoNewline; Write-Host "http://localhost:8000/api/v2/coins" -ForegroundColor Cyan
+Write-Host "Frontend: " -NoNewline; Write-Host "http://127.0.0.1:3000" -ForegroundColor Cyan
+Write-Host "Backend:  " -NoNewline; Write-Host "http://127.0.0.1:8000/docs" -ForegroundColor Cyan
+Write-Host "API V2:   " -NoNewline; Write-Host "http://127.0.0.1:8000/api/v2/coins" -ForegroundColor Cyan

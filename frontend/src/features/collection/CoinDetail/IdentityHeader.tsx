@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Coin } from '@/domain/schemas';
 import { parseCategory, CATEGORY_CONFIG } from '@/components/design-system/colors';
+import { RarityIndicator } from '@/components/design-system/RarityIndicator';
 import { formatYear, getAttributionTitle } from '@/lib/formatters';
 import { getReferenceUrl, formatReference } from '@/lib/referenceLinks';
 import { cn } from '@/lib/utils';
@@ -225,6 +226,15 @@ export const IdentityHeader = memo(function IdentityHeader({
               >
                 {coin.issue_status.replace(/_/g, ' ')}
               </span>
+            )}
+
+            {/* Rarity Badge */}
+            {coin.rarity && (
+              <RarityIndicator 
+                rarity={coin.rarity} 
+                variant="badge" 
+                className="ml-2 h-5 flex items-center" 
+              />
             )}
 
             {/* Actions */}

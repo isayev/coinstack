@@ -74,6 +74,10 @@ class CreateCoinRequest(BaseModel):
     storage_location: Optional[str] = None
     personal_notes: Optional[str] = None
     
+    # Rarity
+    rarity: Optional[str] = None
+    rarity_notes: Optional[str] = None
+    
     # Research Grade Extensions
     specific_gravity: Optional[Decimal] = None
     issue_status: str = "official"
@@ -184,7 +188,7 @@ class CoinResponse(BaseModel):
     # LLM enrichment
     historical_significance: Optional[str] = None
     llm_enriched_at: Optional[str] = None
-    llm_analysis_sections: Optional[str] = None      # JSON-encoded sections
+    llm_analysis_sections: Optional[Dict[str, Any]] = None      # JSON-encoded sections
     llm_suggested_references: Optional[List[str]] = None  # Citations found by LLM for audit
     llm_suggested_rarity: Optional[dict] = None      # Rarity info from LLM for audit
     llm_suggested_design: Optional[dict] = None     # Design suggestions: obverse_legend, reverse_legend, exergue, obverse_description, reverse_description, *_expanded
@@ -605,8 +609,8 @@ def update_coin(
             ) if request.acquisition_price is not None else None,
             storage_location=request.storage_location,
             personal_notes=request.personal_notes,
-            rarity=existing_coin.rarity,
-            rarity_notes=existing_coin.rarity_notes,
+            rarity=request.rarity if "rarity" in request.model_fields_set else existing_coin.rarity,
+            rarity_notes=request.rarity_notes if "rarity_notes" in request.model_fields_set else existing_coin.rarity_notes,
 
             # Extensions
             issue_status=IssueStatus(request.issue_status) if request.issue_status else IssueStatus.OFFICIAL,

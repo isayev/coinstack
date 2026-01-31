@@ -14,9 +14,13 @@ async def main():
         context = await browser.new_context(viewport={'width': 1280, 'height': 720})
         page = await context.new_page()
 
-        print("Navigating to http://localhost:3000 ...")
+        # Capture console logs
+        page.on("console", lambda msg: print(f"BROWSER CONSOLE: {msg.type}: {msg.text}"))
+        page.on("pageerror", lambda exc: print(f"BROWSER ERROR: {exc}"))
+
+        print("Navigating to http://127.0.0.1:3000 ...")
         try:
-            await page.goto("http://localhost:3000", timeout=30000)
+            await page.goto("http://127.0.0.1:3000", timeout=30000)
             print("Page loaded.")
         except Exception as e:
             print(f"Failed to load page: {e}")

@@ -1,11 +1,12 @@
 <#
 .SYNOPSIS
-    CoinStack Full Backup Script - Creates versioned backups of database, images, and settings.
+    CoinStack V2 Full Backup Script - Creates versioned backups of database, images, and settings.
 
 .DESCRIPTION
-    Creates complete application state backups including:
-    - SQLite database (coinstack.db)
-    - Coin images (coin_images, cng_images directories)
+    Creates complete application state backups for V2 architecture including:
+    - SQLite database (coinstack_v2.db)
+    - Coin images (coin_images, cng_images, biddr_images, ebay_images)
+    - LLM data (cache, costs, vision cache)
     - Settings (.env configuration)
     - User uploads
     
@@ -44,15 +45,20 @@ $ErrorActionPreference = "Stop"
 $Script:ProjectRoot = $PSScriptRoot
 $Script:BackendDir = Join-Path $ProjectRoot "backend"
 $Script:DataDir = Join-Path $BackendDir "data"
-$Script:BackupsDir = Join-Path $BackendDir "backups"
-$Script:MaxVersions = 5
+$Script:RootDataDir = Join-Path $ProjectRoot "data"
+$Script:BackupsDir = Join-Path $Script:BackendDir "backups"
+$Script:MaxVersions = 10
 
 # Paths to backup
-$Script:DatabasePath = Join-Path $DataDir "coinstack.db"
-$Script:CoinImagesDir = Join-Path $DataDir "coin_images"
-$Script:CngImagesDir = Join-Path $DataDir "cng_images"
+$Script:DatabasePath = Join-Path $Script:BackendDir "coinstack_v2.db"
 $Script:UploadsDir = Join-Path $BackendDir "uploads"
 $Script:EnvFile = Join-Path $BackendDir ".env"
+
+# Image directories in backend/data
+$Script:ImageDirs = @("coin_images", "cng_images", "biddr_images", "ebay_images")
+
+# LLM data files in root/data
+$Script:LlmFiles = @("llm_cache.sqlite", "llm_costs.sqlite", "llm_vision_cache.sqlite")
 
 function Write-Status {
     param([string]$Message, [string]$Type = "Info")
@@ -75,16 +81,12 @@ function Write-Status {
 }
 
 function Get-BackupVersions {
-    <#
-    .SYNOPSIS
-        Returns list of existing backup versions sorted by date (newest first).
-    #>
     if (-not (Test-Path $BackupsDir)) {
         return @()
     }
     
     Get-ChildItem -Path $BackupsDir -Directory | 
-        Where-Object { $_.Name -match '^\d{8}_\d{6}$' } |
+        Where-Object { $_.Name -match '^\d{8}_{1}\d{6}$' } |
         Sort-Object Name -Descending |
         Select-Object -ExpandProperty Name
 }
@@ -101,15 +103,10 @@ function Get-BackupManifest {
 }
 
 function New-BackupVersion {
-    <#
-    .SYNOPSIS
-        Creates a new timestamped backup of the entire application state.
-    #>
-    
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $backupPath = Join-Path $BackupsDir $timestamp
     
-    Write-Status "Creating backup version: $timestamp"
+    Write-Status "Creating V2 backup version: $timestamp"
     Write-Status "Backup location: $backupPath"
     
     # Ensure backup directory exists
@@ -124,6 +121,7 @@ function New-BackupVersion {
     # Initialize manifest
     $manifest = @{
         version = $timestamp
+        app_version = "V2.1"
         created_at = (Get-Date).ToString("o")
         components = @{}
         stats = @{
@@ -132,14 +130,14 @@ function New-BackupVersion {
         }
     }
     
-    # 1. Backup Database
-    Write-Status "Backing up database..."
+    # 1. Backup Database (V2)
+    Write-Status "Backing up V2 database..."
     if (Test-Path $DatabasePath) {
-        $dbBackupPath = Join-Path $backupPath "coinstack.db"
+        $dbBackupPath = Join-Path $backupPath "coinstack_v2.db"
         Copy-Item -Path $DatabasePath -Destination $dbBackupPath -Force
         $dbSize = (Get-Item $dbBackupPath).Length
         $manifest.components["database"] = @{
-            file = "coinstack.db"
+            file = "coinstack_v2.db"
             size_bytes = $dbSize
             original_path = $DatabasePath
         }
@@ -165,87 +163,61 @@ function New-BackupVersion {
         }
         $manifest.stats.total_files++
         Write-Status "Settings backed up" "Success"
-    } else {
-        Write-Status ".env file not found - skipping" "Warning"
-        $manifest.components["settings"] = @{ status = "not_found" }
     }
     
-    # 3. Backup Coin Images
-    Write-Status "Backing up coin images..."
+    # 3. Backup Images
+    Write-Status "Backing up image repositories..."
     $imagesBackupPath = Join-Path $backupPath "images"
     New-Item -ItemType Directory -Path $imagesBackupPath -Force | Out-Null
     
-    # Coin images
-    if (Test-Path $CoinImagesDir) {
-        $coinImagesBackup = Join-Path $imagesBackupPath "coin_images"
-        Copy-Item -Path $CoinImagesDir -Destination $coinImagesBackup -Recurse -Force
-        $coinImageFiles = Get-ChildItem -Path $coinImagesBackup -File -Recurse
-        $coinImageCount = ($coinImageFiles | Measure-Object).Count
-        $coinImageSize = ($coinImageFiles | Measure-Object -Property Length -Sum).Sum
-        $manifest.components["coin_images"] = @{
-            directory = "images/coin_images"
-            file_count = $coinImageCount
-            size_bytes = $coinImageSize
-            original_path = $CoinImagesDir
+    foreach ($dirName in $ImageDirs) {
+        $sourceDir = Join-Path $DataDir $dirName
+        if (Test-Path $sourceDir) {
+            $destDir = Join-Path $imagesBackupPath $dirName
+            Copy-Item -Path $sourceDir -Destination $destDir -Recurse -Force
+            $files = Get-ChildItem -Path $destDir -File -Recurse -ErrorAction SilentlyContinue
+            $count = ($files | Measure-Object).Count
+            $size = ($files | Measure-Object -Property Length -Sum).Sum
+            if ($null -eq $size) { $size = 0 }
+            
+            $manifest.components[$dirName] = @{
+                directory = "images/$dirName"
+                file_count = $count
+                size_bytes = $size
+                original_path = $sourceDir
+            }
+            $manifest.stats.total_files += $count
+            $manifest.stats.total_size_mb += [math]::Round($size / 1MB, 2)
+            Write-Status "  - ${dirName}: $count files ($([math]::Round($size / 1MB, 2)) MB)" "Success"
         }
-        $manifest.stats.total_files += $coinImageCount
-        $manifest.stats.total_size_mb += [math]::Round($coinImageSize / 1MB, 2)
-        Write-Status "Coin images backed up ($coinImageCount files, $([math]::Round($coinImageSize / 1MB, 2)) MB)" "Success"
-    } else {
-        Write-Status "coin_images directory not found - skipping" "Warning"
-        $manifest.components["coin_images"] = @{ status = "not_found" }
     }
     
-    # CNG images (scraped)
-    if (Test-Path $CngImagesDir) {
-        $cngImagesBackup = Join-Path $imagesBackupPath "cng_images"
-        Copy-Item -Path $CngImagesDir -Destination $cngImagesBackup -Recurse -Force
-        $cngImageFiles = Get-ChildItem -Path $cngImagesBackup -File -Recurse
-        $cngImageCount = ($cngImageFiles | Measure-Object).Count
-        $cngImageSize = ($cngImageFiles | Measure-Object -Property Length -Sum).Sum
-        $manifest.components["cng_images"] = @{
-            directory = "images/cng_images"
-            file_count = $cngImageCount
-            size_bytes = $cngImageSize
-            original_path = $CngImagesDir
-        }
-        $manifest.stats.total_files += $cngImageCount
-        $manifest.stats.total_size_mb += [math]::Round($cngImageSize / 1MB, 2)
-        Write-Status "CNG images backed up ($cngImageCount files, $([math]::Round($cngImageSize / 1MB, 2)) MB)" "Success"
-    } else {
-        Write-Status "cng_images directory not found - skipping" "Warning"
-        $manifest.components["cng_images"] = @{ status = "not_found" }
-    }
+    # 4. Backup LLM Data
+    Write-Status "Backing up LLM caches and metrics..."
+    $llmBackupPath = Join-Path $backupPath "llm_data"
+    New-Item -ItemType Directory -Path $llmBackupPath -Force | Out-Null
     
-    # 4. Backup Uploads
-    Write-Status "Backing up uploads..."
-    if (Test-Path $UploadsDir) {
-        $uploadsBackupPath = Join-Path $backupPath "uploads"
-        Copy-Item -Path $UploadsDir -Destination $uploadsBackupPath -Recurse -Force
-        $uploadFiles = Get-ChildItem -Path $uploadsBackupPath -File -Recurse -ErrorAction SilentlyContinue
-        $uploadCount = ($uploadFiles | Measure-Object).Count
-        $uploadSize = ($uploadFiles | Measure-Object -Property Length -Sum).Sum
-        if ($null -eq $uploadSize) { $uploadSize = 0 }
-        $manifest.components["uploads"] = @{
-            directory = "uploads"
-            file_count = $uploadCount
-            size_bytes = $uploadSize
-            original_path = $UploadsDir
+    foreach ($fileName in $LlmFiles) {
+        $sourceFile = Join-Path $RootDataDir $fileName
+        if (Test-Path $sourceFile) {
+            Copy-Item -Path $sourceFile -Destination $llmBackupPath -Force
+            $size = (Get-Item $sourceFile).Length
+            $manifest.components[$fileName] = @{
+                file = "llm_data/$fileName"
+                size_bytes = $size
+                original_path = $sourceFile
+            }
+            $manifest.stats.total_files++
+            $manifest.stats.total_size_mb += [math]::Round($size / 1MB, 2)
+            Write-Status "  - $fileName backed up" "Success"
         }
-        $manifest.stats.total_files += $uploadCount
-        $manifest.stats.total_size_mb += [math]::Round($uploadSize / 1MB, 2)
-        Write-Status "Uploads backed up ($uploadCount files)" "Success"
-    } else {
-        Write-Status "uploads directory not found - skipping" "Warning"
-        $manifest.components["uploads"] = @{ status = "not_found" }
     }
     
     # Write manifest
     $manifestPath = Join-Path $backupPath "manifest.json"
     $manifest | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath -Encoding UTF8
-    Write-Status "Manifest created"
     
-    # Calculate total backup size
+    # Recalculate total size
     $totalBackupSize = (Get-ChildItem -Path $backupPath -Recurse -File | Measure-Object -Property Length -Sum).Sum
     $manifest.stats.total_size_mb = [math]::Round($totalBackupSize / 1MB, 2)
     
@@ -257,25 +229,15 @@ function New-BackupVersion {
     Write-Host "  Location:    $backupPath"
     Write-Host ""
     
-    # Rotate old backups
     Remove-OldBackups
-    
     return $timestamp
 }
 
 function Remove-OldBackups {
-    <#
-    .SYNOPSIS
-        Removes old backups keeping only the most recent MaxVersions.
-    #>
-    
     $versions = Get-BackupVersions
-    
     if ($versions.Count -gt $MaxVersions) {
         $toRemove = $versions | Select-Object -Skip $MaxVersions
-        
         Write-Status "Rotating old backups (keeping $MaxVersions most recent)..."
-        
         foreach ($version in $toRemove) {
             $versionPath = Join-Path $BackupsDir $version
             Remove-Item -Path $versionPath -Recurse -Force
@@ -285,215 +247,103 @@ function Remove-OldBackups {
 }
 
 function Show-BackupList {
-    <#
-    .SYNOPSIS
-        Displays list of available backup versions with details.
-    #>
-    
     $versions = Get-BackupVersions
-    
     if ($versions.Count -eq 0) {
         Write-Status "No backups found in $BackupsDir" "Warning"
         return
     }
     
     Write-Host ""
-    Write-Host "Available Backup Versions:" -ForegroundColor Cyan
+    Write-Host "Available Backup Versions (V2):" -ForegroundColor Cyan
     Write-Host "=" * 80
     
     foreach ($version in $versions) {
         $manifest = Get-BackupManifest -BackupVersion $version
-        $versionPath = Join-Path $BackupsDir $version
-        
         if ($manifest) {
             $created = [DateTime]::Parse($manifest.created_at).ToString("yyyy-MM-dd HH:mm:ss")
-            $size = $manifest.stats.total_size_mb
-            $files = $manifest.stats.total_files
-            
             Write-Host ""
             Write-Host "  Version: $version" -ForegroundColor Yellow
             Write-Host "    Created:     $created"
-            Write-Host "    Total size:  $size MB"
-            Write-Host "    Total files: $files"
-            
-            # Component status
-            Write-Host "    Components:"
-            $compNames = @("database", "settings", "coin_images", "cng_images", "uploads")
-            foreach ($comp in $compNames) {
-                $compData = $manifest.components.$comp
-                if ($null -eq $compData -or $compData.status -eq "not_found") {
-                    Write-Host "      - $comp : [not included]" -ForegroundColor DarkGray
-                } else {
-                    $compInfo = if ($compData.file_count) {
-                        "$($compData.file_count) files"
-                    } elseif ($compData.size_bytes) {
-                        "$([math]::Round($compData.size_bytes / 1KB, 1)) KB"
-                    } else {
-                        "included"
-                    }
-                    Write-Host "      - $comp : $compInfo" -ForegroundColor Green
-                }
-            }
-        } else {
-            Write-Host ""
-            Write-Host "  Version: $version" -ForegroundColor Yellow
-            Write-Host "    [Manifest not found - backup may be corrupted]" -ForegroundColor Red
+            Write-Host "    Total size:  $($manifest.stats.total_size_mb) MB"
+            Write-Host "    App Version: $($manifest.app_version)"
         }
     }
-    
-    Write-Host ""
-    Write-Host "=" * 80
-    Write-Host "To restore: .\backup.ps1 -Action restore -Version `"VERSION`"" -ForegroundColor Cyan
     Write-Host ""
 }
 
 function Restore-BackupVersion {
     param([string]$BackupVersion)
     
-    <#
-    .SYNOPSIS
-        Restores application state from a specific backup version.
-    #>
-    
     if ([string]::IsNullOrWhiteSpace($BackupVersion)) {
         Write-Status "Please specify a version to restore using -Version parameter" "Error"
-        Write-Status "Use -Action list to see available versions"
         return
     }
     
     $versionPath = Join-Path $BackupsDir $BackupVersion
-    
     if (-not (Test-Path $versionPath)) {
         Write-Status "Backup version '$BackupVersion' not found" "Error"
-        Write-Status "Use -Action list to see available versions"
         return
     }
     
     $manifest = Get-BackupManifest -BackupVersion $BackupVersion
-    
     if (-not $manifest) {
         Write-Status "Manifest not found for backup '$BackupVersion'" "Error"
         return
     }
     
     Write-Host ""
-    Write-Status "Restoring from backup: $BackupVersion"
-    Write-Status "Created: $($manifest.created_at)"
-    Write-Host ""
-    
-    # Confirm restore
-    Write-Host "WARNING: This will overwrite current data!" -ForegroundColor Red
-    Write-Host "Components to restore:"
-    foreach ($comp in $manifest.components.Keys) {
-        $compData = $manifest.components[$comp]
-        if ($compData.status -ne "not_found") {
-            Write-Host "  - $comp"
-        }
-    }
-    Write-Host ""
-    
+    Write-Status "Restoring from V2 backup: $BackupVersion"
+    Write-Host "WARNING: This will overwrite current V2 data!" -ForegroundColor Red
     $confirm = Read-Host "Type 'RESTORE' to confirm"
     if ($confirm -ne "RESTORE") {
         Write-Status "Restore cancelled" "Warning"
         return
     }
     
-    Write-Host ""
+    # 1. Restore Database
+    if ($manifest.components.database) {
+        Write-Status "Restoring coinstack_v2.db..."
+        Copy-Item -Path (Join-Path $versionPath "coinstack_v2.db") -Destination $DatabasePath -Force
+    }
     
-    # Create pre-restore backup
-    Write-Status "Creating pre-restore safety backup..."
-    $safetyBackup = New-BackupVersion
-    Write-Status "Safety backup created: $safetyBackup" "Success"
-    Write-Host ""
-    
-    # Restore Database
-    if ($manifest.components["database"] -and $manifest.components["database"].status -ne "not_found") {
-        Write-Status "Restoring database..."
-        $dbSource = Join-Path $versionPath "coinstack.db"
-        if (Test-Path $dbSource) {
-            # Ensure data directory exists
-            $dataDir = Split-Path $DatabasePath -Parent
-            if (-not (Test-Path $dataDir)) {
-                New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
-            }
-            Copy-Item -Path $dbSource -Destination $DatabasePath -Force
-            Write-Status "Database restored" "Success"
+    # 2. Restore Images
+    foreach ($dirName in $ImageDirs) {
+        $src = Join-Path $versionPath "images/$dirName"
+        if (Test-Path $src) {
+            Write-Status "Restoring $dirName..."
+            $dest = Join-Path $DataDir $dirName
+            if (Test-Path $dest) { Remove-Item -Path $dest -Recurse -Force }
+            Copy-Item -Path $src -Destination $dest -Recurse -Force
         }
     }
     
-    # Restore Settings
-    if ($manifest.components["settings"] -and $manifest.components["settings"].status -ne "not_found") {
-        Write-Status "Restoring settings..."
-        $settingsDir = Join-Path $versionPath "settings"
-        $envSource = Join-Path $settingsDir ".env"
-        if (Test-Path $envSource) {
-            Copy-Item -Path $envSource -Destination $EnvFile -Force
-            Write-Status "Settings restored" "Success"
+    # 3. Restore LLM Data
+    foreach ($fileName in $LlmFiles) {
+        $src = Join-Path $versionPath "llm_data/$fileName"
+        if (Test-Path $src) {
+            Write-Status "Restoring $fileName..."
+            Copy-Item -Path $src -Destination (Join-Path $RootDataDir $fileName) -Force
         }
     }
     
-    # Restore Coin Images
-    if ($manifest.components["coin_images"] -and $manifest.components["coin_images"].status -ne "not_found") {
-        Write-Status "Restoring coin images..."
-        $imagesDir = Join-Path $versionPath "images"
-        $coinImgSource = Join-Path $imagesDir "coin_images"
-        if (Test-Path $coinImgSource) {
-            if (Test-Path $CoinImagesDir) {
-                Remove-Item -Path $CoinImagesDir -Recurse -Force
-            }
-            Copy-Item -Path $coinImgSource -Destination $CoinImagesDir -Recurse -Force
-            Write-Status "Coin images restored" "Success"
-        }
+    # 4. Restore Settings
+    $envSrc = Join-Path $versionPath "settings/.env"
+    if (Test-Path $envSrc) {
+        Write-Status "Restoring .env..."
+        Copy-Item -Path $envSrc -Destination $EnvFile -Force
     }
     
-    # Restore CNG Images
-    if ($manifest.components["cng_images"] -and $manifest.components["cng_images"].status -ne "not_found") {
-        Write-Status "Restoring CNG images..."
-        $cngImgSource = Join-Path $imagesDir "cng_images"
-        if (Test-Path $cngImgSource) {
-            if (Test-Path $CngImagesDir) {
-                Remove-Item -Path $CngImagesDir -Recurse -Force
-            }
-            Copy-Item -Path $cngImgSource -Destination $CngImagesDir -Recurse -Force
-            Write-Status "CNG images restored" "Success"
-        }
-    }
-    
-    # Restore Uploads
-    if ($manifest.components["uploads"] -and $manifest.components["uploads"].status -ne "not_found") {
-        Write-Status "Restoring uploads..."
-        $uploadsSource = Join-Path $versionPath "uploads"
-        if (Test-Path $uploadsSource) {
-            if (Test-Path $UploadsDir) {
-                Remove-Item -Path $UploadsDir -Recurse -Force
-            }
-            Copy-Item -Path $uploadsSource -Destination $UploadsDir -Recurse -Force
-            Write-Status "Uploads restored" "Success"
-        }
-    }
-    
-    Write-Host ""
     Write-Status "Restore completed successfully!" "Success"
-    Write-Status "A safety backup was created: $safetyBackup"
-    Write-Status "Please restart the application to apply changes."
-    Write-Host ""
 }
 
 # Main execution
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  CoinStack Backup Utility v1.0" -ForegroundColor Cyan
+Write-Host "  CoinStack V2 Backup Utility" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host ""
 
 switch ($Action) {
-    "backup" {
-        New-BackupVersion
-    }
-    "restore" {
-        Restore-BackupVersion -BackupVersion $Version
-    }
-    "list" {
-        Show-BackupList
-    }
+    "backup" { New-BackupVersion }
+    "restore" { Restore-BackupVersion -BackupVersion $Version }
+    "list" { Show-BackupList }
 }

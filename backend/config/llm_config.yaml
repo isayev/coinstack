@@ -114,10 +114,10 @@ models:
     supports_vision: true
     supports_json_mode: true
 
-  deepseek-v3:
+  deepseek-v3.2:
     provider: openrouter
     # OpenRouter: deepseek/deepseek-v3.2 (V3.2, reasoning-capable)
-    model_id: deepseek/deepseek-v3.2
+    model_id: openrouter/deepseek/deepseek-v3.2
     cost_per_1k_input: 0.00014
     cost_per_1k_output: 0.00028
     max_tokens: 8192
@@ -168,11 +168,11 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: deepseek-v3
+        primary: deepseek-v3.2
         fallback: [claude-haiku]
       development:
         primary: ollama-phi3
-        fallback: [ollama-llama3.2, deepseek-v3]
+        fallback: [ollama-llama3.2, deepseek-v3.2]
       offline:
         primary: ollama-phi3
         fallback: []
@@ -186,7 +186,7 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: deepseek-v3
+        primary: deepseek-v3.2
         fallback: [claude-haiku]
       development:
         primary: ollama-llama3.2
@@ -204,8 +204,8 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: claude-haiku
-        fallback: [deepseek-v3]
+        primary: deepseek-v3.2
+        fallback: [claude-haiku]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -222,8 +222,8 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: claude-haiku
-        fallback: [deepseek-v3]
+        primary: deepseek-v3.2
+        fallback: [claude-haiku]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -261,8 +261,8 @@ capabilities:
     cacheable: true
     profiles:
       production:
-        primary: claude-haiku
-        fallback: [deepseek-v3]
+        primary: deepseek-v3.2
+        fallback: [claude-haiku]
       development:
         primary: ollama-llama3.2
         fallback: [ollama-phi3]
@@ -279,12 +279,12 @@ capabilities:
     cacheable: false
     streaming: false
     profiles:
-      # deepseek-v3 primary to avoid Anthropic credit dependency; Claude as fallback when credits available
+      # deepseek-v3.2 primary to avoid Anthropic credit dependency; Claude as fallback when credits available
       production:
-        primary: deepseek-v3
-        fallback: [claude-opus, claude-sonnet]
+        primary: deepseek-v3.2
+        fallback: []
       development:
-        primary: deepseek-v3
+        primary: deepseek-v3.2
         fallback: [ollama-llama3.2]
       offline:
         primary: ollama-llama3.2
@@ -305,8 +305,8 @@ capabilities:
     cacheable: false  # Each query is unique
     profiles:
       production:
-        primary: claude-opus
-        fallback: [deepseek-v3, claude-sonnet]
+        primary: deepseek-v3.2
+        fallback: [claude-opus, claude-sonnet]
       development:
         primary: ollama-llama3.2
         fallback: []
@@ -342,8 +342,8 @@ capabilities:
     cacheable: true  # Deterministic parsing
     profiles:
       production:
-        primary: claude-haiku
-        fallback: [deepseek-v3]
+        primary: deepseek-v3.2
+        fallback: [claude-haiku]
       development:
         primary: ollama-phi3
         fallback: [ollama-llama3.2]

@@ -32,5 +32,4 @@ Start-Process -FilePath "uv" -ArgumentList $backendArgs -WorkingDirectory "$PSSc
 Write-Host "starting frontend..." -ForegroundColor Yellow
 Start-Process -FilePath "npm" -ArgumentList "run", "dev" -WorkingDirectory "$PSScriptRoot\frontend" -WindowStyle Hidden
 
-Write-Host "done. backend: http://localhost:8000 | frontend: http://localhost:3000" -ForegroundColor Green
-Write-Host "use 'get-process | stop-process' or manually kill terminal to stop." -ForegroundColor Gray
+    Write-Host "done. backend: http://127.0.0.1:8000 | frontend: http://127.0.0.1:3000" -ForegroundColor GreenWrite-Host "use 'get-process | stop-process' or manually kill terminal to stop." -ForegroundColor Gray

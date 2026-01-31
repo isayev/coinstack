@@ -19,8 +19,8 @@ import { MarkdownContent, SECTION_TITLES, SECTION_ORDER } from '@/components/ui/
 interface HistoricalContextCardProps {
   /** Pre-existing historical context from backend */
   context?: string | null;
-  /** JSON-encoded analysis sections (Research Grade) */
-  analysisSections?: string | null;
+  /** JSON-encoded or pre-parsed analysis sections (Research Grade) */
+  analysisSections?: string | Record<string, any> | null;
   /** When context was generated */
   generatedAt?: string | null;
   /** Coin metadata for context generation */
@@ -55,19 +55,26 @@ export function HistoricalContextCard({
   // Parse sections if available
   const parsedSections = useMemo(() => {
     if (!analysisSections) return null;
-    try {
-      const parsed = JSON.parse(analysisSections);
-      // Ensure it's an array of objects
-      if (Array.isArray(parsed)) return parsed;
-      // Convert dict to array if needed
-      if (typeof parsed === 'object') {
-        return Object.entries(parsed).map(([title, content]) => ({ title, content }));
+    
+    let parsed: any;
+    if (typeof analysisSections === 'object') {
+      parsed = analysisSections;
+    } else {
+      try {
+        parsed = JSON.parse(analysisSections);
+      } catch (e) {
+        console.error("Failed to parse analysis sections", e);
+        return null;
       }
-      return null;
-    } catch (e) {
-      console.error("Failed to parse analysis sections", e);
-      return null;
     }
+
+    // Ensure it's an array of objects for the orderedSections memo
+    if (Array.isArray(parsed)) return parsed;
+    // Convert dict to array if needed
+    if (parsed && typeof parsed === 'object') {
+      return Object.entries(parsed).map(([title, content]) => ({ title, content }));
+    }
+    return null;
   }, [analysisSections]);
 
   const hasData = !!context || !!parsedSections;

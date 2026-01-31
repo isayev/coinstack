@@ -258,12 +258,9 @@ export function CoinTableRow({
       </div>
 
       {/* 17. Rarity */}
-      <div className="flex justify-center gap-1 hidden 2xl:flex">
+      <div className="flex justify-center hidden 2xl:flex">
         {coin.rarity ? (
-          <>
-            <RarityIndicator rarity={coin.rarity} variant="dot" />
-            <span className="text-[10px] font-medium text-muted-foreground">{coin.rarity.toUpperCase()}</span>
-          </>
+          <RarityIndicator rarity={coin.rarity} variant="badge" />
         ) : (
           <span className="text-muted-foreground">—</span>
         )}

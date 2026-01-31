@@ -19,6 +19,7 @@ from src.infrastructure.persistence.orm import CoinModel, AuctionDataModel
 
 router = APIRouter(prefix="/api/v2/audit", tags=["audit"])
 
+
 # --- Enrichments list API (Phase 5) ---
 
 def _synthetic_id(coin_id: int, auction_data_id: int, field_name: str) -> int:

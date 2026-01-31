@@ -281,9 +281,14 @@ const CoinContent = memo(function CoinContent({
               {performance > 0 ? '↑' : performance < 0 ? '↓' : ''}{Math.abs(performance).toFixed(0)}%
             </div>
           )}
+
+          {/* Rarity Badge */}
+          {coin.rarity && (
+            <RarityIndicator rarity={coin.rarity} variant="badge" />
+          )}
         </div>
 
-        {/* Right: Unified Badge Row - Cert, Grade, Metal, Rarity, Category */}
+        {/* Right: Unified Badge Row - Cert, Grade, Metal, Category */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -350,11 +355,6 @@ const CoinContent = memo(function CoinContent({
             >
               {coin.metal}
             </div>
-          )}
-
-          {/* Rarity Dot */}
-          {coin.rarity && (
-            <RarityIndicator rarity={coin.rarity} variant="dot" />
           )}
 
           {/* Category Badge - Rightmost */}

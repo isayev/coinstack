@@ -1386,7 +1386,76 @@ Before submitting frontend changes:
 
 ---
 
-## 11. Planned Features (Not Yet Implemented)
+## 12. Feature Components
+
+These components are specific to functional modules beyond core coin management.
+
+### 12.1 AuctionListV2
+
+**Location**: `frontend/src/features/auctions/AuctionListV2.tsx`
+
+**Purpose**: Displays a list of auction lots (from scraped or external data) with infinite scroll support. Supports both grid and table views.
+
+**Props**:
+```typescript
+interface AuctionListV2Props {
+  filters: AuctionFilters
+  viewMode: 'grid' | 'table'
+  setViewMode: (mode: 'grid' | 'table') => void
+  sortBy: string
+  setSortBy: (sort: string) => void
+  sortOrder: 'asc' | 'desc'
+  setSortOrder: (order: 'asc' | 'desc') => void
+}
+```
+
+**Key Features**:
+- Infinite scrolling with Intersection Observer
+- Grid view (`AuctionCard`) and Table view (`AuctionTableRowV2`)
+- Handles loading, error, and empty states
+- Opens auction URL in new tab on click
+
+### 12.2 AuditPanel
+
+**Location**: `frontend/src/features/audit/AuditPanel.tsx`
+
+**Purpose**: Compares local coin data against external auction source data to identify and resolve discrepancies.
+
+**Props**:
+```typescript
+interface AuditPanelProps {
+  coinId: number
+}
+```
+
+**Key Features**:
+- Fetches audit report via `client.auditCoin(coinId)`
+- Displays discrepancy count or success state
+- `DiscrepancyCard` shows side-by-side comparison (Local vs Auction)
+- "Fix / Apply" button updates local field via `client.applyEnrichment`
+
+### 12.3 ScraperForm
+
+**Location**: `frontend/src/features/scraper/ScraperForm.tsx`
+
+**Purpose**: Simple input form to scrape and import a coin from a supported auction URL (Heritage, CNG).
+
+**Props**:
+```typescript
+interface ScraperFormProps {
+  onScrapeSuccess: (data: any) => void
+}
+```
+
+**Key Features**:
+- Validates URL input
+- Calls `client.importFromUrl` mutation
+- Shows loading state and toast notifications
+- Supports Heritage (coins.ha.com) and CNG (cngcoins.com)
+
+---
+
+## 13. Planned Features (Not Yet Implemented)
 
 The following features are specified but not yet implemented. See [12-UI-UX-ROADMAP.md](12-UI-UX-ROADMAP.md) for full details.
 

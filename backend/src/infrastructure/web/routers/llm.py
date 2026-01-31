@@ -845,8 +845,8 @@ async def generate_context(
                 "exergue": coin.exergue,
                 
                 # Physical
-                "weight_g": coin.weight_g,
-                "diameter_mm": coin.diameter_mm,
+                "weight_g": float(coin.weight_g) if coin.weight_g else None,
+                "diameter_mm": float(coin.diameter_mm) if coin.diameter_mm else None,
                 "die_axis": coin.die_axis,
                 
                 # Existing catalog references (passed to LLM for context)
@@ -1203,7 +1203,7 @@ async def get_status(
     ollama_available = False
     try:
         import httpx
-        resp = httpx.get(f"{llm_service.config.settings.get('ollama_host', 'http://localhost:11434')}/api/version", timeout=2)
+        resp = httpx.get(f"{llm_service.config.settings.get('ollama_host', 'http://127.0.0.1:11434')}/api/version", timeout=2)
         ollama_available = resp.status_code == 200
     except Exception:
         pass

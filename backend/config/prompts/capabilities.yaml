@@ -512,7 +512,7 @@ context_generate:
     ONLY include sections where you have verifiable information.
     Skip any section that would require speculation.
     
-    {coin_data}
+    {input}
     
     [END ANALYSIS] when complete.
   

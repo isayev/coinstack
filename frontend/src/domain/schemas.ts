@@ -47,12 +47,22 @@ export const IssueStatusSchema = z.enum([
   'tooling_altered',
 ])
 
+// Helper to safely handle NaN/empty values from number inputs
+const preprocessNaN = (v: any) => {
+  if (v === "" || v === null || v === undefined) return null;
+  if (typeof v === 'number' && isNaN(v)) return null;
+  return v;
+};
+
 export const DimensionsSchema = z.object({
-  weight_g: z.coerce.number().min(0).nullable().optional(),
-  diameter_mm: z.coerce.number().min(0).nullable().optional(),
-  thickness_mm: z.coerce.number().min(0).nullable().optional(),
-  die_axis: z.coerce.number().min(0).max(12).nullable().optional(),
-  specific_gravity: z.coerce.number().min(0).nullable().optional(),
+  weight_g: z.preprocess(preprocessNaN, z.coerce.number().min(0).nullable().optional()),
+  diameter_mm: z.preprocess(preprocessNaN, z.coerce.number().min(0).nullable().optional()),
+  thickness_mm: z.preprocess(preprocessNaN, z.coerce.number().min(0).nullable().optional()),
+  die_axis: z.preprocess(
+    preprocessNaN,
+    z.coerce.number().min(0).max(12).nullable().optional()
+  ),
+  specific_gravity: z.preprocess(preprocessNaN, z.coerce.number().min(0).nullable().optional()),
 })
 
 export const DieInfoSchema = z.object({
@@ -77,8 +87,8 @@ export const AttributionSchema = z.object({
   issuer_id: z.number().nullable().optional(),
   mint: z.string().nullable().optional(),
   mint_id: z.number().nullable().optional(),
-  year_start: z.coerce.number().nullable().optional(),
-  year_end: z.coerce.number().nullable().optional(),
+  year_start: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  year_end: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
 })
 
 export const SeriesSlotSchema = z.object({
@@ -126,12 +136,12 @@ export const GradingDetailsSchema = z.object({
   certification_number: z.string().nullable().optional(),
   strike: strikeSurfaceSchema,
   surface: strikeSurfaceSchema,
-  eye_appeal: z.number().nullable().optional(),
+  eye_appeal: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   toning_description: z.string().nullable().optional(),
 })
 
 export const AcquisitionDetailsSchema = z.object({
-  price: z.coerce.number().min(0).nullable().optional(),
+  price: z.preprocess(preprocessNaN, z.coerce.number().min(0).nullable().optional()),
   currency: z.string().nullable().optional(),
   source: z.string().nullable().optional(),
   date: z.string().nullable().optional(), // ISO string
@@ -166,17 +176,17 @@ export const BaseCoinSchema = z.object({
   status: z.string().nullable().optional(),
 
   // Chronology
-  reign_start: z.number().nullable().optional(),
-  reign_end: z.number().nullable().optional(),
-  mint_year_start: z.number().nullable().optional(),
-  mint_year_end: z.number().nullable().optional(),
+  reign_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  reign_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  mint_year_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  mint_year_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   is_circa: z.boolean().optional(),
 
   // Physical
-  weight_g: z.number().nullable().optional(),
-  diameter_mm: z.number().nullable().optional(),
-  thickness_mm: z.number().nullable().optional(),
-  die_axis: z.number().nullable().optional(),
+  weight_g: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  diameter_mm: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  thickness_mm: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  die_axis: z.preprocess(preprocessNaN, z.number().nullable().optional()),
 
   // Design
   obverse_legend: z.string().nullable().optional(),
@@ -194,7 +204,7 @@ export const BaseCoinSchema = z.object({
   surface_quality: z.string().nullable().optional(),
 
   // Acquisition
-  acquisition_price: z.number().nullable().optional(),
+  acquisition_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   acquisition_source: z.string().nullable().optional(),
   acquisition_date: z.string().nullable().optional(),
   acquisition_currency: z.string().nullable().optional(),
@@ -258,10 +268,10 @@ export const DomainCoinSchema = z.object({
   portrait_subject: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
 
-  reign_start: z.number().nullable().optional(),
-  reign_end: z.number().nullable().optional(),
-  mint_year_start: z.number().nullable().optional(),
-  mint_year_end: z.number().nullable().optional(),
+  reign_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  reign_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  mint_year_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  mint_year_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   is_circa: z.boolean().optional(),
 
   // Nested Objects
@@ -296,9 +306,9 @@ export const DomainCoinSchema = z.object({
     sale_number: z.string().nullable().optional(),
     lot_number: z.string().nullable().optional(),
     catalog_reference: z.string().nullable().optional(),
-    hammer_price: z.number().nullable().optional(),
-    buyers_premium_pct: z.number().nullable().optional(),
-    total_price: z.number().nullable().optional(),
+    hammer_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+    buyers_premium_pct: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+    total_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
     currency: z.string().nullable().optional(),
     dealer_name: z.string().nullable().optional(),
     collection_name: z.string().nullable().optional(),
@@ -321,7 +331,7 @@ export const DomainCoinSchema = z.object({
   catalog_description: z.string().nullable().optional(),
   condition_observations: z.string().nullable().optional(),  // JSON string
   llm_enriched_at: z.string().nullable().optional(),
-  llm_analysis_sections: z.string().nullable().optional(),
+  llm_analysis_sections: z.union([z.record(z.string(), z.unknown()), z.string()]).nullable().optional(),
 
   // -------------------------------------------------------------------------
   // Iconography and Design Details
@@ -385,7 +395,7 @@ export const DomainCoinSchema = z.object({
   // -------------------------------------------------------------------------
   // Market Value Tracking
   // -------------------------------------------------------------------------
-  market_value: z.number().nullable().optional(),
+  market_value: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   market_value_date: z.string().nullable().optional(),
 
   // -------------------------------------------------------------------------
@@ -430,9 +440,9 @@ export const ProvenanceEventSchema = z.object({
   sale_number: z.string().nullable().optional(),
   lot_number: z.string().nullable().optional(),
   catalog_reference: z.string().nullable().optional(),
-  hammer_price: z.number().nullable().optional(),
-  buyers_premium_pct: z.number().nullable().optional(),
-  total_price: z.number().nullable().optional(),
+  hammer_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  buyers_premium_pct: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  total_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
   currency: z.string().nullable().optional(),
   dealer_name: z.string().nullable().optional(),
   collection_name: z.string().nullable().optional(),

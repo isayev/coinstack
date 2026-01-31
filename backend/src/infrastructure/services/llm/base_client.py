@@ -406,6 +406,7 @@ class BaseLLMClient:
 
         # 3. Model Selection
         cap_name = capability.value
+        cap_cfg = self.config.get_capability(cap_name)
         primary_model, fallbacks = self.config.get_model_for_capability(cap_name)
         if not primary_model:
             raise LLMCapabilityNotAvailable(f"No model configured for {cap_name}")
@@ -447,10 +448,12 @@ class BaseLLMClient:
                     messages.append({"role": "user", "content": full_user_message})
 
                 # Call API
+                json_mode = cap_cfg.requires_json and model_cfg.supports_json_mode
+                
                 response = await acompletion(
                     model=model_cfg.model_id,
                     messages=messages,
-                    response_format={"type": "json_object"} if model_cfg.supports_json_mode else None,
+                    response_format={"type": "json_object"} if json_mode else None,
                     max_tokens=model_cfg.max_tokens,
                     temperature=0.1, # Deterministic usually better for data extraction
                 )
@@ -460,7 +463,7 @@ class BaseLLMClient:
                 
                 # Parse JSON if expected
                 parsed_content = content
-                if model_cfg.supports_json_mode:
+                if json_mode:
                     try:
                         cleaned_content = self._strip_markdown_json(content)
                         parsed_content = json.loads(cleaned_content)

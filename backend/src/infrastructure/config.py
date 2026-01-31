@@ -12,7 +12,12 @@ class Settings(BaseSettings):
     
     # API
     API_PREFIX: str = "/api"
-    CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000", 
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173"
+    ]
     
     # File Upload
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
