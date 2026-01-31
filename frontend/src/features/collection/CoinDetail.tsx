@@ -21,7 +21,6 @@ import {
   IdentityHeader,
   ObverseReversePanel,
   ReferencesCard,
-  ProvenanceTimeline,
   HistoricalContextCard,
   DieStudyCard,
   IconographySection,
@@ -29,10 +28,7 @@ import {
   SpecificationsCard
 } from './CoinDetail/index';
 import { parseIconography, parseControlMarks } from '@/lib/parsers';
-import { AddProvenanceDialog } from '@/components/coins/AddProvenanceDialog';
-import { useState } from 'react';
-import { useUpdateCoin } from '@/hooks/useCoins';
-import { toast } from 'sonner';
+import { ProvenanceManager } from '@/features/provenance';
 
 interface CoinDetailV3Props {
   coin: Coin;
@@ -75,47 +71,6 @@ export function CoinDetail({
   const performance = currentValue && paidPrice && currentValue !== paidPrice
     ? ((currentValue - paidPrice) / paidPrice) * 100
     : null;
-
-  const [isAddProvenanceOpen, setIsAddProvenanceOpen] = useState(false);
-  const [provenanceToEdit, setProvenanceToEdit] = useState<any>(undefined);
-  const updateCoin = useUpdateCoin();
-
-  const handleEditProvenance = (entry: any) => {
-    setProvenanceToEdit(entry);
-    setIsAddProvenanceOpen(true);
-  };
-
-  const handleDeleteProvenance = async (entryToDelete: any) => {
-    if (!coin.id) return;
-    
-    // Filter out the entry
-    // If entry has ID, filter by ID. If not (optimistic or legacy), use index?
-    // ProvenanceTimeline passes the entry object back.
-    // If we rely on object reference equality, it might be tricky if data refreshed.
-    // Best to filter by ID if present, otherwise match properties.
-    
-    const newProvenance = (coin.provenance || []).filter(p => {
-      if (entryToDelete.id && p.id) {
-        return p.id !== entryToDelete.id;
-      }
-      // Fallback: match all fields (unlikely collisions)
-      return p !== entryToDelete && JSON.stringify(p) !== JSON.stringify(entryToDelete);
-    });
-
-    try {
-      await updateCoin.mutateAsync({
-        id: coin.id,
-        data: {
-          ...coin,
-          provenance: newProvenance as any
-        }
-      });
-      toast.success("Provenance record deleted");
-    } catch (e) {
-      console.error(e);
-      toast.error("Failed to delete provenance");
-    }
-  };
 
   return (
     <div className="coin-detail flex flex-col gap-6 max-w-[1400px] mx-auto px-8">
@@ -271,16 +226,12 @@ export function CoinDetail({
       </div>
 
       {/* Provenance Timeline with Gap Handling */}
-      <ProvenanceTimeline
-        provenance={coin.provenance}
-        categoryType={categoryType}
-        onAddProvenance={() => {
-          setProvenanceToEdit(undefined);
-          setIsAddProvenanceOpen(true);
-        }}
-        onEditProvenance={handleEditProvenance}
-        onDeleteProvenance={handleDeleteProvenance}
-      />
+      {coin.id && (
+        <ProvenanceManager
+          coinId={coin.id}
+          categoryType={categoryType}
+        />
+      )}
 
       {/* Historical Context - AI Generated */}
       <HistoricalContextCard
@@ -324,17 +275,6 @@ export function CoinDetail({
           </p>
         </DataCard>
       )}
-
-      {/* Dialogs */}
-      <AddProvenanceDialog 
-        coin={coin}
-        open={isAddProvenanceOpen}
-        onOpenChange={(open) => {
-          setIsAddProvenanceOpen(open);
-          if (!open) setProvenanceToEdit(undefined);
-        }}
-        entryToEdit={provenanceToEdit}
-      />
     </div>
   );
 }

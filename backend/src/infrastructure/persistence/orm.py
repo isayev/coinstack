@@ -219,6 +219,79 @@ class CoinModel(Base):
     market_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)  # Current market estimate
     market_value_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)  # Date of valuation
 
+    # -------------------------------------------------------------------------
+    # Schema V3 - Phase 1: Core Numismatic Enhancements
+    # -------------------------------------------------------------------------
+
+    # Attribution enhancements
+    secondary_authority: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    secondary_authority_term_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("vocab_terms.id"), nullable=True)
+    authority_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # authority_type values: 'magistrate', 'satrap', 'dynast', 'strategos', 'archon', 'epistates'
+
+    co_ruler: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    co_ruler_term_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("vocab_terms.id"), nullable=True)
+    portrait_relationship: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # portrait_relationship: 'self', 'consort', 'heir', 'parent', 'predecessor', 'commemorative', 'divus', 'diva'
+
+    moneyer_gens: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Physical enhancements
+    weight_standard: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # weight_standard: 'attic', 'aeginetan', 'corinthian', 'phoenician', 'denarius_early', etc.
+    expected_weight_g: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 3), nullable=True)
+    flan_shape: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # flan_shape: 'round', 'irregular', 'oval', 'square', 'scyphate'
+    flan_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # flan_type: 'cast', 'struck', 'cut_from_bar', 'hammered'
+    flan_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Secondary treatments (structured)
+    is_overstrike: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    undertype_visible: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    undertype_attribution: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    has_test_cut: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    test_cut_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    test_cut_positions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    has_bankers_marks: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    has_graffiti: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    graffiti_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    was_mounted: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    mount_evidence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Tooling/repairs
+    tooling_extent: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # tooling_extent: 'none', 'minor', 'moderate', 'significant', 'extensive'
+    tooling_details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    has_ancient_repair: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    ancient_repairs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Centering
+    centering: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    # centering: 'well-centered', 'slightly_off', 'off_center', 'significantly_off'
+    centering_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Die study enhancements (per-side states)
+    obverse_die_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    reverse_die_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    # die state: 'fresh', 'early', 'middle', 'late', 'worn', 'broken', 'repaired'
+    die_break_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Grading TPG enhancements
+    grade_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # NGC/PCGS numeric: 50, 53, 55, 58, 60, 62, 63, 64, 65, 66, 67, 68, 69, 70
+    grade_designation: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # grade_designation: 'Fine Style', 'Choice', 'Gem', 'Superb Gem'
+    has_star_designation: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    photo_certificate: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    verification_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Chronology enhancements
+    date_period_notation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    # Human-readable: "c. 150-100 BC", "late 3rd century AD"
+    emission_phase: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    # emission_phase: 'First Issue', 'Second Issue', 'Reform Coinage', 'Heavy Series', 'Light Series'
+
     # Relationships
     images: Mapped[List["CoinImageModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
     # UPDATED: Added cascade to prevent orphaned auction data
@@ -371,47 +444,61 @@ class CoinReferenceModel(Base):
 
 class ProvenanceEventModel(Base):
     """
-    Provenance events tracking coin ownership history.
-    
+    Provenance events tracking coin ownership history (V3 schema).
+
     Records auction appearances, collection holdings, dealer sales, etc.
-    Compatible with V1 schema structure.
+    Uses unified source_name field instead of separate auction_house/dealer_name/collection_name.
+
+    The ACQUISITION event_type represents current ownership (final pedigree entry).
     """
     __tablename__ = "provenance_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id"), index=True)
-    
-    # Event classification
-    event_type: Mapped[str] = mapped_column(String(50))  # "auction", "dealer", "collection", "private_sale", etc.
-    event_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    date_string: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "1920s", "Year 2000"
-    
-    # Auction details
-    auction_house: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    sale_series: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    sale_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    lot_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    # Event classification - UNIFIED source field (V3)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)  # ProvenanceEventType enum value
+    source_name: Mapped[str] = mapped_column(String(200), nullable=False, default="", index=True)  # Unified!
+
+    # Dating (flexible)
+    event_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
+    date_string: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # "1920s", "circa 1840"
+
+    # Auction/Sale details
+    sale_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # "January 2024 NYINC Sale"
+    sale_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Catalog number
+    lot_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     catalog_reference: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    
+
     # Pricing
-    hammer_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
-    buyers_premium_pct: Mapped[Optional[Decimal]] = mapped_column(Numeric(4, 2), nullable=True)
-    total_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2), nullable=True)
-    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
-    
-    # Dealer/Collection details
-    dealer_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    collection_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    
+    hammer_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    buyers_premium_pct: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    total_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)  # ISO 4217
+
     # Documentation
     url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    receipt_available: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
+    receipt_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    sort_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=0)
-    
+
+    # Metadata
+    source_origin: Mapped[str] = mapped_column(String(30), nullable=False, default="manual_entry", index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, index=True)
+
     # Link to auction_data if from tracked scrape
-    auction_data_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("auction_data_v2.id"), nullable=True)
-    
+    auction_data_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("auction_data_v2.id"), nullable=True, index=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, onupdate=datetime.utcnow)
+
+    # --- LEGACY FIELDS (kept for migration, will be removed in future) ---
+    auction_house: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    dealer_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    collection_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sale_series: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Legacy, use sale_name
+
+    # Relationships
     coin: Mapped["CoinModel"] = relationship(back_populates="provenance_events")
 
 
@@ -435,3 +522,521 @@ class EnrichmentJobModel(Base):
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+# =============================================================================
+# Schema V3 - Phase 2: Grading & Rarity System
+# =============================================================================
+
+class GradingHistoryModel(Base):
+    """Track complete grading lifecycle (raw → slabbed → regraded)."""
+    __tablename__ = "grading_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), index=True)
+
+    # Grading state at this point
+    grading_state: Mapped[str] = mapped_column(String(20), nullable=False)
+    grade: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    grade_service: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    certification_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    strike_quality: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    surface_quality: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    grade_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    designation: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    has_star: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    photo_cert: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    verification_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Event tracking
+    event_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    graded_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    submitter: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    turnaround_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    grading_fee: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Ordering
+    sequence_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_current: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Relationship
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="grading_history_entries")
+
+
+class RarityAssessmentModel(Base):
+    """Multi-source rarity tracking with grade-conditional support."""
+    __tablename__ = "rarity_assessments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), index=True)
+
+    rarity_code: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    rarity_system: Mapped[str] = mapped_column(String(30), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    source_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    source_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    grade_range_low: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    grade_range_high: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    grade_conditional_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    census_total: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    census_this_grade: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    census_finer: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    census_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    confidence: Mapped[Optional[str]] = mapped_column(String(20), default="medium")
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_primary: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="rarity_assessments")
+
+
+class CensusSnapshotModel(Base):
+    """Track NGC/PCGS population over time."""
+    __tablename__ = "census_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), index=True)
+
+    service: Mapped[str] = mapped_column(String(20), nullable=False)
+    snapshot_date: Mapped[date] = mapped_column(Date, nullable=False)
+    total_graded: Mapped[int] = mapped_column(Integer, nullable=False)
+    grade_breakdown: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    coins_at_grade: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    coins_finer: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    percentile: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    catalog_reference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="census_snapshots")
+
+
+# =============================================================================
+# Schema V3 - Phase 3: Reference System Enhancements
+# =============================================================================
+
+class ReferenceConcordanceModel(Base):
+    """Cross-reference linking (RIC 207 = RSC 112 = BMC 298)."""
+    __tablename__ = "reference_concordance"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    concordance_group_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    reference_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("reference_types.id", ondelete="CASCADE"), index=True)
+    confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), default=1.0)
+    source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    reference_type: Mapped["ReferenceTypeModel"] = relationship("ReferenceTypeModel", backref="concordances")
+
+
+class ExternalCatalogLinkModel(Base):
+    """Links to OCRE, Nomisma, CRRO, RPC Online."""
+    __tablename__ = "external_catalog_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    reference_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("reference_types.id", ondelete="CASCADE"), index=True)
+    catalog_source: Mapped[str] = mapped_column(String(30), nullable=False)
+    external_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    external_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    external_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    sync_status: Mapped[Optional[str]] = mapped_column(String(20), default="pending")
+
+    reference_type: Mapped["ReferenceTypeModel"] = relationship("ReferenceTypeModel", backref="external_links")
+
+
+# =============================================================================
+# Schema V3 - Phase 4: LLM Architecture
+# =============================================================================
+
+class LLMEnrichmentModel(Base):
+    """Centralized LLM enrichments with versioning and review workflow."""
+    __tablename__ = "llm_enrichments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), index=True)
+
+    capability: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    capability_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+    model_id: Mapped[str] = mapped_column(String(50), nullable=False)
+    model_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    input_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_snapshot: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    output_content: Mapped[str] = mapped_column(Text, nullable=False)
+    raw_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    confidence: Mapped[Decimal] = mapped_column(Numeric(3, 2), nullable=False)
+    needs_review: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    quality_flags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    cost_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 6), default=0)
+    input_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    cached: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    latency_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    review_status: Mapped[Optional[str]] = mapped_column(String(20), default="pending", index=True)
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    superseded_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("llm_enrichments.id"), nullable=True)
+    request_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    batch_job_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="llm_enrichments")
+
+
+class LLMPromptTemplateModel(Base):
+    """Database-managed prompts for versioning and A/B testing."""
+    __tablename__ = "llm_prompt_templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    capability: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    user_template: Mapped[str] = mapped_column(Text, nullable=False)
+    parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    requires_vision: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    preferred_model: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    max_tokens: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    temperature: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), nullable=True)
+    output_schema: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    variant_name: Mapped[Optional[str]] = mapped_column(String(50), default="default")
+    traffic_weight: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), default=1.0)
+
+    is_active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    deprecated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class LLMFeedbackModel(Base):
+    """Quality feedback loop for LLM enrichments."""
+    __tablename__ = "llm_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    enrichment_id: Mapped[int] = mapped_column(Integer, ForeignKey("llm_enrichments.id", ondelete="CASCADE"), index=True)
+
+    feedback_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    field_path: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    original_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    corrected_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    helpful: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    feedback_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    enrichment: Mapped["LLMEnrichmentModel"] = relationship("LLMEnrichmentModel", backref="feedback")
+
+
+class LLMUsageDailyModel(Base):
+    """Aggregated LLM analytics."""
+    __tablename__ = "llm_usage_daily"
+
+    date: Mapped[str] = mapped_column(String(10), primary_key=True)
+    capability: Mapped[str] = mapped_column(String(50), primary_key=True)
+    model_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+
+    request_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    cache_hits: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    error_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    total_cost_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 4), default=0)
+    total_input_tokens: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    total_output_tokens: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    avg_confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), nullable=True)
+    review_approved: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    review_rejected: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    avg_rating: Mapped[Optional[Decimal]] = mapped_column(Numeric(2, 1), nullable=True)
+    avg_latency_ms: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
+    p95_latency_ms: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
+
+
+# =============================================================================
+# Schema V3 - Phase 5: Market Tracking & Wishlists
+# =============================================================================
+
+class MarketPriceModel(Base):
+    """Aggregate pricing by attribution."""
+    __tablename__ = "market_prices"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    attribution_key: Mapped[str] = mapped_column(String(200), nullable=False, unique=True, index=True)
+
+    issuer: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    denomination: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    mint: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    metal: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    catalog_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+
+    avg_price_vf: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    avg_price_ef: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    avg_price_au: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    min_price_seen: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    max_price_seen: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    median_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+
+    data_point_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    last_sale_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    last_updated: Mapped[Optional[datetime]] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MarketDataPointModel(Base):
+    """Individual price observations."""
+    __tablename__ = "market_data_points"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    market_price_id: Mapped[int] = mapped_column(Integer, ForeignKey("market_prices.id", ondelete="CASCADE"), index=True)
+
+    price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), default="USD")
+    price_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    source_type: Mapped[str] = mapped_column(String(30), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+
+    grade: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    grade_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    condition_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    auction_house: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    sale_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    lot_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    lot_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    dealer_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    confidence: Mapped[Optional[str]] = mapped_column(String(20), default="medium")
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    market_price: Mapped["MarketPriceModel"] = relationship("MarketPriceModel", backref="data_points")
+
+
+class CoinValuationModel(Base):
+    """Valuation snapshots per coin."""
+    __tablename__ = "coin_valuations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), index=True)
+
+    valuation_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    purchase_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    purchase_currency: Mapped[Optional[str]] = mapped_column(String(3), nullable=True)
+    purchase_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    current_market_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    value_currency: Mapped[Optional[str]] = mapped_column(String(3), default="USD")
+    market_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    comparable_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    comparable_avg_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    comparable_date_range: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    price_trend_6mo: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    price_trend_12mo: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    price_trend_36mo: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+
+    gain_loss_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    gain_loss_pct: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
+
+    valuation_method: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="valuations")
+
+
+class WishlistItemModel(Base):
+    """Acquisition targets."""
+    __tablename__ = "wishlist_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    issuer: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    issuer_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("vocab_terms.id"), nullable=True)
+    mint: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    mint_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("vocab_terms.id"), nullable=True)
+    year_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    year_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    denomination: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    metal: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    catalog_ref: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    catalog_ref_pattern: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    min_grade: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    min_grade_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    condition_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    max_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    target_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), default="USD")
+
+    priority: Mapped[Optional[int]] = mapped_column(Integer, default=2, index=True)
+    tags: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    series_slot_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("series_slots.id"), nullable=True)
+
+    status: Mapped[Optional[str]] = mapped_column(String(20), default="wanted", index=True)
+    acquired_coin_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("coins_v2.id"), nullable=True)
+    acquired_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    acquired_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+
+    notify_on_match: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
+    notify_email: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, onupdate=datetime.utcnow)
+
+
+class PriceAlertModel(Base):
+    """User alert configurations."""
+    __tablename__ = "price_alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    attribution_key: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    coin_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="SET NULL"), nullable=True, index=True)
+    wishlist_item_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("wishlist_items.id", ondelete="CASCADE"), nullable=True, index=True)
+
+    trigger_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    threshold_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    threshold_pct: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    threshold_grade: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    status: Mapped[Optional[str]] = mapped_column(String(20), default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    triggered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    notification_sent: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    notification_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    notification_channel: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    cooldown_hours: Mapped[Optional[int]] = mapped_column(Integer, default=24)
+    last_triggered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+class WishlistMatchModel(Base):
+    """Matched auction lots for wishlists."""
+    __tablename__ = "wishlist_matches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    wishlist_item_id: Mapped[int] = mapped_column(Integer, ForeignKey("wishlist_items.id", ondelete="CASCADE"), index=True)
+
+    match_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    match_source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    match_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    match_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    grade: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    grade_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    condition_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    estimate_low: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    estimate_high: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    currency: Mapped[Optional[str]] = mapped_column(String(3), default="USD")
+    current_bid: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+
+    auction_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
+    end_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    match_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), nullable=True)
+    match_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    match_reasons: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    is_below_budget: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    is_below_market: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    value_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), nullable=True)
+
+    notified: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    notified_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    dismissed: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    dismissed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    saved: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+
+    wishlist_item: Mapped["WishlistItemModel"] = relationship("WishlistItemModel", backref="matches")
+
+
+# =============================================================================
+# Schema V3 - Phase 6: Collections & Sub-collections
+# =============================================================================
+
+class CollectionModel(Base):
+    """Collection definitions with support for custom and smart collections."""
+    __tablename__ = "collections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    slug: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    collection_type: Mapped[Optional[str]] = mapped_column(String(20), default="custom", index=True)
+    smart_filter: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    series_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("series.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    cover_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    icon: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    display_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    default_sort: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    default_view: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    coin_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    total_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
+    stats_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    is_favorite: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
+    is_hidden: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_public: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+
+    parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("collections.id", ondelete="SET NULL"), nullable=True, index=True)
+    level: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True, onupdate=datetime.utcnow)
+
+    parent: Mapped[Optional["CollectionModel"]] = relationship("CollectionModel", remote_side=[id], backref="children")
+
+
+class CollectionCoinModel(Base):
+    """Many-to-many linking for collections."""
+    __tablename__ = "collection_coins"
+
+    collection_id: Mapped[int] = mapped_column(Integer, ForeignKey("collections.id", ondelete="CASCADE"), primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), primary_key=True, index=True)
+
+    added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    added_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    custom_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_featured: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_cover_coin: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    series_slot_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("series_slots.id", ondelete="SET NULL"), nullable=True)
+
+    collection: Mapped["CollectionModel"] = relationship("CollectionModel", backref="coin_memberships")
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="collection_memberships")

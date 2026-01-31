@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Coin, ProvenanceEventSchema } from "@/domain/schemas";
+import { Coin } from "@/domain/schemas";
 import { useUpdateCoin } from "@/hooks/useCoins";
 import { toast } from "sonner";
 

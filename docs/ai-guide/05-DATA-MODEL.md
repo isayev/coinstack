@@ -282,6 +282,112 @@ class EnrichmentJobModel(Base):
 
 ---
 
+## Schema V3 Tables (2026-02-01)
+
+Schema V3 adds comprehensive support for world-class numismatic functionality.
+
+### Phase 1: Core Numismatic Enhancements (coins_v2)
+
+New columns added to `coins_v2` for attribution, physical characteristics, and grading:
+
+| Category | Fields |
+|----------|--------|
+| **Attribution** | `secondary_authority`, `co_ruler`, `portrait_relationship`, `authority_type`, `moneyer_gens` |
+| **Physical** | `weight_standard`, `expected_weight_g`, `flan_shape`, `flan_type`, `flan_notes` |
+| **Secondary Treatments** | `is_overstrike`, `undertype_visible`, `has_test_cut`, `has_bankers_marks`, `has_graffiti`, `was_mounted` |
+| **Tooling** | `tooling_extent`, `tooling_details`, `has_ancient_repair`, `ancient_repairs` |
+| **Centering** | `centering`, `centering_notes` |
+| **Die Study** | `obverse_die_state`, `reverse_die_state`, `die_break_description` |
+| **TPG Grading** | `grade_numeric`, `grade_designation`, `has_star_designation`, `photo_certificate`, `verification_url` |
+| **Chronology** | `date_period_notation`, `emission_phase` |
+
+### Phase 2: Grading & Rarity System
+
+**`grading_history`** - TPG lifecycle tracking (raw → slabbed → regraded)
+```python
+class GradingHistoryModel(Base):
+    __tablename__ = "grading_history"
+    coin_id: FK to coins_v2
+    grading_state, grade, grade_service, certification_number
+    grade_numeric, designation, has_star, photo_cert, verification_url
+    event_type: 'initial', 'crossover', 'regrade', 'crack_out'
+    graded_date, turnaround_days, grading_fee
+    sequence_order, is_current
+```
+
+**`rarity_assessments`** - Multi-source rarity with grade-conditional support
+```python
+class RarityAssessmentModel(Base):
+    __tablename__ = "rarity_assessments"
+    coin_id: FK to coins_v2
+    rarity_code: 'C', 'S', 'R1'-'R5', 'RR', 'RRR', 'UNIQUE'
+    rarity_system: 'RIC', 'catalog', 'census', 'market_frequency'
+    source_type: 'catalog', 'census_data', 'auction_analysis', 'expert_opinion'
+    grade_range_low, grade_range_high, grade_conditional_notes
+    census_total, census_this_grade, census_finer
+    is_primary, confidence
+```
+
+**`census_snapshots`** - NGC/PCGS population tracking over time
+
+### Phase 3: Reference System Enhancements
+
+**`reference_concordance`** - Cross-reference linking (RIC 207 = RSC 112 = BMC 298)
+```python
+class ReferenceConcordanceModel(Base):
+    __tablename__ = "reference_concordance"
+    concordance_group_id: UUID grouping equivalent references
+    reference_type_id: FK to reference_types
+    confidence: 0.0-1.0
+    source: 'ocre', 'crro', 'user', 'literature'
+```
+
+**`external_catalog_links`** - Links to OCRE, Nomisma, CRRO, RPC Online
+
+### Phase 4: LLM Architecture
+
+**`llm_enrichments`** - Centralized LLM outputs with versioning and review workflow
+```python
+class LLMEnrichmentModel(Base):
+    __tablename__ = "llm_enrichments"
+    coin_id: FK to coins_v2
+    capability: 'context_generate', 'attribution_suggest', 'catalog_lookup', etc.
+    model_id, model_version
+    input_hash, output_content, confidence
+    review_status: 'pending', 'approved', 'rejected', 'revised'
+    cost_usd, input_tokens, output_tokens
+```
+
+**`llm_prompt_templates`** - Database-managed prompts for A/B testing
+**`llm_feedback`** - Quality feedback loop
+**`llm_usage_daily`** - Aggregated analytics
+
+### Phase 5: Market Tracking & Wishlists
+
+**`market_prices`** - Aggregate pricing by attribution (type-level)
+**`market_data_points`** - Individual price observations
+**`coin_valuations`** - Valuation snapshots per coin
+**`price_alerts`** - User alert configurations
+**`wishlist_items`** - Acquisition targets
+**`wishlist_matches`** - Matched auction lots
+
+### Phase 6: Collections & Sub-collections
+
+**`collections`** - Custom and smart collections
+```python
+class CollectionModel(Base):
+    __tablename__ = "collections"
+    name, description, slug
+    collection_type: 'custom', 'smart', 'series', 'system'
+    smart_filter: JSON filter criteria
+    parent_id: FK for hierarchical organization
+    coin_count, total_value
+```
+
+**`collection_coins`** - Many-to-many with ordering and metadata
+
+---
+
 ## SQLAlchemy 2.0 Patterns
 
 ### ORM Syntax (MANDATORY)

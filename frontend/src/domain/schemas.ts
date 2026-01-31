@@ -300,10 +300,10 @@ export const DomainCoinSchema = z.object({
     id: z.number().optional(),
     coin_id: z.number().optional(),
     event_type: z.string(),
+    source_name: z.string().nullable().optional(), // V3 unified field
     event_date: z.string().nullable().optional(),
     date_string: z.string().nullable().optional(),
-    auction_house: z.string().nullable().optional(),
-    sale_series: z.string().nullable().optional(),
+    sale_name: z.string().nullable().optional(), // V3 field
     sale_number: z.string().nullable().optional(),
     lot_number: z.string().nullable().optional(),
     catalog_reference: z.string().nullable().optional(),
@@ -311,12 +311,16 @@ export const DomainCoinSchema = z.object({
     buyers_premium_pct: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
     total_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
     currency: z.string().nullable().optional(),
-    dealer_name: z.string().nullable().optional(),
-    collection_name: z.string().nullable().optional(),
     url: z.string().nullable().optional(),
     receipt_available: z.boolean().nullable().optional(),
     notes: z.string().nullable().optional(),
     sort_order: z.number().nullable().optional(),
+    is_acquisition: z.boolean().nullable().optional(), // V3 field
+    // Legacy fields (backward compat)
+    auction_house: z.string().nullable().optional(),
+    sale_series: z.string().nullable().optional(),
+    dealer_name: z.string().nullable().optional(),
+    collection_name: z.string().nullable().optional(),
   })).optional(),
 
   // Collection management
@@ -422,6 +426,83 @@ export const DomainCoinSchema = z.object({
   // Navigation helpers (added by API)
   prev_id: z.number().nullable().optional(),
   next_id: z.number().nullable().optional(),
+
+  // -------------------------------------------------------------------------
+  // Schema V3 - Phase 1: Core Numismatic Enhancements (Nested Objects)
+  // -------------------------------------------------------------------------
+
+  // Attribution enhancements (nested objects from API)
+  secondary_authority: z.object({
+    name: z.string().nullable().optional(),
+    term_id: z.number().nullable().optional(),
+    authority_type: z.string().nullable().optional(),
+  }).nullable().optional(),
+  co_ruler: z.object({
+    name: z.string().nullable().optional(),
+    term_id: z.number().nullable().optional(),
+    portrait_relationship: z.string().nullable().optional(),
+  }).nullable().optional(),
+  moneyer_gens: z.string().nullable().optional(),
+
+  // Physical enhancements (nested object)
+  physical_enhancements: z.object({
+    weight_standard: z.string().nullable().optional(),
+    expected_weight_g: z.number().nullable().optional(),
+    flan_shape: z.string().nullable().optional(),
+    flan_type: z.string().nullable().optional(),
+    flan_notes: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Secondary treatments V3 (nested object)
+  secondary_treatments_v3: z.object({
+    is_overstrike: z.boolean().optional(),
+    undertype_visible: z.string().nullable().optional(),
+    undertype_attribution: z.string().nullable().optional(),
+    has_test_cut: z.boolean().optional(),
+    test_cut_count: z.number().nullable().optional(),
+    test_cut_positions: z.string().nullable().optional(),
+    has_bankers_marks: z.boolean().optional(),
+    has_graffiti: z.boolean().optional(),
+    graffiti_description: z.string().nullable().optional(),
+    was_mounted: z.boolean().optional(),
+    mount_evidence: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Tooling/repairs (nested object)
+  tooling_repairs: z.object({
+    tooling_extent: z.string().nullable().optional(),
+    tooling_details: z.string().nullable().optional(),
+    has_ancient_repair: z.boolean().optional(),
+    ancient_repairs: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Centering (nested object)
+  centering_info: z.object({
+    centering: z.string().nullable().optional(),
+    centering_notes: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Die study enhancements (nested object)
+  die_study: z.object({
+    obverse_die_state: z.string().nullable().optional(),
+    reverse_die_state: z.string().nullable().optional(),
+    die_break_description: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Grading TPG enhancements (nested object)
+  grading_tpg: z.object({
+    grade_numeric: z.number().nullable().optional(),
+    grade_designation: z.string().nullable().optional(),
+    has_star_designation: z.boolean().optional(),
+    photo_certificate: z.boolean().optional(),
+    verification_url: z.string().nullable().optional(),
+  }).nullable().optional(),
+
+  // Chronology enhancements (nested object)
+  chronology: z.object({
+    date_period_notation: z.string().nullable().optional(),
+    emission_phase: z.string().nullable().optional(),
+  }).nullable().optional(),
 })
 
 // Export CoinSchema as the Domain structure since backend V2 returns this nested format
@@ -430,32 +511,86 @@ export const CoinSchema = DomainCoinSchema;
 // Legacy flat schema if needed for reference or flat inputs
 // export const CoinSchemaOld = BaseCoinSchema.transform(...)
 
-// --- Provenance Event Schema ---
+// --- Provenance Event Types (V3) ---
+export const ProvenanceEventTypeSchema = z.enum([
+  'auction',
+  'dealer',
+  'collection',
+  'private_sale',
+  'publication',
+  'hoard_find',
+  'estate',
+  'acquisition',  // Current ownership - my purchase
+  'unknown'
+]);
+
+export const ProvenanceSourceSchema = z.enum([
+  'manual_entry',
+  'scraper',
+  'import',
+  'llm_enrichment',
+  'migration',
+  'auto_acquisition'
+]);
+
+// --- Provenance Event Schema (V3) ---
 export const ProvenanceEventSchema = z.object({
   id: z.number().optional(),
   coin_id: z.number().optional(),
-  event_type: z.string(),  // auction, dealer, collection, private_sale
-  source_name: z.string().nullable().optional(), // Generic source name from backend
+
+  // Event classification - UNIFIED source_name field
+  event_type: ProvenanceEventTypeSchema,
+  source_name: z.string(),  // Unified: auction house, dealer, collection, etc.
+
+  // Dating (flexible)
   event_date: z.string().nullable().optional(),
-  date_string: z.string().nullable().optional(),
-  auction_house: z.string().nullable().optional(),
-  sale_series: z.string().nullable().optional(),
+  date_string: z.string().nullable().optional(),  // "1920s", "circa 1840"
+
+  // Auction/Sale details
+  sale_name: z.string().nullable().optional(),  // "January 2024 NYINC Sale"
   sale_number: z.string().nullable().optional(),
   lot_number: z.string().nullable().optional(),
   catalog_reference: z.string().nullable().optional(),
+
+  // Pricing
   hammer_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   buyers_premium_pct: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   total_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  computed_total: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),  // Computed from hammer + premium
   currency: z.string().nullable().optional(),
-  dealer_name: z.string().nullable().optional(),
-  collection_name: z.string().nullable().optional(),
+
+  // Documentation
   url: z.string().nullable().optional(),
   receipt_available: z.boolean().nullable().optional(),
   notes: z.string().nullable().optional(),
+
+  // Metadata
+  source_origin: ProvenanceSourceSchema.optional().default('manual_entry'),
   sort_order: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  raw_text: z.string().optional().default(''),  // Display string
+  is_acquisition: z.boolean().optional().default(false),  // True if current ownership
+
+  // Legacy fields (for backward compat during migration)
+  auction_house: z.string().nullable().optional(),
+  dealer_name: z.string().nullable().optional(),
+  collection_name: z.string().nullable().optional(),
+  sale_series: z.string().nullable().optional(),
 });
 
 export type ProvenanceEvent = z.infer<typeof ProvenanceEventSchema>;
+export type ProvenanceEventType = z.infer<typeof ProvenanceEventTypeSchema>;
+export type ProvenanceSource = z.infer<typeof ProvenanceSourceSchema>;
+
+// --- Provenance Chain Response ---
+export const ProvenanceChainSchema = z.object({
+  coin_id: z.number(),
+  entries: z.array(ProvenanceEventSchema),
+  earliest_known_year: z.number().nullable().optional(),
+  has_acquisition: z.boolean().default(false),
+  total_entries: z.number().default(0),
+});
+
+export type ProvenanceChain = z.infer<typeof ProvenanceChainSchema>;
 
 export type Metal = z.infer<typeof MetalSchema>
 export type Category = z.infer<typeof CategorySchema>
@@ -492,3 +627,500 @@ export interface LegendExpansionResponse {
     meaning?: string;
   }>;
 }
+
+// =============================================================================
+// Schema V3 - Phase 1: Core Numismatic Enhancements
+// =============================================================================
+
+export const AuthorityTypeSchema = z.enum([
+  'magistrate', 'satrap', 'dynast', 'strategos', 'archon', 'epistates'
+]);
+
+// --- Phase 1 Value Object Schemas (nested representation) ---
+
+export const SecondaryAuthoritySchema = z.object({
+  name: z.string().nullable().optional(),
+  term_id: z.number().nullable().optional(),
+  authority_type: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const CoRulerSchema = z.object({
+  name: z.string().nullable().optional(),
+  term_id: z.number().nullable().optional(),
+  portrait_relationship: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const PhysicalEnhancementsSchema = z.object({
+  weight_standard: z.string().nullable().optional(),
+  expected_weight_g: z.number().nullable().optional(),
+  flan_shape: z.string().nullable().optional(),
+  flan_type: z.string().nullable().optional(),
+  flan_notes: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const SecondaryTreatmentsV3Schema = z.object({
+  is_overstrike: z.boolean().optional(),
+  undertype_visible: z.string().nullable().optional(),
+  undertype_attribution: z.string().nullable().optional(),
+  has_test_cut: z.boolean().optional(),
+  test_cut_count: z.number().nullable().optional(),
+  test_cut_positions: z.string().nullable().optional(),
+  has_bankers_marks: z.boolean().optional(),
+  has_graffiti: z.boolean().optional(),
+  graffiti_description: z.string().nullable().optional(),
+  was_mounted: z.boolean().optional(),
+  mount_evidence: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const ToolingRepairsSchema = z.object({
+  tooling_extent: z.string().nullable().optional(),
+  tooling_details: z.string().nullable().optional(),
+  has_ancient_repair: z.boolean().optional(),
+  ancient_repairs: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const CenteringInfoSchema = z.object({
+  centering: z.string().nullable().optional(),
+  centering_notes: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const DieStudyEnhancementsSchema = z.object({
+  obverse_die_state: z.string().nullable().optional(),
+  reverse_die_state: z.string().nullable().optional(),
+  die_break_description: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const GradingTPGEnhancementsSchema = z.object({
+  grade_numeric: z.number().nullable().optional(),
+  grade_designation: z.string().nullable().optional(),
+  has_star_designation: z.boolean().optional(),
+  photo_certificate: z.boolean().optional(),
+  verification_url: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const ChronologyEnhancementsSchema = z.object({
+  date_period_notation: z.string().nullable().optional(),
+  emission_phase: z.string().nullable().optional(),
+}).nullable().optional();
+
+export const PortraitRelationshipSchema = z.enum([
+  'self', 'consort', 'heir', 'parent', 'predecessor', 'commemorative', 'divus', 'diva'
+]);
+
+export const WeightStandardSchema = z.enum([
+  'attic', 'aeginetan', 'corinthian', 'phoenician', 'denarius_early',
+  'denarius_reformed', 'antoninianus', 'solidus'
+]);
+
+export const FlanShapeSchema = z.enum([
+  'round', 'irregular', 'oval', 'square', 'scyphate'
+]);
+
+export const FlanTypeSchema = z.enum([
+  'cast', 'struck', 'cut_from_bar', 'hammered'
+]);
+
+export const ToolingExtentSchema = z.enum([
+  'none', 'minor', 'moderate', 'significant', 'extensive'
+]);
+
+export const CenteringSchema = z.enum([
+  'well-centered', 'slightly_off', 'off_center', 'significantly_off'
+]);
+
+export const DieStateSchema = z.enum([
+  'fresh', 'early', 'middle', 'late', 'worn', 'broken', 'repaired'
+]);
+
+export const GradeDesignationSchema = z.enum([
+  'Fine Style', 'Choice', 'Gem', 'Superb Gem'
+]);
+
+// =============================================================================
+// Schema V3 - Phase 2: Grading & Rarity System
+// =============================================================================
+
+export const GradingEventTypeSchema = z.enum([
+  'initial', 'crossover', 'regrade', 'crack_out', 'upgrade_attempt'
+]);
+
+export const GradingHistoryEntrySchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number(),
+
+  grading_state: z.string(),
+  grade: z.string().nullable().optional(),
+  grade_service: z.string().nullable().optional(),
+  certification_number: z.string().nullable().optional(),
+  strike_quality: z.string().nullable().optional(),
+  surface_quality: z.string().nullable().optional(),
+  grade_numeric: z.number().nullable().optional(),
+  designation: z.string().nullable().optional(),
+  has_star: z.boolean().optional(),
+  photo_cert: z.boolean().optional(),
+  verification_url: z.string().nullable().optional(),
+
+  event_type: GradingEventTypeSchema,
+  graded_date: z.string().nullable().optional(),
+  recorded_at: z.string().optional(),
+  submitter: z.string().nullable().optional(),
+  turnaround_days: z.number().nullable().optional(),
+  grading_fee: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+
+  sequence_order: z.number().optional(),
+  is_current: z.boolean().optional(),
+});
+
+export const RaritySystemSchema = z.enum([
+  'RIC', 'catalog', 'census', 'market_frequency', 'custom'
+]);
+
+export const RaritySourceTypeSchema = z.enum([
+  'catalog', 'census_data', 'auction_analysis', 'expert_opinion', 'database'
+]);
+
+export const RarityAssessmentSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number(),
+
+  rarity_code: z.string(),
+  rarity_system: RaritySystemSchema,
+  source_type: RaritySourceTypeSchema,
+  source_name: z.string().nullable().optional(),
+  source_url: z.string().nullable().optional(),
+  source_date: z.string().nullable().optional(),
+
+  grade_range_low: z.string().nullable().optional(),
+  grade_range_high: z.string().nullable().optional(),
+  grade_conditional_notes: z.string().nullable().optional(),
+
+  census_total: z.number().nullable().optional(),
+  census_this_grade: z.number().nullable().optional(),
+  census_finer: z.number().nullable().optional(),
+  census_date: z.string().nullable().optional(),
+
+  confidence: z.enum(['low', 'medium', 'high', 'authoritative']).optional(),
+  notes: z.string().nullable().optional(),
+  is_primary: z.boolean().optional(),
+  created_at: z.string().optional(),
+});
+
+export const CensusSnapshotSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number(),
+  service: z.enum(['NGC', 'PCGS']),
+  snapshot_date: z.string(),
+  total_graded: z.number(),
+  grade_breakdown: z.record(z.string(), z.number()).nullable().optional(),
+  coins_at_grade: z.number().nullable().optional(),
+  coins_finer: z.number().nullable().optional(),
+  percentile: z.number().nullable().optional(),
+  catalog_reference: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+// =============================================================================
+// Schema V3 - Phase 4: LLM Architecture
+// =============================================================================
+
+export const LLMCapabilitySchema = z.enum([
+  'context_generate', 'attribution_suggest', 'catalog_lookup',
+  'provenance_parse', 'design_describe', 'value_estimate',
+  'rarity_assess', 'condition_assess', 'iconography_identify',
+  'historical_context', 'artistic_analysis'
+]);
+
+export const LLMReviewStatusSchema = z.enum([
+  'pending', 'approved', 'rejected', 'revised'
+]);
+
+export const LLMEnrichmentSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number(),
+
+  capability: LLMCapabilitySchema,
+  capability_version: z.number().optional(),
+  model_id: z.string(),
+  model_version: z.string().nullable().optional(),
+
+  input_hash: z.string(),
+  output_content: z.string(),
+
+  confidence: z.number(),
+  needs_review: z.boolean().optional(),
+  quality_flags: z.array(z.string()).nullable().optional(),
+
+  cost_usd: z.number().nullable().optional(),
+  input_tokens: z.number().nullable().optional(),
+  output_tokens: z.number().nullable().optional(),
+  cached: z.boolean().optional(),
+  latency_ms: z.number().nullable().optional(),
+
+  review_status: LLMReviewStatusSchema.optional(),
+  reviewed_by: z.string().nullable().optional(),
+  reviewed_at: z.string().nullable().optional(),
+  review_notes: z.string().nullable().optional(),
+
+  created_at: z.string().optional(),
+  expires_at: z.string().nullable().optional(),
+});
+
+// =============================================================================
+// Schema V3 - Phase 5: Market Tracking & Wishlists
+// =============================================================================
+
+export const MarketSourceTypeSchema = z.enum([
+  'auction_realized', 'auction_unsold', 'dealer_asking', 'private_sale', 'estimate'
+]);
+
+export const MarketPriceSchema = z.object({
+  id: z.number().optional(),
+  attribution_key: z.string(),
+  issuer: z.string().nullable().optional(),
+  denomination: z.string().nullable().optional(),
+  mint: z.string().nullable().optional(),
+  metal: z.string().nullable().optional(),
+  catalog_ref: z.string().nullable().optional(),
+
+  avg_price_vf: z.number().nullable().optional(),
+  avg_price_ef: z.number().nullable().optional(),
+  avg_price_au: z.number().nullable().optional(),
+  min_price_seen: z.number().nullable().optional(),
+  max_price_seen: z.number().nullable().optional(),
+  median_price: z.number().nullable().optional(),
+
+  data_point_count: z.number().optional(),
+  last_sale_date: z.string().nullable().optional(),
+  last_updated: z.string().nullable().optional(),
+});
+
+export const CoinValuationSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number(),
+  valuation_date: z.string(),
+
+  purchase_price: z.number().nullable().optional(),
+  purchase_currency: z.string().nullable().optional(),
+  purchase_date: z.string().nullable().optional(),
+
+  current_market_value: z.number().nullable().optional(),
+  value_currency: z.string().optional(),
+  market_confidence: z.enum(['low', 'medium', 'high', 'strong']).nullable().optional(),
+
+  comparable_count: z.number().nullable().optional(),
+  price_trend_6mo: z.number().nullable().optional(),
+  price_trend_12mo: z.number().nullable().optional(),
+
+  gain_loss_usd: z.number().nullable().optional(),
+  gain_loss_pct: z.number().nullable().optional(),
+
+  valuation_method: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+});
+
+export const WishlistPrioritySchema = z.enum(['1', '2', '3', '4']);
+
+export const WishlistStatusSchema = z.enum([
+  'wanted', 'watching', 'bidding', 'acquired', 'cancelled'
+]);
+
+export const WishlistItemSchema = z.object({
+  id: z.number().optional(),
+  title: z.string(),
+  description: z.string().nullable().optional(),
+
+  issuer: z.string().nullable().optional(),
+  mint: z.string().nullable().optional(),
+  year_start: z.number().nullable().optional(),
+  year_end: z.number().nullable().optional(),
+  denomination: z.string().nullable().optional(),
+  metal: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
+  catalog_ref: z.string().nullable().optional(),
+
+  min_grade: z.string().nullable().optional(),
+  max_price: z.number().nullable().optional(),
+  target_price: z.number().nullable().optional(),
+  currency: z.string().optional(),
+
+  priority: z.number().optional(),
+  status: WishlistStatusSchema.optional(),
+
+  acquired_coin_id: z.number().nullable().optional(),
+  acquired_at: z.string().nullable().optional(),
+  acquired_price: z.number().nullable().optional(),
+
+  notify_on_match: z.boolean().optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().nullable().optional(),
+});
+
+export const WishlistMatchSchema = z.object({
+  id: z.number().optional(),
+  wishlist_item_id: z.number(),
+
+  match_type: z.string(),
+  match_source: z.string().nullable().optional(),
+  match_id: z.string(),
+  match_url: z.string().nullable().optional(),
+
+  title: z.string(),
+  description: z.string().nullable().optional(),
+  image_url: z.string().nullable().optional(),
+
+  grade: z.string().nullable().optional(),
+  price: z.number().nullable().optional(),
+  estimate_low: z.number().nullable().optional(),
+  estimate_high: z.number().nullable().optional(),
+  currency: z.string().optional(),
+
+  auction_date: z.string().nullable().optional(),
+
+  match_score: z.number().nullable().optional(),
+  match_confidence: z.enum(['exact', 'high', 'medium', 'possible']).nullable().optional(),
+
+  is_below_budget: z.boolean().nullable().optional(),
+  is_below_market: z.boolean().nullable().optional(),
+  value_score: z.number().nullable().optional(),
+
+  notified: z.boolean().optional(),
+  dismissed: z.boolean().optional(),
+  saved: z.boolean().optional(),
+
+  created_at: z.string().optional(),
+});
+
+export const PriceAlertTriggerSchema = z.enum([
+  'price_below', 'price_above', 'price_change_pct', 'new_listing', 'auction_soon'
+]);
+
+export const PriceAlertStatusSchema = z.enum([
+  'active', 'triggered', 'paused', 'expired', 'deleted'
+]);
+
+export const PriceAlertSchema = z.object({
+  id: z.number().optional(),
+
+  attribution_key: z.string().nullable().optional(),
+  coin_id: z.number().nullable().optional(),
+  wishlist_item_id: z.number().nullable().optional(),
+
+  trigger_type: PriceAlertTriggerSchema,
+  threshold_value: z.number().nullable().optional(),
+  threshold_pct: z.number().nullable().optional(),
+  threshold_grade: z.string().nullable().optional(),
+
+  status: PriceAlertStatusSchema.optional(),
+  created_at: z.string().optional(),
+  triggered_at: z.string().nullable().optional(),
+  expires_at: z.string().nullable().optional(),
+
+  notification_sent: z.boolean().optional(),
+  cooldown_hours: z.number().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+// =============================================================================
+// Schema V3 - Phase 6: Collections & Sub-collections
+// =============================================================================
+
+export const CollectionTypeSchema = z.enum([
+  'custom', 'smart', 'series', 'system'
+]);
+
+export const CollectionSchema = z.object({
+  id: z.number().optional(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  slug: z.string().nullable().optional(),
+
+  collection_type: CollectionTypeSchema.optional(),
+  smart_filter: z.record(z.string(), z.unknown()).nullable().optional(),
+  series_id: z.number().nullable().optional(),
+
+  cover_image_url: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
+  display_order: z.number().nullable().optional(),
+  default_sort: z.string().nullable().optional(),
+  default_view: z.enum(['grid', 'table', 'timeline']).nullable().optional(),
+
+  coin_count: z.number().optional(),
+  total_value: z.number().nullable().optional(),
+
+  is_favorite: z.boolean().optional(),
+  is_hidden: z.boolean().optional(),
+  is_public: z.boolean().optional(),
+
+  parent_id: z.number().nullable().optional(),
+  level: z.number().optional(),
+
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+  updated_at: z.string().nullable().optional(),
+});
+
+export const CollectionCoinSchema = z.object({
+  collection_id: z.number(),
+  coin_id: z.number(),
+  added_at: z.string().optional(),
+  position: z.number().nullable().optional(),
+  custom_order: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  is_featured: z.boolean().optional(),
+  is_cover_coin: z.boolean().optional(),
+});
+
+// =============================================================================
+// Schema V3 Type Exports
+// =============================================================================
+
+export type AuthorityType = z.infer<typeof AuthorityTypeSchema>;
+export type PortraitRelationship = z.infer<typeof PortraitRelationshipSchema>;
+export type WeightStandard = z.infer<typeof WeightStandardSchema>;
+export type FlanShape = z.infer<typeof FlanShapeSchema>;
+export type FlanType = z.infer<typeof FlanTypeSchema>;
+export type ToolingExtent = z.infer<typeof ToolingExtentSchema>;
+export type CenteringQuality = z.infer<typeof CenteringSchema>;
+export type DieState = z.infer<typeof DieStateSchema>;
+export type GradeDesignation = z.infer<typeof GradeDesignationSchema>;
+
+// Phase 1 Value Object Types
+export type SecondaryAuthority = z.infer<typeof SecondaryAuthoritySchema>;
+export type CoRuler = z.infer<typeof CoRulerSchema>;
+export type PhysicalEnhancements = z.infer<typeof PhysicalEnhancementsSchema>;
+export type SecondaryTreatmentsV3 = z.infer<typeof SecondaryTreatmentsV3Schema>;
+export type ToolingRepairs = z.infer<typeof ToolingRepairsSchema>;
+export type CenteringInfo = z.infer<typeof CenteringInfoSchema>;
+export type DieStudyEnhancements = z.infer<typeof DieStudyEnhancementsSchema>;
+export type GradingTPGEnhancements = z.infer<typeof GradingTPGEnhancementsSchema>;
+export type ChronologyEnhancements = z.infer<typeof ChronologyEnhancementsSchema>;
+
+export type GradingEventType = z.infer<typeof GradingEventTypeSchema>;
+export type GradingHistoryEntry = z.infer<typeof GradingHistoryEntrySchema>;
+export type RaritySystem = z.infer<typeof RaritySystemSchema>;
+export type RaritySourceType = z.infer<typeof RaritySourceTypeSchema>;
+export type RarityAssessment = z.infer<typeof RarityAssessmentSchema>;
+export type CensusSnapshot = z.infer<typeof CensusSnapshotSchema>;
+
+export type LLMCapability = z.infer<typeof LLMCapabilitySchema>;
+export type LLMReviewStatus = z.infer<typeof LLMReviewStatusSchema>;
+export type LLMEnrichment = z.infer<typeof LLMEnrichmentSchema>;
+
+export type MarketSourceType = z.infer<typeof MarketSourceTypeSchema>;
+export type MarketPrice = z.infer<typeof MarketPriceSchema>;
+export type CoinValuation = z.infer<typeof CoinValuationSchema>;
+export type WishlistPriority = z.infer<typeof WishlistPrioritySchema>;
+export type WishlistStatus = z.infer<typeof WishlistStatusSchema>;
+export type WishlistItem = z.infer<typeof WishlistItemSchema>;
+export type WishlistMatch = z.infer<typeof WishlistMatchSchema>;
+export type PriceAlertTrigger = z.infer<typeof PriceAlertTriggerSchema>;
+export type PriceAlertStatus = z.infer<typeof PriceAlertStatusSchema>;
+export type PriceAlert = z.infer<typeof PriceAlertSchema>;
+
+export type CollectionType = z.infer<typeof CollectionTypeSchema>;
+export type Collection = z.infer<typeof CollectionSchema>;
+export type CollectionCoin = z.infer<typeof CollectionCoinSchema>;

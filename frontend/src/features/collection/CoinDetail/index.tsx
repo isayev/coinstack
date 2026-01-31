@@ -16,6 +16,7 @@ export { IdentityHeader } from './IdentityHeader';
 export { ObverseReversePanel } from './ObverseReversePanel';
 export { CoinSidePanel } from './CoinSidePanel';
 export { ReferencesCard } from './ReferencesCard';
+/** @deprecated Use ProvenanceManager from '@/features/provenance' instead */
 export { ProvenanceTimeline } from './ProvenanceTimeline';
 export { HistoricalContextCard } from './HistoricalContextCard';
 export { EnrichmentToolbar, useCoinEnrichmentActions } from './EnrichmentToolbar';

@@ -1,8 +1,8 @@
-
 import { useState } from "react"
 import { UseFormReturn, Controller } from "react-hook-form"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import { ReferenceSuggest } from "../ReferenceSuggest"
 import { DieLinker } from "../DieLinker"
@@ -21,7 +21,7 @@ export function ResearchStep({
     onReferenceSelect,
     coinContext
 }: ResearchStepProps) {
-    const { register, control, watch } = form
+    const { register, control, watch, setValue } = form
     const [lookupQuery, setLookupQuery] = useState("")
 
     // Watch for die IDs to pass to DieLinker
@@ -78,6 +78,157 @@ export function ResearchStep({
                         <div className="space-y-2">
                             <label className="text-sm font-semibold">Die Match Notes</label>
                             <Input {...register("die_match_notes")} placeholder="e.g. Matches specimen in BMC 42" className="h-11 shadow-sm" />
+                        </div>
+                    </div>
+
+                    {/* Phase 1: Die Study Enhancements */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-dashed">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Obverse Die State</label>
+                            <Select
+                                value={watch("die_study.obverse_die_state") || ""}
+                                onValueChange={(v) => setValue("die_study.obverse_die_state", v || null)}
+                            >
+                                <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Select state" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="fresh">Fresh</SelectItem>
+                                    <SelectItem value="early">Early</SelectItem>
+                                    <SelectItem value="middle">Middle</SelectItem>
+                                    <SelectItem value="late">Late</SelectItem>
+                                    <SelectItem value="worn">Worn</SelectItem>
+                                    <SelectItem value="broken">Broken</SelectItem>
+                                    <SelectItem value="repaired">Repaired</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Reverse Die State</label>
+                            <Select
+                                value={watch("die_study.reverse_die_state") || ""}
+                                onValueChange={(v) => setValue("die_study.reverse_die_state", v || null)}
+                            >
+                                <SelectTrigger className="h-10">
+                                    <SelectValue placeholder="Select state" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="fresh">Fresh</SelectItem>
+                                    <SelectItem value="early">Early</SelectItem>
+                                    <SelectItem value="middle">Middle</SelectItem>
+                                    <SelectItem value="late">Late</SelectItem>
+                                    <SelectItem value="worn">Worn</SelectItem>
+                                    <SelectItem value="broken">Broken</SelectItem>
+                                    <SelectItem value="repaired">Repaired</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Die Break Description</label>
+                            <Input
+                                {...register("die_study.die_break_description")}
+                                placeholder="e.g., Cud at 2:00"
+                                className="h-10"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Phase 1: Chronology Enhancements */}
+                <div className="space-y-4 pt-6 border-t">
+                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Chronology</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Date Period Notation</label>
+                            <Input
+                                {...register("chronology.date_period_notation")}
+                                placeholder="e.g., c. 150-100 BC"
+                                className="h-11"
+                            />
+                            <p className="text-xs text-muted-foreground">Human-readable date expression</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Emission Phase</label>
+                            <Input
+                                {...register("chronology.emission_phase")}
+                                placeholder="e.g., First Issue, Reform Coinage"
+                                className="h-11"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Phase 1: Attribution Enhancements */}
+                <div className="space-y-4 pt-6 border-t">
+                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Attribution Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Secondary Authority</label>
+                            <Input
+                                {...register("secondary_authority.name")}
+                                placeholder="Magistrate, Satrap, etc."
+                                className="h-11"
+                            />
+                            <p className="text-xs text-muted-foreground">Greek magistrates, provincial governors</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Authority Type</label>
+                            <Select
+                                value={watch("secondary_authority.authority_type") || ""}
+                                onValueChange={(v) => setValue("secondary_authority.authority_type", v || null)}
+                            >
+                                <SelectTrigger className="h-11">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="magistrate">Magistrate</SelectItem>
+                                    <SelectItem value="satrap">Satrap</SelectItem>
+                                    <SelectItem value="dynast">Dynast</SelectItem>
+                                    <SelectItem value="strategos">Strategos</SelectItem>
+                                    <SelectItem value="archon">Archon</SelectItem>
+                                    <SelectItem value="epistates">Epistates</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Moneyer (Gens)</label>
+                            <Input
+                                {...register("moneyer_gens")}
+                                placeholder="e.g., Calpurnius"
+                                className="h-11"
+                            />
+                            <p className="text-xs text-muted-foreground">Republican moneyer family</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Co-Ruler</label>
+                            <Input
+                                {...register("co_ruler.name")}
+                                placeholder="Byzantine/Imperial co-ruler"
+                                className="h-11"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold">Portrait Relationship</label>
+                            <Select
+                                value={watch("co_ruler.portrait_relationship") || ""}
+                                onValueChange={(v) => setValue("co_ruler.portrait_relationship", v || null)}
+                            >
+                                <SelectTrigger className="h-11">
+                                    <SelectValue placeholder="Select relationship" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="self">Self</SelectItem>
+                                    <SelectItem value="consort">Consort</SelectItem>
+                                    <SelectItem value="heir">Heir</SelectItem>
+                                    <SelectItem value="parent">Parent</SelectItem>
+                                    <SelectItem value="predecessor">Predecessor</SelectItem>
+                                    <SelectItem value="commemorative">Commemorative</SelectItem>
+                                    <SelectItem value="divus">Divus</SelectItem>
+                                    <SelectItem value="diva">Diva</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </div>

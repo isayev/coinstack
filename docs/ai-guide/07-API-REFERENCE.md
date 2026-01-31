@@ -56,6 +56,222 @@ PUT /api/v2/coins/{id}
 DELETE /api/v2/coins/{id}
 ```
 
+### Coin Request Schema (Create/Update)
+
+The request body for create/update includes all coin fields plus Phase 1 numismatic enhancements:
+
+```typescript
+interface CreateCoinRequest {
+  // Required fields
+  category: string;  // roman_imperial, greek, byzantine, etc.
+  metal: string;     // gold, silver, bronze, etc.
+  diameter_mm: number;
+  issuer: string;
+  grading_state: string;  // raw, slabbed, capsule, flip
+  grade: string;          // VF, XF, AU, etc.
+
+  // Optional base fields
+  weight_g?: number;
+  mint?: string;
+  year_start?: number;   // Negative for BC
+  year_end?: number;
+  die_axis?: number;     // 0-12
+  grade_service?: string;  // ngc, pcgs, etc.
+  certification?: string;
+  strike?: string;
+  surface?: string;
+  acquisition_price?: number;
+  acquisition_source?: string;
+  acquisition_date?: string;  // ISO date
+  acquisition_url?: string;
+  images?: Array<{ url: string; image_type: string; is_primary: boolean }>;
+  denomination?: string;
+  portrait_subject?: string;
+  design?: {
+    obverse_legend?: string;
+    obverse_description?: string;
+    reverse_legend?: string;
+    reverse_description?: string;
+    exergue?: string;
+  };
+  storage_location?: string;
+  personal_notes?: string;
+  rarity?: string;
+  rarity_notes?: string;
+  specific_gravity?: number;
+  issue_status?: string;  // official, fourree, imitation, etc.
+  obverse_die_id?: string;
+  reverse_die_id?: string;
+  find_spot?: string;
+  find_date?: string;
+  references?: Array<CatalogReferenceInput>;
+  provenance?: Array<ProvenanceEntryRequest>;
+
+  // Schema V3 Phase 1: Numismatic Enhancements (all optional)
+  secondary_authority?: {
+    name?: string;
+    term_id?: number;
+    authority_type?: string;  // magistrate, satrap, dynast, etc.
+  };
+  co_ruler?: {
+    name?: string;
+    term_id?: number;
+    portrait_relationship?: string;  // self, consort, heir, etc.
+  };
+  moneyer_gens?: string;  // Republican moneyer family
+  physical_enhancements?: {
+    weight_standard?: string;  // attic, aeginetan, denarius_reformed, etc.
+    expected_weight_g?: number;
+    flan_shape?: string;  // round, irregular, oval, scyphate
+    flan_type?: string;   // cast, struck, hammered
+    flan_notes?: string;
+  };
+  secondary_treatments_v3?: {
+    is_overstrike?: boolean;
+    undertype_visible?: string;
+    undertype_attribution?: string;
+    has_test_cut?: boolean;
+    test_cut_count?: number;
+    test_cut_positions?: string;
+    has_bankers_marks?: boolean;
+    has_graffiti?: boolean;
+    graffiti_description?: string;
+    was_mounted?: boolean;
+    mount_evidence?: string;
+  };
+  tooling_repairs?: {
+    tooling_extent?: string;  // none, minor, moderate, significant, extensive
+    tooling_details?: string;
+    has_ancient_repair?: boolean;
+    ancient_repairs?: string;
+  };
+  centering_info?: {
+    centering?: string;  // well-centered, slightly_off, off_center
+    centering_notes?: string;
+  };
+  die_study?: {
+    obverse_die_state?: string;  // fresh, early, middle, late, worn, broken
+    reverse_die_state?: string;
+    die_break_description?: string;
+  };
+  grading_tpg?: {
+    grade_numeric?: number;  // NGC/PCGS numeric grade (e.g., 35, 50, 65)
+    grade_designation?: string;  // Fine Style, Choice, Gem
+    has_star_designation?: boolean;
+    photo_certificate?: boolean;
+    verification_url?: string;
+  };
+  chronology?: {
+    date_period_notation?: string;  // "c. 150-100 BC"
+    emission_phase?: string;  // First Issue, Second Issue
+  };
+}
+```
+
+**Example: Create coin with Phase 1 fields:**
+```json
+{
+  "category": "roman_imperial",
+  "metal": "silver",
+  "diameter_mm": 19,
+  "issuer": "Hadrian",
+  "grading_state": "slabbed",
+  "grade": "XF",
+  "grade_service": "ngc",
+  "grading_tpg": {
+    "grade_numeric": 45,
+    "grade_designation": "Fine Style",
+    "has_star_designation": true
+  },
+  "physical_enhancements": {
+    "weight_standard": "denarius_reformed",
+    "flan_shape": "round"
+  },
+  "centering_info": {
+    "centering": "well-centered"
+  }
+}
+```
+
+**Update behavior:** For updates, Phase 1 fields preserve existing values if not provided. To clear a field, explicitly send the nested object with null values.
+
+### Coin Response (Schema V3)
+
+The coin response includes Phase 1 numismatic enhancements:
+
+```typescript
+interface CoinResponse {
+  id: number;
+  category: string;
+  metal: string;
+  dimensions: { weight_g, diameter_mm, die_axis, specific_gravity };
+  attribution: { issuer, mint, year_start, year_end };
+  grading: { grading_state, grade, service, certification_number, strike, surface };
+  acquisition: { price, currency, source, date, url } | null;
+  images: Array<{ url, image_type, is_primary }>;
+  // ... (existing fields)
+
+  // Schema V3 Phase 1: Numismatic Enhancements
+  secondary_authority: {
+    name: string | null;
+    term_id: number | null;
+    authority_type: string | null;  // magistrate, satrap, dynast, etc.
+  } | null;
+  co_ruler: {
+    name: string | null;
+    term_id: number | null;
+    portrait_relationship: string | null;  // self, consort, heir, etc.
+  } | null;
+  moneyer_gens: string | null;
+  physical_enhancements: {
+    weight_standard: string | null;  // attic, aeginetan, etc.
+    expected_weight_g: number | null;
+    flan_shape: string | null;  // round, irregular, scyphate, etc.
+    flan_type: string | null;  // cast, struck, hammered
+    flan_notes: string | null;
+  } | null;
+  secondary_treatments_v3: {
+    is_overstrike: boolean;
+    undertype_visible: string | null;
+    undertype_attribution: string | null;
+    has_test_cut: boolean;
+    test_cut_count: number | null;
+    test_cut_positions: string | null;
+    has_bankers_marks: boolean;
+    has_graffiti: boolean;
+    graffiti_description: string | null;
+    was_mounted: boolean;
+    mount_evidence: string | null;
+  } | null;
+  tooling_repairs: {
+    tooling_extent: string | null;  // none, minor, moderate, significant, extensive
+    tooling_details: string | null;
+    has_ancient_repair: boolean;
+    ancient_repairs: string | null;
+  } | null;
+  centering_info: {
+    centering: string | null;  // well-centered, slightly_off, off_center, significantly_off
+    centering_notes: string | null;
+  } | null;
+  die_study: {
+    obverse_die_state: string | null;  // fresh, early, middle, late, worn, broken, repaired
+    reverse_die_state: string | null;
+    die_break_description: string | null;
+  } | null;
+  grading_tpg: {
+    grade_numeric: number | null;  // NGC/PCGS numeric grades
+    grade_designation: string | null;  // Fine Style, Choice, Gem, Superb Gem
+    has_star_designation: boolean;
+    photo_certificate: boolean;
+    verification_url: string | null;
+  } | null;
+  chronology: {
+    date_period_notation: string | null;  // "c. 150-100 BC", "late 3rd century AD"
+    emission_phase: string | null;  // First Issue, Second Issue, etc.
+  } | null;
+}
+```
+
 ---
 
 ## LLM API (`/api/v2/llm`)

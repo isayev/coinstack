@@ -29,6 +29,8 @@ interface ProvenanceEntry {
   id?: number;
   /** ISO date string or approximate date like "1920s" */
   event_date?: string | null;
+  /** Flexible date string like "1920s", "circa 1980" */
+  date_string?: string | null;
   /** 'exact' | 'year' | 'decade' | 'approximate' */
   date_precision?: string;
   /** 'auction' | 'private_sale' | 'collection' | 'acquired' | 'gift' | 'unknown' */

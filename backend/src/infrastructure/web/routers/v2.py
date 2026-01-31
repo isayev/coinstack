@@ -4,11 +4,19 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from datetime import date
 from src.domain.repositories import ICoinRepository
-from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDTO, ImageDTO, DesignDTO
+from src.application.commands.create_coin import (
+    CreateCoinUseCase, CreateCoinDTO, ImageDTO, DesignDTO,
+    # Phase 1: Schema V3 DTOs
+    SecondaryAuthorityDTO, CoRulerDTO, PhysicalEnhancementsDTO, SecondaryTreatmentsV3DTO,
+    ToolingRepairsDTO, CenteringDTO, DieStudyEnhancementsDTO, GradingTPGEnhancementsDTO, ChronologyEnhancementsDTO
+)
 from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
-    Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
-    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry
+    Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails,
+    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry,
+    # Phase 1: Schema V3 value objects
+    SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
+    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
 )
 from sqlalchemy.orm import Session
 from src.infrastructure.web.dependencies import get_coin_repo, get_db
@@ -60,6 +68,73 @@ class ProvenanceEntryRequest(BaseModel):
     sort_order: int = 0
 
 
+# --- Phase 1: Schema V3 Input Models ---
+
+class SecondaryAuthorityRequest(BaseModel):
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    authority_type: Optional[str] = None  # magistrate, satrap, dynast, etc.
+
+
+class CoRulerRequest(BaseModel):
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    portrait_relationship: Optional[str] = None  # self, consort, heir, etc.
+
+
+class PhysicalEnhancementsRequest(BaseModel):
+    weight_standard: Optional[str] = None  # attic, aeginetan, etc.
+    expected_weight_g: Optional[Decimal] = None
+    flan_shape: Optional[str] = None  # round, irregular, scyphate
+    flan_type: Optional[str] = None  # cast, struck, hammered
+    flan_notes: Optional[str] = None
+
+
+class SecondaryTreatmentsV3Request(BaseModel):
+    is_overstrike: bool = False
+    undertype_visible: Optional[str] = None
+    undertype_attribution: Optional[str] = None
+    has_test_cut: bool = False
+    test_cut_count: Optional[int] = None
+    test_cut_positions: Optional[str] = None
+    has_bankers_marks: bool = False
+    has_graffiti: bool = False
+    graffiti_description: Optional[str] = None
+    was_mounted: bool = False
+    mount_evidence: Optional[str] = None
+
+
+class ToolingRepairsRequest(BaseModel):
+    tooling_extent: Optional[str] = None  # none, minor, moderate, significant, extensive
+    tooling_details: Optional[str] = None
+    has_ancient_repair: bool = False
+    ancient_repairs: Optional[str] = None
+
+
+class CenteringRequest(BaseModel):
+    centering: Optional[str] = None  # well-centered, slightly_off, off_center
+    centering_notes: Optional[str] = None
+
+
+class DieStudyEnhancementsRequest(BaseModel):
+    obverse_die_state: Optional[str] = None  # fresh, early, middle, late, worn, broken
+    reverse_die_state: Optional[str] = None
+    die_break_description: Optional[str] = None
+
+
+class GradingTPGEnhancementsRequest(BaseModel):
+    grade_numeric: Optional[int] = None  # NGC/PCGS numeric grades
+    grade_designation: Optional[str] = None  # Fine Style, Choice, Gem
+    has_star_designation: bool = False
+    photo_certificate: bool = False
+    verification_url: Optional[str] = None
+
+
+class ChronologyEnhancementsRequest(BaseModel):
+    date_period_notation: Optional[str] = None  # "c. 150-100 BC"
+    emission_phase: Optional[str] = None  # First Issue, Second Issue
+
+
 class CreateCoinRequest(BaseModel):
     category: str
     metal: str
@@ -106,6 +181,18 @@ class CreateCoinRequest(BaseModel):
     provenance: Optional[List[ProvenanceEntryRequest]] = None
     # Note: secondary_treatments and monograms not yet supported in simple CREATE
     # They should be added via specific endpoints or future updates
+
+    # --- Phase 1: Schema V3 Numismatic Enhancements ---
+    secondary_authority: Optional[SecondaryAuthorityRequest] = None
+    co_ruler: Optional[CoRulerRequest] = None
+    moneyer_gens: Optional[str] = None
+    physical_enhancements: Optional[PhysicalEnhancementsRequest] = None
+    secondary_treatments_v3: Optional[SecondaryTreatmentsV3Request] = None
+    tooling_repairs: Optional[ToolingRepairsRequest] = None
+    centering_info: Optional[CenteringRequest] = None
+    die_study: Optional[DieStudyEnhancementsRequest] = None
+    grading_tpg: Optional[GradingTPGEnhancementsRequest] = None
+    chronology: Optional[ChronologyEnhancementsRequest] = None
 
 class DimensionsResponse(BaseModel):
     weight_g: Optional[Decimal] = None
@@ -187,6 +274,74 @@ class FindDataResponse(BaseModel):
     find_spot: Optional[str] = None
     find_date: Optional[date] = None
 
+
+# --- Phase 1: Schema V3 Response Models ---
+
+class SecondaryAuthorityResponse(BaseModel):
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    authority_type: Optional[str] = None
+
+
+class CoRulerResponse(BaseModel):
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    portrait_relationship: Optional[str] = None
+
+
+class PhysicalEnhancementsResponse(BaseModel):
+    weight_standard: Optional[str] = None
+    expected_weight_g: Optional[Decimal] = None
+    flan_shape: Optional[str] = None
+    flan_type: Optional[str] = None
+    flan_notes: Optional[str] = None
+
+
+class SecondaryTreatmentsV3Response(BaseModel):
+    is_overstrike: bool = False
+    undertype_visible: Optional[str] = None
+    undertype_attribution: Optional[str] = None
+    has_test_cut: bool = False
+    test_cut_count: Optional[int] = None
+    test_cut_positions: Optional[str] = None
+    has_bankers_marks: bool = False
+    has_graffiti: bool = False
+    graffiti_description: Optional[str] = None
+    was_mounted: bool = False
+    mount_evidence: Optional[str] = None
+
+
+class ToolingRepairsResponse(BaseModel):
+    tooling_extent: Optional[str] = None
+    tooling_details: Optional[str] = None
+    has_ancient_repair: bool = False
+    ancient_repairs: Optional[str] = None
+
+
+class CenteringResponse(BaseModel):
+    centering: Optional[str] = None
+    centering_notes: Optional[str] = None
+
+
+class DieStudyEnhancementsResponse(BaseModel):
+    obverse_die_state: Optional[str] = None
+    reverse_die_state: Optional[str] = None
+    die_break_description: Optional[str] = None
+
+
+class GradingTPGEnhancementsResponse(BaseModel):
+    grade_numeric: Optional[int] = None
+    grade_designation: Optional[str] = None
+    has_star_designation: bool = False
+    photo_certificate: bool = False
+    verification_url: Optional[str] = None
+
+
+class ChronologyEnhancementsResponse(BaseModel):
+    date_period_notation: Optional[str] = None
+    emission_phase: Optional[str] = None
+
+
 class CoinResponse(BaseModel):
     id: Optional[int]
     category: str
@@ -228,7 +383,19 @@ class CoinResponse(BaseModel):
     # Navigation helpers
     prev_id: Optional[int] = None
     next_id: Optional[int] = None
-    
+
+    # --- Phase 1: Schema V3 Numismatic Enhancements ---
+    secondary_authority: Optional[SecondaryAuthorityResponse] = None
+    co_ruler: Optional[CoRulerResponse] = None
+    moneyer_gens: Optional[str] = None
+    physical_enhancements: Optional[PhysicalEnhancementsResponse] = None
+    secondary_treatments_v3: Optional[SecondaryTreatmentsV3Response] = None
+    tooling_repairs: Optional[ToolingRepairsResponse] = None
+    centering_info: Optional[CenteringResponse] = None
+    die_study: Optional[DieStudyEnhancementsResponse] = None
+    grading_tpg: Optional[GradingTPGEnhancementsResponse] = None
+    chronology: Optional[ChronologyEnhancementsResponse] = None
+
     model_config = ConfigDict(from_attributes=True)
 
     @staticmethod
@@ -298,7 +465,7 @@ class CoinResponse(BaseModel):
             provenance=[
                 ProvenanceEntryResponse(
                     id=p.id,
-                    event_type=p.source_type,
+                    event_type=p.event_type.value if hasattr(p.event_type, 'value') else p.event_type,
                     source_name=p.source_name,
                     event_date=p.event_date,
                     date_string=p.date_string,
@@ -342,7 +509,66 @@ class CoinResponse(BaseModel):
             find_data=FindDataResponse(
                 find_spot=coin.find_data.find_spot,
                 find_date=coin.find_data.find_date
-            ) if coin.find_data else None
+            ) if coin.find_data else None,
+
+            # --- Phase 1: Schema V3 Numismatic Enhancements ---
+            secondary_authority=SecondaryAuthorityResponse(
+                name=coin.secondary_authority.name,
+                term_id=coin.secondary_authority.term_id,
+                authority_type=coin.secondary_authority.authority_type
+            ) if coin.secondary_authority else None,
+            co_ruler=CoRulerResponse(
+                name=coin.co_ruler.name,
+                term_id=coin.co_ruler.term_id,
+                portrait_relationship=coin.co_ruler.portrait_relationship
+            ) if coin.co_ruler else None,
+            moneyer_gens=coin.moneyer_gens,
+            physical_enhancements=PhysicalEnhancementsResponse(
+                weight_standard=coin.physical_enhancements.weight_standard,
+                expected_weight_g=coin.physical_enhancements.expected_weight_g,
+                flan_shape=coin.physical_enhancements.flan_shape,
+                flan_type=coin.physical_enhancements.flan_type,
+                flan_notes=coin.physical_enhancements.flan_notes
+            ) if coin.physical_enhancements else None,
+            secondary_treatments_v3=SecondaryTreatmentsV3Response(
+                is_overstrike=coin.secondary_treatments_v3.is_overstrike,
+                undertype_visible=coin.secondary_treatments_v3.undertype_visible,
+                undertype_attribution=coin.secondary_treatments_v3.undertype_attribution,
+                has_test_cut=coin.secondary_treatments_v3.has_test_cut,
+                test_cut_count=coin.secondary_treatments_v3.test_cut_count,
+                test_cut_positions=coin.secondary_treatments_v3.test_cut_positions,
+                has_bankers_marks=coin.secondary_treatments_v3.has_bankers_marks,
+                has_graffiti=coin.secondary_treatments_v3.has_graffiti,
+                graffiti_description=coin.secondary_treatments_v3.graffiti_description,
+                was_mounted=coin.secondary_treatments_v3.was_mounted,
+                mount_evidence=coin.secondary_treatments_v3.mount_evidence
+            ) if coin.secondary_treatments_v3 else None,
+            tooling_repairs=ToolingRepairsResponse(
+                tooling_extent=coin.tooling_repairs.tooling_extent,
+                tooling_details=coin.tooling_repairs.tooling_details,
+                has_ancient_repair=coin.tooling_repairs.has_ancient_repair,
+                ancient_repairs=coin.tooling_repairs.ancient_repairs
+            ) if coin.tooling_repairs else None,
+            centering_info=CenteringResponse(
+                centering=coin.centering_info.centering,
+                centering_notes=coin.centering_info.centering_notes
+            ) if coin.centering_info else None,
+            die_study=DieStudyEnhancementsResponse(
+                obverse_die_state=coin.die_study.obverse_die_state,
+                reverse_die_state=coin.die_study.reverse_die_state,
+                die_break_description=coin.die_study.die_break_description
+            ) if coin.die_study else None,
+            grading_tpg=GradingTPGEnhancementsResponse(
+                grade_numeric=coin.grading_tpg.grade_numeric,
+                grade_designation=coin.grading_tpg.grade_designation,
+                has_star_designation=coin.grading_tpg.has_star_designation,
+                photo_certificate=coin.grading_tpg.photo_certificate,
+                verification_url=coin.grading_tpg.verification_url
+            ) if coin.grading_tpg else None,
+            chronology=ChronologyEnhancementsResponse(
+                date_period_notation=coin.chronology.date_period_notation,
+                emission_phase=coin.chronology.emission_phase
+            ) if coin.chronology else None,
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -371,6 +597,72 @@ def create_coin(
             exergue=request.design.exergue
         )
 
+    # Map Phase 1 fields to DTOs
+    secondary_authority_dto = SecondaryAuthorityDTO(
+        name=request.secondary_authority.name,
+        term_id=request.secondary_authority.term_id,
+        authority_type=request.secondary_authority.authority_type
+    ) if request.secondary_authority else None
+
+    co_ruler_dto = CoRulerDTO(
+        name=request.co_ruler.name,
+        term_id=request.co_ruler.term_id,
+        portrait_relationship=request.co_ruler.portrait_relationship
+    ) if request.co_ruler else None
+
+    physical_enhancements_dto = PhysicalEnhancementsDTO(
+        weight_standard=request.physical_enhancements.weight_standard,
+        expected_weight_g=request.physical_enhancements.expected_weight_g,
+        flan_shape=request.physical_enhancements.flan_shape,
+        flan_type=request.physical_enhancements.flan_type,
+        flan_notes=request.physical_enhancements.flan_notes
+    ) if request.physical_enhancements else None
+
+    secondary_treatments_v3_dto = SecondaryTreatmentsV3DTO(
+        is_overstrike=request.secondary_treatments_v3.is_overstrike,
+        undertype_visible=request.secondary_treatments_v3.undertype_visible,
+        undertype_attribution=request.secondary_treatments_v3.undertype_attribution,
+        has_test_cut=request.secondary_treatments_v3.has_test_cut,
+        test_cut_count=request.secondary_treatments_v3.test_cut_count,
+        test_cut_positions=request.secondary_treatments_v3.test_cut_positions,
+        has_bankers_marks=request.secondary_treatments_v3.has_bankers_marks,
+        has_graffiti=request.secondary_treatments_v3.has_graffiti,
+        graffiti_description=request.secondary_treatments_v3.graffiti_description,
+        was_mounted=request.secondary_treatments_v3.was_mounted,
+        mount_evidence=request.secondary_treatments_v3.mount_evidence
+    ) if request.secondary_treatments_v3 else None
+
+    tooling_repairs_dto = ToolingRepairsDTO(
+        tooling_extent=request.tooling_repairs.tooling_extent,
+        tooling_details=request.tooling_repairs.tooling_details,
+        has_ancient_repair=request.tooling_repairs.has_ancient_repair,
+        ancient_repairs=request.tooling_repairs.ancient_repairs
+    ) if request.tooling_repairs else None
+
+    centering_info_dto = CenteringDTO(
+        centering=request.centering_info.centering,
+        centering_notes=request.centering_info.centering_notes
+    ) if request.centering_info else None
+
+    die_study_dto = DieStudyEnhancementsDTO(
+        obverse_die_state=request.die_study.obverse_die_state,
+        reverse_die_state=request.die_study.reverse_die_state,
+        die_break_description=request.die_study.die_break_description
+    ) if request.die_study else None
+
+    grading_tpg_dto = GradingTPGEnhancementsDTO(
+        grade_numeric=request.grading_tpg.grade_numeric,
+        grade_designation=request.grading_tpg.grade_designation,
+        has_star_designation=request.grading_tpg.has_star_designation,
+        photo_certificate=request.grading_tpg.photo_certificate,
+        verification_url=request.grading_tpg.verification_url
+    ) if request.grading_tpg else None
+
+    chronology_dto = ChronologyEnhancementsDTO(
+        date_period_notation=request.chronology.date_period_notation,
+        emission_phase=request.chronology.emission_phase
+    ) if request.chronology else None
+
     dto = CreateCoinDTO(
         category=request.category,
         metal=request.metal,
@@ -389,7 +681,7 @@ def create_coin(
         acquisition_source=request.acquisition_source,
         acquisition_date=request.acquisition_date,
         acquisition_url=request.acquisition_url,
-        
+
         # Extensions
         specific_gravity=request.specific_gravity,
         issue_status=request.issue_status,
@@ -397,12 +689,24 @@ def create_coin(
         reverse_die_id=request.reverse_die_id,
         find_spot=request.find_spot,
         find_date=request.find_date,
-        
+
         # New Fields
         denomination=request.denomination,
         portrait_subject=request.portrait_subject,
         images=images_dto,
-        design=design_dto
+        design=design_dto,
+
+        # Phase 1: Schema V3 Numismatic Enhancements
+        secondary_authority=secondary_authority_dto,
+        co_ruler=co_ruler_dto,
+        moneyer_gens=request.moneyer_gens,
+        physical_enhancements=physical_enhancements_dto,
+        secondary_treatments_v3=secondary_treatments_v3_dto,
+        tooling_repairs=tooling_repairs_dto,
+        centering_info=centering_info_dto,
+        die_study=die_study_dto,
+        grading_tpg=grading_tpg_dto,
+        chronology=chronology_dto,
     )
     
     saved_coin = use_case.execute(dto)
@@ -683,6 +987,74 @@ def update_coin(
                 ) for p in request.provenance
             ] if request.provenance is not None else existing_coin.provenance,
             enrichment=existing_coin.enrichment,
+
+            # --- Phase 1: Schema V3 Numismatic Enhancements (preserve existing if not provided) ---
+            secondary_authority=SecondaryAuthority(
+                name=request.secondary_authority.name,
+                term_id=request.secondary_authority.term_id,
+                authority_type=request.secondary_authority.authority_type
+            ) if request.secondary_authority else existing_coin.secondary_authority,
+
+            co_ruler=CoRuler(
+                name=request.co_ruler.name,
+                term_id=request.co_ruler.term_id,
+                portrait_relationship=request.co_ruler.portrait_relationship
+            ) if request.co_ruler else existing_coin.co_ruler,
+
+            moneyer_gens=request.moneyer_gens if "moneyer_gens" in request.model_fields_set else existing_coin.moneyer_gens,
+
+            physical_enhancements=PhysicalEnhancements(
+                weight_standard=request.physical_enhancements.weight_standard,
+                expected_weight_g=request.physical_enhancements.expected_weight_g,
+                flan_shape=request.physical_enhancements.flan_shape,
+                flan_type=request.physical_enhancements.flan_type,
+                flan_notes=request.physical_enhancements.flan_notes
+            ) if request.physical_enhancements else existing_coin.physical_enhancements,
+
+            secondary_treatments_v3=SecondaryTreatments(
+                is_overstrike=request.secondary_treatments_v3.is_overstrike,
+                undertype_visible=request.secondary_treatments_v3.undertype_visible,
+                undertype_attribution=request.secondary_treatments_v3.undertype_attribution,
+                has_test_cut=request.secondary_treatments_v3.has_test_cut,
+                test_cut_count=request.secondary_treatments_v3.test_cut_count,
+                test_cut_positions=request.secondary_treatments_v3.test_cut_positions,
+                has_bankers_marks=request.secondary_treatments_v3.has_bankers_marks,
+                has_graffiti=request.secondary_treatments_v3.has_graffiti,
+                graffiti_description=request.secondary_treatments_v3.graffiti_description,
+                was_mounted=request.secondary_treatments_v3.was_mounted,
+                mount_evidence=request.secondary_treatments_v3.mount_evidence
+            ) if request.secondary_treatments_v3 else existing_coin.secondary_treatments_v3,
+
+            tooling_repairs=ToolingRepairs(
+                tooling_extent=request.tooling_repairs.tooling_extent,
+                tooling_details=request.tooling_repairs.tooling_details,
+                has_ancient_repair=request.tooling_repairs.has_ancient_repair,
+                ancient_repairs=request.tooling_repairs.ancient_repairs
+            ) if request.tooling_repairs else existing_coin.tooling_repairs,
+
+            centering_info=Centering(
+                centering=request.centering_info.centering,
+                centering_notes=request.centering_info.centering_notes
+            ) if request.centering_info else existing_coin.centering_info,
+
+            die_study=DieStudyEnhancements(
+                obverse_die_state=request.die_study.obverse_die_state,
+                reverse_die_state=request.die_study.reverse_die_state,
+                die_break_description=request.die_study.die_break_description
+            ) if request.die_study else existing_coin.die_study,
+
+            grading_tpg=GradingTPGEnhancements(
+                grade_numeric=request.grading_tpg.grade_numeric,
+                grade_designation=request.grading_tpg.grade_designation,
+                has_star_designation=request.grading_tpg.has_star_designation,
+                photo_certificate=request.grading_tpg.photo_certificate,
+                verification_url=request.grading_tpg.verification_url
+            ) if request.grading_tpg else existing_coin.grading_tpg,
+
+            chronology=ChronologyEnhancements(
+                date_period_notation=request.chronology.date_period_notation,
+                emission_phase=request.chronology.emission_phase
+            ) if request.chronology else existing_coin.chronology,
         )
         
         # Add images manually here since DTO/UseCase flow is pending update

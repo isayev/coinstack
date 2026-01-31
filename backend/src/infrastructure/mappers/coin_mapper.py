@@ -1,9 +1,12 @@
 import json
 from typing import Optional, List, Dict, Any
 from src.domain.coin import (
-    Coin, Dimensions, Attribution, Category, Metal, 
+    Coin, Dimensions, Attribution, Category, Metal,
     GradingDetails, AcquisitionDetails, GradingState, GradeService, CoinImage,
-    Design, CatalogReference, ProvenanceEntry, IssueStatus, DieInfo, Monogram, FindData, EnrichmentData
+    Design, CatalogReference, ProvenanceEntry, IssueStatus, DieInfo, Monogram, FindData, EnrichmentData,
+    # Phase 1: Schema V3 value objects
+    SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
+    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
 )
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
 from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system, SYSTEM_TO_DISPLAY
@@ -122,6 +125,80 @@ class CoinMapper:
                 suggested_design=CoinMapper._safe_json_load(model.llm_suggested_design),
                 suggested_attribution=CoinMapper._safe_json_load(model.llm_suggested_attribution),
             ) if (model.historical_significance or model.llm_suggested_references) else None,
+
+            # --- Phase 1: Schema V3 Numismatic Enhancements ---
+            # Attribution enhancements
+            secondary_authority=SecondaryAuthority(
+                name=model.secondary_authority,
+                term_id=model.secondary_authority_term_id,
+                authority_type=model.authority_type
+            ) if (model.secondary_authority or model.secondary_authority_term_id) else None,
+            co_ruler=CoRuler(
+                name=model.co_ruler,
+                term_id=model.co_ruler_term_id,
+                portrait_relationship=model.portrait_relationship
+            ) if (model.co_ruler or model.co_ruler_term_id) else None,
+            moneyer_gens=model.moneyer_gens,
+
+            # Physical enhancements
+            physical_enhancements=PhysicalEnhancements(
+                weight_standard=model.weight_standard,
+                expected_weight_g=model.expected_weight_g,
+                flan_shape=model.flan_shape,
+                flan_type=model.flan_type,
+                flan_notes=model.flan_notes
+            ) if any([model.weight_standard, model.expected_weight_g, model.flan_shape, model.flan_type, model.flan_notes]) else None,
+
+            # Secondary treatments
+            secondary_treatments_v3=SecondaryTreatments(
+                is_overstrike=model.is_overstrike or False,
+                undertype_visible=model.undertype_visible,
+                undertype_attribution=model.undertype_attribution,
+                has_test_cut=model.has_test_cut or False,
+                test_cut_count=model.test_cut_count,
+                test_cut_positions=model.test_cut_positions,
+                has_bankers_marks=model.has_bankers_marks or False,
+                has_graffiti=model.has_graffiti or False,
+                graffiti_description=model.graffiti_description,
+                was_mounted=model.was_mounted or False,
+                mount_evidence=model.mount_evidence
+            ) if any([model.is_overstrike, model.has_test_cut, model.has_bankers_marks, model.has_graffiti, model.was_mounted]) else None,
+
+            # Tooling/Repairs
+            tooling_repairs=ToolingRepairs(
+                tooling_extent=model.tooling_extent,
+                tooling_details=model.tooling_details,
+                has_ancient_repair=model.has_ancient_repair or False,
+                ancient_repairs=model.ancient_repairs
+            ) if any([model.tooling_extent, model.tooling_details, model.has_ancient_repair]) else None,
+
+            # Centering
+            centering_info=Centering(
+                centering=model.centering,
+                centering_notes=model.centering_notes
+            ) if (model.centering or model.centering_notes) else None,
+
+            # Die study enhancements
+            die_study=DieStudyEnhancements(
+                obverse_die_state=model.obverse_die_state,
+                reverse_die_state=model.reverse_die_state,
+                die_break_description=model.die_break_description
+            ) if any([model.obverse_die_state, model.reverse_die_state, model.die_break_description]) else None,
+
+            # Grading TPG enhancements
+            grading_tpg=GradingTPGEnhancements(
+                grade_numeric=model.grade_numeric,
+                grade_designation=model.grade_designation,
+                has_star_designation=model.has_star_designation or False,
+                photo_certificate=model.photo_certificate or False,
+                verification_url=model.verification_url
+            ) if any([model.grade_numeric, model.grade_designation, model.has_star_designation, model.photo_certificate, model.verification_url]) else None,
+
+            # Chronology enhancements
+            chronology=ChronologyEnhancements(
+                date_period_notation=model.date_period_notation,
+                emission_phase=model.emission_phase
+            ) if (model.date_period_notation or model.emission_phase) else None,
         )
 
     @staticmethod
@@ -185,7 +262,63 @@ class CoinMapper:
             llm_suggested_rarity=json.dumps(coin.enrichment.suggested_rarity) if (coin.enrichment and coin.enrichment.suggested_rarity) else None,
             llm_suggested_design=json.dumps(coin.enrichment.suggested_design) if (coin.enrichment and coin.enrichment.suggested_design) else None,
             llm_suggested_attribution=json.dumps(coin.enrichment.suggested_attribution) if (coin.enrichment and coin.enrichment.suggested_attribution) else None,
-            
+
+            # --- Phase 1: Schema V3 Numismatic Enhancements ---
+            # Attribution enhancements
+            secondary_authority=coin.secondary_authority.name if coin.secondary_authority else None,
+            secondary_authority_term_id=coin.secondary_authority.term_id if coin.secondary_authority else None,
+            authority_type=coin.secondary_authority.authority_type if coin.secondary_authority else None,
+            co_ruler=coin.co_ruler.name if coin.co_ruler else None,
+            co_ruler_term_id=coin.co_ruler.term_id if coin.co_ruler else None,
+            portrait_relationship=coin.co_ruler.portrait_relationship if coin.co_ruler else None,
+            moneyer_gens=coin.moneyer_gens,
+
+            # Physical enhancements
+            weight_standard=coin.physical_enhancements.weight_standard if coin.physical_enhancements else None,
+            expected_weight_g=coin.physical_enhancements.expected_weight_g if coin.physical_enhancements else None,
+            flan_shape=coin.physical_enhancements.flan_shape if coin.physical_enhancements else None,
+            flan_type=coin.physical_enhancements.flan_type if coin.physical_enhancements else None,
+            flan_notes=coin.physical_enhancements.flan_notes if coin.physical_enhancements else None,
+
+            # Secondary treatments
+            is_overstrike=coin.secondary_treatments_v3.is_overstrike if coin.secondary_treatments_v3 else False,
+            undertype_visible=coin.secondary_treatments_v3.undertype_visible if coin.secondary_treatments_v3 else None,
+            undertype_attribution=coin.secondary_treatments_v3.undertype_attribution if coin.secondary_treatments_v3 else None,
+            has_test_cut=coin.secondary_treatments_v3.has_test_cut if coin.secondary_treatments_v3 else False,
+            test_cut_count=coin.secondary_treatments_v3.test_cut_count if coin.secondary_treatments_v3 else None,
+            test_cut_positions=coin.secondary_treatments_v3.test_cut_positions if coin.secondary_treatments_v3 else None,
+            has_bankers_marks=coin.secondary_treatments_v3.has_bankers_marks if coin.secondary_treatments_v3 else False,
+            has_graffiti=coin.secondary_treatments_v3.has_graffiti if coin.secondary_treatments_v3 else False,
+            graffiti_description=coin.secondary_treatments_v3.graffiti_description if coin.secondary_treatments_v3 else None,
+            was_mounted=coin.secondary_treatments_v3.was_mounted if coin.secondary_treatments_v3 else False,
+            mount_evidence=coin.secondary_treatments_v3.mount_evidence if coin.secondary_treatments_v3 else None,
+
+            # Tooling/Repairs
+            tooling_extent=coin.tooling_repairs.tooling_extent if coin.tooling_repairs else None,
+            tooling_details=coin.tooling_repairs.tooling_details if coin.tooling_repairs else None,
+            has_ancient_repair=coin.tooling_repairs.has_ancient_repair if coin.tooling_repairs else False,
+            ancient_repairs=coin.tooling_repairs.ancient_repairs if coin.tooling_repairs else None,
+
+            # Centering
+            centering=coin.centering_info.centering if coin.centering_info else None,
+            centering_notes=coin.centering_info.centering_notes if coin.centering_info else None,
+
+            # Die study enhancements
+            obverse_die_state=coin.die_study.obverse_die_state if coin.die_study else None,
+            reverse_die_state=coin.die_study.reverse_die_state if coin.die_study else None,
+            die_break_description=coin.die_study.die_break_description if coin.die_study else None,
+
+            # Grading TPG enhancements
+            grade_numeric=coin.grading_tpg.grade_numeric if coin.grading_tpg else None,
+            grade_designation=coin.grading_tpg.grade_designation if coin.grading_tpg else None,
+            has_star_designation=coin.grading_tpg.has_star_designation if coin.grading_tpg else False,
+            photo_certificate=coin.grading_tpg.photo_certificate if coin.grading_tpg else False,
+            verification_url=coin.grading_tpg.verification_url if coin.grading_tpg else None,
+
+            # Chronology enhancements
+            date_period_notation=coin.chronology.date_period_notation if coin.chronology else None,
+            emission_phase=coin.chronology.emission_phase if coin.chronology else None,
+
             # Relationships
             provenance_events=[
                 CoinMapper._provenance_to_model(p) for p in coin.provenance
@@ -230,76 +363,105 @@ class CoinMapper:
     
     @staticmethod
     def _provenance_to_domain(model: ProvenanceEventModel) -> ProvenanceEntry:
-        """Map ProvenanceEventModel to domain ProvenanceEntry."""
-        # Determine source name based on event type
-        source_name = ""
-        if model.event_type == "auction":
-            source_name = model.auction_house or ""
-        elif model.event_type == "dealer":
-            source_name = model.dealer_name or ""
-        elif model.event_type == "collection":
-            source_name = model.collection_name or ""
-        else:
-            source_name = model.auction_house or model.dealer_name or model.collection_name or ""
-        
-        # Build raw text representation
-        raw_parts = []
-        if source_name:
-            raw_parts.append(source_name)
-        if model.event_date:
-            raw_parts.append(str(model.event_date.year))
-        if model.lot_number:
-            raw_parts.append(f"lot {model.lot_number}")
-        raw_text = ", ".join(raw_parts) if raw_parts else ""
-        
+        """
+        Map ProvenanceEventModel to domain ProvenanceEntry.
+
+        V3 schema uses unified source_name field. For backward compatibility
+        with legacy data, falls back to auction_house/dealer_name/collection_name.
+        """
+        from src.domain.coin import ProvenanceEventType, ProvenanceSource
+
+        # V3: Use unified source_name, fall back to legacy fields for migration
+        source_name = model.source_name
+        if not source_name:
+            # Legacy fallback: reconstruct from denormalized fields
+            source_name = (
+                model.auction_house
+                or model.dealer_name
+                or model.collection_name
+                or ""
+            )
+
+        # Parse event_type enum (handle both V2 strings and V3 enum values)
+        try:
+            event_type = ProvenanceEventType(model.event_type)
+        except ValueError:
+            event_type = ProvenanceEventType.UNKNOWN
+
+        # Parse source_origin enum (V3 field, default for legacy data)
+        try:
+            source_origin = ProvenanceSource(model.source_origin) if model.source_origin else ProvenanceSource.MIGRATION
+        except ValueError:
+            source_origin = ProvenanceSource.MANUAL_ENTRY
+
         return ProvenanceEntry(
             id=model.id,
-            source_type=model.event_type,
+            event_type=event_type,
             source_name=source_name,
             event_date=model.event_date,
             date_string=model.date_string,
+            sale_name=model.sale_name or model.sale_series,  # V3 field, fall back to legacy
+            sale_number=model.sale_number,
             lot_number=model.lot_number,
-            notes=model.notes,
-            raw_text=raw_text,
-            # Add missing fields
+            catalog_reference=model.catalog_reference,
             hammer_price=model.hammer_price,
+            buyers_premium_pct=model.buyers_premium_pct,
             total_price=model.total_price,
             currency=model.currency,
+            notes=model.notes,
             url=model.url,
-            sort_order=model.sort_order or 0
+            receipt_available=model.receipt_available or False,
+            source_origin=source_origin,
+            auction_data_id=model.auction_data_id,
+            sort_order=model.sort_order or 0,
+            raw_text=""  # Computed on demand via build_raw_text()
         )
 
     @staticmethod
     def _provenance_to_model(domain: ProvenanceEntry) -> ProvenanceEventModel:
-        """Map domain ProvenanceEntry to ProvenanceEventModel."""
-        # Logic to split source_name back to specific fields could be complex.
-        # For now, we put source_name into the field corresponding to source_type.
-        
+        """
+        Map domain ProvenanceEntry to ProvenanceEventModel.
+
+        V3 schema: Direct 1:1 mapping with unified source_name.
+        Also populates legacy fields for backward compatibility during migration.
+        """
+        # Map event_type to legacy fields for backward compat
         auction_house = None
         dealer_name = None
         collection_name = None
-        
-        if domain.source_type == "auction":
+
+        event_type_value = domain.event_type.value if hasattr(domain.event_type, 'value') else str(domain.event_type)
+
+        if event_type_value == "auction":
             auction_house = domain.source_name
-        elif domain.source_type == "dealer":
+        elif event_type_value == "dealer":
             dealer_name = domain.source_name
-        elif domain.source_type == "collection":
+        elif event_type_value == "collection":
             collection_name = domain.source_name
-        
+
         return ProvenanceEventModel(
             id=domain.id,
-            event_type=domain.source_type,
+            event_type=event_type_value,
+            source_name=domain.source_name,  # V3 unified field
             event_date=domain.event_date,
             date_string=domain.date_string,
+            sale_name=domain.sale_name,
+            sale_number=domain.sale_number,
             lot_number=domain.lot_number,
+            catalog_reference=domain.catalog_reference,
+            hammer_price=domain.hammer_price,
+            buyers_premium_pct=domain.buyers_premium_pct,
+            total_price=domain.total_price,
+            currency=domain.currency,
             notes=domain.notes,
+            url=domain.url,
+            receipt_available=domain.receipt_available,
+            source_origin=domain.source_origin.value if hasattr(domain.source_origin, 'value') else str(domain.source_origin),
+            auction_data_id=domain.auction_data_id,
+            sort_order=domain.sort_order,
+            # Legacy fields for backward compat
             auction_house=auction_house,
             dealer_name=dealer_name,
             collection_name=collection_name,
-            # Add missing fields
-            hammer_price=getattr(domain, 'hammer_price', None),
-            total_price=getattr(domain, 'total_price', None),
-            currency=getattr(domain, 'currency', None),
-            url=getattr(domain, 'url', None),
-            sort_order=getattr(domain, 'sort_order', 0)
+            sale_series=domain.sale_name,  # Legacy alias
         )

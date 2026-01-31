@@ -1,5 +1,6 @@
 from typing import Protocol, Optional, List, Dict, Any, Union
-from src.domain.coin import Coin
+from datetime import date
+from src.domain.coin import Coin, ProvenanceEntry, ProvenanceEventType
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
 from src.domain.vocab import IVocabRepository  # Re-export the unified interface
@@ -207,17 +208,75 @@ class ILegacyVocabRepository(Protocol):
     ) -> List[FuzzyMatch]:
         """
         Fuzzy search for vocabulary terms.
-        
+
         Used as fallback when LLM is unavailable. Uses string similarity
         to find potential matches.
-        
+
         Args:
             query: Search query string
             vocab_type: "issuer" or "mint"
             limit: Maximum number of results
             min_score: Minimum similarity score (0.0 to 1.0)
-        
+
         Returns:
             List of FuzzyMatch results sorted by score descending
         """
+        ...
+
+
+class IProvenanceRepository(Protocol):
+    """
+    Repository interface for provenance (pedigree) record management.
+
+    Provenance tracks the ownership history of a coin, from earliest known
+    appearance through to current ownership (ACQUISITION event type).
+    """
+
+    def get_by_coin_id(self, coin_id: int) -> List[ProvenanceEntry]:
+        """
+        Get all provenance entries for a coin, ordered by sort_order.
+
+        Returns complete pedigree timeline from earliest to most recent.
+        """
+        ...
+
+    def get_by_id(self, provenance_id: int) -> Optional[ProvenanceEntry]:
+        """Get a specific provenance entry by ID."""
+        ...
+
+    def create(self, coin_id: int, entry: ProvenanceEntry) -> ProvenanceEntry:
+        """
+        Create a new provenance entry for a coin.
+
+        Returns entry with ID assigned.
+        """
+        ...
+
+    def create_bulk(self, coin_id: int, entries: List[ProvenanceEntry]) -> List[ProvenanceEntry]:
+        """Create multiple provenance entries efficiently."""
+        ...
+
+    def update(self, provenance_id: int, entry: ProvenanceEntry) -> Optional[ProvenanceEntry]:
+        """Update an existing provenance entry."""
+        ...
+
+    def delete(self, provenance_id: int) -> bool:
+        """Delete a provenance entry by ID."""
+        ...
+
+    def find_by_source(
+        self,
+        event_type: ProvenanceEventType,
+        source_name: str,
+        event_date: Optional[date] = None
+    ) -> List[ProvenanceEntry]:
+        """Find provenance entries by source details (for deduplication)."""
+        ...
+
+    def get_acquisition_by_coin(self, coin_id: int) -> Optional[ProvenanceEntry]:
+        """Get the acquisition (current ownership) entry for a coin, if exists."""
+        ...
+
+    def get_earliest_by_coin(self, coin_id: int) -> Optional[ProvenanceEntry]:
+        """Get the earliest known provenance entry for a coin."""
         ...

@@ -92,8 +92,8 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
                 grade: coin?.grading.grade || "",
                 service: coin?.grading.service || null,
                 certification_number: coin?.grading.certification_number || "",
-                strike: coin?.grading.strike || "",
-                surface: coin?.grading.surface || "",
+                strike: coin?.grading.strike || null,
+                surface: coin?.grading.surface || null,
             },
             acquisition: coin?.acquisition || {
                 price: 0,
@@ -125,7 +125,58 @@ export function CoinForm({ coin, onSubmit, isSubmitting, defaultValues: propDefa
             monograms: coin?.monograms || [],
             references: coin?.references || [],
             storage_location: coin?.storage_location || "",
-            personal_notes: coin?.personal_notes || ""
+            personal_notes: coin?.personal_notes || "",
+
+            // Phase 1: Schema V3 Numismatic Enhancements
+            moneyer_gens: coin?.moneyer_gens || "",
+            secondary_authority: coin?.secondary_authority || null,
+            co_ruler: coin?.co_ruler || null,
+            physical_enhancements: coin?.physical_enhancements || {
+                weight_standard: null,
+                expected_weight_g: null,
+                flan_shape: null,
+                flan_type: null,
+                flan_notes: null,
+            },
+            secondary_treatments_v3: coin?.secondary_treatments_v3 || {
+                is_overstrike: false,
+                undertype_visible: null,
+                undertype_attribution: null,
+                has_test_cut: false,
+                test_cut_count: null,
+                test_cut_positions: null,
+                has_bankers_marks: false,
+                has_graffiti: false,
+                graffiti_description: null,
+                was_mounted: false,
+                mount_evidence: null,
+            },
+            tooling_repairs: coin?.tooling_repairs || {
+                tooling_extent: null,
+                tooling_details: null,
+                has_ancient_repair: false,
+                ancient_repairs: null,
+            },
+            centering_info: coin?.centering_info || {
+                centering: null,
+                centering_notes: null,
+            },
+            die_study: coin?.die_study || {
+                obverse_die_state: null,
+                reverse_die_state: null,
+                die_break_description: null,
+            },
+            grading_tpg: coin?.grading_tpg || {
+                grade_numeric: null,
+                grade_designation: null,
+                has_star_designation: false,
+                photo_certificate: false,
+                verification_url: null,
+            },
+            chronology: coin?.chronology || {
+                date_period_notation: null,
+                emission_phase: null,
+            },
         },
     })
 

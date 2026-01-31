@@ -21,7 +21,7 @@ import { useFilterStore, SortField } from '@/stores/filterStore';
 import { useSelection } from '@/stores/selectionStore';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useMemo, useCallback, forwardRef } from 'react';
+import { useMemo, useCallback, forwardRef } from 'react';
 import { Virtuoso, VirtuosoGrid } from 'react-virtuoso';
 
 export function CoinList() {

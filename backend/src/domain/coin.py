@@ -60,6 +60,109 @@ class IssueStatus(str, Enum):
     MODERN_FAKE = "modern_fake"
     TOOLING_ALTERED = "tooling_altered"
 
+
+# --- Phase 1: Schema V3 Enums ---
+
+class AuthorityType(str, Enum):
+    """Type of secondary authority (Greek magistrates, provincial governors)."""
+    MAGISTRATE = "magistrate"
+    SATRAP = "satrap"
+    DYNAST = "dynast"
+    STRATEGOS = "strategos"
+    ARCHON = "archon"
+    EPISTATES = "epistates"
+
+
+class PortraitRelationship(str, Enum):
+    """Relationship of portrait subject to issuing authority."""
+    SELF = "self"
+    CONSORT = "consort"
+    HEIR = "heir"
+    PARENT = "parent"
+    PREDECESSOR = "predecessor"
+    COMMEMORATIVE = "commemorative"
+    DIVUS = "divus"
+    DIVA = "diva"
+
+
+class WeightStandard(str, Enum):
+    """Ancient weight standards for coinage."""
+    ATTIC = "attic"
+    AEGINETAN = "aeginetan"
+    CORINTHIAN = "corinthian"
+    PHOENICIAN = "phoenician"
+    DENARIUS_EARLY = "denarius_early"
+    DENARIUS_REFORMED = "denarius_reformed"
+    ANTONINIANUS = "antoninianus"
+
+
+class FlanShape(str, Enum):
+    """Shape of the coin flan."""
+    ROUND = "round"
+    IRREGULAR = "irregular"
+    OVAL = "oval"
+    SQUARE = "square"
+    SCYPHATE = "scyphate"
+
+
+class FlanType(str, Enum):
+    """Manufacturing method of the flan."""
+    CAST = "cast"
+    STRUCK = "struck"
+    CUT_FROM_BAR = "cut_from_bar"
+    HAMMERED = "hammered"
+
+
+class ToolingExtent(str, Enum):
+    """Extent of tooling or repair on the coin."""
+    NONE = "none"
+    MINOR = "minor"
+    MODERATE = "moderate"
+    SIGNIFICANT = "significant"
+    EXTENSIVE = "extensive"
+
+
+class CenteringQuality(str, Enum):
+    """Quality of strike centering."""
+    WELL_CENTERED = "well-centered"
+    SLIGHTLY_OFF = "slightly_off"
+    OFF_CENTER = "off_center"
+    SIGNIFICANTLY_OFF = "significantly_off"
+
+
+class DieState(str, Enum):
+    """State of the die used for striking."""
+    FRESH = "fresh"
+    EARLY = "early"
+    MIDDLE = "middle"
+    LATE = "late"
+    WORN = "worn"
+    BROKEN = "broken"
+    REPAIRED = "repaired"
+
+
+class ProvenanceEventType(str, Enum):
+    """Types of provenance events in a coin's ownership history."""
+    AUCTION = "auction"
+    DEALER = "dealer"
+    COLLECTION = "collection"
+    PRIVATE_SALE = "private_sale"
+    PUBLICATION = "publication"
+    HOARD_FIND = "hoard_find"
+    ESTATE = "estate"
+    ACQUISITION = "acquisition"  # My purchase - final entry in pedigree
+    UNKNOWN = "unknown"
+
+
+class ProvenanceSource(str, Enum):
+    """Origin/source of provenance data entry."""
+    MANUAL_ENTRY = "manual_entry"
+    SCRAPER = "scraper"
+    IMPORT = "import"
+    LLM_ENRICHMENT = "llm_enrichment"
+    MIGRATION = "migration"
+    AUTO_ACQUISITION = "auto_acquisition"  # Auto-created from acquisition data
+
 # --- Value Objects ---
 
 @dataclass(frozen=True, slots=True)
@@ -139,20 +242,101 @@ class CatalogReference:
 
 @dataclass(frozen=True, slots=True)
 class ProvenanceEntry:
-    """A single provenance event in a coin's ownership history."""
+    """
+    A single provenance event in a coin's ownership history.
+
+    Supports flexible detail levels from minimal ("Ex Hunt Collection")
+    to complete auction records with full financial data.
+
+    The ACQUISITION event type represents the current owner's purchase,
+    serving as the final entry in the pedigree timeline.
+    """
+    # Identity
     id: int | None = None
-    source_type: str = "auction"          # "collection", "auction", "dealer", "private_sale"
-    source_name: str = ""          # "Hunt Collection", "Heritage", "CNG"
+
+    # Event Classification
+    event_type: ProvenanceEventType = ProvenanceEventType.UNKNOWN
+    source_name: str = ""  # UNIFIED FIELD: auction house, dealer, collection name, etc.
+
+    # Dating (flexible: exact date OR approximate string)
     event_date: DateType | None = None
-    date_string: str | None = None  # "1920s", "Year 2000"
+    date_string: str | None = None  # "1920s", "before 1950", "circa 1840"
+
+    # Auction Details (when applicable)
+    sale_name: str | None = None  # "January 2024 NYINC Signature Sale"
+    sale_number: str | None = None  # Auction catalog number
     lot_number: str | None = None
-    notes: str | None = None
-    raw_text: str = ""
+    catalog_reference: str | None = None  # "Heritage 3456:245"
+
+    # Financial Data (optional)
     hammer_price: Decimal | None = None
+    buyers_premium_pct: Decimal | None = None  # 20.0 for 20%
     total_price: Decimal | None = None
-    currency: str | None = None
+    currency: str | None = None  # ISO 4217 code (USD, EUR, GBP)
+
+    # Documentation
+    notes: str | None = None  # Free text, historical context
     url: str | None = None
-    sort_order: int = 0
+    receipt_available: bool = False
+
+    # Metadata
+    source_origin: ProvenanceSource = ProvenanceSource.MANUAL_ENTRY
+    auction_data_id: int | None = None  # Link to scraped auction data
+    sort_order: int = 0  # Display order (0 = earliest, highest = most recent/acquisition)
+
+    # Legacy/computed field for display
+    raw_text: str = ""  # "Heritage Auctions, 2024, lot 3245"
+
+    def __post_init__(self):
+        """Validate provenance entry data."""
+        if self.hammer_price is not None and self.hammer_price < 0:
+            raise ValueError("Hammer price cannot be negative")
+        if self.total_price is not None and self.total_price < 0:
+            raise ValueError("Total price cannot be negative")
+        if self.buyers_premium_pct is not None and not (Decimal(0) <= self.buyers_premium_pct <= Decimal(100)):
+            raise ValueError("Buyer's premium must be between 0 and 100%")
+
+    def compute_total_price(self) -> Decimal | None:
+        """Calculate total price from hammer + premium if not explicitly set."""
+        if self.total_price is not None:
+            return self.total_price
+        if self.hammer_price is not None and self.buyers_premium_pct is not None:
+            premium = self.hammer_price * (self.buyers_premium_pct / Decimal(100))
+            return self.hammer_price + premium
+        return self.hammer_price  # Return hammer if no premium
+
+    def build_raw_text(self) -> str:
+        """Generate display string from components."""
+        parts = []
+        if self.source_name:
+            parts.append(self.source_name)
+        if self.event_date:
+            parts.append(str(self.event_date.year))
+        elif self.date_string:
+            parts.append(self.date_string)
+        if self.sale_name:
+            parts.append(self.sale_name)
+        if self.lot_number:
+            parts.append(f"lot {self.lot_number}")
+        return ", ".join(parts) if parts else ""
+
+    @property
+    def is_acquisition(self) -> bool:
+        """Check if this is the current owner's acquisition entry."""
+        return self.event_type == ProvenanceEventType.ACQUISITION
+
+    @property
+    def display_year(self) -> int | None:
+        """Extract year for timeline sorting."""
+        if self.event_date:
+            return self.event_date.year
+        if self.date_string:
+            # Try to extract year from date_string like "1920s", "1985", "circa 1840"
+            import re
+            match = re.search(r'\b(1[0-9]{3}|20[0-2][0-9])\b', self.date_string)
+            if match:
+                return int(match.group(1))
+        return None
 
 @dataclass(frozen=True, slots=True)
 class CoinImage:
@@ -180,6 +364,96 @@ class FindData:
     """Archaeological context or find data."""
     find_spot: str | None = None
     find_date: DateType | None = None
+
+
+# --- Phase 1: Schema V3 Value Objects ---
+
+@dataclass(frozen=True, slots=True)
+class SecondaryAuthority:
+    """Secondary authority information (Greek magistrates, provincial governors)."""
+    name: str | None = None
+    term_id: int | None = None
+    authority_type: str | None = None  # magistrate, satrap, dynast, etc.
+
+
+@dataclass(frozen=True, slots=True)
+class CoRuler:
+    """Co-ruler information for joint reigns (Byzantine, Imperial)."""
+    name: str | None = None
+    term_id: int | None = None
+    portrait_relationship: str | None = None  # self, consort, heir, etc.
+
+
+@dataclass(frozen=True, slots=True)
+class PhysicalEnhancements:
+    """Enhanced physical characteristics from Phase 1."""
+    weight_standard: str | None = None  # attic, aeginetan, etc.
+    expected_weight_g: Decimal | None = None
+    flan_shape: str | None = None  # round, irregular, oval, etc.
+    flan_type: str | None = None  # cast, struck, hammered, etc.
+    flan_notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SecondaryTreatments:
+    """Secondary treatments and modifications to the coin."""
+    # Overstrikes
+    is_overstrike: bool = False
+    undertype_visible: str | None = None
+    undertype_attribution: str | None = None
+    # Test cuts
+    has_test_cut: bool = False
+    test_cut_count: int | None = None
+    test_cut_positions: str | None = None
+    # Other marks
+    has_bankers_marks: bool = False
+    has_graffiti: bool = False
+    graffiti_description: str | None = None
+    # Mounting evidence
+    was_mounted: bool = False
+    mount_evidence: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ToolingRepairs:
+    """Tooling and repair information."""
+    tooling_extent: str | None = None  # none, minor, moderate, significant, extensive
+    tooling_details: str | None = None
+    has_ancient_repair: bool = False
+    ancient_repairs: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Centering:
+    """Strike centering information."""
+    centering: str | None = None  # well-centered, slightly_off, off_center, significantly_off
+    centering_notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DieStudyEnhancements:
+    """Enhanced die study information with separate states per side."""
+    obverse_die_state: str | None = None  # fresh, early, middle, late, worn, broken, repaired
+    reverse_die_state: str | None = None
+    die_break_description: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class GradingTPGEnhancements:
+    """TPG grading enhancements (NGC/PCGS features)."""
+    grade_numeric: int | None = None  # 50, 53, 55, 58, 60, 62-70
+    grade_designation: str | None = None  # Fine Style, Choice, Gem, Superb Gem
+    has_star_designation: bool = False
+    photo_certificate: bool = False
+    verification_url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ChronologyEnhancements:
+    """Enhanced chronological information."""
+    date_period_notation: str | None = None  # "c. 150-100 BC", "late 3rd century AD"
+    emission_phase: str | None = None  # First Issue, Second Issue, Reform Coinage, etc.
+
 
 @dataclass(frozen=True, slots=True)
 class EnrichmentData:
@@ -228,6 +502,33 @@ class Coin:
 
     # LLM enrichment
     enrichment: EnrichmentData | None = None
+
+    # --- Phase 1: Schema V3 Numismatic Enhancements ---
+    # Attribution enhancements
+    secondary_authority: SecondaryAuthority | None = None
+    co_ruler: CoRuler | None = None
+    moneyer_gens: str | None = None              # Republican moneyer family
+
+    # Physical enhancements
+    physical_enhancements: PhysicalEnhancements | None = None
+
+    # Secondary treatments
+    secondary_treatments_v3: SecondaryTreatments | None = None
+
+    # Tooling/Repairs
+    tooling_repairs: ToolingRepairs | None = None
+
+    # Centering
+    centering_info: Centering | None = None
+
+    # Die study enhancements (extends die_info)
+    die_study: DieStudyEnhancements | None = None
+
+    # Grading TPG enhancements (extends grading)
+    grading_tpg: GradingTPGEnhancements | None = None
+
+    # Chronology enhancements
+    chronology: ChronologyEnhancements | None = None
 
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None
