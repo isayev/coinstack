@@ -53,19 +53,25 @@ function formatProvenancePreview(provenance: any[] | null | undefined): string |
 
   // Prefer collection names over auction houses
   const collection = provenance.find(p => p.event_type === 'collection');
-  if (collection?.source_name) return collection.source_name;
+  const collectionName = collection?.source_name || collection?.collection_name;
+  if (collectionName) return collectionName;
 
   // Fall back to notable auction houses
-  const notable = provenance.find(p =>
-    p.source_name?.includes('Triton') ||
-    p.source_name?.includes('NAC') ||
-    p.source_name?.includes('Heritage') ||
-    p.source_name?.includes('CNG')
-  );
-  if (notable?.source_name) return notable.source_name;
+  const notable = provenance.find(p => {
+    const name = (p.source_name || p.auction_house || '').toLowerCase();
+    return name.includes('triton') ||
+           name.includes('nac') ||
+           name.includes('heritage') ||
+           name.includes('cng') ||
+           name.includes('sotheby') ||
+           name.includes('christie');
+  });
+  const notableName = notable?.source_name || notable?.auction_house;
+  if (notableName) return notableName;
 
-  // Fall back to first entry with a source name
-  return provenance[0]?.source_name || null;
+  // Fall back to first entry with any source name
+  const first = provenance[0];
+  return first?.source_name || first?.auction_house || first?.dealer_name || first?.collection_name || null;
 }
 
 export const IdentityHeader = memo(function IdentityHeader({

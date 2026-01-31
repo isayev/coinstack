@@ -140,12 +140,19 @@ class CatalogReference:
 @dataclass(frozen=True, slots=True)
 class ProvenanceEntry:
     """A single provenance event in a coin's ownership history."""
-    source_type: str          # "collection", "auction", "dealer", "private_sale"
-    source_name: str          # "Hunt Collection", "Heritage", "CNG"
+    id: int | None = None
+    source_type: str = "auction"          # "collection", "auction", "dealer", "private_sale"
+    source_name: str = ""          # "Hunt Collection", "Heritage", "CNG"
     event_date: DateType | None = None
+    date_string: str | None = None  # "1920s", "Year 2000"
     lot_number: str | None = None
     notes: str | None = None
     raw_text: str = ""
+    hammer_price: Decimal | None = None
+    total_price: Decimal | None = None
+    currency: str | None = None
+    url: str | None = None
+    sort_order: int = 0
 
 @dataclass(frozen=True, slots=True)
 class CoinImage:

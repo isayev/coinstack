@@ -37,6 +37,7 @@ class SqlAlchemyProvenanceRepository:
         event_type: str,
         source_name: str,
         event_date: Optional[date] = None,
+        date_string: Optional[str] = None,
         lot_number: Optional[str] = None,
         hammer_price: Optional[Decimal] = None,
         total_price: Optional[Decimal] = None,
@@ -83,6 +84,7 @@ class SqlAlchemyProvenanceRepository:
             coin_id=coin_id,
             event_type=event_type,
             event_date=event_date,
+            date_string=date_string,
             auction_house=auction_house,
             dealer_name=dealer_name,
             collection_name=collection_name,
@@ -105,6 +107,7 @@ class SqlAlchemyProvenanceRepository:
         event_type: Optional[str] = None,
         source_name: Optional[str] = None,
         event_date: Optional[date] = None,
+        date_string: Optional[str] = None,
         lot_number: Optional[str] = None,
         hammer_price: Optional[Decimal] = None,
         total_price: Optional[Decimal] = None,
@@ -150,6 +153,8 @@ class SqlAlchemyProvenanceRepository:
         
         if event_date is not None:
             model.event_date = event_date
+        if date_string is not None:
+            model.date_string = date_string
         if lot_number is not None:
             model.lot_number = lot_number
         if hammer_price is not None:
@@ -208,6 +213,7 @@ class SqlAlchemyProvenanceRepository:
             source_type=model.event_type,
             source_name=source_name,
             event_date=model.event_date,
+            date_string=model.date_string,
             lot_number=model.lot_number,
             notes=model.notes,
             raw_text=raw_text

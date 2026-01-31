@@ -384,6 +384,7 @@ class ProvenanceEventModel(Base):
     # Event classification
     event_type: Mapped[str] = mapped_column(String(50))  # "auction", "dealer", "collection", "private_sale", etc.
     event_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    date_string: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "1920s", "Year 2000"
     
     # Auction details
     auction_house: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)

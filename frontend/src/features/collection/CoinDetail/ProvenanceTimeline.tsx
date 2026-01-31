@@ -11,9 +11,19 @@
  * @module features/collection/CoinDetail/ProvenanceTimeline
  */
 
-import { memo } from 'react';
-import { Plus } from 'lucide-react';
+import { memo, useState } from 'react';
+import { Plus, Trash2, Edit2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProvenanceEntry {
   id?: number;
@@ -42,6 +52,10 @@ interface ProvenanceTimelineProps {
   categoryType?: string;
   /** Callback when "Add" is clicked */
   onAddProvenance?: () => void;
+  /** Callback when "Edit" is clicked */
+  onEditProvenance?: (entry: ProvenanceEntry) => void;
+  /** Callback when "Delete" is clicked */
+  onDeleteProvenance?: (entry: ProvenanceEntry) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -50,9 +64,26 @@ export const ProvenanceTimeline = memo(function ProvenanceTimeline({
   provenance,
   categoryType = 'imperial',
   onAddProvenance,
+  onEditProvenance,
+  onDeleteProvenance,
   className,
 }: ProvenanceTimelineProps) {
   const events = provenance || [];
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<ProvenanceEntry | null>(null);
+
+  const handleDeleteClick = (entry: ProvenanceEntry) => {
+    setEntryToDelete(entry);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (entryToDelete && onDeleteProvenance) {
+      onDeleteProvenance(entryToDelete);
+    }
+    setDeleteConfirmOpen(false);
+    setEntryToDelete(null);
+  };
 
   // Sort by date (oldest first)
   const sortedEvents = [...events].sort((a, b) => {
@@ -151,7 +182,7 @@ export const ProvenanceTimeline = memo(function ProvenanceTimeline({
                 )}
 
                 {/* Entry */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 group relative">
                   {/* Timeline connector */}
                   <div className="flex flex-col items-center w-3 flex-shrink-0">
                     <span
@@ -172,34 +203,60 @@ export const ProvenanceTimeline = memo(function ProvenanceTimeline({
 
                   {/* Content */}
                   <div className="flex-1 pb-4">
-                    {/* Date */}
-                    <span
-                      className="text-xs font-semibold block"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      {formatProvenanceDate(entry.event_date, entry.date_precision)}
-                    </span>
-
-                    {/* Source */}
-                    <span
-                      className="text-sm block mt-0.5"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {entry.source_name || getEventTypeLabel(entry.event_type)}
-                      {entry.lot_number && (
-                        <span style={{ color: 'var(--text-muted)' }}>
-                          {' '}· lot {entry.lot_number}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        {/* Date */}
+                        <span
+                          className="text-xs font-semibold block"
+                          style={{ color: 'var(--text-muted)' }}
+                        >
+                          {formatProvenanceDate(entry.date_string || entry.event_date, entry.date_precision)}
                         </span>
-                      )}
-                    </span>
+
+                        {/* Source */}
+                        <span
+                          className="text-sm block mt-0.5"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {entry.source_name || (entry as any).auction_house || (entry as any).dealer_name || (entry as any).collection_name || getEventTypeLabel(entry.event_type)}
+                          {entry.lot_number && (
+                            <span style={{ color: 'var(--text-muted)' }}>
+                              {' '}· lot {entry.lot_number}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Actions (Visible on Group Hover) */}
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {onEditProvenance && (
+                          <button
+                            onClick={() => onEditProvenance(entry)}
+                            className="p-1 rounded hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all mr-1"
+                            title="Edit entry"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        {onDeleteProvenance && (
+                          <button
+                            onClick={() => handleDeleteClick(entry)}
+                            className="p-1 rounded hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-destructive transition-all"
+                            title="Delete entry"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Price */}
-                    {entry.price && (
+                    {(entry.price || (entry as any).total_price) && (
                       <span
                         className="text-xs block mt-0.5"
                         style={{ color: 'var(--text-secondary)' }}
                       >
-                        {formatCurrency(entry.price, entry.currency)}
+                        {formatCurrency(entry.price || (entry as any).total_price, entry.currency)}
                       </span>
                     )}
 
@@ -219,6 +276,23 @@ export const ProvenanceTimeline = memo(function ProvenanceTimeline({
           </div>
         )}
       </div>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Provenance Record?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This record will be permanently removed from the coin's history.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

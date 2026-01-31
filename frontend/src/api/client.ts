@@ -378,5 +378,21 @@ function mapCoinToPayload(coin: Omit<Coin, 'id'>) {
       notes: ref?.notes,
       raw_text: ref?.raw_text ?? undefined,
     })),
+
+    // Provenance
+    provenance: coin.provenance?.map(p => ({
+      id: p.id,
+      event_type: p.event_type,
+      source_name: p.source_name || p.auction_house || p.dealer_name || p.collection_name || "Unknown",
+      event_date: p.event_date || null,
+      date_string: p.date_string || null,
+      lot_number: p.lot_number || null,
+      hammer_price: p.hammer_price || null,
+      total_price: p.total_price || null,
+      currency: p.currency || null,
+      notes: p.notes || null,
+      url: p.url || null,
+      sort_order: p.sort_order || 0,
+    })),
   }
 }

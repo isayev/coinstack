@@ -136,7 +136,7 @@ export const GradingDetailsSchema = z.object({
   certification_number: z.string().nullable().optional(),
   strike: strikeSurfaceSchema,
   surface: strikeSurfaceSchema,
-  eye_appeal: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  eye_appeal: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   toning_description: z.string().nullable().optional(),
 })
 
@@ -176,17 +176,17 @@ export const BaseCoinSchema = z.object({
   status: z.string().nullable().optional(),
 
   // Chronology
-  reign_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  reign_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  mint_year_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  mint_year_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  reign_start: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  reign_end: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  mint_year_start: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  mint_year_end: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   is_circa: z.boolean().optional(),
 
   // Physical
-  weight_g: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  diameter_mm: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  thickness_mm: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  die_axis: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  weight_g: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  diameter_mm: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  thickness_mm: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  die_axis: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
 
   // Design
   obverse_legend: z.string().nullable().optional(),
@@ -204,7 +204,7 @@ export const BaseCoinSchema = z.object({
   surface_quality: z.string().nullable().optional(),
 
   // Acquisition
-  acquisition_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  acquisition_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   acquisition_source: z.string().nullable().optional(),
   acquisition_date: z.string().nullable().optional(),
   acquisition_currency: z.string().nullable().optional(),
@@ -268,10 +268,10 @@ export const DomainCoinSchema = z.object({
   portrait_subject: z.string().nullable().optional(),
   status: z.string().nullable().optional(),
 
-  reign_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  reign_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  mint_year_start: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  mint_year_end: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  reign_start: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  reign_end: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  mint_year_start: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  mint_year_end: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   is_circa: z.boolean().optional(),
 
   // Nested Objects
@@ -301,14 +301,15 @@ export const DomainCoinSchema = z.object({
     coin_id: z.number().optional(),
     event_type: z.string(),
     event_date: z.string().nullable().optional(),
+    date_string: z.string().nullable().optional(),
     auction_house: z.string().nullable().optional(),
     sale_series: z.string().nullable().optional(),
     sale_number: z.string().nullable().optional(),
     lot_number: z.string().nullable().optional(),
     catalog_reference: z.string().nullable().optional(),
-    hammer_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-    buyers_premium_pct: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-    total_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+    hammer_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+    buyers_premium_pct: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+    total_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
     currency: z.string().nullable().optional(),
     dealer_name: z.string().nullable().optional(),
     collection_name: z.string().nullable().optional(),
@@ -395,7 +396,7 @@ export const DomainCoinSchema = z.object({
   // -------------------------------------------------------------------------
   // Market Value Tracking
   // -------------------------------------------------------------------------
-  market_value: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  market_value: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   market_value_date: z.string().nullable().optional(),
 
   // -------------------------------------------------------------------------
@@ -434,22 +435,24 @@ export const ProvenanceEventSchema = z.object({
   id: z.number().optional(),
   coin_id: z.number().optional(),
   event_type: z.string(),  // auction, dealer, collection, private_sale
+  source_name: z.string().nullable().optional(), // Generic source name from backend
   event_date: z.string().nullable().optional(),
+  date_string: z.string().nullable().optional(),
   auction_house: z.string().nullable().optional(),
   sale_series: z.string().nullable().optional(),
   sale_number: z.string().nullable().optional(),
   lot_number: z.string().nullable().optional(),
   catalog_reference: z.string().nullable().optional(),
-  hammer_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  buyers_premium_pct: z.preprocess(preprocessNaN, z.number().nullable().optional()),
-  total_price: z.preprocess(preprocessNaN, z.number().nullable().optional()),
+  hammer_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  buyers_premium_pct: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
+  total_price: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
   currency: z.string().nullable().optional(),
   dealer_name: z.string().nullable().optional(),
   collection_name: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   receipt_available: z.boolean().nullable().optional(),
   notes: z.string().nullable().optional(),
-  sort_order: z.number().nullable().optional(),
+  sort_order: z.preprocess(preprocessNaN, z.coerce.number().nullable().optional()),
 });
 
 export type ProvenanceEvent = z.infer<typeof ProvenanceEventSchema>;

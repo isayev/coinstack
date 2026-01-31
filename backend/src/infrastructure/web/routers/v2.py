@@ -8,7 +8,7 @@ from src.application.commands.create_coin import CreateCoinUseCase, CreateCoinDT
 from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails, 
-    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design
+    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry
 )
 from sqlalchemy.orm import Session
 from src.infrastructure.web.dependencies import get_coin_repo, get_db
@@ -42,6 +42,22 @@ class CatalogReferenceInput(BaseModel):
     mint: Optional[str] = None     # RIC mint code
     supplement: Optional[str] = None  # RPC S, S2
     collection: Optional[str] = None  # SNG collection
+
+
+class ProvenanceEntryRequest(BaseModel):
+    """Request to create/update a provenance entry nested in coin update."""
+    id: Optional[int] = None
+    event_type: str
+    source_name: str
+    event_date: Optional[date] = None
+    date_string: Optional[str] = None
+    lot_number: Optional[str] = None
+    hammer_price: Optional[Decimal] = None
+    total_price: Optional[Decimal] = None
+    currency: Optional[str] = None
+    notes: Optional[str] = None
+    url: Optional[str] = None
+    sort_order: int = 0
 
 
 class CreateCoinRequest(BaseModel):
@@ -87,6 +103,7 @@ class CreateCoinRequest(BaseModel):
     find_date: Optional[date] = None
     # None = omit/not provided (create: no refs; update: preserve existing). [] = clear on update; [x,y] = set.
     references: Optional[List[CatalogReferenceInput]] = None
+    provenance: Optional[List[ProvenanceEntryRequest]] = None
     # Note: secondary_treatments and monograms not yet supported in simple CREATE
     # They should be added via specific endpoints or future updates
 
@@ -142,12 +159,19 @@ class CatalogReferenceResponse(BaseModel):
     collection: Optional[str] = None
 
 class ProvenanceEntryResponse(BaseModel):
-    source_type: str
+    id: Optional[int] = None
+    event_type: str
     source_name: str
     event_date: Optional[date] = None
+    date_string: Optional[str] = None
     lot_number: Optional[str] = None
     notes: Optional[str] = None
     raw_text: str = ""
+    hammer_price: Optional[Decimal] = None
+    total_price: Optional[Decimal] = None
+    currency: Optional[str] = None
+    url: Optional[str] = None
+    sort_order: int = 0
 
 class DieInfoResponse(BaseModel):
     obverse_die_id: Optional[str] = None
@@ -273,12 +297,19 @@ class CoinResponse(BaseModel):
             ],
             provenance=[
                 ProvenanceEntryResponse(
-                    source_type=p.source_type,
+                    id=p.id,
+                    event_type=p.source_type,
                     source_name=p.source_name,
                     event_date=p.event_date,
+                    date_string=p.date_string,
                     lot_number=p.lot_number,
                     notes=p.notes,
-                    raw_text=p.raw_text
+                    raw_text=p.raw_text,
+                    hammer_price=p.hammer_price,
+                    total_price=p.total_price,
+                    currency=p.currency,
+                    url=p.url,
+                    sort_order=p.sort_order
                 ) for p in coin.provenance
             ],
             storage_location=coin.storage_location,
@@ -634,7 +665,23 @@ def update_coin(
             secondary_treatments=existing_coin.secondary_treatments,
             description=existing_coin.description,
             references=existing_coin.references,
-            provenance=existing_coin.provenance,
+            provenance=[
+                ProvenanceEntry(
+                    id=p.id,
+                    source_type=p.event_type,
+                    source_name=p.source_name,
+                    event_date=p.event_date,
+                    date_string=p.date_string,
+                    lot_number=p.lot_number,
+                    notes=p.notes,
+                    raw_text="",
+                    hammer_price=p.hammer_price,
+                    total_price=p.total_price,
+                    currency=p.currency,
+                    url=p.url,
+                    sort_order=p.sort_order
+                ) for p in request.provenance
+            ] if request.provenance is not None else existing_coin.provenance,
             enrichment=existing_coin.enrichment,
         )
         

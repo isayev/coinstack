@@ -34,6 +34,7 @@ class ProvenanceEntryCreate(BaseModel):
     event_type: str = Field(..., description="Type: auction, dealer, collection, private_sale")
     source_name: str = Field(..., description="Name of auction house, dealer, or collection")
     event_date: Optional[date] = Field(None, description="Date of the event")
+    date_string: Optional[str] = Field(None, description="Flexible date string (e.g. '1920s')")
     lot_number: Optional[str] = Field(None, description="Lot number if auction")
     hammer_price: Optional[float] = Field(None, description="Hammer price")
     total_price: Optional[float] = Field(None, description="Total price including premium")
@@ -48,6 +49,7 @@ class ProvenanceEntryUpdate(BaseModel):
     event_type: Optional[str] = None
     source_name: Optional[str] = None
     event_date: Optional[date] = None
+    date_string: Optional[str] = None
     lot_number: Optional[str] = None
     hammer_price: Optional[float] = None
     total_price: Optional[float] = None
@@ -64,6 +66,7 @@ class ProvenanceEntryResponse(BaseModel):
     event_type: str
     source_name: str
     event_date: Optional[date]
+    date_string: Optional[str] = None
     lot_number: Optional[str]
     hammer_price: Optional[float]
     total_price: Optional[float]
@@ -147,6 +150,7 @@ def get_provenance(
             event_type=m.event_type,
             source_name=source_name,
             event_date=m.event_date,
+            date_string=m.date_string,
             lot_number=m.lot_number,
             hammer_price=float(m.hammer_price) if m.hammer_price else None,
             total_price=float(m.total_price) if m.total_price else None,
@@ -205,10 +209,10 @@ def add_provenance(
         )
     
     model = provenance_repo.add(
-        coin_id=coin_id,
         event_type=request.event_type,
         source_name=request.source_name,
         event_date=request.event_date,
+        date_string=request.date_string,
         lot_number=request.lot_number,
         hammer_price=Decimal(str(request.hammer_price)) if request.hammer_price else None,
         total_price=Decimal(str(request.total_price)) if request.total_price else None,
@@ -224,6 +228,7 @@ def add_provenance(
         event_type=model.event_type,
         source_name=request.source_name,
         event_date=model.event_date,
+        date_string=model.date_string,
         lot_number=model.lot_number,
         hammer_price=float(model.hammer_price) if model.hammer_price else None,
         total_price=float(model.total_price) if model.total_price else None,
@@ -255,6 +260,7 @@ def update_provenance(
         event_type=request.event_type,
         source_name=request.source_name,
         event_date=request.event_date,
+        date_string=request.date_string,
         lot_number=request.lot_number,
         hammer_price=Decimal(str(request.hammer_price)) if request.hammer_price else None,
         total_price=Decimal(str(request.total_price)) if request.total_price else None,
@@ -284,6 +290,7 @@ def update_provenance(
         event_type=model.event_type,
         source_name=source_name,
         event_date=model.event_date,
+        date_string=model.date_string,
         lot_number=model.lot_number,
         hammer_price=float(model.hammer_price) if model.hammer_price else None,
         total_price=float(model.total_price) if model.total_price else None,

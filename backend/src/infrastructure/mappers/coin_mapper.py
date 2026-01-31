@@ -253,12 +253,20 @@ class CoinMapper:
         raw_text = ", ".join(raw_parts) if raw_parts else ""
         
         return ProvenanceEntry(
+            id=model.id,
             source_type=model.event_type,
             source_name=source_name,
             event_date=model.event_date,
+            date_string=model.date_string,
             lot_number=model.lot_number,
             notes=model.notes,
-            raw_text=raw_text
+            raw_text=raw_text,
+            # Add missing fields
+            hammer_price=model.hammer_price,
+            total_price=model.total_price,
+            currency=model.currency,
+            url=model.url,
+            sort_order=model.sort_order or 0
         )
 
     @staticmethod
@@ -279,11 +287,19 @@ class CoinMapper:
             collection_name = domain.source_name
         
         return ProvenanceEventModel(
+            id=domain.id,
             event_type=domain.source_type,
             event_date=domain.event_date,
+            date_string=domain.date_string,
             lot_number=domain.lot_number,
             notes=domain.notes,
             auction_house=auction_house,
             dealer_name=dealer_name,
-            collection_name=collection_name
+            collection_name=collection_name,
+            # Add missing fields
+            hammer_price=getattr(domain, 'hammer_price', None),
+            total_price=getattr(domain, 'total_price', None),
+            currency=getattr(domain, 'currency', None),
+            url=getattr(domain, 'url', None),
+            sort_order=getattr(domain, 'sort_order', 0)
         )
