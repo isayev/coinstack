@@ -14,12 +14,23 @@ export const MetalSchema = z.enum([
 ])
 
 export const CategorySchema = z.enum([
+  // Core categories
   'greek',
   'roman_imperial',
   'roman_republic',
   'roman_provincial',
   'byzantine',
   'medieval',
+  // Breakaway empires
+  'gallic_empire',
+  'palmyrene_empire',
+  'romano_british',
+  // Other ancient categories
+  'celtic',
+  'judaean',
+  'parthian',
+  'sasanian',
+  'migration',
   'other'
 ])
 
@@ -249,6 +260,12 @@ export const CatalogReferenceSchema = z.object({
   mint: z.string().nullable().optional(),       // RIC mint code
   supplement: z.string().nullable().optional(),  // RPC S, S2
   collection: z.string().nullable().optional(), // SNG collection
+  // Phase 3: Reference System Enhancements
+  attribution_confidence: z.enum(['certain', 'probable', 'possible', 'tentative']).nullable().optional(),
+  catalog_rarity_note: z.string().nullable().optional(), // e.g., "R2" from RIC, "Very Rare" from BMC
+  disagreement_note: z.string().nullable().optional(),   // e.g., "RIC attributes to Nero, but legend style suggests Vespasian"
+  page_reference: z.string().nullable().optional(),      // e.g., "p. 234, pl. XV.7"
+  variant_note: z.string().nullable().optional(),        // e.g., "var. b with AVGVSTI"
 }).nullable().optional();
 
 export type CatalogReference = z.infer<typeof CatalogReferenceSchema>;
@@ -881,11 +898,13 @@ export const MarketPriceSchema = z.object({
   denomination: z.string().nullable().optional(),
   mint: z.string().nullable().optional(),
   metal: z.string().nullable().optional(),
+  category: z.string().nullable().optional(),
   catalog_ref: z.string().nullable().optional(),
 
   avg_price_vf: z.number().nullable().optional(),
   avg_price_ef: z.number().nullable().optional(),
   avg_price_au: z.number().nullable().optional(),
+  avg_price_ms: z.number().nullable().optional(),
   min_price_seen: z.number().nullable().optional(),
   max_price_seen: z.number().nullable().optional(),
   median_price: z.number().nullable().optional(),
@@ -893,6 +912,34 @@ export const MarketPriceSchema = z.object({
   data_point_count: z.number().optional(),
   last_sale_date: z.string().nullable().optional(),
   last_updated: z.string().nullable().optional(),
+});
+
+export const MarketDataPointSchema = z.object({
+  id: z.number().optional(),
+  market_price_id: z.number(),
+  price: z.number(),
+  currency: z.string().optional(),
+  price_usd: z.number().nullable().optional(),
+  source_type: MarketSourceTypeSchema,
+  date: z.string(),
+  grade: z.string().nullable().optional(),
+  grade_numeric: z.number().nullable().optional(),
+  condition_notes: z.string().nullable().optional(),
+  auction_house: z.string().nullable().optional(),
+  sale_name: z.string().nullable().optional(),
+  lot_number: z.string().nullable().optional(),
+  lot_url: z.string().nullable().optional(),
+  dealer_name: z.string().nullable().optional(),
+  // Price breakdown for auction sales
+  is_hammer_price: z.boolean().optional(),
+  buyers_premium_pct: z.number().nullable().optional(),
+  // Slabbed coin information
+  is_slabbed: z.boolean().optional(),
+  grading_service: z.string().nullable().optional(),
+  certification_number: z.string().nullable().optional(),
+  confidence: z.enum(['low', 'medium', 'high', 'verified']).optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
 });
 
 export const CoinValuationSchema = z.object({
@@ -909,8 +956,11 @@ export const CoinValuationSchema = z.object({
   market_confidence: z.enum(['low', 'medium', 'high', 'strong']).nullable().optional(),
 
   comparable_count: z.number().nullable().optional(),
+  comparable_avg_price: z.number().nullable().optional(),
+  comparable_date_range: z.string().nullable().optional(),
   price_trend_6mo: z.number().nullable().optional(),
   price_trend_12mo: z.number().nullable().optional(),
+  price_trend_36mo: z.number().nullable().optional(),
 
   gain_loss_usd: z.number().nullable().optional(),
   gain_loss_pct: z.number().nullable().optional(),
@@ -932,20 +982,27 @@ export const WishlistItemSchema = z.object({
   description: z.string().nullable().optional(),
 
   issuer: z.string().nullable().optional(),
+  issuer_id: z.number().nullable().optional(),
   mint: z.string().nullable().optional(),
+  mint_id: z.number().nullable().optional(),
   year_start: z.number().nullable().optional(),
   year_end: z.number().nullable().optional(),
   denomination: z.string().nullable().optional(),
   metal: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
   catalog_ref: z.string().nullable().optional(),
+  catalog_ref_pattern: z.string().nullable().optional(),
 
   min_grade: z.string().nullable().optional(),
+  min_grade_numeric: z.number().nullable().optional(),
+  condition_notes: z.string().nullable().optional(),
   max_price: z.number().nullable().optional(),
   target_price: z.number().nullable().optional(),
   currency: z.string().optional(),
 
   priority: z.number().optional(),
+  tags: z.string().nullable().optional(),
+  series_slot_id: z.number().nullable().optional(),
   status: WishlistStatusSchema.optional(),
 
   acquired_coin_id: z.number().nullable().optional(),
@@ -953,6 +1010,7 @@ export const WishlistItemSchema = z.object({
   acquired_price: z.number().nullable().optional(),
 
   notify_on_match: z.boolean().optional(),
+  notify_email: z.boolean().optional(),
   notes: z.string().nullable().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().nullable().optional(),
@@ -1028,8 +1086,17 @@ export const PriceAlertSchema = z.object({
 // =============================================================================
 
 export const CollectionTypeSchema = z.enum([
-  'custom', 'smart', 'series', 'system'
+  'custom', 'smart', 'series', 'type_set', 'system'
 ]);
+
+export const CollectionPurposeSchema = z.enum([
+  'study', 'display', 'type_set', 'duplicates', 'reserves', 'insurance', 'general'
+]);
+
+export const SmartCriteriaSchema = z.object({
+  match: z.enum(['all', 'any']).optional(),
+  conditions: z.array(z.record(z.string(), z.unknown())).optional(),
+});
 
 export const CollectionSchema = z.object({
   id: z.number().optional(),
@@ -1038,25 +1105,40 @@ export const CollectionSchema = z.object({
   slug: z.string().nullable().optional(),
 
   collection_type: CollectionTypeSchema.optional(),
-  smart_filter: z.record(z.string(), z.unknown()).nullable().optional(),
+  purpose: CollectionPurposeSchema.optional(),
+  smart_criteria: SmartCriteriaSchema.nullable().optional(),
   series_id: z.number().nullable().optional(),
 
+  // Type set tracking
+  is_type_set: z.boolean().optional(),
+  type_set_definition: z.string().nullable().optional(),
+  completion_percentage: z.number().nullable().optional(),
+
+  // Display settings
   cover_image_url: z.string().nullable().optional(),
+  cover_coin_id: z.number().nullable().optional(),
   color: z.string().nullable().optional(),
   icon: z.string().nullable().optional(),
   display_order: z.number().nullable().optional(),
   default_sort: z.string().nullable().optional(),
   default_view: z.enum(['grid', 'table', 'timeline']).nullable().optional(),
 
+  // Cached statistics
   coin_count: z.number().optional(),
   total_value: z.number().nullable().optional(),
+  stats_updated_at: z.string().nullable().optional(),
 
+  // Flags
   is_favorite: z.boolean().optional(),
   is_hidden: z.boolean().optional(),
   is_public: z.boolean().optional(),
 
+  // Hierarchy (limited to 3 levels)
   parent_id: z.number().nullable().optional(),
   level: z.number().optional(),
+
+  // Physical storage mapping
+  storage_location: z.string().nullable().optional(),
 
   notes: z.string().nullable().optional(),
   created_at: z.string().optional(),
@@ -1067,11 +1149,35 @@ export const CollectionCoinSchema = z.object({
   collection_id: z.number(),
   coin_id: z.number(),
   added_at: z.string().optional(),
+  added_by: z.string().nullable().optional(),
   position: z.number().nullable().optional(),
   custom_order: z.number().nullable().optional(),
   notes: z.string().nullable().optional(),
   is_featured: z.boolean().optional(),
   is_cover_coin: z.boolean().optional(),
+  // From numismatic review
+  is_placeholder: z.boolean().optional(),
+  exclude_from_stats: z.boolean().optional(),
+  fulfills_type: z.string().nullable().optional(),
+  series_slot_id: z.number().nullable().optional(),
+});
+
+export const CollectionStatisticsSchema = z.object({
+  collection_id: z.number(),
+  coin_count: z.number().optional(),
+  total_value: z.number().nullable().optional(),
+  total_cost: z.number().nullable().optional(),
+  unrealized_gain_loss: z.number().nullable().optional(),
+  metal_breakdown: z.record(z.string(), z.number()).nullable().optional(),
+  denomination_breakdown: z.record(z.string(), z.number()).nullable().optional(),
+  category_breakdown: z.record(z.string(), z.number()).nullable().optional(),
+  grade_distribution: z.record(z.string(), z.number()).nullable().optional(),
+  average_grade: z.number().nullable().optional(),
+  slabbed_count: z.number().optional(),
+  raw_count: z.number().optional(),
+  earliest_coin_year: z.number().nullable().optional(),
+  latest_coin_year: z.number().nullable().optional(),
+  completion_percentage: z.number().nullable().optional(),
 });
 
 // =============================================================================
@@ -1112,6 +1218,7 @@ export type LLMEnrichment = z.infer<typeof LLMEnrichmentSchema>;
 
 export type MarketSourceType = z.infer<typeof MarketSourceTypeSchema>;
 export type MarketPrice = z.infer<typeof MarketPriceSchema>;
+export type MarketDataPoint = z.infer<typeof MarketDataPointSchema>;
 export type CoinValuation = z.infer<typeof CoinValuationSchema>;
 export type WishlistPriority = z.infer<typeof WishlistPrioritySchema>;
 export type WishlistStatus = z.infer<typeof WishlistStatusSchema>;
@@ -1122,5 +1229,8 @@ export type PriceAlertStatus = z.infer<typeof PriceAlertStatusSchema>;
 export type PriceAlert = z.infer<typeof PriceAlertSchema>;
 
 export type CollectionType = z.infer<typeof CollectionTypeSchema>;
+export type CollectionPurpose = z.infer<typeof CollectionPurposeSchema>;
+export type SmartCriteria = z.infer<typeof SmartCriteriaSchema>;
 export type Collection = z.infer<typeof CollectionSchema>;
 export type CollectionCoin = z.infer<typeof CollectionCoinSchema>;
+export type CollectionStatistics = z.infer<typeof CollectionStatisticsSchema>;

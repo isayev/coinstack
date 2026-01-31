@@ -129,7 +129,15 @@ class CreateCoinDTO:
     denomination: Optional[str] = None
     portrait_subject: Optional[str] = None
     design: Optional[DesignDTO] = None
-    
+
+    # Collection management
+    storage_location: Optional[str] = None
+    personal_notes: Optional[str] = None
+
+    # Rarity
+    rarity: Optional[str] = None
+    rarity_notes: Optional[str] = None
+
     # Research Grade Extensions
     specific_gravity: Optional[Decimal] = None
     issue_status: str = "official"
@@ -227,6 +235,14 @@ class CreateCoinUseCase:
             portrait_subject=dto.portrait_subject,
             design=design,
             images=images,
+
+            # Collection management
+            storage_location=dto.storage_location,
+            personal_notes=dto.personal_notes,
+
+            # Rarity
+            rarity=dto.rarity,
+            rarity_notes=dto.rarity_notes,
 
             # Extensions
             issue_status=issue_status,

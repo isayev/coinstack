@@ -15,6 +15,7 @@
 **Router Locations**:
 - Coins: `src/infrastructure/web/routers/v2.py`
 - LLM: `src/infrastructure/web/routers/llm.py`
+- LLM Enrichments: `src/infrastructure/web/routers/llm_enrichment.py` (Phase 4)
 - Catalog: `src/infrastructure/web/routers/catalog.py` (V1) & `catalog_v2.py` (V2)
 - Scraper: `src/infrastructure/web/routers/scrape_v2.py`
 - Vocab: `src/infrastructure/web/routers/vocab.py`
@@ -24,6 +25,10 @@
 - Rarity Assessment: `src/infrastructure/web/routers/rarity_assessment.py`
 - Concordance: `src/infrastructure/web/routers/concordance.py`
 - External Links: `src/infrastructure/web/routers/external_links.py`
+- Census Snapshot: `src/infrastructure/web/routers/census_snapshot.py`
+- Market Prices: `src/infrastructure/web/routers/market.py` (Phase 5)
+- Valuations: `src/infrastructure/web/routers/valuation.py` (Phase 5)
+- Wishlist: `src/infrastructure/web/routers/wishlist.py` (Phase 5)
 - Die Study: `src/infrastructure/web/routers/die_study.py`
 - Stats: `src/infrastructure/web/routers/stats.py`
 - Audit: `src/infrastructure/web/routers/audit_v2.py`
@@ -610,6 +615,436 @@ POST /api/v2/external-links/{link_id}/sync
 ### Delete External Link
 ```http
 DELETE /api/v2/external-links/{link_id}
+```
+
+---
+
+## LLM Enrichments API (`/api/v2/llm-enrichments`)
+
+Centralized LLM enrichment management with versioning, review workflow, prompt templates, feedback, and usage analytics.
+
+### Enrichment Endpoints
+
+#### Get Coin Enrichments
+```http
+GET /api/v2/llm-enrichments/coin/{coin_id}
+```
+**Query Parameters**: `capability`, `review_status`
+
+#### Get Current Enrichment
+```http
+GET /api/v2/llm-enrichments/coin/{coin_id}/current/{capability}
+```
+Returns the current active enrichment for a coin/capability.
+
+#### Check Cache
+```http
+GET /api/v2/llm-enrichments/cache?capability={capability}&input_hash={hash}
+```
+Check if an enrichment exists in cache by input hash.
+
+#### Get Pending Review
+```http
+GET /api/v2/llm-enrichments/pending-review?capability={capability}&limit=100
+```
+Returns enrichments pending review.
+
+#### Create Enrichment
+```http
+POST /api/v2/llm-enrichments
+```
+**Request Body**:
+```json
+{
+  "coin_id": 1,
+  "capability": "context_generate",
+  "capability_version": 1,
+  "model_id": "claude-3-sonnet",
+  "input_hash": "abc123...",
+  "output_content": "{...}",
+  "confidence": 0.95,
+  "needs_review": false,
+  "cost_usd": 0.003
+}
+```
+
+#### Update Review Status
+```http
+PUT /api/v2/llm-enrichments/{enrichment_id}/review
+```
+**Request Body**:
+```json
+{
+  "review_status": "approved",
+  "reviewed_by": "user",
+  "review_notes": "Verified accuracy"
+}
+```
+
+#### Supersede Enrichment
+```http
+POST /api/v2/llm-enrichments/{old_id}/supersede/{new_id}
+```
+
+#### Delete Enrichment
+```http
+DELETE /api/v2/llm-enrichments/{enrichment_id}
+```
+
+### Prompt Template Endpoints
+
+#### List Templates
+```http
+GET /api/v2/llm-enrichments/templates/{capability}?include_deprecated=false
+```
+
+#### Get Active Template
+```http
+GET /api/v2/llm-enrichments/templates/{capability}/active?variant_name=default
+```
+
+#### Create Template
+```http
+POST /api/v2/llm-enrichments/templates
+```
+**Request Body**:
+```json
+{
+  "capability": "context_generate",
+  "version": 1,
+  "system_prompt": "You are a numismatic expert...",
+  "user_template": "Generate historical context for: {coin_description}",
+  "variant_name": "default",
+  "traffic_weight": 1.0
+}
+```
+
+#### Deprecate Template
+```http
+POST /api/v2/llm-enrichments/templates/{template_id}/deprecate
+```
+
+### Feedback Endpoints
+
+#### Get Enrichment Feedback
+```http
+GET /api/v2/llm-enrichments/feedback/enrichment/{enrichment_id}
+```
+
+#### Create Feedback
+```http
+POST /api/v2/llm-enrichments/feedback
+```
+**Request Body**:
+```json
+{
+  "enrichment_id": 1,
+  "feedback_type": "modified",
+  "field_path": "issuer",
+  "original_value": "Augustus",
+  "corrected_value": "Octavian",
+  "feedback_notes": "Pre-27 BC coinage"
+}
+```
+Valid feedback types: `accepted`, `rejected`, `modified`, `hallucination`
+
+#### List Feedback by Type
+```http
+GET /api/v2/llm-enrichments/feedback/type/{feedback_type}?skip=0&limit=100
+```
+
+### Usage Analytics Endpoints
+
+#### Get Daily Usage
+```http
+GET /api/v2/llm-enrichments/usage/daily?start_date=2026-01-01&end_date=2026-01-31&capability={optional}&model_id={optional}
+```
+
+#### Get Usage Summary
+```http
+GET /api/v2/llm-enrichments/usage/summary?start_date=2026-01-01&end_date=2026-01-31
+```
+Returns aggregated usage by capability with total cost and requests.
+
+#### Record Usage
+```http
+POST /api/v2/llm-enrichments/usage/record?date=2026-01-31&capability=context_generate&model_id=claude-3-sonnet&request_count=1&cost_usd=0.003
+```
+
+---
+
+## Market Prices API (`/api/v2/market`)
+
+Type-level market pricing aggregates based on auction data and dealer prices.
+
+### List Market Prices
+```http
+GET /api/v2/market/prices
+```
+**Query Parameters**: `issuer`, `denomination`, `metal`, `skip`, `limit`
+
+### Get Market Price by Attribution
+```http
+GET /api/v2/market/prices/by-attribution?attribution_key={key}
+```
+
+### Get Market Price
+```http
+GET /api/v2/market/prices/{id}
+```
+
+### Create Market Price
+```http
+POST /api/v2/market/prices
+```
+**Request Body**:
+```json
+{
+  "attribution_key": "hadrian-denarius-rome",
+  "issuer": "Hadrian",
+  "denomination": "Denarius",
+  "mint": "Rome",
+  "metal": "silver",
+  "catalog_ref": "RIC II 207",
+  "avg_price_vf": 250.00,
+  "avg_price_ef": 450.00,
+  "median_price": 350.00
+}
+```
+
+### Update/Delete Market Price
+```http
+PUT /api/v2/market/prices/{id}
+DELETE /api/v2/market/prices/{id}
+```
+
+### Data Points
+
+#### List Data Points
+```http
+GET /api/v2/market/prices/{price_id}/data-points
+```
+**Query Parameters**: `source_type`, `skip`, `limit`
+
+#### Create Data Point
+```http
+POST /api/v2/market/prices/{price_id}/data-points
+```
+**Request Body**:
+```json
+{
+  "price": 425.00,
+  "currency": "USD",
+  "source_type": "auction_realized",
+  "date": "2026-01-15",
+  "grade": "EF",
+  "auction_house": "Heritage",
+  "sale_name": "NYINC 2026",
+  "lot_number": "3245",
+  "confidence": "high"
+}
+```
+Valid source types: `auction_realized`, `auction_unsold`, `dealer_asking`, `private_sale`, `estimate`
+
+#### Get/Update/Delete Data Point
+```http
+GET /api/v2/market/data-points/{id}
+PUT /api/v2/market/data-points/{id}
+DELETE /api/v2/market/data-points/{id}
+```
+
+---
+
+## Coin Valuations API (`/api/v2/coins/{coin_id}/valuations`)
+
+Per-coin portfolio valuation snapshots with gain/loss tracking.
+
+### List Valuations
+```http
+GET /api/v2/coins/{coin_id}/valuations
+```
+
+### Get Latest Valuation
+```http
+GET /api/v2/coins/{coin_id}/valuations/latest
+```
+
+### Create Valuation
+```http
+POST /api/v2/coins/{coin_id}/valuations
+```
+**Request Body**:
+```json
+{
+  "valuation_date": "2026-01-31",
+  "purchase_price": 350.00,
+  "purchase_currency": "USD",
+  "purchase_date": "2024-05-15",
+  "current_market_value": 425.00,
+  "value_currency": "USD",
+  "market_confidence": "high",
+  "comparable_count": 12,
+  "gain_loss_usd": 75.00,
+  "gain_loss_pct": 21.4,
+  "valuation_method": "comparable_sales"
+}
+```
+Valid confidence: `low`, `medium`, `high`, `strong`
+Valid methods: `comparable_sales`, `dealer_estimate`, `insurance`, `user_estimate`, `llm_estimate`
+
+### Get/Update/Delete Valuation
+```http
+GET /api/v2/coins/{coin_id}/valuations/{valuation_id}
+PUT /api/v2/coins/{coin_id}/valuations/{valuation_id}
+DELETE /api/v2/coins/{coin_id}/valuations/{valuation_id}
+```
+
+### Portfolio Summary
+```http
+GET /api/v2/valuations/portfolio-summary
+```
+Returns aggregate portfolio totals:
+```json
+{
+  "total_coins": 150,
+  "total_purchase_value": 45000.00,
+  "total_current_value": 52500.00,
+  "total_gain_loss_usd": 7500.00,
+  "total_gain_loss_pct": 16.7
+}
+```
+
+---
+
+## Wishlist API (`/api/v2/wishlist`)
+
+Acquisition targets, matched lots, and price alerts.
+
+### Wishlist Items
+
+#### List Wishlist Items
+```http
+GET /api/v2/wishlist
+```
+**Query Parameters**: `status`, `priority`, `category`, `skip`, `limit`
+Valid statuses: `wanted`, `watching`, `bidding`, `acquired`, `cancelled`
+
+#### Create Wishlist Item
+```http
+POST /api/v2/wishlist
+```
+**Request Body**:
+```json
+{
+  "title": "Hadrian Denarius - Travel Series",
+  "issuer": "Hadrian",
+  "denomination": "Denarius",
+  "category": "roman_imperial",
+  "catalog_ref": "RIC II 207",
+  "min_grade": "VF",
+  "max_price": 500.00,
+  "target_price": 350.00,
+  "currency": "USD",
+  "priority": 1,
+  "notify_on_match": true
+}
+```
+
+#### Get/Update/Delete Wishlist Item
+```http
+GET /api/v2/wishlist/{id}
+PUT /api/v2/wishlist/{id}
+DELETE /api/v2/wishlist/{id}
+```
+
+#### Mark as Acquired
+```http
+POST /api/v2/wishlist/{id}/mark-acquired
+```
+**Request Body**:
+```json
+{
+  "coin_id": 123,
+  "acquired_price": 325.00
+}
+```
+
+### Wishlist Matches
+
+#### List Matches
+```http
+GET /api/v2/wishlist/{item_id}/matches
+```
+**Query Parameters**: `include_dismissed`
+
+#### Create Match
+```http
+POST /api/v2/wishlist/{item_id}/matches
+```
+**Request Body**:
+```json
+{
+  "match_type": "auction_lot",
+  "match_source": "heritage",
+  "match_id": "lot-12345",
+  "match_url": "https://coins.ha.com/...",
+  "title": "Hadrian Denarius",
+  "price": 325.00,
+  "estimate_low": 300.00,
+  "estimate_high": 400.00,
+  "grade": "VF+",
+  "match_score": 0.92,
+  "match_confidence": "high"
+}
+```
+Valid match types: `auction_lot`, `dealer_listing`, `ebay_listing`, `vcoins`
+Valid confidence: `exact`, `high`, `medium`, `possible`
+
+#### Update Match
+```http
+PUT /api/v2/wishlist/matches/{match_id}
+```
+
+#### Dismiss/Save Match
+```http
+POST /api/v2/wishlist/matches/{match_id}/dismiss
+POST /api/v2/wishlist/matches/{match_id}/save
+```
+
+### Price Alerts
+
+#### List Alerts
+```http
+GET /api/v2/price-alerts
+```
+**Query Parameters**: `status`, `trigger_type`, `skip`, `limit`
+
+#### Create Alert
+```http
+POST /api/v2/price-alerts
+```
+**Request Body**:
+```json
+{
+  "attribution_key": "hadrian-denarius-rome",
+  "trigger_type": "price_below",
+  "threshold_value": 300.00,
+  "threshold_grade": "VF",
+  "cooldown_hours": 24
+}
+```
+Valid trigger types: `price_below`, `price_above`, `price_change_pct`, `new_listing`, `auction_soon`
+
+#### Get/Update/Delete Alert
+```http
+GET /api/v2/price-alerts/{id}
+PUT /api/v2/price-alerts/{id}
+DELETE /api/v2/price-alerts/{id}
+```
+
+#### Trigger Alert Manually
+```http
+POST /api/v2/price-alerts/{id}/trigger
 ```
 
 ---

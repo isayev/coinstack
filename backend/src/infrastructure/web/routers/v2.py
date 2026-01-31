@@ -13,7 +13,7 @@ from src.application.commands.create_coin import (
 from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
     Coin, Dimensions, Attribution, GradingDetails, AcquisitionDetails,
-    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry,
+    Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry, ProvenanceEventType,
     # Phase 1: Schema V3 value objects
     SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
     ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
@@ -696,6 +696,14 @@ def create_coin(
         images=images_dto,
         design=design_dto,
 
+        # Collection management
+        storage_location=request.storage_location,
+        personal_notes=request.personal_notes,
+
+        # Rarity
+        rarity=request.rarity,
+        rarity_notes=request.rarity_notes,
+
         # Phase 1: Schema V3 Numismatic Enhancements
         secondary_authority=secondary_authority_dto,
         co_ruler=co_ruler_dto,
@@ -972,7 +980,7 @@ def update_coin(
             provenance=[
                 ProvenanceEntry(
                     id=p.id,
-                    source_type=p.event_type,
+                    event_type=ProvenanceEventType(p.event_type),
                     source_name=p.source_name,
                     event_date=p.event_date,
                     date_string=p.date_string,

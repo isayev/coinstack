@@ -373,3 +373,160 @@ export function useIdentifyCoinForCoin() {
     },
   });
 }
+
+// ============================================================================
+// Phase 4: LLM Enrichment API Types and Hooks
+// ============================================================================
+
+/** LLM Enrichment record from llm_enrichments table */
+export interface LLMEnrichmentRecord {
+  id: number;
+  coin_id: number;
+  capability: string;
+  capability_version: number;
+  model_id: string;
+  model_version: string | null;
+  input_hash: string;
+  output_content: string;
+  confidence: number;
+  needs_review: boolean;
+  quality_flags: string | null;
+  cost_usd: number;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cached: boolean;
+  review_status: 'pending' | 'provisional' | 'approved' | 'rejected' | 'superseded';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
+  created_at: string;
+  expires_at: string | null;
+  superseded_by: number | null;
+  request_id: string | null;
+  batch_job_id: string | null;
+}
+
+export interface EnrichmentsListResponse {
+  enrichments: LLMEnrichmentRecord[];
+  total_count: number;
+}
+
+/** Get all enrichments for a coin */
+export function useCoinEnrichments(coinId: number, options?: {
+  capability?: string;
+  reviewStatus?: string;
+  skip?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ["llm-enrichments", coinId, options],
+    queryFn: async (): Promise<EnrichmentsListResponse> => {
+      const params = new URLSearchParams();
+      if (options?.capability) params.set("capability", options.capability);
+      if (options?.reviewStatus) params.set("review_status", options.reviewStatus);
+      if (options?.skip) params.set("skip", options.skip.toString());
+      if (options?.limit) params.set("limit", options.limit.toString());
+
+      const url = `/api/v2/llm-enrichments/coin/${coinId}${params.toString() ? `?${params}` : ""}`;
+      const response = await api.get<EnrichmentsListResponse>(url);
+      return response.data;
+    },
+    enabled: coinId > 0,
+  });
+}
+
+/** Get current active enrichment for a coin/capability */
+export function useCurrentEnrichment(coinId: number, capability: string) {
+  return useQuery({
+    queryKey: ["llm-enrichment-current", coinId, capability],
+    queryFn: async (): Promise<LLMEnrichmentRecord | null> => {
+      try {
+        const response = await api.get<LLMEnrichmentRecord>(
+          `/api/v2/llm-enrichments/coin/${coinId}/current/${capability}`
+        );
+        return response.data;
+      } catch {
+        return null;
+      }
+    },
+    enabled: coinId > 0 && !!capability,
+  });
+}
+
+/** Get enrichments pending review */
+export function usePendingReviewEnrichments(capability?: string, limit: number = 100) {
+  return useQuery({
+    queryKey: ["llm-enrichments-pending", capability, limit],
+    queryFn: async (): Promise<EnrichmentsListResponse> => {
+      const params = new URLSearchParams();
+      if (capability) params.set("capability", capability);
+      params.set("limit", limit.toString());
+
+      const response = await api.get<EnrichmentsListResponse>(
+        `/api/v2/llm-enrichments/pending-review?${params}`
+      );
+      return response.data;
+    },
+  });
+}
+
+/** Update enrichment review status */
+export interface UpdateReviewStatusRequest {
+  review_status: 'pending' | 'provisional' | 'approved' | 'rejected';
+  reviewed_by?: string;
+  review_notes?: string;
+}
+
+export function useUpdateEnrichmentReviewStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      enrichmentId,
+      request,
+    }: {
+      enrichmentId: number;
+      request: UpdateReviewStatusRequest;
+    }): Promise<LLMEnrichmentRecord> => {
+      const response = await api.post<LLMEnrichmentRecord>(
+        `/api/v2/llm-enrichments/${enrichmentId}/review-status`,
+        request
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["llm-enrichments"] });
+      queryClient.invalidateQueries({ queryKey: ["llm-enrichments-pending"] });
+      queryClient.invalidateQueries({ queryKey: ["llm-enrichment-current", data.coin_id] });
+    },
+  });
+}
+
+/** Get confidence thresholds for auto-provisional approval */
+export function useConfidenceThresholds() {
+  return useQuery({
+    queryKey: ["llm-confidence-thresholds"],
+    queryFn: async () => {
+      const response = await api.get<{ thresholds: Record<string, number>; description: string }>(
+        "/api/v2/llm-enrichments/confidence-thresholds/list"
+      );
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}
+
+/** Get quality flags descriptions */
+export function useQualityFlags() {
+  return useQuery({
+    queryKey: ["llm-quality-flags"],
+    queryFn: async () => {
+      const response = await api.get<{
+        flags: Record<string, string>;
+        blocking_flags: string[];
+      }>("/api/v2/llm-enrichments/quality-flags/list");
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+}

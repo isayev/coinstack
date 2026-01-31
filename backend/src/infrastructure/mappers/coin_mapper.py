@@ -149,7 +149,7 @@ class CoinMapper:
                 flan_notes=model.flan_notes
             ) if any([model.weight_standard, model.expected_weight_g, model.flan_shape, model.flan_type, model.flan_notes]) else None,
 
-            # Secondary treatments
+            # Secondary treatments - check both boolean flags AND text fields to avoid data loss
             secondary_treatments_v3=SecondaryTreatments(
                 is_overstrike=model.is_overstrike or False,
                 undertype_visible=model.undertype_visible,
@@ -162,7 +162,11 @@ class CoinMapper:
                 graffiti_description=model.graffiti_description,
                 was_mounted=model.was_mounted or False,
                 mount_evidence=model.mount_evidence
-            ) if any([model.is_overstrike, model.has_test_cut, model.has_bankers_marks, model.has_graffiti, model.was_mounted]) else None,
+            ) if any([
+                model.is_overstrike, model.has_test_cut, model.has_bankers_marks, model.has_graffiti, model.was_mounted,
+                model.undertype_visible, model.undertype_attribution, model.test_cut_positions,
+                model.graffiti_description, model.mount_evidence, model.test_cut_count
+            ]) else None,
 
             # Tooling/Repairs
             tooling_repairs=ToolingRepairs(
