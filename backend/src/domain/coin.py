@@ -65,28 +65,49 @@ class IssueStatus(str, Enum):
 
 class AuthorityType(str, Enum):
     """Type of secondary authority (Greek magistrates, provincial governors)."""
+    # Greek civic officials
     MAGISTRATE = "magistrate"
-    SATRAP = "satrap"
-    DYNAST = "dynast"
     STRATEGOS = "strategos"
     ARCHON = "archon"
     EPISTATES = "epistates"
-    # Additional authority types for broader coverage
-    PROCONSUL = "proconsul"        # Roman provincial governors (e.g., Cicero in Cilicia)
     TYRANT = "tyrant"              # Greek tyrants (e.g., Polycrates of Samos)
+    # Hellenistic rulers
+    SATRAP = "satrap"
+    DYNAST = "dynast"
     BASILEUS = "basileus"          # Hellenistic kings using Greek title
+    MONARCH = "monarch"            # Independent kings on Greek coins
+    # Roman provincial officials
+    PROCONSUL = "proconsul"        # Roman provincial governors (e.g., Cicero in Cilicia)
+    PROCURATOR = "procurator"      # Judaea (Pontius Pilate, Felix)
+    PREFECT = "prefect"            # Roman Egypt prefects
+    LEGATE = "legate"              # Legati Augusti (legionary coinages)
+    # Judaean authorities
+    TETRARCH = "tetrarch"          # Herodian dynasties
+    ETHNARCH = "ethnarch"          # Jewish ethnarchs
+    # Roman Republican officials
+    QUAESTOR = "quaestor"          # Quaestores pro praetore
+    PRAETOR = "praetor"            # Republican mints
 
 
 class PortraitRelationship(str, Enum):
     """Relationship of portrait subject to issuing authority."""
+    # Direct relationships
     SELF = "self"
     CONSORT = "consort"
     HEIR = "heir"
     PARENT = "parent"
+    SIBLING = "sibling"            # Byzantine joint reigns
+    # Succession relationships
     PREDECESSOR = "predecessor"
+    ANCESTOR = "ancestor"          # Coins showing Alexander centuries later
+    ADOPTIVE_PARENT = "adoptive_parent"  # Roman succession (Hadrian/Trajan)
+    # Commemorative
     COMMEMORATIVE = "commemorative"
     DIVUS = "divus"
     DIVA = "diva"
+    # Divine/symbolic
+    DEITY = "deity"                # Greek issues with Athena, Apollo
+    PERSONIFICATION = "personification"  # Roma, Constantinople
 
 
 class WeightStandard(str, Enum):
@@ -97,12 +118,23 @@ class WeightStandard(str, Enum):
     CORINTHIAN = "corinthian"                # 8.6g stater
     PHOENICIAN = "phoenician"                # 7.0g shekel/didrachm
     ALEXANDRINE = "alexandrine"              # Ptolemaic Egyptian standard (~28g tetradrachm)
+    PTOLEMAIC = "ptolemaic"                  # Egyptian standard (synonym for clarity)
+    CHIAN = "chian"                          # Ionia (~3.9g drachm)
+    MILESIAN = "milesian"                    # Archaic Greek (~3.5g)
+    EUBOIC = "euboic"                        # Related to Attic (~4.3g)
+    PERSIC = "persic"                        # Persian/Achaemenid (~5.6g siglos)
+    RHODIAN = "rhodian"                      # Rhodes, Caria (~3.0g drachm)
     # Roman Republican weight standards
     LIBRAL = "libral"                        # Early Roman as-libral (~324g as)
     SEXTANTAL = "sextantal"                  # Reduced Republican (~54g as)
     DENARIUS_EARLY = "denarius_early"        # ~4.5g (211 BC)
     DENARIUS_REFORMED = "denarius_reformed"  # ~3.9g (Nero onward)
     ANTONINIANUS = "antoninianus"            # ~5.0g double denarius
+    # Late Roman weight standards
+    SOLIDUS = "solidus"                      # Constantine reform (~4.5g)
+    SILIQUA = "siliqua"                      # Late Roman silver (~2.0-3.0g)
+    TREMISSIS = "tremissis"                  # 1/3 solidus (~1.5g)
+    FOLLIS_REFORM = "follis_reform"          # Diocletianic reform (~10g bronze)
     # Byzantine weight standards
     HISTAMENON = "histamenon"                # Standard Byzantine solidus (~4.4g)
     TETARTERON = "tetarteron"                # Light solidus (~4.1g, 10th c. onward)
@@ -115,15 +147,21 @@ class FlanShape(str, Enum):
     IRREGULAR = "irregular"
     OVAL = "oval"
     SQUARE = "square"
-    SCYPHATE = "scyphate"
+    SCYPHATE = "scyphate"              # Cup-shaped (Byzantine)
+    RECTANGULAR = "rectangular"        # Archaic Greek bar coins
+    INCUSE_SQUARE = "incuse_square"    # Archaic Magna Graecia (punch mark only)
 
 
 class FlanType(str, Enum):
     """Manufacturing method of the flan."""
-    CAST = "cast"
-    STRUCK = "struck"
-    CUT_FROM_BAR = "cut_from_bar"
-    HAMMERED = "hammered"
+    CAST = "cast"                  # Cast flan (common in early Roman bronze)
+    STRUCK = "struck"              # Standard struck coinage
+    CUT_FROM_BAR = "cut_from_bar"  # Cut from metal bar (archaic)
+    HAMMERED = "hammered"          # Hand-hammered (medieval style)
+    # Additional flan characteristics
+    DUMP = "dump"                  # Thick, small diameter (late Roman AE4)
+    SPREAD = "spread"              # Thin, spread flan (Celtic imitations)
+    SERRATED = "serrated"          # Serrated edge flan (denarii serrati)
 
 
 class FlanEdge(str, Enum):

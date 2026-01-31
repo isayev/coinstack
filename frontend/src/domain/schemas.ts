@@ -650,8 +650,16 @@ export interface LegendExpansionResponse {
 // =============================================================================
 
 export const AuthorityTypeSchema = z.enum([
-  'magistrate', 'satrap', 'dynast', 'strategos', 'archon', 'epistates',
-  'proconsul', 'tyrant', 'basileus'
+  // Greek civic officials
+  'magistrate', 'strategos', 'archon', 'epistates', 'tyrant',
+  // Hellenistic rulers
+  'satrap', 'dynast', 'basileus', 'monarch',
+  // Roman provincial officials
+  'proconsul', 'procurator', 'prefect', 'legate',
+  // Judaean authorities
+  'tetrarch', 'ethnarch',
+  // Roman Republican officials
+  'quaestor', 'praetor'
 ]);
 
 // --- Phase 1 Value Object Schemas (nested representation) ---
@@ -722,24 +730,36 @@ export const ChronologyEnhancementsSchema = z.object({
 }).nullable().optional();
 
 export const PortraitRelationshipSchema = z.enum([
-  'self', 'consort', 'heir', 'parent', 'predecessor', 'commemorative', 'divus', 'diva'
+  // Direct relationships
+  'self', 'consort', 'heir', 'parent', 'sibling',
+  // Succession relationships
+  'predecessor', 'ancestor', 'adoptive_parent',
+  // Commemorative
+  'commemorative', 'divus', 'diva',
+  // Divine/symbolic
+  'deity', 'personification'
 ]);
 
 export const WeightStandardSchema = z.enum([
   // Greek weight standards
   'attic', 'aeginetan', 'corinthian', 'phoenician', 'alexandrine',
+  'ptolemaic', 'chian', 'milesian', 'euboic', 'persic', 'rhodian',
   // Roman Republican weight standards
   'libral', 'sextantal', 'denarius_early', 'denarius_reformed', 'antoninianus',
+  // Late Roman weight standards
+  'solidus', 'siliqua', 'tremissis', 'follis_reform',
   // Byzantine weight standards
-  'histamenon', 'tetarteron', 'hyperpyron', 'solidus'
+  'histamenon', 'tetarteron', 'hyperpyron'
 ]);
 
 export const FlanShapeSchema = z.enum([
-  'round', 'irregular', 'oval', 'square', 'scyphate'
+  'round', 'irregular', 'oval', 'square', 'scyphate',
+  'rectangular', 'incuse_square'
 ]);
 
 export const FlanTypeSchema = z.enum([
-  'cast', 'struck', 'cut_from_bar', 'hammered'
+  'cast', 'struck', 'cut_from_bar', 'hammered',
+  'dump', 'spread', 'serrated'
 ]);
 
 export const FlanEdgeSchema = z.enum([
