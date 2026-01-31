@@ -43,6 +43,35 @@ class SqlAlchemyCoinRepository:
         return CoinMapper.to_domain(merged)
 ```
 
+### Domain Entity: AuctionLot
+
+**CRITICAL**: The `AuctionLot` domain entity (`src/domain/auction.py`) has specific field names that differ from common assumptions. When writing services that use `AuctionLot`, reference this table:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `source` | `str` | Auction house name (NOT `auction_house`) |
+| `lot_id` | `str` | Unique lot identifier |
+| `url` | `str` | Auction URL |
+| `lot_number` | `Optional[str]` | Display lot number |
+| `auction_date` | `Optional[date]` | Sale date (NOT `sale_date`) |
+| `hammer_price` | `Optional[Decimal]` | Final sale price (NOT `realized_price`) |
+| `estimate_low` | `Optional[Decimal]` | Low estimate |
+| `estimate_high` | `Optional[Decimal]` | High estimate |
+| `currency` | `str` | Default "USD" |
+| `issuer` | `Optional[str]` | Issuing authority |
+| `mint` | `Optional[str]` | Mint location |
+| `year_start` | `Optional[int]` | Start year (NOT `date_start`) |
+| `year_end` | `Optional[int]` | End year (NOT `date_end`) |
+| `grade` | `Optional[str]` | Grade string |
+| `description` | `Optional[str]` | Full description text |
+| `primary_image_url` | `Optional[str]` | Main image (NOT `image_urls`) |
+| `additional_images` | `List[str]` | Additional image URLs |
+
+**Missing fields**: AuctionLot does NOT have:
+- `denomination` - extract from `description`
+- `references` - extract from `description`
+- `title` - construct from `issuer`/`mint`
+
 ---
 
 ## Entity Relationship Diagram
@@ -286,20 +315,104 @@ class EnrichmentJobModel(Base):
 
 Schema V3 adds comprehensive support for world-class numismatic functionality.
 
-### Phase 1: Core Numismatic Enhancements (coins_v2)
+### Phase 1: Core Numismatic Enhancements ✅ (coins_v2)
+
+**Status**: Complete - Migration applied, all layers implemented
 
 New columns added to `coins_v2` for attribution, physical characteristics, and grading:
 
 | Category | Fields |
 |----------|--------|
-| **Attribution** | `secondary_authority`, `co_ruler`, `portrait_relationship`, `authority_type`, `moneyer_gens` |
+| **Attribution** | `secondary_authority`, `secondary_authority_term_id`, `authority_type`, `co_ruler`, `co_ruler_term_id`, `portrait_relationship`, `moneyer_gens` |
 | **Physical** | `weight_standard`, `expected_weight_g`, `flan_shape`, `flan_type`, `flan_notes` |
-| **Secondary Treatments** | `is_overstrike`, `undertype_visible`, `has_test_cut`, `has_bankers_marks`, `has_graffiti`, `was_mounted` |
+| **Secondary Treatments** | `is_overstrike`, `undertype_visible`, `undertype_attribution`, `has_test_cut`, `test_cut_count`, `test_cut_positions`, `has_bankers_marks`, `has_graffiti`, `graffiti_description`, `was_mounted`, `mount_evidence` |
 | **Tooling** | `tooling_extent`, `tooling_details`, `has_ancient_repair`, `ancient_repairs` |
 | **Centering** | `centering`, `centering_notes` |
 | **Die Study** | `obverse_die_state`, `reverse_die_state`, `die_break_description` |
 | **TPG Grading** | `grade_numeric`, `grade_designation`, `has_star_designation`, `photo_certificate`, `verification_url` |
 | **Chronology** | `date_period_notation`, `emission_phase` |
+
+**Domain Value Objects** (`backend/src/domain/coin.py`):
+
+```python
+@dataclass(frozen=True)
+class SecondaryAuthority:
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    authority_type: Optional[str] = None  # 'magistrate', 'satrap', 'dynast', 'strategos'
+
+@dataclass(frozen=True)
+class CoRuler:
+    name: Optional[str] = None
+    term_id: Optional[int] = None
+    portrait_relationship: Optional[str] = None  # 'consort', 'heir', 'divus', 'commemorative'
+
+@dataclass(frozen=True)
+class PhysicalEnhancements:
+    weight_standard: Optional[str] = None  # 'attic', 'denarius_reformed', etc.
+    expected_weight_g: Optional[Decimal] = None
+    flan_shape: Optional[str] = None  # 'round', 'scyphate', 'irregular'
+    flan_type: Optional[str] = None  # 'cast', 'struck', 'hammered'
+    flan_notes: Optional[str] = None
+
+@dataclass(frozen=True)
+class SecondaryTreatments:
+    is_overstrike: bool = False
+    undertype_visible: Optional[str] = None
+    undertype_attribution: Optional[str] = None
+    has_test_cut: bool = False
+    test_cut_count: Optional[int] = None
+    test_cut_positions: Optional[str] = None
+    has_bankers_marks: bool = False
+    has_graffiti: bool = False
+    graffiti_description: Optional[str] = None
+    was_mounted: bool = False
+    mount_evidence: Optional[str] = None
+
+@dataclass(frozen=True)
+class ToolingRepairs:
+    tooling_extent: Optional[str] = None  # 'none', 'minor', 'moderate', 'significant'
+    tooling_details: Optional[str] = None
+    has_ancient_repair: bool = False
+    ancient_repairs: Optional[str] = None
+
+@dataclass(frozen=True)
+class Centering:
+    centering: Optional[str] = None  # 'well-centered', 'slightly_off', 'off_center'
+    centering_notes: Optional[str] = None
+
+@dataclass(frozen=True)
+class DieStudyEnhancements:
+    obverse_die_state: Optional[str] = None  # 'fresh', 'early', 'middle', 'late', 'broken'
+    reverse_die_state: Optional[str] = None
+    die_break_description: Optional[str] = None
+
+@dataclass(frozen=True)
+class GradingTPGEnhancements:
+    grade_numeric: Optional[int] = None  # 50, 58, 62, 65 (PCGS/NGC scale)
+    grade_designation: Optional[str] = None  # 'Fine Style', 'Choice', 'Gem'
+    has_star_designation: bool = False
+    photo_certificate: bool = False
+    verification_url: Optional[str] = None
+
+@dataclass(frozen=True)
+class ChronologyEnhancements:
+    date_period_notation: Optional[str] = None  # "c. 150-100 BC"
+    emission_phase: Optional[str] = None  # "First Issue", "Reform Coinage"
+```
+
+**API Request/Response Models** - See `backend/src/infrastructure/web/routers/v2.py` for:
+- `SecondaryAuthorityRequest/Response`
+- `CoRulerRequest/Response`
+- `PhysicalEnhancementsRequest/Response`
+- `SecondaryTreatmentsV3Request/Response`
+- `ToolingRepairsRequest/Response`
+- `CenteringRequest/Response`
+- `DieStudyEnhancementsRequest/Response`
+- `GradingTPGEnhancementsRequest/Response`
+- `ChronologyEnhancementsRequest/Response`
+
+**Frontend Zod Schemas** - See `frontend/src/domain/schemas.ts` for corresponding TypeScript types.
 
 ### Phase 2: Grading & Rarity System
 

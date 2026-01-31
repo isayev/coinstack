@@ -28,6 +28,7 @@ Admin Endpoints:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -50,7 +51,10 @@ from src.domain.llm import (
     LLMBudgetExceeded,
     LLMCapabilityNotAvailable,
 )
-from src.infrastructure.web.dependencies import get_db
+from src.domain.coin import LLMEnrichment
+from src.infrastructure.repositories.llm_enrichment_repository import SqlAlchemyLLMEnrichmentRepository
+from src.infrastructure.web.dependencies import get_db, get_save_llm_enrichment_use_case
+from src.application.commands.save_llm_enrichment import SaveLLMEnrichmentUseCase
 
 logger = logging.getLogger(__name__)
 
@@ -668,11 +672,14 @@ async def identify_coin_for_coin(
     coin_id: int,
     llm_service=Depends(get_llm_service),
     db: Session = Depends(get_db),
+    enrichment_use_case: SaveLLMEnrichmentUseCase = Depends(get_save_llm_enrichment_use_case),
 ):
     """
     Identify coin from its primary image and store in llm_suggested_attribution,
     llm_suggested_design (obverse/reverse descriptions), and llm_suggested_references.
     Sets llm_enriched_at. Merges design delta into existing llm_suggested_design.
+
+    Also writes to llm_enrichments table for audit/history (dual-write).
     """
     from datetime import datetime, timezone
     from src.infrastructure.persistence.orm import CoinModel
@@ -722,13 +729,32 @@ async def identify_coin_for_coin(
             merged = list(dict.fromkeys(existing_refs + list(result.suggested_references)))
             orm_coin.llm_suggested_references = json.dumps(merged)
         orm_coin.llm_enriched_at = datetime.now(timezone.utc)
-        db.commit()
+
+        # Phase 4 Dual-Write: Save to llm_enrichments table via use case
+        output_content = {
+            "attribution": attribution,
+            "design": design_delta,
+            "suggested_references": list(result.suggested_references) if result.suggested_references else [],
+        }
+        # Use 32-char hash for adequate collision resistance
+        image_hash = enrichment_use_case.compute_image_hash(image_b64)
+        enrichment_use_case.execute(
+            coin_id=coin_id,
+            capability="identify_coin",
+            output_content=output_content,
+            input_data={"coin_id": coin_id, "image_hash": image_hash},
+            model_id=getattr(result, 'model_used', 'unknown'),
+            confidence=getattr(result, 'confidence', None),  # None if unknown, not misleading 0.8
+            cost_usd=getattr(result, 'cost_usd', 0.0),
+            raw_response=getattr(result, 'content', ''),
+            cached=getattr(result, 'cached', False),
+        )
+        # Note: get_db() handles commit on success, no explicit commit needed
     except HTTPException:
         raise
     except Exception as e:
-        db.rollback()
-        logger.exception("Failed to save identify suggestions for coin %s: %s", coin_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to save identify suggestions for coin %d", coin_id)
+        raise HTTPException(status_code=500, detail="Failed to save coin identification results")
     return CoinIdentifyResponse(
         ruler=result.ruler,
         denomination=result.denomination,
@@ -785,86 +811,82 @@ async def validate_reference(
 async def generate_context(
     request: ContextGenerateRequest,
     llm_service = Depends(get_llm_service),
+    db: Session = Depends(get_db),
+    enrichment_use_case: SaveLLMEnrichmentUseCase = Depends(get_save_llm_enrichment_use_case),
 ):
     """
     Generate historical context for a coin.
-    
+
     Fetches full coin data from DB and generates numismatically-specific
     context including legend analysis, iconographic interpretation,
     and historical significance tied to the actual coin type.
-    
+
     Also extracts catalog citations from LLM response and compares with
     existing references - new citations are saved for audit/review.
     """
     from datetime import datetime, timezone
     from sqlalchemy import text
     from src.infrastructure.persistence.orm import CoinModel
-    from src.infrastructure.persistence.database import SessionLocal
-    
+
     try:
-        # Fetch full coin data from database
-        db = SessionLocal()
-        try:
-            coin = db.query(CoinModel).filter(CoinModel.id == request.coin_id).first()
-            if not coin:
-                raise HTTPException(status_code=404, detail=f"Coin {request.coin_id} not found")
-            
-            # Query catalog references (join coin_references with reference_types)
-            refs_query = text("""
-                SELECT rt.system, rt.volume, rt.number 
-                FROM coin_references cr
-                JOIN reference_types rt ON cr.reference_type_id = rt.id
-                WHERE cr.coin_id = :coin_id
-            """)
-            refs_result = db.execute(refs_query, {"coin_id": request.coin_id}).fetchall()
-            existing_references = [
-                f"{r[0]} {r[1] or ''} {r[2]}".strip()
-                for r in refs_result
-            ] if refs_result else []
-            
-            # Build comprehensive coin data dict
-            coin_data = {
-                # Core identification
-                "issuer": coin.issuer,
-                "denomination": coin.denomination,
-                "category": coin.category,
-                "metal": coin.metal,
-                "mint": coin.mint,
-                
-                # Dating
-                "year_start": coin.year_start,
-                "year_end": coin.year_end,
-                
-                # Obverse (front)
-                "obverse_legend": coin.obverse_legend,
-                "obverse_description": coin.obverse_description,
-                
-                # Reverse (back)  
-                "reverse_legend": coin.reverse_legend,
-                "reverse_description": coin.reverse_description,
-                "exergue": coin.exergue,
-                
-                # Physical
-                "weight_g": float(coin.weight_g) if coin.weight_g else None,
-                "diameter_mm": float(coin.diameter_mm) if coin.diameter_mm else None,
-                "die_axis": coin.die_axis,
-                
-                # Existing catalog references (passed to LLM for context)
-                "references": existing_references,
-                
-                # Grading context
-                "grade": coin.grade,
-            }
-            
-            # Remove None/empty values for cleaner prompt (keep references even if empty)
-            coin_data = {k: v for k, v in coin_data.items() 
-                        if v is not None and v != "" and (k == "references" or v != [])}
-            
-        finally:
-            db.close()
-        
+        # Fetch full coin data from database using injected session
+        coin = db.query(CoinModel).filter(CoinModel.id == request.coin_id).first()
+        if not coin:
+            raise HTTPException(status_code=404, detail=f"Coin {request.coin_id} not found")
+
+        # Query catalog references (join coin_references with reference_types)
+        refs_query = text("""
+            SELECT rt.system, rt.volume, rt.number
+            FROM coin_references cr
+            JOIN reference_types rt ON cr.reference_type_id = rt.id
+            WHERE cr.coin_id = :coin_id
+        """)
+        refs_result = db.execute(refs_query, {"coin_id": request.coin_id}).fetchall()
+        existing_references = [
+            f"{r[0]} {r[1] or ''} {r[2]}".strip()
+            for r in refs_result
+        ] if refs_result else []
+
+        # Build comprehensive coin data dict
+        coin_data = {
+            # Core identification
+            "issuer": coin.issuer,
+            "denomination": coin.denomination,
+            "category": coin.category,
+            "metal": coin.metal,
+            "mint": coin.mint,
+
+            # Dating
+            "year_start": coin.year_start,
+            "year_end": coin.year_end,
+
+            # Obverse (front)
+            "obverse_legend": coin.obverse_legend,
+            "obverse_description": coin.obverse_description,
+
+            # Reverse (back)
+            "reverse_legend": coin.reverse_legend,
+            "reverse_description": coin.reverse_description,
+            "exergue": coin.exergue,
+
+            # Physical
+            "weight_g": float(coin.weight_g) if coin.weight_g else None,
+            "diameter_mm": float(coin.diameter_mm) if coin.diameter_mm else None,
+            "die_axis": coin.die_axis,
+
+            # Existing catalog references (passed to LLM for context)
+            "references": existing_references,
+
+            # Grading context
+            "grade": coin.grade,
+        }
+
+        # Remove None/empty values for cleaner prompt (keep references even if empty)
+        coin_data = {k: v for k, v in coin_data.items()
+                    if v is not None and v != "" and (k == "references" or v != [])}
+
         result = await llm_service.generate_context(coin_data)
-        
+
         # Parse content string back to dict
         try:
             content_dict = json.loads(result.content)
@@ -875,47 +897,52 @@ async def generate_context(
         llm_found_refs = content_dict.get("llm_citations", [])
         suggested_refs = content_dict.get("suggested_references", [])
         matched_refs = content_dict.get("matched_references", [])
-        
+
         # Save to database (raw content for backward compat, sections as JSON)
-        db = SessionLocal()
-        try:
-            coin = db.query(CoinModel).filter(CoinModel.id == request.coin_id).first()
-            if coin:
-                # Store raw content for backward compatibility
-                coin.historical_significance = content_dict.get("raw_content", "")
-                # Store sections as JSON string
-                coin.llm_analysis_sections = json.dumps(content_dict.get("sections", {}))
-                coin.llm_enriched_at = datetime.now(timezone.utc)
-                
-                # Store suggested references for audit (new citations not in DB)
-                if suggested_refs:
-                    # Merge with any existing suggestions
+        # Store raw content for backward compatibility (inline columns)
+        coin.historical_significance = content_dict.get("raw_content", "")
+        # Store sections as JSON string
+        coin.llm_analysis_sections = json.dumps(content_dict.get("sections", {}))
+        coin.llm_enriched_at = datetime.now(timezone.utc)
+
+        # Store suggested references for audit (new citations not in DB)
+        if suggested_refs:
+            # Merge with any existing suggestions
+            existing_suggestions = []
+            if coin.llm_suggested_references:
+                try:
+                    existing_suggestions = json.loads(coin.llm_suggested_references)
+                except json.JSONDecodeError:
                     existing_suggestions = []
-                    if coin.llm_suggested_references:
-                        try:
-                            existing_suggestions = json.loads(coin.llm_suggested_references)
-                        except json.JSONDecodeError:
-                            existing_suggestions = []
-                    
-                    # Deduplicate and merge
-                    all_suggestions = list(set(existing_suggestions + suggested_refs))
-                    coin.llm_suggested_references = json.dumps(all_suggestions)
-                    logger.info(f"Coin {request.coin_id}: LLM suggested {len(suggested_refs)} new reference(s): {suggested_refs}")
-                
-                # Store rarity info if found
-                rarity_info = content_dict.get("rarity_info", {})
-                if rarity_info and (rarity_info.get("rarity_code") or rarity_info.get("rarity_description")):
-                    coin.llm_suggested_rarity = json.dumps(rarity_info)
-                    logger.info(f"Coin {request.coin_id}: LLM identified rarity: {rarity_info.get('rarity_code')} ({rarity_info.get('rarity_description')})")
-                
-                db.commit()
-                logger.info(f"Saved historical context ({len(content_dict.get('sections', {}))} sections) for coin {request.coin_id}")
-        except Exception as db_err:
-            logger.error(f"Failed to save historical context: {db_err}")
-            db.rollback()
-        finally:
-            db.close()
-        
+
+            # Deduplicate and merge
+            all_suggestions = list(set(existing_suggestions + suggested_refs))
+            coin.llm_suggested_references = json.dumps(all_suggestions)
+            logger.info("Coin %d: LLM suggested %d new reference(s): %s", request.coin_id, len(suggested_refs), suggested_refs)
+
+        # Store rarity info if found
+        rarity_info = content_dict.get("rarity_info", {})
+        if rarity_info and (rarity_info.get("rarity_code") or rarity_info.get("rarity_description")):
+            coin.llm_suggested_rarity = json.dumps(rarity_info)
+            logger.info("Coin %d: LLM identified rarity: %s (%s)", request.coin_id, rarity_info.get('rarity_code'), rarity_info.get('rarity_description'))
+
+        # Phase 4 Dual-Write: Save to llm_enrichments table via use case
+        enrichment_use_case.execute(
+            coin_id=request.coin_id,
+            capability="generate_context",
+            output_content=content_dict,
+            input_data=coin_data,
+            model_id=result.model_used,
+            confidence=result.confidence,
+            cost_usd=result.cost_usd,
+            raw_response=result.content,
+            cached=result.cached,
+            needs_review=result.needs_review,
+        )
+        logger.info("Saved historical context (%d sections) for coin %d", len(content_dict.get('sections', {})), request.coin_id)
+
+        # Note: get_db() handles commit on success, no explicit commit needed
+
         # Build response with section objects
         sections_list = [
             ContextSectionResponse(
@@ -925,9 +952,8 @@ async def generate_context(
             )
             for key, content in content_dict.get("sections", {}).items()
         ]
-        
+
         # Build rarity response if found
-        rarity_info = content_dict.get("rarity_info", {})
         rarity_response = None
         if rarity_info and (rarity_info.get("rarity_code") or rarity_info.get("rarity_description")):
             rarity_response = RarityInfoResponse(
@@ -936,7 +962,7 @@ async def generate_context(
                 specimens_known=rarity_info.get("specimens_known"),
                 source=rarity_info.get("source"),
             )
-        
+
         return ContextGenerateResponse(
             sections=sections_list,
             raw_content=content_dict.get("raw_content", ""),
@@ -949,8 +975,13 @@ async def generate_context(
             matched_references=matched_refs,
             rarity_info=rarity_response,
         )
+    except HTTPException:
+        raise
     except LLMError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="LLM service error generating context")
+    except Exception as e:
+        logger.exception("Failed to generate context for coin %d", request.coin_id)
+        raise HTTPException(status_code=500, detail="Failed to generate historical context")
 
 
 # =============================================================================
@@ -1044,11 +1075,14 @@ async def transcribe_legend_for_coin(
     coin_id: int,
     llm_service=Depends(get_llm_service),
     db: Session = Depends(get_db),
+    enrichment_use_case: SaveLLMEnrichmentUseCase = Depends(get_save_llm_enrichment_use_case),
 ):
     """
     Transcribe legends from the coin's primary image and merge into llm_suggested_design.
     Uses the same merge pattern as identify_coin_for_coin so descriptions (or other fields)
     from a prior identify run are preserved. Sets llm_enriched_at.
+
+    Also writes to llm_enrichments table for audit/history (dual-write).
     """
     from datetime import datetime, timezone
     from src.infrastructure.persistence.orm import CoinModel
@@ -1081,13 +1115,31 @@ async def transcribe_legend_for_coin(
         existing.update(design_delta)
         orm_coin.llm_suggested_design = json.dumps(existing) if existing else orm_coin.llm_suggested_design
         orm_coin.llm_enriched_at = datetime.now(timezone.utc)
-        db.commit()
+
+        # Phase 4 Dual-Write: Save to llm_enrichments table via use case
+        output_content = {
+            "design": design_delta,
+            "uncertain_portions": list(result.uncertain_portions) if result.uncertain_portions else [],
+        }
+        # Use 32-char hash for adequate collision resistance
+        image_hash = enrichment_use_case.compute_image_hash(image_b64)
+        enrichment_use_case.execute(
+            coin_id=coin_id,
+            capability="transcribe_legend",
+            output_content=output_content,
+            input_data={"coin_id": coin_id, "image_hash": image_hash},
+            model_id=getattr(result, 'model_used', 'unknown'),
+            confidence=getattr(result, 'confidence', None),  # None if unknown, not misleading 0.8
+            cost_usd=getattr(result, 'cost_usd', 0.0),
+            raw_response=getattr(result, 'content', ''),
+            cached=getattr(result, 'cached', False),
+        )
+        # Note: get_db() handles commit on success, no explicit commit needed
     except HTTPException:
         raise
     except Exception as e:
-        db.rollback()
-        logger.exception("Failed to save transcribe suggestions for coin %s: %s", coin_id, e)
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to save transcribe suggestions for coin %d", coin_id)
+        raise HTTPException(status_code=500, detail="Failed to save legend transcription results")
     return LegendTranscribeResponse(
         obverse_legend=result.obverse_legend,
         obverse_legend_expanded=result.obverse_legend_expanded,

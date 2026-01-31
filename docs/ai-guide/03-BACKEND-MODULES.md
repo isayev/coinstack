@@ -19,10 +19,15 @@ backend/src/
 │   └── strategies/            # Audit strategies
 │
 ├── application/               # Application Layer (use cases)
-│   └── commands/
-│       ├── create_coin.py
-│       ├── enrich_coin.py
-│       └── ...
+│   ├── commands/
+│   │   ├── create_coin.py
+│   │   ├── enrich_coin.py
+│   │   └── ...
+│   └── services/              # Application services
+│       ├── apply_enrichment.py    # Apply LLM enrichment results
+│       ├── valuation_service.py   # Coin valuation & portfolio summary
+│       ├── price_alert_service.py # Price monitoring & alerts
+│       └── wishlist_matching_service.py # Auction lot matching
 │
 └── infrastructure/            # Infrastructure Layer (external concerns)
     ├── persistence/           # Database & ORM
@@ -104,6 +109,98 @@ class IScraper(Protocol):
     async def scrape(self, url: str) -> ScrapeResult[AuctionLot]:
         ...
 ```
+
+---
+
+## Application Layer (`src/application/`)
+
+### Application Services (`src/application/services/`)
+
+Application services orchestrate domain logic and repository operations. They follow Clean Architecture by depending on Protocol interfaces, not concrete implementations.
+
+#### `valuation_service.py`
+
+Calculates coin valuations and portfolio summaries using market data.
+
+```python
+class ValuationService:
+    def __init__(
+        self,
+        market_repo: IMarketPriceRepository,
+        valuation_repo: ICoinValuationRepository,
+    ):
+        ...
+
+    def calculate_valuation(
+        self,
+        coin_id: int,
+        attribution_key: str,
+        grade_numeric: Optional[int] = None,
+        purchase_price: Optional[Decimal] = None,
+    ) -> ValuationResult:
+        """Calculate current market value based on comparable sales."""
+        ...
+
+    def get_portfolio_summary(self, coin_ids: List[int]) -> PortfolioSummary:
+        """Calculate aggregate portfolio value and performance."""
+        ...
+```
+
+#### `price_alert_service.py`
+
+Monitors price conditions and triggers alerts with cooldown support.
+
+```python
+class PriceAlertService:
+    def __init__(
+        self,
+        alert_repo: IPriceAlertRepository,
+        market_repo: IMarketPriceRepository,
+    ):
+        ...
+
+    def check_alerts(self) -> List[AlertCheckResult]:
+        """Check all active alerts against current market data."""
+        ...
+
+    def trigger_alert(self, alert_id: int, reason: str) -> Optional[PriceAlert]:
+        """Mark alert as triggered (logs reason for audit)."""
+        ...
+
+    def should_notify(self, alert: PriceAlert) -> bool:
+        """Check if alert is within cooldown period."""
+        ...
+```
+
+Supports trigger types: `price_below`, `price_above`, `price_change_pct`, `new_listing`, `auction_soon`.
+
+#### `wishlist_matching_service.py`
+
+Scores and matches auction lots against wishlist criteria using multi-factor scoring.
+
+```python
+class WishlistMatchingService:
+    # Scoring weights
+    WEIGHT_ISSUER = 40        # 40 points
+    WEIGHT_CATALOG_REF = 25   # 25 points
+    WEIGHT_DENOMINATION = 15  # 15 points
+    WEIGHT_DATE_RANGE = 10    # 10 points
+    WEIGHT_GRADE = 10         # 10 points
+
+    def score_lot(self, item: WishlistItem, lot: AuctionLot) -> MatchScore:
+        """Calculate match score (0-100) with confidence level."""
+        ...
+
+    def find_matches(
+        self,
+        lots: List[AuctionLot],
+        min_score: Decimal = Decimal("30"),
+    ) -> List[WishlistMatch]:
+        """Find matches for all active wishlist items."""
+        ...
+```
+
+**Important**: The service searches `AuctionLot.description` for denomination and catalog references since `AuctionLot` doesn't have dedicated fields for these. It uses `hammer_price` (not `realized_price`), `source` (not `auction_house`), and `year_start`/`year_end` (not `date_start`/`date_end`).
 
 ---
 

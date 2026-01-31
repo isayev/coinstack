@@ -339,6 +339,62 @@ class CreateCoinUseCase:
         return self.coin_repo.save(coin)
 ```
 
+### Application Service Pattern
+
+**Rules**:
+- Orchestrates repository operations for complex workflows
+- Depends on repository **interfaces** (Protocols), not implementations
+- Returns explicit result objects (e.g., `ValuationResult`, `AlertCheckResult`)
+- NO framework dependencies (FastAPI, SQLAlchemy)
+
+```python
+# src/application/services/valuation_service.py
+from dataclasses import dataclass
+from typing import Optional, List
+from decimal import Decimal
+from src.domain.coin import CoinValuation, MarketPrice
+from src.domain.repositories import IMarketPriceRepository, ICoinValuationRepository
+
+@dataclass(frozen=True, slots=True)
+class ValuationResult:
+    """Explicit result object for valuation operation."""
+    success: bool
+    valuation: Optional[CoinValuation] = None
+    error: Optional[str] = None
+
+class ValuationService:
+    """Application service for coin valuation workflows."""
+
+    def __init__(
+        self,
+        market_repo: IMarketPriceRepository,   # ✅ Protocol interface
+        valuation_repo: ICoinValuationRepository,  # ✅ Protocol interface
+    ):
+        self._market_repo = market_repo
+        self._valuation_repo = valuation_repo
+
+    def calculate_valuation(
+        self,
+        coin_id: int,
+        attribution_key: str,
+        grade_numeric: Optional[int] = None,
+    ) -> ValuationResult:
+        """Calculate current market value based on comparable sales."""
+        market_price = self._market_repo.get_by_attribution_key(attribution_key)
+
+        if not market_price:
+            return ValuationResult(
+                success=False,
+                error=f"No market data for: {attribution_key}",
+            )
+
+        # Business logic for valuation...
+        valuation = CoinValuation(coin_id=coin_id, ...)
+        saved = self._valuation_repo.create(coin_id, valuation)
+
+        return ValuationResult(success=True, valuation=saved)
+```
+
 **Testing Use Cases** (with mock repositories):
 
 ```python
@@ -542,14 +598,21 @@ class SqlAlchemyCoinRepository:
 - Define in `src/infrastructure/web/dependencies.py`
 - `get_db()` manages transactions automatically
 - Provide concrete implementations of interfaces
+- **Return Protocol types, not concrete types** (CRITICAL for Clean Architecture)
 
 ```python
 # src/infrastructure/web/dependencies.py
 from sqlalchemy.orm import Session
 from typing import Generator
-from src.domain.repositories import ICoinRepository
+from fastapi import Depends
+from src.domain.repositories import (
+    ICoinRepository, IMarketPriceRepository, ICoinValuationRepository,
+    IPriceAlertRepository, IWishlistItemRepository, IWishlistMatchRepository,
+)
 from src.infrastructure.persistence.database import SessionLocal
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
+from src.infrastructure.repositories.market_price_repository import SqlAlchemyMarketPriceRepository
+from src.application.services.valuation_service import ValuationService
 
 def get_db() -> Generator[Session, None, None]:
     """Provides SQLAlchemy session with automatic transaction management."""
@@ -563,9 +626,25 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
+# ✅ CORRECT - Return Protocol type, not concrete type
 def get_coin_repository(db: Session = Depends(get_db)) -> ICoinRepository:
     """Provides concrete repository implementation."""
     return SqlAlchemyCoinRepository(db)
+
+def get_market_price_repo(db: Session = Depends(get_db)) -> IMarketPriceRepository:
+    return SqlAlchemyMarketPriceRepository(db)
+
+# ✅ CORRECT - Service factory returns service type
+def get_valuation_service(db: Session = Depends(get_db)) -> ValuationService:
+    """Build ValuationService with repository dependencies."""
+    return ValuationService(
+        market_repo=SqlAlchemyMarketPriceRepository(db),
+        valuation_repo=SqlAlchemyCoinValuationRepository(db),
+    )
+
+# ❌ WRONG - Don't return concrete repository types
+def get_market_price_repo(db: Session = Depends(get_db)) -> SqlAlchemyMarketPriceRepository:  # ❌
+    return SqlAlchemyMarketPriceRepository(db)
 ```
 
 ### Web Router Pattern (Thin Adapter)

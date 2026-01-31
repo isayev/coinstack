@@ -2,7 +2,10 @@ from typing import Protocol, Optional, List, Dict, Any, Union
 from datetime import date
 from src.domain.coin import (
     Coin, ProvenanceEntry, ProvenanceEventType, GradingHistoryEntry,
-    RarityAssessment, ReferenceConcordance, ExternalCatalogLink
+    RarityAssessment, ReferenceConcordance, ExternalCatalogLink,
+    LLMEnrichment, PromptTemplate, LLMFeedback, LLMUsageDaily,
+    MarketPrice, MarketDataPoint, CoinValuation, WishlistItem,
+    PriceAlert, WishlistMatch, Collection, CollectionCoin, CollectionStatistics
 )
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
@@ -489,4 +492,730 @@ class IExternalCatalogLinkRepository(Protocol):
         external_data: Optional[str] = None
     ) -> bool:
         """Mark an external link as synced with optional data."""
+        ...
+
+
+# --- Phase 4: LLM Architecture Repositories ---
+
+class ILLMEnrichmentRepository(Protocol):
+    """
+    Repository interface for LLM enrichment management.
+
+    Centralized storage for all LLM-generated content with versioning,
+    review workflow, and cost tracking.
+    """
+
+    def get_by_id(self, enrichment_id: int) -> Optional[LLMEnrichment]:
+        """Get a specific enrichment by ID."""
+        ...
+
+    def get_by_coin_id(
+        self,
+        coin_id: int,
+        capability: Optional[str] = None,
+        review_status: Optional[str] = None
+    ) -> List[LLMEnrichment]:
+        """
+        Get enrichments for a coin, optionally filtered by capability and status.
+
+        Returns enrichments ordered by created_at desc.
+        """
+        ...
+
+    def get_current(self, coin_id: int, capability: str) -> Optional[LLMEnrichment]:
+        """
+        Get the current (active) enrichment for a coin/capability.
+
+        Returns the most recent approved enrichment, or pending if none approved.
+        """
+        ...
+
+    def get_by_input_hash(
+        self,
+        capability: str,
+        input_hash: str
+    ) -> Optional[LLMEnrichment]:
+        """
+        Get enrichment by input hash for cache lookup.
+
+        Used to check if we already have a result for this exact input.
+        """
+        ...
+
+    def create(self, enrichment: LLMEnrichment) -> LLMEnrichment:
+        """Create a new enrichment. Returns enrichment with ID assigned."""
+        ...
+
+    def update(
+        self,
+        enrichment_id: int,
+        enrichment: LLMEnrichment
+    ) -> Optional[LLMEnrichment]:
+        """Update an existing enrichment."""
+        ...
+
+    def update_review_status(
+        self,
+        enrichment_id: int,
+        review_status: str,
+        reviewed_by: Optional[str] = None,
+        review_notes: Optional[str] = None
+    ) -> bool:
+        """Update the review status of an enrichment."""
+        ...
+
+    def supersede(
+        self,
+        old_enrichment_id: int,
+        new_enrichment_id: int
+    ) -> bool:
+        """Mark an enrichment as superseded by a newer one."""
+        ...
+
+    def delete(self, enrichment_id: int) -> bool:
+        """Delete an enrichment by ID."""
+        ...
+
+    def list_pending_review(
+        self,
+        capability: Optional[str] = None,
+        limit: int = 100
+    ) -> List[LLMEnrichment]:
+        """Get enrichments pending review."""
+        ...
+
+    def list_by_capability(
+        self,
+        capability: str,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[LLMEnrichment]:
+        """List all enrichments for a capability with pagination."""
+        ...
+
+
+class IPromptTemplateRepository(Protocol):
+    """
+    Repository interface for prompt template management.
+
+    Enables versioning and A/B testing of prompts.
+    """
+
+    def get_by_id(self, template_id: int) -> Optional[PromptTemplate]:
+        """Get a specific template by ID."""
+        ...
+
+    def get_active(
+        self,
+        capability: str,
+        variant_name: str = "default"
+    ) -> Optional[PromptTemplate]:
+        """Get the active template for a capability and variant."""
+        ...
+
+    def get_latest_version(self, capability: str) -> Optional[PromptTemplate]:
+        """Get the highest version template for a capability."""
+        ...
+
+    def list_by_capability(
+        self,
+        capability: str,
+        include_deprecated: bool = False
+    ) -> List[PromptTemplate]:
+        """List all templates for a capability."""
+        ...
+
+    def list_active_variants(self, capability: str) -> List[PromptTemplate]:
+        """List all active variants for A/B testing."""
+        ...
+
+    def create(self, template: PromptTemplate) -> PromptTemplate:
+        """Create a new template. Returns template with ID assigned."""
+        ...
+
+    def update(
+        self,
+        template_id: int,
+        template: PromptTemplate
+    ) -> Optional[PromptTemplate]:
+        """Update an existing template."""
+        ...
+
+    def deprecate(self, template_id: int) -> bool:
+        """Mark a template as deprecated."""
+        ...
+
+    def delete(self, template_id: int) -> bool:
+        """Delete a template by ID."""
+        ...
+
+
+class ILLMFeedbackRepository(Protocol):
+    """
+    Repository interface for LLM feedback management.
+
+    Tracks user corrections and quality feedback.
+    """
+
+    def get_by_id(self, feedback_id: int) -> Optional[LLMFeedback]:
+        """Get a specific feedback entry by ID."""
+        ...
+
+    def get_by_enrichment_id(self, enrichment_id: int) -> List[LLMFeedback]:
+        """Get all feedback for an enrichment."""
+        ...
+
+    def create(self, feedback: LLMFeedback) -> LLMFeedback:
+        """Create a new feedback entry. Returns feedback with ID assigned."""
+        ...
+
+    def delete(self, feedback_id: int) -> bool:
+        """Delete a feedback entry by ID."""
+        ...
+
+    def list_by_type(
+        self,
+        feedback_type: str,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[LLMFeedback]:
+        """List feedback entries by type."""
+        ...
+
+    def list_by_capability(
+        self,
+        capability: str,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[LLMFeedback]:
+        """List feedback for enrichments of a specific capability."""
+        ...
+
+    def count_by_type(self, feedback_type: str) -> int:
+        """Count feedback entries by type."""
+        ...
+
+
+class ILLMUsageRepository(Protocol):
+    """
+    Repository interface for LLM usage metrics.
+
+    Aggregated daily metrics for cost monitoring and analytics.
+    """
+
+    def get_daily(
+        self,
+        date: str,
+        capability: str,
+        model_id: str
+    ) -> Optional[LLMUsageDaily]:
+        """Get usage metrics for a specific day/capability/model."""
+        ...
+
+    def upsert(self, usage: LLMUsageDaily) -> LLMUsageDaily:
+        """Create or update daily usage metrics."""
+        ...
+
+    def increment(
+        self,
+        date: str,
+        capability: str,
+        model_id: str,
+        request_count: int = 1,
+        cache_hits: int = 0,
+        error_count: int = 0,
+        cost_usd: float = 0.0,
+        input_tokens: int = 0,
+        output_tokens: int = 0
+    ) -> LLMUsageDaily:
+        """Atomically increment usage counters."""
+        ...
+
+    def list_by_date_range(
+        self,
+        start_date: str,
+        end_date: str,
+        capability: Optional[str] = None,
+        model_id: Optional[str] = None
+    ) -> List[LLMUsageDaily]:
+        """List usage metrics for a date range."""
+        ...
+
+    def get_total_cost(
+        self,
+        start_date: str,
+        end_date: str,
+        capability: Optional[str] = None
+    ) -> float:
+        """Get total cost for a date range."""
+        ...
+
+    def get_capability_summary(
+        self,
+        start_date: str,
+        end_date: str
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Get usage summary grouped by capability.
+
+        Returns dict with totals for each capability.
+        """
+        ...
+
+
+# --- Phase 5: Market Tracking & Wishlists Repositories ---
+
+class IMarketPriceRepository(Protocol):
+    """
+    Repository interface for market price aggregate management.
+
+    Tracks type-level pricing across multiple sales/observations.
+    """
+
+    def get_by_id(self, price_id: int) -> Optional[MarketPrice]:
+        """Get a market price by ID."""
+        ...
+
+    def get_by_attribution_key(self, attribution_key: str) -> Optional[MarketPrice]:
+        """Get market price by attribution key."""
+        ...
+
+    def list_all(
+        self,
+        issuer: Optional[str] = None,
+        denomination: Optional[str] = None,
+        metal: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[MarketPrice]:
+        """List market prices with optional filters."""
+        ...
+
+    def count(
+        self,
+        issuer: Optional[str] = None,
+        denomination: Optional[str] = None,
+        metal: Optional[str] = None,
+    ) -> int:
+        """Count market prices matching filters."""
+        ...
+
+    def create(self, market_price: MarketPrice) -> MarketPrice:
+        """Create a new market price. Returns price with ID assigned."""
+        ...
+
+    def update(self, price_id: int, market_price: MarketPrice) -> Optional[MarketPrice]:
+        """Update an existing market price."""
+        ...
+
+    def delete(self, price_id: int) -> bool:
+        """Delete a market price by ID."""
+        ...
+
+
+class IMarketDataPointRepository(Protocol):
+    """
+    Repository interface for market data point management.
+
+    Individual price observations feeding market aggregates.
+    """
+
+    def get_by_id(self, data_point_id: int) -> Optional[MarketDataPoint]:
+        """Get a data point by ID."""
+        ...
+
+    def get_by_market_price_id(
+        self,
+        market_price_id: int,
+        source_type: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[MarketDataPoint]:
+        """Get all data points for a market price."""
+        ...
+
+    def get_recent(self, market_price_id: int, days: int = 365) -> List[MarketDataPoint]:
+        """Get recent data points within a date range."""
+        ...
+
+    def create(self, market_price_id: int, data_point: MarketDataPoint) -> MarketDataPoint:
+        """Create a new data point. Returns point with ID assigned."""
+        ...
+
+    def update(self, data_point_id: int, data_point: MarketDataPoint) -> Optional[MarketDataPoint]:
+        """Update an existing data point."""
+        ...
+
+    def delete(self, data_point_id: int) -> bool:
+        """Delete a data point by ID."""
+        ...
+
+    def count_by_market_price_id(self, market_price_id: int) -> int:
+        """Count data points for a market price."""
+        ...
+
+
+class ICoinValuationRepository(Protocol):
+    """
+    Repository interface for coin valuation management.
+
+    Per-coin valuation snapshots with trend tracking.
+    """
+
+    def get_by_id(self, valuation_id: int) -> Optional[CoinValuation]:
+        """Get a valuation by ID."""
+        ...
+
+    def get_by_coin_id(
+        self,
+        coin_id: int,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[CoinValuation]:
+        """Get all valuations for a coin."""
+        ...
+
+    def get_latest(self, coin_id: int) -> Optional[CoinValuation]:
+        """Get the most recent valuation for a coin."""
+        ...
+
+    def get_latest_batch(self, coin_ids: List[int]) -> Dict[int, CoinValuation]:
+        """
+        Get the most recent valuations for multiple coins in a single query.
+
+        Args:
+            coin_ids: List of coin IDs to get valuations for
+
+        Returns:
+            Dict mapping coin_id to its latest CoinValuation (missing coins not included)
+        """
+        ...
+
+    def create(self, coin_id: int, valuation: CoinValuation) -> CoinValuation:
+        """Create a new valuation. Returns valuation with ID assigned."""
+        ...
+
+    def update(self, valuation_id: int, valuation: CoinValuation) -> Optional[CoinValuation]:
+        """Update an existing valuation."""
+        ...
+
+    def delete(self, valuation_id: int) -> bool:
+        """Delete a valuation by ID."""
+        ...
+
+    def count_by_coin_id(self, coin_id: int) -> int:
+        """Count valuations for a specific coin."""
+        ...
+
+    def get_portfolio_summary(self) -> Dict[str, Any]:
+        """Calculate portfolio-wide valuation summary."""
+        ...
+
+
+class IWishlistItemRepository(Protocol):
+    """
+    Repository interface for wishlist item management.
+
+    Acquisition targets with matching criteria.
+    """
+
+    def get_by_id(self, item_id: int) -> Optional[WishlistItem]:
+        """Get a wishlist item by ID."""
+        ...
+
+    def list_all(
+        self,
+        status: Optional[str] = None,
+        priority: Optional[int] = None,
+        category: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[WishlistItem]:
+        """List wishlist items with optional filters."""
+        ...
+
+    def count(
+        self,
+        status: Optional[str] = None,
+        priority: Optional[int] = None,
+        category: Optional[str] = None,
+    ) -> int:
+        """Count wishlist items matching filters."""
+        ...
+
+    def create(self, item: WishlistItem) -> WishlistItem:
+        """Create a new wishlist item. Returns item with ID assigned."""
+        ...
+
+    def update(self, item_id: int, item: WishlistItem) -> Optional[WishlistItem]:
+        """Update an existing wishlist item."""
+        ...
+
+    def delete(self, item_id: int) -> bool:
+        """Delete a wishlist item by ID."""
+        ...
+
+    def mark_acquired(
+        self,
+        item_id: int,
+        coin_id: int,
+        acquired_price: Optional[Any] = None,
+    ) -> Optional[WishlistItem]:
+        """Mark a wishlist item as acquired."""
+        ...
+
+
+class IPriceAlertRepository(Protocol):
+    """
+    Repository interface for price alert management.
+
+    User-configured alerts for price thresholds and availability.
+    """
+
+    def get_by_id(self, alert_id: int) -> Optional[PriceAlert]:
+        """Get an alert by ID."""
+        ...
+
+    def get_active(self, skip: int = 0, limit: int = 100) -> List[PriceAlert]:
+        """Get all active alerts."""
+        ...
+
+    def get_by_coin_id(self, coin_id: int) -> List[PriceAlert]:
+        """Get all alerts for a specific coin."""
+        ...
+
+    def get_by_wishlist_item_id(self, wishlist_item_id: int) -> List[PriceAlert]:
+        """Get all alerts for a wishlist item."""
+        ...
+
+    def list_all(
+        self,
+        status: Optional[str] = None,
+        trigger_type: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[PriceAlert]:
+        """List alerts with optional filters."""
+        ...
+
+    def count(self, status: Optional[str] = None) -> int:
+        """Count alerts matching filters."""
+        ...
+
+    def create(self, alert: PriceAlert) -> PriceAlert:
+        """Create a new alert. Returns alert with ID assigned."""
+        ...
+
+    def update(self, alert_id: int, alert: PriceAlert) -> Optional[PriceAlert]:
+        """Update an existing alert."""
+        ...
+
+    def delete(self, alert_id: int) -> bool:
+        """Delete an alert by ID."""
+        ...
+
+    def trigger(self, alert_id: int) -> Optional[PriceAlert]:
+        """Mark an alert as triggered."""
+        ...
+
+
+class IWishlistMatchRepository(Protocol):
+    """
+    Repository interface for wishlist match management.
+
+    Matched auction lots for wishlist items.
+    """
+
+    def get_by_id(self, match_id: int) -> Optional[WishlistMatch]:
+        """Get a match by ID."""
+        ...
+
+    def get_by_wishlist_item_id(
+        self,
+        wishlist_item_id: int,
+        include_dismissed: bool = False,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[WishlistMatch]:
+        """Get all matches for a wishlist item."""
+        ...
+
+    def get_saved(
+        self,
+        wishlist_item_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[WishlistMatch]:
+        """Get saved matches, optionally filtered by wishlist item."""
+        ...
+
+    def count_by_wishlist_item_id(
+        self,
+        wishlist_item_id: int,
+        include_dismissed: bool = False,
+    ) -> int:
+        """Count matches for a wishlist item."""
+        ...
+
+    def create(self, wishlist_item_id: int, match: WishlistMatch) -> WishlistMatch:
+        """Create a new match. Returns match with ID assigned."""
+        ...
+
+    def update(self, match_id: int, match: WishlistMatch) -> Optional[WishlistMatch]:
+        """Update an existing match."""
+        ...
+
+    def dismiss(self, match_id: int) -> Optional[WishlistMatch]:
+        """Dismiss a match."""
+        ...
+
+    def save(self, match_id: int) -> Optional[WishlistMatch]:
+        """Save/bookmark a match."""
+        ...
+
+    def delete(self, match_id: int) -> bool:
+        """Delete a match by ID."""
+        ...
+
+
+# --- Phase 6: Collections Repository ---
+
+class ICollectionRepository(Protocol):
+    """
+    Repository interface for collection management.
+
+    Supports custom collections (manual coin selection) and smart collections
+    (dynamic membership based on criteria). Hierarchy limited to 3 levels.
+    """
+
+    def get_by_id(self, collection_id: int) -> Optional[Collection]:
+        """Get a collection by ID with eager loading of relationships."""
+        ...
+
+    def get_by_slug(self, slug: str) -> Optional[Collection]:
+        """Get a collection by unique slug."""
+        ...
+
+    def list_all(
+        self,
+        parent_id: Optional[int] = None,
+        collection_type: Optional[str] = None,
+        purpose: Optional[str] = None,
+        include_hidden: bool = False,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[Collection]:
+        """
+        List collections with optional filters.
+
+        If parent_id is None, returns top-level collections.
+        If parent_id is set, returns children of that collection.
+        """
+        ...
+
+    def list_tree(self) -> List[Collection]:
+        """
+        Get complete collection hierarchy as a tree structure.
+
+        Returns all collections ordered for tree display.
+        """
+        ...
+
+    def count(
+        self,
+        parent_id: Optional[int] = None,
+        collection_type: Optional[str] = None,
+        include_hidden: bool = False,
+    ) -> int:
+        """Count collections matching filters."""
+        ...
+
+    def create(self, collection: Collection) -> Collection:
+        """Create a new collection. Returns collection with ID assigned."""
+        ...
+
+    def update(self, collection_id: int, collection: Collection) -> Optional[Collection]:
+        """Update an existing collection."""
+        ...
+
+    def delete(self, collection_id: int, promote_children: bool = True) -> bool:
+        """
+        Delete a collection by ID.
+
+        If promote_children is True, child collections are moved to
+        the deleted collection's parent. Otherwise they become top-level.
+        """
+        ...
+
+    # --- Coin membership operations ---
+
+    def add_coin(
+        self,
+        collection_id: int,
+        coin_id: int,
+        notes: Optional[str] = None,
+        position: Optional[int] = None,
+    ) -> bool:
+        """Add a coin to a collection."""
+        ...
+
+    def add_coins_bulk(
+        self,
+        collection_id: int,
+        coin_ids: List[int],
+    ) -> int:
+        """Add multiple coins to a collection. Returns count added."""
+        ...
+
+    def remove_coin(self, collection_id: int, coin_id: int) -> bool:
+        """Remove a coin from a collection."""
+        ...
+
+    def get_coins_in_collection(
+        self,
+        collection_id: int,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[CollectionCoin]:
+        """Get coins in a collection with membership details."""
+        ...
+
+    def get_collections_for_coin(self, coin_id: int) -> List[Collection]:
+        """Get all collections containing a specific coin."""
+        ...
+
+    def update_coin_membership(
+        self,
+        collection_id: int,
+        coin_id: int,
+        notes: Optional[str] = None,
+        is_featured: Optional[bool] = None,
+        is_placeholder: Optional[bool] = None,
+        position: Optional[int] = None,
+        fulfills_type: Optional[str] = None,
+        exclude_from_stats: Optional[bool] = None,
+    ) -> bool:
+        """Update a coin's membership details in a collection."""
+        ...
+
+    def reorder_coins(self, collection_id: int, coin_order: List[int]) -> bool:
+        """Reorder coins within a collection."""
+        ...
+
+    def count_coins_in_collection(self, collection_id: int) -> int:
+        """Count coins in a collection."""
+        ...
+
+    def get_membership(self, collection_id: int, coin_id: int) -> Optional[CollectionCoin]:
+        """Get a single coin membership by collection and coin ID."""
+        ...
+
+    # --- Statistics ---
+
+    def get_statistics(self, collection_id: int) -> CollectionStatistics:
+        """Calculate collection statistics."""
+        ...
+
+    def update_cached_stats(self, collection_id: int) -> bool:
+        """Refresh cached statistics for a collection."""
         ...

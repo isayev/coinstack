@@ -622,6 +622,625 @@ class RarityAssessment:
     created_at: str | None = None         # When this record was created (ISO timestamp)
 
 
+@dataclass(slots=True)
+class CensusSnapshot:
+    """
+    A point-in-time census population snapshot from NGC/PCGS.
+
+    Tracks population data over time to enable trend analysis and
+    track changes in certified populations for specific coin types.
+    """
+    # Identity
+    id: int | None = None
+    coin_id: int | None = None
+
+    # Service and timing
+    service: str = ""                     # ngc, pcgs
+    snapshot_date: DateType | None = None # When census was captured
+
+    # Population data
+    total_graded: int = 0                 # Total graded by this service
+    grade_breakdown: str | None = None    # JSON: {"VF": 10, "EF": 5, "AU": 2}
+    coins_at_grade: int | None = None     # Population at this coin's specific grade
+    coins_finer: int | None = None        # Population at finer grades
+    percentile: Decimal | None = None     # Where this coin ranks (top X%)
+
+    # Reference for lookup
+    catalog_reference: str | None = None  # e.g., "RIC III 42" used for census lookup
+    notes: str | None = None              # Additional context
+
+
+# --- Phase 4: Schema V3 - LLM Architecture Enums ---
+
+class LLMReviewStatus(str, Enum):
+    """Review status for LLM enrichments.
+
+    Status workflow:
+    - PENDING: Awaiting human review (default for new enrichments)
+    - PROVISIONAL: Auto-approved based on high confidence, may need spot-check
+    - APPROVED: Explicitly approved by human reviewer
+    - REJECTED: Rejected as incorrect or low quality
+    - SUPERSEDED: Replaced by a newer enrichment version
+    """
+    PENDING = "pending"
+    PROVISIONAL = "provisional"  # High-confidence auto-approval
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+
+
+class LLMQualityFlags:
+    """Standardized quality flags for LLM enrichments.
+
+    These flags help identify potential issues that may require review.
+    Multiple flags can be combined with comma separation.
+    """
+    UNCERTAIN = "uncertain"           # Model expressed uncertainty
+    LOW_CONFIDENCE = "low_confidence"  # Confidence below threshold
+    HALLUCINATION_RISK = "hallucination_risk"  # Potential hallucination detected
+    NEEDS_CITATION = "needs_citation"  # Attribution requires source verification
+    AMBIGUOUS_INPUT = "ambiguous_input"  # Input data was ambiguous
+    PARTIAL_DATA = "partial_data"      # Some expected fields missing
+    CONFLICTING_DATA = "conflicting_data"  # Input contained contradictions
+    RARE_TYPE = "rare_type"           # Unusual coin type, extra verification needed
+
+
+# Capability confidence thresholds for auto-approval to PROVISIONAL status
+CAPABILITY_CONFIDENCE_THRESHOLDS = {
+    "historical_context": 0.85,      # Higher threshold for historical claims
+    "attribution": 0.90,             # Very high for attribution (critical)
+    "iconography": 0.80,             # Moderate for visual descriptions
+    "provenance_analysis": 0.85,     # Higher for provenance claims
+    "die_study": 0.90,               # Very high for die analysis
+    "market_analysis": 0.75,         # Lower for market estimates (subjective)
+    "conservation": 0.80,            # Moderate for condition assessment
+    "default": 0.85,                 # Default threshold for unknown capabilities
+}
+
+
+class LLMFeedbackType(str, Enum):
+    """Types of feedback for LLM enrichments."""
+    ACCEPTED = "accepted"        # Output was correct as-is
+    REJECTED = "rejected"        # Output was incorrect/unusable
+    MODIFIED = "modified"        # Output required corrections
+    HALLUCINATION = "hallucination"  # Detected factual error
+
+
+# --- Phase 4: Schema V3 - LLM Architecture Value Objects ---
+
+@dataclass(frozen=True, slots=True)
+class LLMEnrichment:
+    """
+    Centralized LLM enrichment with versioning and quality tracking.
+
+    Replaces inline LLM columns with structured, versioned storage.
+    Supports review workflow, cost tracking, and model provenance.
+    """
+    # Identity
+    id: int | None = None
+    coin_id: int = 0
+
+    # Capability
+    capability: str = ""                  # vocab_normalize, legend_expand, context_generate, etc.
+    capability_version: int = 1           # Version of the capability/prompt
+
+    # Model provenance
+    model_id: str = ""                    # claude-3-sonnet, gpt-4, gemini-pro, etc.
+    model_version: str | None = None      # Specific model version if known
+
+    # Content
+    input_hash: str = ""                  # Hash of input for deduplication/caching
+    input_snapshot: str | None = None     # JSON snapshot of input data
+    output_content: str = ""              # The actual LLM output (JSON or text)
+    raw_response: str | None = None       # Full raw API response for debugging
+
+    # Quality
+    confidence: float = 0.0               # 0.0-1.0 confidence score
+    needs_review: bool = False            # Flagged for human review
+    quality_flags: str | None = None      # JSON: ["low_confidence", "multiple_matches", etc.]
+
+    # Cost tracking
+    cost_usd: float = 0.0                 # Cost of this API call
+    input_tokens: int | None = None       # Input tokens consumed
+    output_tokens: int | None = None      # Output tokens generated
+    cached: bool = False                  # Was this result from cache?
+
+    # Review workflow
+    review_status: str = "pending"        # pending, approved, rejected, superseded
+    reviewed_by: str | None = None        # User/system that reviewed
+    reviewed_at: DateTimeType | None = None
+    review_notes: str | None = None
+
+    # Lifecycle
+    created_at: DateTimeType | None = None
+    expires_at: DateTimeType | None = None
+    superseded_by: int | None = None      # ID of newer enrichment that replaced this
+    request_id: str | None = None         # Tracking ID from API provider
+    batch_job_id: str | None = None       # Batch job ID if applicable
+
+
+@dataclass(frozen=True, slots=True)
+class PromptTemplate:
+    """
+    Database-managed prompt template for LLM capabilities.
+
+    Enables versioning, A/B testing, and prompt optimization.
+    """
+    # Identity
+    id: int | None = None
+    capability: str = ""                  # Which LLM capability this template is for
+    version: int = 1                      # Version number for this capability
+
+    # Content
+    system_prompt: str = ""               # System message
+    user_template: str = ""               # User message template with {placeholders}
+    parameters: str | None = None         # JSON: default parameters, temperature, etc.
+    requires_vision: bool = False         # Does this template need image input?
+    output_schema: str | None = None      # JSON Schema for expected output
+
+    # A/B testing
+    variant_name: str = "default"         # Variant name for A/B testing
+    traffic_weight: float = 1.0           # Traffic allocation weight (0.0-1.0)
+
+    # Lifecycle
+    is_active: bool = True                # Is this template in use?
+    created_at: DateTimeType | None = None
+    deprecated_at: DateTimeType | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LLMFeedback:
+    """
+    User feedback on LLM enrichment quality.
+
+    Creates a feedback loop for continuous improvement.
+    """
+    # Identity
+    id: int | None = None
+    enrichment_id: int = 0                # Which enrichment this feedback is for
+
+    # Feedback
+    feedback_type: str = ""               # accepted, rejected, modified, hallucination
+    field_path: str | None = None         # Specific field that was wrong (e.g., "issuer")
+    original_value: str | None = None     # What the LLM suggested
+    corrected_value: str | None = None    # What it should have been
+
+    # Attribution
+    user_id: str | None = None            # Who provided feedback
+    feedback_notes: str | None = None     # Additional context
+
+    # Metadata
+    created_at: DateTimeType | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LLMUsageDaily:
+    """
+    Aggregated LLM usage metrics by day.
+
+    Enables cost monitoring, performance tracking, and capacity planning.
+    """
+    # Primary key components
+    date: str = ""                        # YYYY-MM-DD
+    capability: str = ""                  # Which capability
+    model_id: str = ""                    # Which model
+
+    # Volume metrics
+    request_count: int = 0                # Total requests
+    cache_hits: int = 0                   # Requests served from cache
+    error_count: int = 0                  # Failed requests
+
+    # Cost metrics
+    total_cost_usd: float = 0.0           # Total cost for this day/capability/model
+    total_input_tokens: int = 0           # Total input tokens
+    total_output_tokens: int = 0          # Total output tokens
+
+    # Quality metrics
+    avg_confidence: float | None = None   # Average confidence score
+    review_approved: int = 0              # Approved after review
+    review_rejected: int = 0              # Rejected after review
+
+    # Performance metrics
+    avg_latency_ms: float | None = None   # Average response latency
+
+
+# --- Phase 5: Schema V3 - Market Tracking & Wishlists ---
+
+@dataclass(slots=True)
+class MarketPrice:
+    """
+    Aggregate market pricing for a coin type by attribution.
+
+    Tracks price statistics across multiple sales/observations
+    for coins matching a specific attribution key.
+    """
+    id: int | None = None
+    attribution_key: str = ""
+    issuer: str | None = None
+    denomination: str | None = None
+    mint: str | None = None
+    metal: str | None = None
+    category: str | None = None  # imperial, republic, provincial, etc.
+    catalog_ref: str | None = None
+    avg_price_vf: Decimal | None = None
+    avg_price_ef: Decimal | None = None
+    avg_price_au: Decimal | None = None
+    avg_price_ms: Decimal | None = None  # Mint State grade pricing
+    min_price_seen: Decimal | None = None
+    max_price_seen: Decimal | None = None
+    median_price: Decimal | None = None
+    data_point_count: int = 0
+    last_sale_date: DateType | None = None
+    last_updated: DateTimeType | None = None
+
+
+@dataclass(slots=True)
+class MarketDataPoint:
+    """
+    Individual price observation feeding market aggregates.
+
+    Records single sale/listing events with full context:
+    auction results, dealer prices, private sales.
+    """
+    id: int | None = None
+    market_price_id: int | None = None
+    price: Decimal = Decimal("0")
+    currency: str = "USD"
+    price_usd: Decimal | None = None
+    source_type: str = ""  # auction_realized, auction_unsold, dealer_asking, dealer_sold, private_sale, estimate
+    date: DateType | None = None
+    grade: str | None = None
+    grade_numeric: int | None = None
+    condition_notes: str | None = None
+    auction_house: str | None = None
+    sale_name: str | None = None
+    lot_number: str | None = None
+    lot_url: str | None = None
+    dealer_name: str | None = None
+    # Price breakdown for auction sales
+    is_hammer_price: bool = True  # False if price includes buyer's premium
+    buyers_premium_pct: Decimal | None = None  # Buyer's premium percentage (e.g., 20.0)
+    # Slabbed coin information
+    is_slabbed: bool = False
+    grading_service: str | None = None  # ngc, pcgs
+    certification_number: str | None = None
+    confidence: str = "medium"  # low, medium, high, verified
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+
+
+@dataclass(slots=True)
+class CoinValuation:
+    """
+    Point-in-time valuation snapshot for a specific coin.
+
+    Tracks purchase price, current market value, and gain/loss
+    with trend analysis over time.
+    """
+    id: int | None = None
+    coin_id: int | None = None
+    valuation_date: DateType | None = None
+    purchase_price: Decimal | None = None
+    purchase_currency: str | None = None
+    purchase_date: DateType | None = None
+    current_market_value: Decimal | None = None
+    value_currency: str = "USD"
+    market_confidence: str | None = None  # low, medium, high, strong
+    comparable_count: int | None = None
+    comparable_avg_price: Decimal | None = None
+    comparable_date_range: str | None = None
+    price_trend_6mo: Decimal | None = None
+    price_trend_12mo: Decimal | None = None
+    price_trend_36mo: Decimal | None = None
+    gain_loss_usd: Decimal | None = None
+    gain_loss_pct: Decimal | None = None
+    valuation_method: str | None = None  # comparable_sales, dealer_estimate, insurance, user_estimate, llm_estimate
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+
+
+@dataclass(slots=True)
+class WishlistItem:
+    """
+    Acquisition target for the collection wishlist.
+
+    Defines matching criteria for desired coins with
+    budget constraints and notification preferences.
+    """
+    id: int | None = None
+    title: str = ""
+    description: str | None = None
+    issuer: str | None = None
+    issuer_id: int | None = None
+    mint: str | None = None
+    mint_id: int | None = None
+    year_start: int | None = None
+    year_end: int | None = None
+    denomination: str | None = None
+    metal: str | None = None
+    category: str | None = None
+    catalog_ref: str | None = None
+    catalog_ref_pattern: str | None = None
+    min_grade: str | None = None
+    min_grade_numeric: int | None = None
+    condition_notes: str | None = None
+    max_price: Decimal | None = None
+    target_price: Decimal | None = None
+    currency: str = "USD"
+    priority: int = 2  # 1 highest, 4 lowest
+    tags: str | None = None  # JSON array
+    series_slot_id: int | None = None
+    status: str = "wanted"  # wanted, watching, bidding, acquired, cancelled
+    acquired_coin_id: int | None = None
+    acquired_at: DateTimeType | None = None
+    acquired_price: Decimal | None = None
+    notify_on_match: bool = True
+    notify_email: bool = False
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+    updated_at: DateTimeType | None = None
+
+
+@dataclass(slots=True)
+class PriceAlert:
+    """
+    User-configured price/availability alert.
+
+    Triggers notifications when price thresholds are met
+    or new listings appear matching criteria.
+    """
+    id: int | None = None
+    attribution_key: str | None = None
+    coin_id: int | None = None
+    wishlist_item_id: int | None = None
+    trigger_type: str = ""  # price_below, price_above, price_change_pct, new_listing, auction_soon
+    threshold_value: Decimal | None = None
+    threshold_pct: Decimal | None = None
+    threshold_grade: str | None = None
+    status: str = "active"  # active, triggered, paused, expired, deleted
+    created_at: DateTimeType | None = None
+    triggered_at: DateTimeType | None = None
+    expires_at: DateTimeType | None = None
+    notification_sent: bool = False
+    notification_sent_at: DateTimeType | None = None
+    notification_channel: str | None = None  # in_app, email, push
+    cooldown_hours: int = 24
+    last_triggered_at: DateTimeType | None = None
+    notes: str | None = None
+
+
+# --- Phase 6: Schema V3 - Collections Enums ---
+
+class CollectionType(str, Enum):
+    """Type of collection."""
+    CUSTOM = "custom"         # Manual coin selection
+    SMART = "smart"           # Dynamic based on criteria
+    SERIES = "series"         # Linked to a series definition
+    TYPE_SET = "type_set"     # Completion-tracking type set
+
+
+class CollectionPurpose(str, Enum):
+    """Purpose classification for collections (numismatic workflow)."""
+    STUDY = "study"           # Research/educational grouping
+    DISPLAY = "display"       # Exhibition arrangement
+    TYPE_SET = "type_set"     # Systematic completion goal
+    DUPLICATES = "duplicates" # Trading stock
+    RESERVES = "reserves"     # Secondary examples
+    INSURANCE = "insurance"   # Documentation grouping
+    GENERAL = "general"       # Default/unclassified
+
+
+class StandardSortOrder(str, Enum):
+    """Predefined sort orders for collections."""
+    CHRONOLOGICAL = "chronological"
+    REVERSE_CHRONOLOGICAL = "reverse_chronological"
+    CATALOG_NUMBER = "catalog_number"
+    ACQUISITION_DATE = "acquisition_date"
+    VALUE_HIGH_LOW = "value_desc"
+    VALUE_LOW_HIGH = "value_asc"
+    WEIGHT = "weight"
+    DENOMINATION = "denomination"
+    CUSTOM = "custom"
+
+
+# --- Phase 6: Schema V3 - Collections Value Objects ---
+
+@dataclass(frozen=True, slots=True)
+class SmartCriteria:
+    """
+    Value object for smart collection filter criteria.
+
+    Supports compound conditions with 'all' (AND) or 'any' (OR) matching.
+    Each condition specifies a field, operator, and value.
+    """
+    match: str = "all"  # "all" (AND) or "any" (OR)
+    conditions: tuple = ()  # Tuple of condition dicts for immutability
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize to dictionary for JSON storage."""
+        return {
+            "match": self.match,
+            "conditions": list(self.conditions)
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SmartCriteria":
+        """Deserialize from dictionary."""
+        if not data:
+            return cls()
+        return cls(
+            match=data.get("match", "all"),
+            conditions=tuple(data.get("conditions", []))
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CollectionStatistics:
+    """
+    Computed statistics for a collection.
+
+    Provides portfolio-style analytics for collectors.
+    """
+    coin_count: int = 0
+    total_value: Decimal | None = None
+    total_cost: Decimal | None = None
+    unrealized_gain_loss: Decimal | None = None
+    metal_breakdown: Dict[str, int] | None = None
+    denomination_breakdown: Dict[str, int] | None = None
+    category_breakdown: Dict[str, int] | None = None
+    grade_distribution: Dict[str, int] | None = None
+    average_grade: float | None = None
+    slabbed_count: int = 0
+    raw_count: int = 0
+    earliest_coin_year: int | None = None
+    latest_coin_year: int | None = None
+    completion_percentage: float | None = None  # For type sets
+    missing_types: List[str] | None = None  # For type sets
+
+
+# --- Phase 6: Schema V3 - Collections Entities ---
+
+@dataclass(slots=True)
+class Collection:
+    """
+    Collection entity for organizing coins.
+
+    Supports custom (manual) and smart (dynamic) collections with
+    hierarchical nesting limited to 3 levels per numismatic review.
+    """
+    id: int | None = None
+    name: str = ""
+    description: str | None = None
+    slug: str | None = None
+
+    # Type and purpose
+    collection_type: str = "custom"  # custom, smart, series, type_set
+    purpose: str = "general"  # study, display, type_set, duplicates, reserves, insurance, general
+
+    # Smart collection criteria
+    smart_criteria: SmartCriteria | None = None
+
+    # Type set tracking (for completion percentage)
+    is_type_set: bool = False
+    type_set_definition: str | None = None  # JSON defining required types
+
+    # Visual settings
+    cover_image_url: str | None = None
+    cover_coin_id: int | None = None  # Featured coin as cover
+    color: str | None = None  # UI color code
+    icon: str | None = None  # Icon identifier
+
+    # Organization
+    parent_id: int | None = None
+    level: int = 0  # Hierarchy depth (max 3 per review)
+    display_order: int = 0
+    default_sort: str = "custom"  # StandardSortOrder value
+    default_view: str | None = None  # grid, list, table
+
+    # Cached statistics
+    coin_count: int = 0
+    total_value: Decimal | None = None
+    stats_updated_at: DateTimeType | None = None
+    completion_percentage: float | None = None  # For type sets
+
+    # Flags
+    is_favorite: bool = False
+    is_hidden: bool = False
+    is_public: bool = False
+
+    # Physical storage mapping (from numismatic review)
+    storage_location: str | None = None  # "Album 3, Page 12"
+
+    # Metadata
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+    updated_at: DateTimeType | None = None
+
+    def __post_init__(self):
+        """Validate collection data."""
+        if not self.name or not self.name.strip():
+            raise ValueError("Collection name cannot be empty")
+        if self.collection_type == "smart" and not self.smart_criteria:
+            # Smart collections should have criteria, but allow creation without
+            pass
+        if self.level is not None and self.level > 3:
+            raise ValueError("Collection hierarchy limited to 3 levels")
+
+
+@dataclass(slots=True)
+class CollectionCoin:
+    """
+    Link between a collection and a coin with per-collection context.
+
+    Allows adding notes and flags specific to a coin's presence
+    in a particular collection.
+    """
+    collection_id: int
+    coin_id: int
+    added_at: DateTimeType | None = None
+    added_by: str | None = None
+
+    # Ordering
+    position: int | None = None
+    custom_order: int | None = None
+
+    # Context notes (per-collection)
+    notes: str | None = None
+
+    # Flags (from numismatic review)
+    is_featured: bool = False  # Highlight coin in collection
+    is_cover_coin: bool = False  # Use as collection thumbnail
+    is_placeholder: bool = False  # Temporary until upgrade
+    exclude_from_stats: bool = False  # Don't count in totals
+
+    # Type set tracking
+    fulfills_type: str | None = None  # Which type requirement this satisfies
+    series_slot_id: int | None = None  # Link to series slot if applicable
+
+
+@dataclass(slots=True)
+class WishlistMatch:
+    """
+    Matched auction lot or listing for a wishlist item.
+
+    Records potential acquisitions found by the matching
+    engine with scoring and notification tracking.
+    """
+    id: int | None = None
+    wishlist_item_id: int | None = None
+    match_type: str = ""  # auction_lot, dealer_listing, ebay_listing, vcoins
+    match_source: str | None = None  # heritage, cng, biddr, ebay, vcoins
+    match_id: str = ""
+    match_url: str | None = None
+    title: str = ""
+    description: str | None = None
+    image_url: str | None = None
+    grade: str | None = None
+    grade_numeric: int | None = None
+    condition_notes: str | None = None
+    price: Decimal | None = None
+    estimate_low: Decimal | None = None
+    estimate_high: Decimal | None = None
+    currency: str = "USD"
+    current_bid: Decimal | None = None
+    auction_date: DateType | None = None
+    end_time: DateTimeType | None = None
+    match_score: Decimal | None = None
+    match_confidence: str | None = None  # exact, high, medium, possible
+    match_reasons: str | None = None  # JSON array
+    is_below_budget: bool | None = None
+    is_below_market: bool | None = None
+    value_score: Decimal | None = None
+    notified: bool = False
+    notified_at: DateTimeType | None = None
+    dismissed: bool = False
+    dismissed_at: DateTimeType | None = None
+    saved: bool = False
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+
+
 # --- Aggregate Root ---
 
 @dataclass

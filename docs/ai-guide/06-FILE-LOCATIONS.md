@@ -50,11 +50,17 @@ domain/
 ### Application Layer (`src/application/`)
 ```
 application/
-└── commands/
-    ├── create_coin.py         # CreateCoinUseCase
-    ├── enrich_coin.py         # EnrichCoinUseCase
-    ├── import_collection.py   # ImportCollectionUseCase
-    └── scrape_auction_lot.py  # ScrapeAuctionLotUseCase
+├── commands/
+│   ├── create_coin.py         # CreateCoinUseCase
+│   ├── enrich_coin.py         # EnrichCoinUseCase
+│   ├── import_collection.py   # ImportCollectionUseCase
+│   └── scrape_auction_lot.py  # ScrapeAuctionLotUseCase
+│
+└── services/
+    ├── apply_enrichment.py         # ApplyEnrichmentService
+    ├── valuation_service.py        # ValuationService (coin/portfolio valuation)
+    ├── price_alert_service.py      # PriceAlertService (price monitoring)
+    └── wishlist_matching_service.py # WishlistMatchingService (auction matching)
 ```
 
 ### Infrastructure Layer (`src/infrastructure/`)
@@ -71,8 +77,21 @@ infrastructure/
 │       ├── auction_data_repository.py # SqlAlchemyAuctionDataRepository
 │       ├── vocab_repository.py     # SqlAlchemyVocabRepository
 │       ├── series_repository.py    # SqlAlchemySeriesRepository
-│       ├── grading_history_repository.py  # SqlAlchemyGradingHistoryRepository
-│       └── rarity_assessment_repository.py # SqlAlchemyRarityAssessmentRepository
+│       ├── grading_history_repository.py  # SqlAlchemyGradingHistoryRepository (Phase 2)
+│       ├── rarity_assessment_repository.py # SqlAlchemyRarityAssessmentRepository (Phase 2)
+│       ├── reference_concordance_repository.py # SqlAlchemyConcordanceRepository (Phase 3)
+│       ├── external_catalog_link_repository.py # SqlAlchemyExternalCatalogLinkRepository (Phase 3)
+│       ├── llm_enrichment_repository.py # SqlAlchemyLLMEnrichmentRepository (Phase 4)
+│       ├── prompt_template_repository.py # SqlAlchemyPromptTemplateRepository (Phase 4)
+│       ├── llm_feedback_repository.py # SqlAlchemyLLMFeedbackRepository (Phase 4)
+│       ├── llm_usage_repository.py # SqlAlchemyLLMUsageRepository (Phase 4)
+│       ├── market_price_repository.py # SqlAlchemyMarketPriceRepository (Phase 5)
+│       ├── market_data_point_repository.py # SqlAlchemyMarketDataPointRepository (Phase 5)
+│       ├── coin_valuation_repository.py # SqlAlchemyCoinValuationRepository (Phase 5)
+│       ├── price_alert_repository.py # SqlAlchemyPriceAlertRepository (Phase 5)
+│       ├── wishlist_item_repository.py # SqlAlchemyWishlistItemRepository (Phase 5)
+│       ├── wishlist_match_repository.py # SqlAlchemyWishlistMatchRepository (Phase 5)
+│       └── collection_repository.py # SqlAlchemyCollectionRepository (Phase 6)
 │
 ├── scrapers/
 │   ├── base_playwright.py     # Base scraper with Playwright
@@ -118,10 +137,13 @@ infrastructure/
         ├── series.py          # /api/v2/series
         ├── scrape_v2.py       # /api/v2/scrape
         ├── audit_v2.py        # /api/v2/audit
-        ├── llm.py             # /api/v2/llm (AI enrichment)
+        ├── llm.py             # /api/v2/llm (AI enrichment capabilities)
         ├── provenance.py      # /api/v2/provenance
-        ├── grading_history.py # /api/v2/coins/{id}/grading-history
-        ├── rarity_assessment.py # /api/v2/coins/{id}/rarity-assessments
+        ├── grading_history.py # /api/v2/coins/{id}/grading-history (Phase 2)
+        ├── rarity_assessment.py # /api/v2/coins/{id}/rarity-assessments (Phase 2)
+        ├── concordance.py     # /api/v2/concordance (Phase 3)
+        ├── external_links.py  # /api/v2/external-links (Phase 3)
+        ├── llm_enrichment.py  # /api/v2/llm-enrichments (Phase 4)
         └── die_study.py       # /api/v2/die-study
 ```
 

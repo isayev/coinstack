@@ -6,8 +6,24 @@ from src.infrastructure.persistence.database import SessionLocal
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
 from src.infrastructure.repositories.auction_data_repository import SqlAlchemyAuctionDataRepository
 from src.infrastructure.repositories.vocab_repository import SqlAlchemyVocabRepository
-from src.domain.repositories import ICoinRepository, IAuctionDataRepository
+from src.infrastructure.repositories.collection_repository import SqlAlchemyCollectionRepository
+from src.infrastructure.repositories.market_price_repository import SqlAlchemyMarketPriceRepository
+from src.infrastructure.repositories.coin_valuation_repository import SqlAlchemyCoinValuationRepository
+from src.infrastructure.repositories.price_alert_repository import SqlAlchemyPriceAlertRepository
+from src.infrastructure.repositories.wishlist_item_repository import SqlAlchemyWishlistItemRepository
+from src.infrastructure.repositories.wishlist_match_repository import SqlAlchemyWishlistMatchRepository
+from src.infrastructure.repositories.llm_enrichment_repository import SqlAlchemyLLMEnrichmentRepository
+from src.domain.repositories import (
+    ICoinRepository, IAuctionDataRepository, ICollectionRepository,
+    IMarketPriceRepository, ICoinValuationRepository, IPriceAlertRepository,
+    IWishlistItemRepository, IWishlistMatchRepository, ILLMEnrichmentRepository,
+)
+from src.domain.vocab import IVocabRepository
 from src.application.services.apply_enrichment import ApplyEnrichmentService
+from src.application.services.valuation_service import ValuationService
+from src.application.services.price_alert_service import PriceAlertService
+from src.application.services.wishlist_matching_service import WishlistMatchingService
+from src.application.commands.save_llm_enrichment import SaveLLMEnrichmentUseCase
 
 logger = logging.getLogger(__name__)
 
@@ -34,5 +50,64 @@ def get_apply_enrichment_service(db: Session = Depends(get_db)) -> ApplyEnrichme
 def get_auction_repo(db: Session = Depends(get_db)) -> IAuctionDataRepository:
     return SqlAlchemyAuctionDataRepository(db)
 
-def get_vocab_repo(db: Session = Depends(get_db)) -> SqlAlchemyVocabRepository:
+def get_vocab_repo(db: Session = Depends(get_db)) -> IVocabRepository:
     return SqlAlchemyVocabRepository(db)
+
+
+def get_collection_repo(db: Session = Depends(get_db)) -> ICollectionRepository:
+    return SqlAlchemyCollectionRepository(db)
+
+
+def get_market_price_repo(db: Session = Depends(get_db)) -> IMarketPriceRepository:
+    return SqlAlchemyMarketPriceRepository(db)
+
+
+def get_coin_valuation_repo(db: Session = Depends(get_db)) -> ICoinValuationRepository:
+    return SqlAlchemyCoinValuationRepository(db)
+
+
+def get_price_alert_repo(db: Session = Depends(get_db)) -> IPriceAlertRepository:
+    return SqlAlchemyPriceAlertRepository(db)
+
+
+def get_wishlist_item_repo(db: Session = Depends(get_db)) -> IWishlistItemRepository:
+    return SqlAlchemyWishlistItemRepository(db)
+
+
+def get_wishlist_match_repo(db: Session = Depends(get_db)) -> IWishlistMatchRepository:
+    return SqlAlchemyWishlistMatchRepository(db)
+
+
+def get_llm_enrichment_repo(db: Session = Depends(get_db)) -> ILLMEnrichmentRepository:
+    return SqlAlchemyLLMEnrichmentRepository(db)
+
+
+def get_valuation_service(db: Session = Depends(get_db)) -> ValuationService:
+    """Build ValuationService with market price and coin valuation repositories."""
+    return ValuationService(
+        market_repo=SqlAlchemyMarketPriceRepository(db),
+        valuation_repo=SqlAlchemyCoinValuationRepository(db),
+    )
+
+
+def get_price_alert_service(db: Session = Depends(get_db)) -> PriceAlertService:
+    """Build PriceAlertService with price alert and market price repositories."""
+    return PriceAlertService(
+        alert_repo=SqlAlchemyPriceAlertRepository(db),
+        market_repo=SqlAlchemyMarketPriceRepository(db),
+    )
+
+
+def get_wishlist_matching_service(db: Session = Depends(get_db)) -> WishlistMatchingService:
+    """Build WishlistMatchingService with wishlist item and match repositories."""
+    return WishlistMatchingService(
+        wishlist_repo=SqlAlchemyWishlistItemRepository(db),
+        match_repo=SqlAlchemyWishlistMatchRepository(db),
+    )
+
+
+def get_save_llm_enrichment_use_case(db: Session = Depends(get_db)) -> SaveLLMEnrichmentUseCase:
+    """Build SaveLLMEnrichmentUseCase with LLM enrichment repository."""
+    return SaveLLMEnrichmentUseCase(
+        enrichment_repo=SqlAlchemyLLMEnrichmentRepository(db),
+    )
