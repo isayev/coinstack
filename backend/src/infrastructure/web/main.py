@@ -17,15 +17,27 @@ from fastapi.staticfiles import StaticFiles
 from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, die_study, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment, concordance, external_links, llm_enrichment, census_snapshot, market, valuation, wishlist, collections
 from src.infrastructure.persistence.database import init_db
 from src.infrastructure.config import get_settings
+from src.infrastructure.logging_config import configure_logging
+from src.infrastructure.web.middleware import ObservabilityMiddleware
 
 def create_app() -> FastAPI:
-    # CRITICAL: Set Windows event loop policy for Playwright
-    if sys.platform == 'win32':
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
-    
+    # Note: Windows event loop policy already set at module level (lines 7-8)
     settings = get_settings()
+
+    # Configure centralized logging with request ID tracking
+    configure_logging(
+        level=getattr(settings, 'LOG_LEVEL', 'INFO'),
+        include_request_id=True,
+    )
+
     app = FastAPI(title="CoinStack V2 API")
-    
+
+    # Add unified observability middleware (request ID, timing, slow request detection)
+    app.add_middleware(
+        ObservabilityMiddleware,
+        slow_threshold_ms=getattr(settings, 'SLOW_REQUEST_THRESHOLD_MS', 1000.0)
+    )
+
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
@@ -34,7 +46,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     init_db()
     
     # Mount static files for images
@@ -67,6 +79,12 @@ def create_app() -> FastAPI:
     app.include_router(valuation.router)                     # Coin Valuations API (Schema V3 Phase 5)
     app.include_router(wishlist.router)                      # Wishlist API (Schema V3 Phase 5)
     app.include_router(collections.router)                   # Collections API (Schema V3 Phase 6)
+
+    # Health check endpoint
+    @app.get("/health", tags=["health"])
+    async def health_check():
+        """Health check endpoint for monitoring."""
+        return {"status": "healthy", "version": "2.0"}
 
     return app
 

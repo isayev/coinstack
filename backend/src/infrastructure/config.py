@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
+
+    # Observability
+    SLOW_QUERY_THRESHOLD_SECONDS: float = 0.1
+    SLOW_REQUEST_THRESHOLD_MS: float = 1000.0
     
     model_config = SettingsConfigDict(
         env_file=".env",

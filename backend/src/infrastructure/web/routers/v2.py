@@ -19,6 +19,7 @@ from src.domain.coin import (
     ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
 )
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from src.infrastructure.web.dependencies import get_coin_repo, get_db
 
 router = APIRouter(prefix="/api/v2/coins", tags=["coins"])
@@ -769,16 +770,12 @@ def get_coins(
     Filters can be combined. All filters use AND logic.
     If `ids` parameter is provided, returns only those coins (ignores pagination).
     """
-    # Handle ids parameter - fetch specific coins
+    # Handle ids parameter - fetch specific coins (batch query, O(1) instead of O(N))
     if ids:
         try:
             coin_ids = [int(id_str.strip()) for id_str in ids.split(",") if id_str.strip()]
             if coin_ids:
-                coins = []
-                for coin_id in coin_ids:
-                    coin = repo.get_by_id(coin_id)
-                    if coin:
-                        coins.append(coin)
+                coins = repo.get_by_ids(coin_ids)
                 return PaginatedResponse(
                     items=[CoinResponse.from_domain(c) for c in coins],
                     total=len(coins),
@@ -842,51 +839,47 @@ def get_coins(
         pages=pages
     )
 
-def _get_neighbor_ids(repo: ICoinRepository, coin_id: int) -> tuple[Optional[int], Optional[int]]:
+def _get_neighbor_ids(db: Session, coin_id: int) -> tuple[Optional[int], Optional[int]]:
     """
     Get previous and next coin IDs for navigation.
-    
+
     Uses efficient SQL queries to find neighbors without loading all coins.
     Returns (prev_id, next_id) tuple.
+
+    Args:
+        db: Injected SQLAlchemy session (avoids creating new connection)
+        coin_id: Current coin ID to find neighbors for
     """
-    # Get the coin's position in the collection (sorted by ID)
-    # This is a simple but effective approach for navigation
-    from src.infrastructure.persistence.database import SessionLocal
-    from sqlalchemy import text
-    
-    db = SessionLocal()
-    try:
-        # Get previous ID (largest ID less than current)
-        prev_result = db.execute(
-            text("SELECT id FROM coins_v2 WHERE id < :coin_id ORDER BY id DESC LIMIT 1"),
-            {"coin_id": coin_id}
-        ).fetchone()
-        prev_id = prev_result[0] if prev_result else None
-        
-        # Get next ID (smallest ID greater than current)
-        next_result = db.execute(
-            text("SELECT id FROM coins_v2 WHERE id > :coin_id ORDER BY id ASC LIMIT 1"),
-            {"coin_id": coin_id}
-        ).fetchone()
-        next_id = next_result[0] if next_result else None
-        
-        return prev_id, next_id
-    finally:
-        db.close()
+    # Get previous ID (largest ID less than current)
+    prev_result = db.execute(
+        text("SELECT id FROM coins_v2 WHERE id < :coin_id ORDER BY id DESC LIMIT 1"),
+        {"coin_id": coin_id}
+    ).fetchone()
+    prev_id = prev_result[0] if prev_result else None
+
+    # Get next ID (smallest ID greater than current)
+    next_result = db.execute(
+        text("SELECT id FROM coins_v2 WHERE id > :coin_id ORDER BY id ASC LIMIT 1"),
+        {"coin_id": coin_id}
+    ).fetchone()
+    next_id = next_result[0] if next_result else None
+
+    return prev_id, next_id
 
 
 @router.get("/{coin_id}", response_model=CoinResponse)
 def get_coin(
     coin_id: int,
-    repo: ICoinRepository = Depends(get_coin_repo)
+    repo: ICoinRepository = Depends(get_coin_repo),
+    db: Session = Depends(get_db)
 ):
     coin = repo.get_by_id(coin_id)
     if not coin:
         raise HTTPException(status_code=404, detail="Coin not found")
-    
-    # Calculate neighbor IDs for navigation (efficient query)
-    prev_id, next_id = _get_neighbor_ids(repo, coin_id)
-    
+
+    # Calculate neighbor IDs for navigation (uses injected session)
+    prev_id, next_id = _get_neighbor_ids(db, coin_id)
+
     response = CoinResponse.from_domain(coin)
     response.prev_id = prev_id
     response.next_id = next_id

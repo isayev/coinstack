@@ -90,6 +90,32 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             return None
         return CoinMapper.to_domain(orm_coin)
 
+    def get_by_ids(self, coin_ids: List[int]) -> List[Coin]:
+        """Retrieve multiple coins by their IDs efficiently with chunking.
+
+        Uses chunking to avoid SQLite's 999 parameter limit for IN clauses.
+        """
+        if not coin_ids:
+            return []
+
+        CHUNK_SIZE = 500  # SQLite limit is 999, use 500 for safety
+        all_coins: Dict[int, Coin] = {}
+
+        for i in range(0, len(coin_ids), CHUNK_SIZE):
+            chunk = coin_ids[i:i + CHUNK_SIZE]
+            orm_coins = self.session.query(CoinModel).options(
+                selectinload(CoinModel.images),
+                selectinload(CoinModel.provenance_events),
+                selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),
+                selectinload(CoinModel.monograms)
+            ).filter(CoinModel.id.in_(chunk)).all()
+
+            for orm in orm_coins:
+                all_coins[orm.id] = CoinMapper.to_domain(orm)
+
+        # Return in the order of input IDs
+        return [all_coins[cid] for cid in coin_ids if cid in all_coins]
+
     def get_all(
         self, 
         skip: int = 0, 
@@ -239,13 +265,12 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         
         conditions = []
         
-        # Exact match filters
+        # Exact match filters (data normalized on input, direct comparison for index usage)
         if "category" in filters:
-            # Case insensitive category match since backend uses slugs/values inconsistently
-            conditions.append(func.lower(CoinModel.category) == filters["category"].lower())
-        
+            conditions.append(CoinModel.category == filters["category"].lower())
+
         if "metal" in filters:
-            conditions.append(func.lower(CoinModel.metal) == filters["metal"].lower())
+            conditions.append(CoinModel.metal == filters["metal"].lower())
         
         if "denomination" in filters:
             conditions.append(CoinModel.denomination == filters["denomination"])
