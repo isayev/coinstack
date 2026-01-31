@@ -989,17 +989,22 @@ def update_coin(
             enrichment=existing_coin.enrichment,
 
             # --- Phase 1: Schema V3 Numismatic Enhancements (preserve existing if not provided) ---
+            # Use model_fields_set to distinguish "not provided" from "explicitly clear"
             secondary_authority=SecondaryAuthority(
                 name=request.secondary_authority.name,
                 term_id=request.secondary_authority.term_id,
                 authority_type=request.secondary_authority.authority_type
-            ) if request.secondary_authority else existing_coin.secondary_authority,
+            ) if "secondary_authority" in request.model_fields_set and request.secondary_authority else (
+                None if "secondary_authority" in request.model_fields_set else existing_coin.secondary_authority
+            ),
 
             co_ruler=CoRuler(
                 name=request.co_ruler.name,
                 term_id=request.co_ruler.term_id,
                 portrait_relationship=request.co_ruler.portrait_relationship
-            ) if request.co_ruler else existing_coin.co_ruler,
+            ) if "co_ruler" in request.model_fields_set and request.co_ruler else (
+                None if "co_ruler" in request.model_fields_set else existing_coin.co_ruler
+            ),
 
             moneyer_gens=request.moneyer_gens if "moneyer_gens" in request.model_fields_set else existing_coin.moneyer_gens,
 
@@ -1009,7 +1014,9 @@ def update_coin(
                 flan_shape=request.physical_enhancements.flan_shape,
                 flan_type=request.physical_enhancements.flan_type,
                 flan_notes=request.physical_enhancements.flan_notes
-            ) if request.physical_enhancements else existing_coin.physical_enhancements,
+            ) if "physical_enhancements" in request.model_fields_set and request.physical_enhancements else (
+                None if "physical_enhancements" in request.model_fields_set else existing_coin.physical_enhancements
+            ),
 
             secondary_treatments_v3=SecondaryTreatments(
                 is_overstrike=request.secondary_treatments_v3.is_overstrike,
@@ -1023,25 +1030,33 @@ def update_coin(
                 graffiti_description=request.secondary_treatments_v3.graffiti_description,
                 was_mounted=request.secondary_treatments_v3.was_mounted,
                 mount_evidence=request.secondary_treatments_v3.mount_evidence
-            ) if request.secondary_treatments_v3 else existing_coin.secondary_treatments_v3,
+            ) if "secondary_treatments_v3" in request.model_fields_set and request.secondary_treatments_v3 else (
+                None if "secondary_treatments_v3" in request.model_fields_set else existing_coin.secondary_treatments_v3
+            ),
 
             tooling_repairs=ToolingRepairs(
                 tooling_extent=request.tooling_repairs.tooling_extent,
                 tooling_details=request.tooling_repairs.tooling_details,
                 has_ancient_repair=request.tooling_repairs.has_ancient_repair,
                 ancient_repairs=request.tooling_repairs.ancient_repairs
-            ) if request.tooling_repairs else existing_coin.tooling_repairs,
+            ) if "tooling_repairs" in request.model_fields_set and request.tooling_repairs else (
+                None if "tooling_repairs" in request.model_fields_set else existing_coin.tooling_repairs
+            ),
 
             centering_info=Centering(
                 centering=request.centering_info.centering,
                 centering_notes=request.centering_info.centering_notes
-            ) if request.centering_info else existing_coin.centering_info,
+            ) if "centering_info" in request.model_fields_set and request.centering_info else (
+                None if "centering_info" in request.model_fields_set else existing_coin.centering_info
+            ),
 
             die_study=DieStudyEnhancements(
                 obverse_die_state=request.die_study.obverse_die_state,
                 reverse_die_state=request.die_study.reverse_die_state,
                 die_break_description=request.die_study.die_break_description
-            ) if request.die_study else existing_coin.die_study,
+            ) if "die_study" in request.model_fields_set and request.die_study else (
+                None if "die_study" in request.model_fields_set else existing_coin.die_study
+            ),
 
             grading_tpg=GradingTPGEnhancements(
                 grade_numeric=request.grading_tpg.grade_numeric,
@@ -1049,12 +1064,16 @@ def update_coin(
                 has_star_designation=request.grading_tpg.has_star_designation,
                 photo_certificate=request.grading_tpg.photo_certificate,
                 verification_url=request.grading_tpg.verification_url
-            ) if request.grading_tpg else existing_coin.grading_tpg,
+            ) if "grading_tpg" in request.model_fields_set and request.grading_tpg else (
+                None if "grading_tpg" in request.model_fields_set else existing_coin.grading_tpg
+            ),
 
             chronology=ChronologyEnhancements(
                 date_period_notation=request.chronology.date_period_notation,
                 emission_phase=request.chronology.emission_phase
-            ) if request.chronology else existing_coin.chronology,
+            ) if "chronology" in request.model_fields_set and request.chronology else (
+                None if "chronology" in request.model_fields_set else existing_coin.chronology
+            ),
         )
         
         # Add images manually here since DTO/UseCase flow is pending update

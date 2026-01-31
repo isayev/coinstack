@@ -20,6 +20,8 @@
 - Vocab: `src/infrastructure/web/routers/vocab.py`
 - Series: `src/infrastructure/web/routers/series.py`
 - Provenance: `src/infrastructure/web/routers/provenance.py`
+- Grading History: `src/infrastructure/web/routers/grading_history.py`
+- Rarity Assessment: `src/infrastructure/web/routers/rarity_assessment.py`
 - Die Study: `src/infrastructure/web/routers/die_study.py`
 - Stats: `src/infrastructure/web/routers/stats.py`
 - Audit: `src/infrastructure/web/routers/audit_v2.py`
@@ -383,6 +385,107 @@ POST /api/v2/coins/{coin_id}/provenance
 PUT /api/v2/provenance/{id}
 DELETE /api/v2/provenance/{id}
 ```
+
+---
+
+## Grading History API (`/api/v2/coins/{coin_id}/grading-history`)
+
+Tracks the complete TPG (Third Party Grading) lifecycle from initial submission through crossovers, regrades, and crack-outs.
+
+### List Grading History
+```http
+GET /api/v2/coins/{coin_id}/grading-history
+```
+Returns all grading history entries for a coin, ordered by sequence.
+
+### Get Current Grading
+```http
+GET /api/v2/coins/{coin_id}/grading-history/current
+```
+Returns the current (active) grading state.
+
+### Create Grading Entry
+```http
+POST /api/v2/coins/{coin_id}/grading-history
+```
+**Body:**
+```json
+{
+  "grading_state": "slabbed",
+  "event_type": "initial",  // initial, crossover, regrade, crack_out
+  "grade": "Ch XF",
+  "grade_service": "ngc",
+  "certification_number": "1234567-001",
+  "grade_numeric": 45,
+  "designation": "Fine Style",
+  "has_star": true,
+  "graded_date": "2024-01-15",
+  "is_current": true
+}
+```
+
+### Get/Update/Delete Entry
+```http
+GET /api/v2/coins/{coin_id}/grading-history/{entry_id}
+PUT /api/v2/coins/{coin_id}/grading-history/{entry_id}
+DELETE /api/v2/coins/{coin_id}/grading-history/{entry_id}
+```
+
+### Set Current Grading
+```http
+POST /api/v2/coins/{coin_id}/grading-history/{entry_id}/set-current
+```
+Marks an entry as the current grading state (clears is_current on others).
+
+---
+
+## Rarity Assessment API (`/api/v2/coins/{coin_id}/rarity-assessments`)
+
+Tracks multi-source rarity assessments from catalogs, census data, and market analysis.
+
+### List Rarity Assessments
+```http
+GET /api/v2/coins/{coin_id}/rarity-assessments
+```
+Returns all rarity assessments for a coin, with primary assessment indicated.
+
+### Get Primary Assessment
+```http
+GET /api/v2/coins/{coin_id}/rarity-assessments/primary
+```
+Returns the primary rarity assessment.
+
+### Create Rarity Assessment
+```http
+POST /api/v2/coins/{coin_id}/rarity-assessments
+```
+**Body:**
+```json
+{
+  "rarity_code": "R2",  // C, S, R, R1-R5, RR, RRR, UNIQUE
+  "rarity_system": "ric",  // ric, catalog, census, market_frequency
+  "source_type": "catalog",  // catalog, census_data, auction_analysis, expert_opinion
+  "source_name": "RIC II.1",
+  "grade_conditional_notes": "R3 in XF+, R5 in MS",
+  "census_total": 150,
+  "census_this_grade": 12,
+  "confidence": "high",  // high, medium, low
+  "is_primary": true
+}
+```
+
+### Get/Update/Delete Assessment
+```http
+GET /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}
+PUT /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}
+DELETE /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}
+```
+
+### Set Primary Assessment
+```http
+POST /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}/set-primary
+```
+Marks an assessment as primary (clears is_primary on others).
 
 ---
 

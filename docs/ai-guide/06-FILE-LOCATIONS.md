@@ -70,7 +70,9 @@ infrastructure/
 │       ├── coin_repository.py      # SqlAlchemyCoinRepository
 │       ├── auction_data_repository.py # SqlAlchemyAuctionDataRepository
 │       ├── vocab_repository.py     # SqlAlchemyVocabRepository
-│       └── series_repository.py    # SqlAlchemySeriesRepository
+│       ├── series_repository.py    # SqlAlchemySeriesRepository
+│       ├── grading_history_repository.py  # SqlAlchemyGradingHistoryRepository
+│       └── rarity_assessment_repository.py # SqlAlchemyRarityAssessmentRepository
 │
 ├── scrapers/
 │   ├── base_playwright.py     # Base scraper with Playwright
@@ -115,10 +117,12 @@ infrastructure/
         ├── vocab.py           # /api/v2/vocab
         ├── series.py          # /api/v2/series
         ├── scrape_v2.py       # /api/v2/scrape
-        ├── audit_v2.py        # /api/v2/audit (planned)
+        ├── audit_v2.py        # /api/v2/audit
         ├── llm.py             # /api/v2/llm (AI enrichment)
-        ├── provenance.py      # /api/v2/provenance (planned)
-        └── die_study.py       # /api/v2/die-study (planned)
+        ├── provenance.py      # /api/v2/provenance
+        ├── grading_history.py # /api/v2/coins/{id}/grading-history
+        ├── rarity_assessment.py # /api/v2/coins/{id}/rarity-assessments
+        └── die_study.py       # /api/v2/die-study
 ```
 
 ## Frontend Structure (`frontend/src/`)
@@ -159,7 +163,9 @@ components/
 │   ├── CoinTableRowV3.tsx     # Table row (table mode)
 │   ├── CoinForm.tsx           # Create/edit form
 │   ├── CoinFilters.tsx        # Filter controls
-│   └── VocabAutocomplete.tsx  # Controlled vocabulary autocomplete
+│   ├── VocabAutocomplete.tsx  # Controlled vocabulary autocomplete
+│   ├── GradingHistoryPanel.tsx    # TPG grading lifecycle timeline
+│   └── RarityAssessmentPanel.tsx  # Multi-source rarity assessments
 │
 ├── design-system/
 │   ├── colors.ts              # Design tokens
@@ -195,7 +201,9 @@ api/
 hooks/
 ├── useCoins.ts                # TanStack Query for coins
 ├── useVocab.ts                # Vocabulary hooks
-└── useSeries.ts               # Series hooks
+├── useSeries.ts               # Series hooks
+├── useGradingHistory.ts       # Grading history CRUD hooks
+└── useRarityAssessments.ts    # Rarity assessment CRUD hooks
 ```
 
 ### Domain Types (`src/domain/`)

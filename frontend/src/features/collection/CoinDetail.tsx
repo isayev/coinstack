@@ -29,6 +29,8 @@ import {
 } from './CoinDetail/index';
 import { parseIconography, parseControlMarks } from '@/lib/parsers';
 import { ProvenanceManager } from '@/features/provenance';
+import { GradingHistoryPanel } from '@/components/coins/GradingHistoryPanel';
+import { RarityAssessmentPanel } from '@/components/coins/RarityAssessmentPanel';
 
 interface CoinDetailV3Props {
   coin: Coin;
@@ -100,6 +102,11 @@ export function CoinDetail({
         coin={coin}
         categoryType={categoryType}
       />
+
+      {/* Grading History - TPG Lifecycle */}
+      {coin.id && (
+        <GradingHistoryPanel coinId={coin.id} />
+      )}
 
       {/* Horizontal References + Market Data */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -250,6 +257,11 @@ export function CoinDetail({
         isGenerating={isGeneratingContext}
         categoryType={categoryType}
       />
+
+      {/* Rarity Assessments - Multi-source rarity data */}
+      {coin.id && (
+        <RarityAssessmentPanel coinId={coin.id} />
+      )}
 
       {/* Die Study Section (collapsible) */}
       <DieStudyCard

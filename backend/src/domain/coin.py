@@ -163,6 +163,39 @@ class ProvenanceSource(str, Enum):
     MIGRATION = "migration"
     AUTO_ACQUISITION = "auto_acquisition"  # Auto-created from acquisition data
 
+
+# --- Phase 2: Schema V3 - Grading History & Rarity Enums ---
+
+class GradingEventType(str, Enum):
+    """Type of grading event in a coin's TPG lifecycle."""
+    INITIAL = "initial"          # First submission to TPG
+    CROSSOVER = "crossover"      # Moving from one TPG service to another
+    REGRADE = "regrade"          # Resubmission to same service for new grade
+    CRACK_OUT = "crack_out"      # Removed from slab (returned to raw)
+
+
+class RaritySystem(str, Enum):
+    """Rarity rating systems used in numismatics."""
+    RIC = "ric"                          # RIC rarity codes (C, S, R1-R5, RR, RRR)
+    CATALOG = "catalog"                  # Generic catalog rating
+    CENSUS = "census"                    # TPG population-based
+    MARKET_FREQUENCY = "market_frequency"  # Auction appearance analysis
+
+
+class RaritySourceType(str, Enum):
+    """Origin/source of rarity assessment data."""
+    CATALOG = "catalog"                  # Published catalog (RIC, Sear, etc.)
+    CENSUS_DATA = "census_data"          # NGC/PCGS population data
+    AUCTION_ANALYSIS = "auction_analysis"  # Market appearance tracking
+    EXPERT_OPINION = "expert_opinion"    # Dealer/expert assessment
+
+
+class RarityConfidence(str, Enum):
+    """Confidence level for a rarity assessment."""
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
 # --- Value Objects ---
 
 @dataclass(frozen=True, slots=True)
@@ -465,6 +498,88 @@ class EnrichmentData:
     suggested_rarity: Dict[str, Any] | None = None
     suggested_design: Dict[str, Any] | None = None
     suggested_attribution: Dict[str, Any] | None = None
+
+
+# --- Phase 2: Schema V3 - Grading History & Rarity Value Objects ---
+
+@dataclass(frozen=True, slots=True)
+class GradingHistoryEntry:
+    """
+    A single grading event in a coin's TPG lifecycle.
+
+    Tracks the complete grading history from raw to slabbed, including
+    crossovers, regrades, and crack-outs. Each entry represents a snapshot
+    of the coin's grading state at a point in time.
+    """
+    # Identity
+    id: int | None = None
+    coin_id: int | None = None
+
+    # Grading state at this point
+    grading_state: str | None = None      # raw, slabbed, capsule, flip
+    grade: str | None = None              # Ch XF, MS 63, etc.
+    grade_service: str | None = None      # ngc, pcgs, icg, anacs
+    certification_number: str | None = None
+    strike_quality: str | None = None     # NGC/PCGS 1-5 scale
+    surface_quality: str | None = None    # NGC/PCGS 1-5 scale
+    grade_numeric: int | None = None      # 50, 53, 55, 58, 60, 62-70
+    designation: str | None = None        # Fine Style, Choice, Gem, etc.
+    has_star: bool = False                # NGC star designation
+    photo_cert: bool = False              # Photo certificate
+    verification_url: str | None = None   # NGC/PCGS verification URL
+
+    # Event tracking
+    event_type: str = "initial"           # initial, crossover, regrade, crack_out
+    graded_date: DateType | None = None   # Date the grading occurred
+    recorded_at: str | None = None        # When this record was created (ISO timestamp)
+    submitter: str | None = None          # Who submitted for grading
+    turnaround_days: int | None = None    # Days from submission to receipt
+    grading_fee: Decimal | None = None    # Cost of grading service
+    notes: str | None = None              # Additional notes
+
+    # Ordering and status
+    sequence_order: int = 0               # Order in timeline (0 = first)
+    is_current: bool = False              # Is this the current grading state?
+
+
+@dataclass(frozen=True, slots=True)
+class RarityAssessment:
+    """
+    A rarity assessment from a specific source.
+
+    Supports multiple rarity assessments per coin from different sources
+    (catalog, census, market analysis) with grade-conditional support
+    for TPG-specific population data.
+    """
+    # Identity
+    id: int | None = None
+    coin_id: int | None = None
+
+    # Rarity rating
+    rarity_code: str = ""                 # C, S, R1-R5, RR, RRR, UNIQUE
+    rarity_system: str = "ric"            # ric, catalog, census, market_frequency
+    source_type: str = "catalog"          # catalog, census_data, auction_analysis, expert_opinion
+    source_name: str | None = None        # "RIC II.1", "NGC Census", etc.
+    source_url: str | None = None         # URL to source if available
+    source_date: DateType | None = None   # When data was retrieved/published
+
+    # Grade-conditional rarity (for TPG census data)
+    grade_range_low: str | None = None    # Applies to grades >= this
+    grade_range_high: str | None = None   # Applies to grades <= this
+    grade_conditional_notes: str | None = None  # "R3 in XF+, R5 in MS"
+
+    # Census data (when source_type is census_data)
+    census_total: int | None = None       # Total graded by service
+    census_this_grade: int | None = None  # Graded at this specific grade
+    census_finer: int | None = None       # Graded higher than this grade
+    census_date: DateType | None = None   # When census was captured
+
+    # Metadata
+    confidence: str = "medium"            # high, medium, low
+    notes: str | None = None              # Additional context
+    is_primary: bool = False              # Primary rarity assessment
+    created_at: str | None = None         # When this record was created (ISO timestamp)
+
 
 # --- Aggregate Root ---
 

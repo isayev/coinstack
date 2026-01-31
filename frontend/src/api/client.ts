@@ -45,6 +45,77 @@ export const DiscrepancySchema = z.object({
   source: z.string()
 })
 
+// --- Grading History Schemas ---
+export const GradingHistoryEntrySchema = z.object({
+  id: z.number(),
+  coin_id: z.number(),
+  grading_state: z.string().nullable().optional(),
+  event_type: z.string(),
+  grade: z.string().nullable().optional(),
+  grade_service: z.string().nullable().optional(),
+  certification_number: z.string().nullable().optional(),
+  strike_quality: z.string().nullable().optional(),
+  surface_quality: z.string().nullable().optional(),
+  grade_numeric: z.number().nullable().optional(),
+  designation: z.string().nullable().optional(),
+  has_star: z.boolean().default(false),
+  photo_cert: z.boolean().default(false),
+  verification_url: z.string().nullable().optional(),
+  graded_date: z.string().nullable().optional(),
+  recorded_at: z.string().nullable().optional(),
+  submitter: z.string().nullable().optional(),
+  turnaround_days: z.number().nullable().optional(),
+  grading_fee: z.number().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  sequence_order: z.number().default(0),
+  is_current: z.boolean().default(false),
+})
+
+export const GradingHistoryListResponseSchema = z.object({
+  coin_id: z.number(),
+  entries: z.array(GradingHistoryEntrySchema),
+  total: z.number(),
+  has_current: z.boolean().default(false),
+  current_entry_id: z.number().nullable().optional(),
+})
+
+export type GradingHistoryEntry = z.infer<typeof GradingHistoryEntrySchema>
+export type GradingHistoryListResponse = z.infer<typeof GradingHistoryListResponseSchema>
+
+// --- Rarity Assessment Schemas ---
+export const RarityAssessmentSchema = z.object({
+  id: z.number(),
+  coin_id: z.number(),
+  rarity_code: z.string(),
+  rarity_system: z.string(),
+  source_type: z.string(),
+  source_name: z.string().nullable().optional(),
+  source_url: z.string().nullable().optional(),
+  source_date: z.string().nullable().optional(),
+  grade_range_low: z.string().nullable().optional(),
+  grade_range_high: z.string().nullable().optional(),
+  grade_conditional_notes: z.string().nullable().optional(),
+  census_total: z.number().nullable().optional(),
+  census_this_grade: z.number().nullable().optional(),
+  census_finer: z.number().nullable().optional(),
+  census_date: z.string().nullable().optional(),
+  confidence: z.string().default('medium'),
+  notes: z.string().nullable().optional(),
+  is_primary: z.boolean().default(false),
+  created_at: z.string().nullable().optional(),
+})
+
+export const RarityAssessmentListResponseSchema = z.object({
+  coin_id: z.number(),
+  assessments: z.array(RarityAssessmentSchema),
+  total: z.number(),
+  has_primary: z.boolean().default(false),
+  primary_assessment_id: z.number().nullable().optional(),
+})
+
+export type RarityAssessment = z.infer<typeof RarityAssessmentSchema>
+export type RarityAssessmentListResponse = z.infer<typeof RarityAssessmentListResponseSchema>
+
 export const AuditResultSchema = z.object({
   coin_id: z.number(),
   has_issues: z.boolean(),
@@ -256,7 +327,57 @@ export const client = {
     const response = await api.get('/api/v2/stats/summary', { params })
     // Use safe parse or standard parse
     return StatsSummarySchema.parse(response.data)
-  }
+  },
+
+  // --- Grading History API ---
+  getGradingHistory: async (coinId: number): Promise<GradingHistoryListResponse> => {
+    const response = await api.get(`/api/v2/coins/${coinId}/grading-history`)
+    return GradingHistoryListResponseSchema.parse(response.data)
+  },
+
+  createGradingHistory: async (coinId: number, entry: Omit<GradingHistoryEntry, 'id' | 'coin_id' | 'recorded_at'>): Promise<GradingHistoryEntry> => {
+    const response = await api.post(`/api/v2/coins/${coinId}/grading-history`, entry)
+    return GradingHistoryEntrySchema.parse(response.data)
+  },
+
+  updateGradingHistory: async (coinId: number, entryId: number, entry: Partial<GradingHistoryEntry>): Promise<GradingHistoryEntry> => {
+    const response = await api.put(`/api/v2/coins/${coinId}/grading-history/${entryId}`, entry)
+    return GradingHistoryEntrySchema.parse(response.data)
+  },
+
+  deleteGradingHistory: async (coinId: number, entryId: number): Promise<void> => {
+    await api.delete(`/api/v2/coins/${coinId}/grading-history/${entryId}`)
+  },
+
+  setCurrentGrading: async (coinId: number, entryId: number): Promise<GradingHistoryEntry> => {
+    const response = await api.post(`/api/v2/coins/${coinId}/grading-history/${entryId}/set-current`)
+    return GradingHistoryEntrySchema.parse(response.data)
+  },
+
+  // --- Rarity Assessment API ---
+  getRarityAssessments: async (coinId: number): Promise<RarityAssessmentListResponse> => {
+    const response = await api.get(`/api/v2/coins/${coinId}/rarity-assessments`)
+    return RarityAssessmentListResponseSchema.parse(response.data)
+  },
+
+  createRarityAssessment: async (coinId: number, assessment: Omit<RarityAssessment, 'id' | 'coin_id' | 'created_at'>): Promise<RarityAssessment> => {
+    const response = await api.post(`/api/v2/coins/${coinId}/rarity-assessments`, assessment)
+    return RarityAssessmentSchema.parse(response.data)
+  },
+
+  updateRarityAssessment: async (coinId: number, assessmentId: number, assessment: Partial<RarityAssessment>): Promise<RarityAssessment> => {
+    const response = await api.put(`/api/v2/coins/${coinId}/rarity-assessments/${assessmentId}`, assessment)
+    return RarityAssessmentSchema.parse(response.data)
+  },
+
+  deleteRarityAssessment: async (coinId: number, assessmentId: number): Promise<void> => {
+    await api.delete(`/api/v2/coins/${coinId}/rarity-assessments/${assessmentId}`)
+  },
+
+  setPrimaryRarityAssessment: async (coinId: number, assessmentId: number): Promise<RarityAssessment> => {
+    const response = await api.post(`/api/v2/coins/${coinId}/rarity-assessments/${assessmentId}/set-primary`)
+    return RarityAssessmentSchema.parse(response.data)
+  },
 }
 
 // --- Import Schemas ---

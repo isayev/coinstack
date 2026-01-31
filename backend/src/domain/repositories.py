@@ -1,6 +1,6 @@
 from typing import Protocol, Optional, List, Dict, Any, Union
 from datetime import date
-from src.domain.coin import Coin, ProvenanceEntry, ProvenanceEventType
+from src.domain.coin import Coin, ProvenanceEntry, ProvenanceEventType, GradingHistoryEntry, RarityAssessment
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
 from src.domain.vocab import IVocabRepository  # Re-export the unified interface
@@ -279,4 +279,104 @@ class IProvenanceRepository(Protocol):
 
     def get_earliest_by_coin(self, coin_id: int) -> Optional[ProvenanceEntry]:
         """Get the earliest known provenance entry for a coin."""
+        ...
+
+
+class IGradingHistoryRepository(Protocol):
+    """
+    Repository interface for grading history (TPG lifecycle) management.
+
+    Tracks the complete grading history of a coin from raw through
+    slabbing, crossovers, regrades, and crack-outs.
+    """
+
+    def get_by_coin_id(self, coin_id: int) -> List[GradingHistoryEntry]:
+        """
+        Get all grading history entries for a coin, ordered by sequence_order.
+
+        Returns complete timeline from initial grading to current state.
+        """
+        ...
+
+    def get_by_id(self, entry_id: int) -> Optional[GradingHistoryEntry]:
+        """Get a specific grading history entry by ID."""
+        ...
+
+    def create(self, coin_id: int, entry: GradingHistoryEntry) -> GradingHistoryEntry:
+        """
+        Create a new grading history entry for a coin.
+
+        Returns entry with ID assigned.
+        """
+        ...
+
+    def update(self, entry_id: int, entry: GradingHistoryEntry) -> Optional[GradingHistoryEntry]:
+        """Update an existing grading history entry."""
+        ...
+
+    def delete(self, entry_id: int) -> bool:
+        """Delete a grading history entry by ID."""
+        ...
+
+    def set_current(self, coin_id: int, entry_id: int) -> bool:
+        """
+        Mark a grading history entry as the current grading state.
+
+        Clears is_current flag on all other entries for this coin.
+        Returns True if successful, False if entry not found.
+        """
+        ...
+
+    def get_current(self, coin_id: int) -> Optional[GradingHistoryEntry]:
+        """Get the current (active) grading state for a coin."""
+        ...
+
+
+class IRarityAssessmentRepository(Protocol):
+    """
+    Repository interface for multi-source rarity assessment management.
+
+    Supports tracking rarity from multiple sources (catalogs, census data,
+    market analysis) with grade-conditional support.
+    """
+
+    def get_by_coin_id(self, coin_id: int) -> List[RarityAssessment]:
+        """
+        Get all rarity assessments for a coin.
+
+        Returns assessments ordered by is_primary desc, then by source_date desc.
+        """
+        ...
+
+    def get_by_id(self, assessment_id: int) -> Optional[RarityAssessment]:
+        """Get a specific rarity assessment by ID."""
+        ...
+
+    def create(self, coin_id: int, assessment: RarityAssessment) -> RarityAssessment:
+        """
+        Create a new rarity assessment for a coin.
+
+        Returns assessment with ID assigned.
+        """
+        ...
+
+    def update(self, assessment_id: int, assessment: RarityAssessment) -> Optional[RarityAssessment]:
+        """Update an existing rarity assessment."""
+        ...
+
+    def delete(self, assessment_id: int) -> bool:
+        """Delete a rarity assessment by ID."""
+        ...
+
+    def set_primary(self, coin_id: int, assessment_id: int) -> bool:
+        """
+        Mark a rarity assessment as the primary assessment.
+
+        Clears is_primary flag on all other assessments for this coin.
+        Returns True if successful, False if assessment not found.
+        """
+        ...
+
+    def get_primary(self, coin_id: int) -> Optional[RarityAssessment]:
+        """Get the primary rarity assessment for a coin."""
         ...

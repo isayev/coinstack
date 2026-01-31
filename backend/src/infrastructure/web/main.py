@@ -14,7 +14,7 @@ load_dotenv(env_path, override=True)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, die_study, stats, review, import_v2, catalog, catalog_v2
+from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, die_study, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment
 from src.infrastructure.persistence.database import init_db
 from src.infrastructure.config import get_settings
 
@@ -57,6 +57,8 @@ def create_app() -> FastAPI:
     app.include_router(stats.router)                         # Stats/Dashboard API
     app.include_router(catalog.router)                       # Catalog API (/api/catalog)
     app.include_router(catalog_v2.router)                    # Catalog parse/systems (/api/v2/catalog)
+    app.include_router(grading_history.router)               # Grading History API (Schema V3 Phase 2)
+    app.include_router(rarity_assessment.router)             # Rarity Assessment API (Schema V3 Phase 2)
 
     return app
 

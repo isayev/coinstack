@@ -167,7 +167,7 @@ export function PhysicalStep({ form, tentativeFields }: PhysicalStepProps) {
                             <ChevronDown className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
                         </CollapsibleTrigger>
                         <CollapsibleContent className="pt-4 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Weight Standard</label>
                                     <Select
@@ -188,6 +188,22 @@ export function PhysicalStep({ form, tentativeFields }: PhysicalStepProps) {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Expected Weight (g)</label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        {...register("physical_enhancements.expected_weight_g", {
+                                            valueAsNumber: true,
+                                            setValueAs: (v) => v === "" ? null : parseFloat(v)
+                                        })}
+                                        placeholder="Standard weight for type"
+                                        className="h-10 font-mono"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Theoretical weight for comparison</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Flan Shape</label>
                                     <Select
