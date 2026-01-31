@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Self
-from datetime import date as DateType
+from datetime import date as DateType, datetime as DateTimeType
 from decimal import Decimal
 from enum import Enum
 
@@ -272,6 +272,47 @@ class CatalogReference:
     mint: str | None = None     # RIC VI+ mint code, BMCRR/BMC Greek
     supplement: str | None = None  # RPC "S", "S2"
     collection: str | None = None  # SNG collection (e.g. "Copenhagen", "ANS")
+    # Phase 3 enhancements
+    attribution_confidence: str | None = None  # certain, probable, possible, tentative
+    catalog_rarity_note: str | None = None  # "R2", "Very Rare" from catalog
+    disagreement_note: str | None = None  # Attribution disputes
+    page_reference: str | None = None  # "p. 234, pl. XV.7"
+    variant_note: str | None = None  # "var. b with AVGVSTI"
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceConcordance:
+    """
+    Cross-reference linking between equivalent catalog references.
+
+    Example: RIC 207 = RSC 112 = BMC 298 = Cohen 169
+    All linked by the same concordance_group_id.
+    """
+    id: int | None = None
+    concordance_group_id: str = ""  # UUID grouping equivalent refs
+    reference_type_id: int = 0
+    confidence: float = 1.0  # 1.0 = exact match, 0.5 = possible
+    source: str | None = None  # ocre, crro, user, literature
+    notes: str | None = None
+    created_at: DateTimeType | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ExternalCatalogLink:
+    """
+    Link to an external online catalog database.
+
+    Supports OCRE, Nomisma, CRRO, RPC Online, ACSearch, CoinProject.
+    """
+    id: int | None = None
+    reference_type_id: int = 0
+    catalog_source: str = ""  # ocre, nomisma, crro, rpc_online, acsearch
+    external_id: str = ""  # e.g., "ric.3.ant.42" for OCRE
+    external_url: str | None = None  # Direct URL to record
+    external_data: str | None = None  # JSON metadata from source
+    last_synced_at: DateTimeType | None = None
+    sync_status: str = "pending"  # pending, synced, error, not_found
+
 
 @dataclass(frozen=True, slots=True)
 class ProvenanceEntry:

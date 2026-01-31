@@ -383,7 +383,7 @@ class AuctionDataModel(Base):
 class ReferenceTypeModel(Base):
     """
     Catalog reference types (RIC, Crawford, Sear, etc.)
-    
+
     This is a V1 schema table that stores the actual catalog metadata.
     Each reference_type is a unique catalog + number combination.
     """
@@ -403,6 +403,14 @@ class ReferenceTypeModel(Base):
     supplement: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # RPC S, S2
     collection: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # SNG collection
 
+    # Phase 3 enhancements
+    sng_volume: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # SNG Copenhagen, von Aulock
+    number_numeric: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)  # Parsed for range queries
+    publication_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    rarity_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # R1-R5 from catalog
+    full_citation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Full bibliographic citation
+    plate_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # Plate reference
+
     # Relationships
     coin_references: Mapped[List["CoinReferenceModel"]] = relationship(back_populates="reference_type")
 
@@ -410,7 +418,7 @@ class ReferenceTypeModel(Base):
 class CoinReferenceModel(Base):
     """
     Links coins to catalog reference types (RIC, Crawford, Sear, etc.)
-    
+
     Note: This model is compatible with the existing V1 schema which uses
     a separate reference_types table for the actual catalog data.
     """
@@ -418,25 +426,32 @@ class CoinReferenceModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id"), index=True)
-    
+
     # Link to reference_types table (V1 schema)
     reference_type_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("reference_types.id"), nullable=True, index=True)
-    
+
     # Specimen-specific fields
     is_primary: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
     plate_coin: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True, default=False)
     position: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # "obverse", "reverse", "both"
     variant_notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    
+
     # Citation fields
     page: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     plate: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     note_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    
+
     # Origin of this link: "user" | "import" | "scraper" | "llm_approved" | "catalog_lookup"
     source: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)
-    
+
+    # Phase 3 enhancements
+    attribution_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # certain, probable, possible, tentative
+    catalog_rarity_note: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # "R2", "Very Rare"
+    disagreement_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Attribution disputes
+    page_reference: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # "p. 234, pl. XV.7"
+    variant_note: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # "var. b with AVGVSTI"
+
     # Relationships
     coin: Mapped["CoinModel"] = relationship(back_populates="references")
     reference_type: Mapped[Optional["ReferenceTypeModel"]] = relationship(back_populates="coin_references")

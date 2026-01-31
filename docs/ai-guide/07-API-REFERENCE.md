@@ -22,6 +22,8 @@
 - Provenance: `src/infrastructure/web/routers/provenance.py`
 - Grading History: `src/infrastructure/web/routers/grading_history.py`
 - Rarity Assessment: `src/infrastructure/web/routers/rarity_assessment.py`
+- Concordance: `src/infrastructure/web/routers/concordance.py`
+- External Links: `src/infrastructure/web/routers/external_links.py`
 - Die Study: `src/infrastructure/web/routers/die_study.py`
 - Stats: `src/infrastructure/web/routers/stats.py`
 - Audit: `src/infrastructure/web/routers/audit_v2.py`
@@ -486,6 +488,129 @@ DELETE /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}
 POST /api/v2/coins/{coin_id}/rarity-assessments/{assessment_id}/set-primary
 ```
 Marks an assessment as primary (clears is_primary on others).
+
+---
+
+## Reference Concordance API (`/api/v2/concordance`)
+
+Manages cross-reference linking between equivalent catalog references.
+Example: RIC 207 = RSC 112 = BMC 298 = Cohen 169
+
+### Get Concordance Group
+```http
+GET /api/v2/concordance/group/{group_id}
+```
+Returns all entries in a concordance group.
+
+### Get Concordances for Reference
+```http
+GET /api/v2/concordance/reference/{reference_type_id}
+```
+Returns all concordance entries for a specific reference type.
+
+### Find Equivalent References
+```http
+GET /api/v2/concordance/reference/{reference_type_id}/equivalents
+```
+Returns all reference_type_ids equivalent to the given reference.
+
+### Create Concordance Group
+```http
+POST /api/v2/concordance/group
+```
+**Request Body**:
+```json
+{
+  "reference_type_ids": [1, 2, 3],
+  "source": "user",
+  "confidence": 1.0,
+  "notes": "Confirmed equivalence"
+}
+```
+
+### Add to Concordance Group
+```http
+POST /api/v2/concordance/group/{group_id}/add
+```
+**Request Body**:
+```json
+{
+  "reference_type_id": 4,
+  "confidence": 0.9,
+  "notes": "Probable match"
+}
+```
+
+### Delete Concordance Entry
+```http
+DELETE /api/v2/concordance/entry/{entry_id}
+```
+
+### Delete Concordance Group
+```http
+DELETE /api/v2/concordance/group/{group_id}
+```
+
+---
+
+## External Catalog Links API (`/api/v2/external-links`)
+
+Manages links to external online catalog databases (OCRE, Nomisma, CRRO, RPC Online).
+
+**Supported catalog sources**: `ocre`, `nomisma`, `crro`, `rpc_online`, `acsearch`, `coinproject`, `wildwinds`
+
+### Get External Links for Reference
+```http
+GET /api/v2/external-links/reference/{reference_type_id}
+```
+Returns all external links for a reference type.
+
+### Get External Link by Source
+```http
+GET /api/v2/external-links/reference/{reference_type_id}/{catalog_source}
+```
+Returns a specific external link.
+
+### Get Pending Sync Links
+```http
+GET /api/v2/external-links/pending?limit=100
+```
+Returns links pending synchronization with external databases.
+
+### Create External Link
+```http
+POST /api/v2/external-links
+```
+**Request Body**:
+```json
+{
+  "reference_type_id": 1,
+  "catalog_source": "ocre",
+  "external_id": "ric.3.ant.42",
+  "external_url": "http://numismatics.org/ocre/id/ric.3.ant.42"
+}
+```
+
+### Update External Link
+```http
+PUT /api/v2/external-links/{link_id}
+```
+
+### Mark Link as Synced
+```http
+POST /api/v2/external-links/{link_id}/sync
+```
+**Request Body**:
+```json
+{
+  "external_data": "{\"title\": \"RIC III 42\", ...}"
+}
+```
+
+### Delete External Link
+```http
+DELETE /api/v2/external-links/{link_id}
+```
 
 ---
 

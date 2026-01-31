@@ -1,6 +1,9 @@
 from typing import Protocol, Optional, List, Dict, Any, Union
 from datetime import date
-from src.domain.coin import Coin, ProvenanceEntry, ProvenanceEventType, GradingHistoryEntry, RarityAssessment
+from src.domain.coin import (
+    Coin, ProvenanceEntry, ProvenanceEventType, GradingHistoryEntry,
+    RarityAssessment, ReferenceConcordance, ExternalCatalogLink
+)
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
 from src.domain.vocab import IVocabRepository  # Re-export the unified interface
@@ -379,4 +382,111 @@ class IRarityAssessmentRepository(Protocol):
 
     def get_primary(self, coin_id: int) -> Optional[RarityAssessment]:
         """Get the primary rarity assessment for a coin."""
+        ...
+
+
+class IConcordanceRepository(Protocol):
+    """
+    Repository interface for reference concordance management.
+
+    Concordance links equivalent references across different catalog systems.
+    Example: RIC 207 = RSC 112 = BMC 298 = Cohen 169
+    """
+
+    def get_by_group_id(self, group_id: str) -> List[ReferenceConcordance]:
+        """Get all concordance entries in a group."""
+        ...
+
+    def get_by_reference_type_id(self, reference_type_id: int) -> List[ReferenceConcordance]:
+        """Get concordance entries for a specific reference type."""
+        ...
+
+    def create(self, concordance: ReferenceConcordance) -> ReferenceConcordance:
+        """Create a new concordance entry. Returns entry with ID assigned."""
+        ...
+
+    def create_group(
+        self,
+        reference_type_ids: List[int],
+        source: str = "user",
+        confidence: float = 1.0,
+        notes: Optional[str] = None
+    ) -> str:
+        """
+        Create a concordance group linking multiple reference types.
+
+        Returns the generated concordance_group_id (UUID).
+        """
+        ...
+
+    def delete(self, concordance_id: int) -> bool:
+        """Delete a concordance entry by ID."""
+        ...
+
+    def delete_group(self, group_id: str) -> int:
+        """Delete all concordance entries in a group. Returns count deleted."""
+        ...
+
+    def find_equivalent_references(self, reference_type_id: int) -> List[int]:
+        """
+        Find all reference_type_ids equivalent to the given reference.
+
+        Follows concordance links to find all equivalent references.
+        """
+        ...
+
+
+class IExternalCatalogLinkRepository(Protocol):
+    """
+    Repository interface for external catalog link management.
+
+    Links reference types to online databases like OCRE, Nomisma, CRRO, RPC Online.
+    """
+
+    def get_by_reference_type_id(self, reference_type_id: int) -> List[ExternalCatalogLink]:
+        """Get all external links for a reference type."""
+        ...
+
+    def get_by_source(
+        self,
+        reference_type_id: int,
+        catalog_source: str
+    ) -> Optional[ExternalCatalogLink]:
+        """Get a specific external link by reference type and source."""
+        ...
+
+    def create(self, link: ExternalCatalogLink) -> ExternalCatalogLink:
+        """Create a new external catalog link. Returns link with ID assigned."""
+        ...
+
+    def upsert(self, link: ExternalCatalogLink) -> ExternalCatalogLink:
+        """Create or update an external catalog link."""
+        ...
+
+    def update(self, link_id: int, link: ExternalCatalogLink) -> Optional[ExternalCatalogLink]:
+        """Update an existing external catalog link."""
+        ...
+
+    def delete(self, link_id: int) -> bool:
+        """Delete an external catalog link by ID."""
+        ...
+
+    def find_by_external_id(
+        self,
+        catalog_source: str,
+        external_id: str
+    ) -> Optional[ExternalCatalogLink]:
+        """Find an external link by source and external ID."""
+        ...
+
+    def list_pending_sync(self, limit: int = 100) -> List[ExternalCatalogLink]:
+        """Get external links pending synchronization."""
+        ...
+
+    def mark_synced(
+        self,
+        link_id: int,
+        external_data: Optional[str] = None
+    ) -> bool:
+        """Mark an external link as synced with optional data."""
         ...
