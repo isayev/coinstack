@@ -257,6 +257,51 @@ class RarityConfidence(str, Enum):
     MEDIUM = "medium"
     LOW = "low"
 
+
+# --- Phase 1.5b: Countermark System Enums ---
+
+class CountermarkType(str, Enum):
+    """Functional classification of countermarks across Roman/Greek/Byzantine."""
+    REVALIDATION = "revalidation"              # Approval/acceptance marks
+    REVALUATION = "revaluation"                # Value/denomination change
+    IMPERIAL_PORTRAIT = "imperial_portrait"    # Small emperor heads/busts
+    IMPERIAL_MONOGRAM = "imperial_monogram"    # Byzantine monograms (Heraclian etc.)
+    LEGIONARY = "legionary"                    # Legion numbers, standards (L II, XV)
+    CIVIC_SYMBOL = "civic_symbol"              # City emblems (griffin, bull, trident)
+    ROYAL_DYNASTIC = "royal_dynastic"          # Hellenistic (anchors, Seleucid symbols)
+    TRADE_MERCHANT = "trade_merchant"          # Private/banker marks, bullion validation
+    RELIGIOUS_CULT = "religious_cult"          # Cult objects, religious symbols
+    UNCERTAIN = "uncertain"                    # Unknown function
+
+
+class CountermarkPosition(str, Enum):
+    """Placement of countermark on coin."""
+    OBVERSE = "obverse"
+    REVERSE = "reverse"
+    EDGE = "edge"
+    BOTH_SIDES = "both_sides"  # Rare: punch goes through
+
+
+class CountermarkCondition(str, Enum):
+    """Legibility of countermark (affects attribution confidence)."""
+    CLEAR = "clear"
+    PARTIAL = "partial"
+    WORN = "worn"
+    UNCERTAIN = "uncertain"
+
+
+class PunchShape(str, Enum):
+    """Shape of countermark punch (affects identification and classification)."""
+    RECTANGULAR = "rectangular"
+    CIRCULAR = "circular"
+    OVAL = "oval"
+    SQUARE = "square"
+    IRREGULAR = "irregular"
+    TRIANGULAR = "triangular"
+    STAR = "star"
+    UNCERTAIN = "uncertain"
+
+
 # --- Value Objects ---
 
 @dataclass(frozen=True, slots=True)
@@ -581,6 +626,10 @@ class GradingTPGEnhancements:
     has_star_designation: bool = False
     photo_certificate: bool = False
     verification_url: str | None = None
+    # Phase 1.5b: NGC-specific fields (PCGS doesn't use 1-5 scale for ancients)
+    ngc_strike_grade: int | None = None     # NGC 1-5 strike grade
+    ngc_surface_grade: int | None = None    # NGC 1-5 surface grade
+    is_fine_style: bool = False             # NGC Fine Style designation
 
 
 @dataclass(frozen=True, slots=True)
@@ -588,6 +637,34 @@ class ChronologyEnhancements:
     """Enhanced chronological information."""
     date_period_notation: str | None = None  # "c. 150-100 BC", "late 3rd century AD"
     emission_phase: str | None = None  # First Issue, Second Issue, Reform Coinage, etc.
+
+
+# --- Phase 1.5b: Countermark System & Strike Quality ---
+
+@dataclass(frozen=True, slots=True)
+class Countermark:
+    """Individual countermark on a coin. Supports multiple per coin."""
+    id: int | None = None
+    coin_id: int | None = None
+    countermark_type: CountermarkType | None = None
+    position: CountermarkPosition | None = None
+    condition: CountermarkCondition | None = None
+    punch_shape: PunchShape | None = None   # Shape of the punch (rectangular, circular, etc.)
+    description: str | None = None          # e.g., "Howgego 746", "NCAPR in rectangle"
+    authority: str | None = None            # Who applied it (emperor, city, legion)
+    reference: str | None = None            # Howgego number, GIC reference
+    date_applied: str | None = None         # When applied (if known)
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class StrikeQualityDetail:
+    """Manufacturing characteristics and die errors."""
+    detail: str | None = None               # Detailed strike description
+    is_double_struck: bool = False          # Die shift / double strike
+    is_brockage: bool = False               # Incuse mirror image error
+    is_off_center: bool = False             # Off-center strike (common)
+    off_center_pct: int | None = None       # Percentage off-center (5-95%)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1365,6 +1442,10 @@ class Coin:
 
     # Chronology enhancements
     chronology: ChronologyEnhancements | None = None
+
+    # Phase 1.5b: Strike quality detail (manufacturing characteristics)
+    strike_quality_detail: StrikeQualityDetail | None = None
+    # Note: countermarks are in separate table, accessed via repository
 
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None

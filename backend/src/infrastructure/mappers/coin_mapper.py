@@ -6,7 +6,9 @@ from src.domain.coin import (
     Design, CatalogReference, ProvenanceEntry, IssueStatus, DieInfo, Monogram, FindData, EnrichmentData,
     # Phase 1: Schema V3 value objects
     SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
-    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
+    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements,
+    # Phase 1.5b: Strike quality detail
+    StrikeQualityDetail,
 )
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
 from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system, SYSTEM_TO_DISPLAY
@@ -189,20 +191,43 @@ class CoinMapper:
                 die_break_description=model.die_break_description
             ) if any([model.obverse_die_state, model.reverse_die_state, model.die_break_description]) else None,
 
-            # Grading TPG enhancements
+            # Grading TPG enhancements (updated with Phase 1.5b NGC fields)
             grading_tpg=GradingTPGEnhancements(
                 grade_numeric=model.grade_numeric,
                 grade_designation=model.grade_designation,
                 has_star_designation=model.has_star_designation or False,
                 photo_certificate=model.photo_certificate or False,
-                verification_url=model.verification_url
-            ) if any([model.grade_numeric, model.grade_designation, model.has_star_designation, model.photo_certificate, model.verification_url]) else None,
+                verification_url=model.verification_url,
+                # Phase 1.5b NGC-specific fields
+                ngc_strike_grade=model.ngc_strike_grade,
+                ngc_surface_grade=model.ngc_surface_grade,
+                is_fine_style=model.is_fine_style or False,
+            ) if any([
+                model.grade_numeric, model.grade_designation, model.has_star_designation,
+                model.photo_certificate, model.verification_url,
+                model.ngc_strike_grade, model.ngc_surface_grade, model.is_fine_style
+            ]) else None,
 
             # Chronology enhancements
             chronology=ChronologyEnhancements(
                 date_period_notation=model.date_period_notation,
                 emission_phase=model.emission_phase
             ) if (model.date_period_notation or model.emission_phase) else None,
+
+            # Phase 1.5b: Strike quality detail (with off_center_pct from numismatic review)
+            strike_quality_detail=StrikeQualityDetail(
+                detail=model.strike_quality_detail,
+                is_double_struck=model.is_double_struck or False,
+                is_brockage=model.is_brockage or False,
+                is_off_center=model.is_off_center or False,
+                off_center_pct=model.off_center_pct,
+            ) if any([
+                model.strike_quality_detail,
+                model.is_double_struck,
+                model.is_brockage,
+                model.is_off_center,
+                model.off_center_pct
+            ]) else None,
         )
 
     @staticmethod
@@ -318,10 +343,21 @@ class CoinMapper:
             has_star_designation=coin.grading_tpg.has_star_designation if coin.grading_tpg else False,
             photo_certificate=coin.grading_tpg.photo_certificate if coin.grading_tpg else False,
             verification_url=coin.grading_tpg.verification_url if coin.grading_tpg else None,
+            # Phase 1.5b NGC-specific grades
+            ngc_strike_grade=coin.grading_tpg.ngc_strike_grade if coin.grading_tpg else None,
+            ngc_surface_grade=coin.grading_tpg.ngc_surface_grade if coin.grading_tpg else None,
+            is_fine_style=coin.grading_tpg.is_fine_style if coin.grading_tpg else False,
 
             # Chronology enhancements
             date_period_notation=coin.chronology.date_period_notation if coin.chronology else None,
             emission_phase=coin.chronology.emission_phase if coin.chronology else None,
+
+            # Phase 1.5b: Strike quality detail (with off_center_pct from numismatic review)
+            strike_quality_detail=coin.strike_quality_detail.detail if coin.strike_quality_detail else None,
+            is_double_struck=coin.strike_quality_detail.is_double_struck if coin.strike_quality_detail else False,
+            is_brockage=coin.strike_quality_detail.is_brockage if coin.strike_quality_detail else False,
+            is_off_center=coin.strike_quality_detail.is_off_center if coin.strike_quality_detail else False,
+            off_center_pct=coin.strike_quality_detail.off_center_pct if coin.strike_quality_detail else None,
 
             # Relationships
             provenance_events=[

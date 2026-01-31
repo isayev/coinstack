@@ -58,6 +58,76 @@ export const IssueStatusSchema = z.enum([
   'tooling_altered',
 ])
 
+// --- Phase 1.5b: Countermark System Enums ---
+export const CountermarkTypeSchema = z.enum([
+  'revalidation',
+  'revaluation',
+  'imperial_portrait',
+  'imperial_monogram',
+  'legionary',
+  'civic_symbol',
+  'royal_dynastic',
+  'trade_merchant',
+  'religious_cult',
+  'uncertain',
+])
+export type CountermarkType = z.infer<typeof CountermarkTypeSchema>
+
+export const CountermarkPositionSchema = z.enum([
+  'obverse',
+  'reverse',
+  'edge',
+  'both_sides',
+])
+export type CountermarkPosition = z.infer<typeof CountermarkPositionSchema>
+
+export const CountermarkConditionSchema = z.enum([
+  'clear',
+  'partial',
+  'worn',
+  'uncertain',
+])
+export type CountermarkCondition = z.infer<typeof CountermarkConditionSchema>
+
+export const PunchShapeSchema = z.enum([
+  'rectangular',
+  'circular',
+  'oval',
+  'square',
+  'irregular',
+  'triangular',
+  'star',
+  'uncertain',
+])
+export type PunchShape = z.infer<typeof PunchShapeSchema>
+
+// Countermark schema
+export const CountermarkSchema = z.object({
+  id: z.number().optional(),
+  coin_id: z.number().optional(),
+  countermark_type: CountermarkTypeSchema.nullable().optional(),
+  position: CountermarkPositionSchema.nullable().optional(),
+  condition: CountermarkConditionSchema.nullable().optional(),
+  punch_shape: PunchShapeSchema.nullable().optional(),  // Shape of punch (rectangular, circular, etc.)
+  description: z.string().nullable().optional(),
+  authority: z.string().nullable().optional(),
+  reference: z.string().nullable().optional(),  // Howgego number
+  date_applied: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  created_at: z.string().optional(),
+})
+export type Countermark = z.infer<typeof CountermarkSchema>
+
+// Strike quality detail schema
+export const StrikeQualityDetailSchema = z.object({
+  detail: z.string().nullable().optional(),
+  is_double_struck: z.boolean().optional().default(false),
+  is_brockage: z.boolean().optional().default(false),
+  is_off_center: z.boolean().optional().default(false),
+  off_center_pct: z.number().min(5).max(95).nullable().optional(),  // Percentage off-center
+})
+export type StrikeQualityDetail = z.infer<typeof StrikeQualityDetailSchema>
+
 // Helper to safely handle NaN/empty values from number inputs
 const preprocessNaN = (v: any) => {
   if (v === "" || v === null || v === undefined) return null;
@@ -513,6 +583,10 @@ export const DomainCoinSchema = z.object({
     has_star_designation: z.boolean().optional(),
     photo_certificate: z.boolean().optional(),
     verification_url: z.string().nullable().optional(),
+    // Phase 1.5b: NGC-specific fields (PCGS doesn't use 1-5 scale for ancients)
+    ngc_strike_grade: z.number().min(1).max(5).nullable().optional(),
+    ngc_surface_grade: z.number().min(1).max(5).nullable().optional(),
+    is_fine_style: z.boolean().optional().default(false),
   }).nullable().optional(),
 
   // Chronology enhancements (nested object)
@@ -520,6 +594,12 @@ export const DomainCoinSchema = z.object({
     date_period_notation: z.string().nullable().optional(),
     emission_phase: z.string().nullable().optional(),
   }).nullable().optional(),
+
+  // Phase 1.5b: Strike quality detail (nested object)
+  strike_quality_detail: StrikeQualityDetailSchema.nullable().optional(),
+
+  // Phase 1.5b: Countermarks (array of countermark objects)
+  countermarks: z.array(CountermarkSchema).optional().default([]),
 })
 
 // Export CoinSchema as the Domain structure since backend V2 returns this nested format
@@ -722,6 +802,10 @@ export const GradingTPGEnhancementsSchema = z.object({
   has_star_designation: z.boolean().optional(),
   photo_certificate: z.boolean().optional(),
   verification_url: z.string().nullable().optional(),
+  // Phase 1.5b: NGC-specific fields (PCGS doesn't use 1-5 scale for ancients)
+  ngc_strike_grade: z.number().min(1).max(5).nullable().optional(),
+  ngc_surface_grade: z.number().min(1).max(5).nullable().optional(),
+  is_fine_style: z.boolean().optional().default(false),
 }).nullable().optional();
 
 export const ChronologyEnhancementsSchema = z.object({

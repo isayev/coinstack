@@ -88,6 +88,7 @@ erDiagram
     CoinModel }o--o| VocabTermModel : "denomination"
     CoinModel }o--o| VocabTermModel : "dynasty"
     CoinModel }o--o{ MonogramModel : "has"
+    CoinModel ||--o{ CountermarkModel : "has"
 
     SeriesModel ||--o{ SeriesSlotModel : "has"
     SeriesModel ||--o{ SeriesMembershipModel : "has"
@@ -331,6 +332,8 @@ New columns added to `coins_v2` for attribution, physical characteristics, and g
 | **Die Study** | `obverse_die_state`, `reverse_die_state`, `die_break_description` |
 | **TPG Grading** | `grade_numeric`, `grade_designation`, `has_star_designation`, `photo_certificate`, `verification_url` |
 | **Chronology** | `date_period_notation`, `emission_phase` |
+| **Phase 1.5b/c: Strike Quality** | `strike_quality_detail`, `is_double_struck`, `is_brockage`, `is_off_center`, `off_center_pct` |
+| **Phase 1.5b: NGC Grades** | `ngc_strike_grade`, `ngc_surface_grade`, `is_fine_style` |
 
 **Domain Value Objects** (`backend/src/domain/coin.py`):
 
@@ -394,12 +397,69 @@ class GradingTPGEnhancements:
     has_star_designation: bool = False
     photo_certificate: bool = False
     verification_url: Optional[str] = None
+    # Phase 1.5b: NGC-specific fields (PCGS doesn't use 1-5 scale for ancients)
+    ngc_strike_grade: Optional[int] = None  # NGC 1-5 strike grade
+    ngc_surface_grade: Optional[int] = None  # NGC 1-5 surface grade
+    is_fine_style: bool = False  # NGC Fine Style designation
 
 @dataclass(frozen=True)
 class ChronologyEnhancements:
     date_period_notation: Optional[str] = None  # "c. 150-100 BC"
     emission_phase: Optional[str] = None  # "First Issue", "Reform Coinage"
+
+# --- Phase 1.5b: Countermark System & Strike Quality ---
+
+@dataclass(frozen=True)
+class Countermark:
+    """Individual countermark on a coin. Supports multiple per coin."""
+    id: Optional[int] = None
+    coin_id: Optional[int] = None
+    countermark_type: Optional[CountermarkType] = None  # revalidation, legionary, civic_symbol, etc.
+    position: Optional[CountermarkPosition] = None  # obverse, reverse, edge, both_sides
+    condition: Optional[CountermarkCondition] = None  # clear, partial, worn, uncertain
+    punch_shape: Optional[PunchShape] = None  # Phase 1.5c: rectangular, circular, oval, etc.
+    description: Optional[str] = None  # e.g., "Howgego 746", "NCAPR in rectangle"
+    authority: Optional[str] = None  # Who applied it (emperor, city, legion)
+    reference: Optional[str] = None  # Howgego number, GIC reference
+    date_applied: Optional[str] = None
+    notes: Optional[str] = None
+
+@dataclass(frozen=True)
+class StrikeQualityDetail:
+    """Manufacturing characteristics and die errors."""
+    detail: Optional[str] = None  # Detailed strike description
+    is_double_struck: bool = False  # Die shift / double strike
+    is_brockage: bool = False  # Incuse mirror image error
+    is_off_center: bool = False  # Off-center strike (common)
+    off_center_pct: Optional[int] = None  # Phase 1.5c: Percentage off-center (5-95%)
 ```
+
+### Phase 1.5b: Countermarks Table (NEW)
+
+**`countermarks`** - Multi-countermark support with placement tracking
+```python
+class CountermarkModel(Base):
+    __tablename__ = "countermarks"
+    id: Primary key
+    coin_id: FK to coins_v2 (CASCADE)
+    countermark_type: 'revalidation', 'revaluation', 'imperial_portrait',
+                     'imperial_monogram', 'legionary', 'civic_symbol',
+                     'royal_dynastic', 'trade_merchant', 'religious_cult', 'uncertain'
+    position: 'obverse', 'reverse', 'edge', 'both_sides'
+    condition: 'clear', 'partial', 'worn', 'uncertain'
+    punch_shape: 'rectangular', 'circular', 'oval', 'square', 'irregular',
+                 'triangular', 'star', 'uncertain'  # Phase 1.5c
+    description: Text (Howgego reference, visual description)
+    authority: Who applied it
+    reference: Howgego number
+    date_applied: When applied (if known)
+    notes: Text
+    created_at: Timestamp
+```
+
+**Indexes**: `ix_countermarks_coin_id`, `ix_countermarks_coin_type`
+
+**Relationship**: `CoinModel.countermarks` (one-to-many, lazy='selectin')
 
 **API Request/Response Models** - See `backend/src/infrastructure/web/routers/v2.py` for:
 - `SecondaryAuthorityRequest/Response`

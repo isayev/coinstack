@@ -15,14 +15,47 @@ coin_monograms = Table(
 
 class MonogramModel(Base):
     __tablename__ = "monograms"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     label: Mapped[str] = mapped_column(String(100), index=True) # e.g. "Price 123"
     image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     vector_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # SVG path or data
-    
+
     # Relationship back to coins
     coins: Mapped[List["CoinModel"]] = relationship(secondary=coin_monograms, back_populates="monograms")
+
+
+class CountermarkModel(Base):
+    """
+    ORM model for countermarks table (Phase 1.5b).
+
+    Supports multiple countermarks per coin with full tracking of type,
+    placement, condition, and attribution.
+    """
+    __tablename__ = "countermarks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    countermark_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    position: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    condition: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    punch_shape: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)  # rectangular, circular, etc.
+    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    authority: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # Howgego number
+    date_applied: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationship back to coin
+    coin: Mapped["CoinModel"] = relationship("CoinModel", back_populates="countermarks")
+
+    __table_args__ = (
+        Index("ix_countermarks_coin_type", "coin_id", "countermark_type"),
+    )
+
 
 class CoinModel(Base):
     __tablename__ = "coins_v2"
@@ -30,6 +63,8 @@ class CoinModel(Base):
     # Check constraints
     __table_args__ = (
         CheckConstraint('die_axis >= 0 AND die_axis <= 12', name='check_die_axis_range'),
+        CheckConstraint('ngc_strike_grade IS NULL OR (ngc_strike_grade >= 1 AND ngc_strike_grade <= 5)', name='check_ngc_strike_grade_range'),
+        CheckConstraint('ngc_surface_grade IS NULL OR (ngc_surface_grade >= 1 AND ngc_surface_grade <= 5)', name='check_ngc_surface_grade_range'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -292,6 +327,23 @@ class CoinModel(Base):
     emission_phase: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     # emission_phase: 'First Issue', 'Second Issue', 'Reform Coinage', 'Heavy Series', 'Light Series'
 
+    # -------------------------------------------------------------------------
+    # Phase 1.5b: Strike Quality Detail & NGC Grade Components
+    # -------------------------------------------------------------------------
+
+    # Strike quality detail (5 columns)
+    strike_quality_detail: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    is_double_struck: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_brockage: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_off_center: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    off_center_pct: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 5-95%
+
+    # NGC-specific Strike/Surface grades (3 columns)
+    # NGC uses 1-5 scale for ancients; PCGS doesn't use this system
+    ngc_strike_grade: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    ngc_surface_grade: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    is_fine_style: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+
     # Relationships
     images: Mapped[List["CoinImageModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
     # UPDATED: Added cascade to prevent orphaned auction data
@@ -299,6 +351,13 @@ class CoinModel(Base):
     references: Mapped[List["CoinReferenceModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
     provenance_events: Mapped[List["ProvenanceEventModel"]] = relationship(back_populates="coin", cascade="all, delete-orphan")
     monograms: Mapped[List["MonogramModel"]] = relationship(secondary=coin_monograms, back_populates="coins")
+    # Phase 1.5b: Countermarks relationship
+    countermarks: Mapped[List["CountermarkModel"]] = relationship(
+        "CountermarkModel",
+        back_populates="coin",
+        cascade="all, delete-orphan",
+        lazy="selectin"  # Prevent N+1
+    )
     
     # Legacy vocab relationships (deprecated)
     issuer_rel: Mapped[Optional["IssuerModel"]] = relationship("src.infrastructure.persistence.models_vocab.IssuerModel")
@@ -566,7 +625,7 @@ class GradingHistoryModel(Base):
     # Event tracking
     event_type: Mapped[str] = mapped_column(String(30), nullable=False)
     graded_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    recorded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     submitter: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     turnaround_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     grading_fee: Mapped[Optional[Decimal]] = mapped_column(Numeric(8, 2), nullable=True)
@@ -708,7 +767,7 @@ class LLMEnrichmentModel(Base):
     reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     review_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     superseded_by: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("llm_enrichments.id"), nullable=True)
     request_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -1089,7 +1148,7 @@ class CollectionCoinModel(Base):
     coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), primary_key=True, index=True)
 
     # Membership metadata
-    added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     added_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Ordering

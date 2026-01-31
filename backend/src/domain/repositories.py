@@ -6,7 +6,7 @@ from src.domain.coin import (
     LLMEnrichment, PromptTemplate, LLMFeedback, LLMUsageDaily,
     MarketPrice, MarketDataPoint, CoinValuation, WishlistItem,
     PriceAlert, WishlistMatch, Collection, CollectionCoin, CollectionStatistics,
-    CensusSnapshot,
+    CensusSnapshot, Countermark,
 )
 from src.domain.auction import AuctionLot
 from src.domain.vocab import Issuer, Mint, VocabTerm, VocabType, NormalizationResult
@@ -1148,6 +1148,40 @@ class ICensusSnapshotRepository(Protocol):
         end_date: date,
     ) -> List["CensusSnapshot"]:
         """Get snapshots within a date range for trend analysis."""
+        ...
+
+
+# --- Phase 1.5b: Countermark Repository ---
+
+class ICountermarkRepository(Protocol):
+    """
+    Repository interface for countermarks.
+
+    Supports multiple countermarks per coin with full CRUD operations.
+    """
+
+    def get_by_id(self, countermark_id: int) -> Optional[Countermark]:
+        """Get a specific countermark by ID."""
+        ...
+
+    def get_by_coin_id(self, coin_id: int) -> List[Countermark]:
+        """Get all countermarks for a coin."""
+        ...
+
+    def create(self, coin_id: int, countermark: Countermark) -> Countermark:
+        """
+        Create a new countermark for a coin.
+
+        Returns countermark with ID assigned.
+        """
+        ...
+
+    def update(self, countermark_id: int, countermark: Countermark) -> Optional[Countermark]:
+        """Update an existing countermark."""
+        ...
+
+    def delete(self, countermark_id: int) -> bool:
+        """Delete a countermark by ID."""
         ...
 
 

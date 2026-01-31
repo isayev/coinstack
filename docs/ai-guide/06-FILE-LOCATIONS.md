@@ -92,7 +92,12 @@ infrastructure/
 │       ├── wishlist_item_repository.py # SqlAlchemyWishlistItemRepository (Phase 5)
 │       ├── wishlist_match_repository.py # SqlAlchemyWishlistMatchRepository (Phase 5)
 │       ├── collection_repository.py # SqlAlchemyCollectionRepository (Phase 6)
-│       └── census_snapshot_repository.py # SqlAlchemyCensusSnapshotRepository (Phase 5)
+│       ├── census_snapshot_repository.py # SqlAlchemyCensusSnapshotRepository (Phase 5)
+│       └── countermark_repository.py # SqlAlchemyCountermarkRepository (Phase 1.5b)
+│
+├── mappers/
+│   ├── coin_mapper.py           # CoinMapper (Coin <-> CoinModel)
+│   └── countermark_mapper.py    # CountermarkMapper (Phase 1.5b)
 │
 ├── scrapers/
 │   ├── base_playwright.py     # Base scraper with Playwright

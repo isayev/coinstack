@@ -18,12 +18,13 @@ from src.infrastructure.repositories.llm_feedback_repository import SqlAlchemyLL
 from src.infrastructure.repositories.llm_usage_repository import SqlAlchemyLLMUsageRepository
 from src.infrastructure.repositories.market_data_point_repository import SqlAlchemyMarketDataPointRepository
 from src.infrastructure.repositories.census_snapshot_repository import SqlAlchemyCensusSnapshotRepository
+from src.infrastructure.repositories.countermark_repository import SqlAlchemyCountermarkRepository
 from src.domain.repositories import (
     ICoinRepository, IAuctionDataRepository, ICollectionRepository,
     IMarketPriceRepository, ICoinValuationRepository, IPriceAlertRepository,
     IWishlistItemRepository, IWishlistMatchRepository, ILLMEnrichmentRepository,
     IPromptTemplateRepository, ILLMFeedbackRepository, ILLMUsageRepository,
-    IMarketDataPointRepository, ICensusSnapshotRepository,
+    IMarketDataPointRepository, ICensusSnapshotRepository, ICountermarkRepository,
 )
 from src.domain.vocab import IVocabRepository
 from src.application.services.apply_enrichment import ApplyEnrichmentService
@@ -143,3 +144,8 @@ def get_market_data_point_repo(db: Session = Depends(get_db)) -> IMarketDataPoin
 def get_census_snapshot_repo(db: Session = Depends(get_db)) -> ICensusSnapshotRepository:
     """Build CensusSnapshotRepository for TPG census population tracking."""
     return SqlAlchemyCensusSnapshotRepository(db)
+
+
+def get_countermark_repo(db: Session = Depends(get_db)) -> ICountermarkRepository:
+    """Build CountermarkRepository for countermark management (Phase 1.5b)."""
+    return SqlAlchemyCountermarkRepository(db)

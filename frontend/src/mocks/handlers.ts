@@ -33,7 +33,8 @@ const mockCoins: Coin[] = [
       date: '2023-01-01',
       url: null
     },
-    images: []
+    images: [],
+    countermarks: []
   },
   {
     id: 2,
@@ -65,7 +66,8 @@ const mockCoins: Coin[] = [
       date: '2022-05-15',
       url: null
     },
-    images: []
+    images: [],
+    countermarks: []
   }
 ]
 
