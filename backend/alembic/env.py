@@ -11,10 +11,10 @@ sys.path.append(os.getcwd())
 from src.infrastructure.config import get_settings
 from src.infrastructure.persistence.models import Base
 # Import ORM models to register them with Base.metadata
-import src.infrastructure.persistence.orm
+import src.infrastructure.persistence.orm  # Includes die study models (Phase 1.5d)
 import src.infrastructure.persistence.models_vocab
 import src.infrastructure.persistence.models_series
-import src.infrastructure.persistence.models_die_study
+# import src.infrastructure.persistence.models_die_study  # Legacy - replaced by orm.py Phase 1.5d models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

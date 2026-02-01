@@ -12,6 +12,7 @@ from . import dies
 from . import die_links
 from . import die_pairings
 from . import die_varieties
+from . import attribution_hypotheses
 from . import stats
 from . import review
 from . import catalog
@@ -31,6 +32,7 @@ __all__ = [
     "die_links",
     "die_pairings",
     "die_varieties",
+    "attribution_hypotheses",
     "stats",
     "review",
     "catalog",

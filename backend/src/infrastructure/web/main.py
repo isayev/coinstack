@@ -14,7 +14,7 @@ load_dotenv(env_path, override=True)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment, concordance, external_links, llm_enrichment, census_snapshot, market, valuation, wishlist, collections, dies, die_links, die_pairings, die_varieties  # die_study (Legacy) removed in favor of Phase 1.5d
+from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment, concordance, external_links, llm_enrichment, census_snapshot, market, valuation, wishlist, collections, dies, die_links, die_pairings, die_varieties, attribution_hypotheses  # die_study (Legacy) removed in favor of Phase 1.5d
 from src.infrastructure.persistence.database import init_db
 from src.infrastructure.config import get_settings
 from src.infrastructure.logging_config import configure_logging
@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(die_links.router)                     # Die Links API (Phase 1.5d)
     app.include_router(die_pairings.router)                  # Die Pairings API (Phase 1.5d)
     app.include_router(die_varieties.router)                 # Die Varieties API (Phase 1.5d)
+    app.include_router(attribution_hypotheses.router)        # Attribution Hypotheses API (Phase 2)
     app.include_router(stats.router)                         # Stats/Dashboard API
     app.include_router(catalog.router)                       # Catalog API (/api/catalog)
     app.include_router(catalog_v2.router)                    # Catalog parse/systems (/api/v2/catalog)

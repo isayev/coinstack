@@ -1285,3 +1285,48 @@ class DieVarietyModel(Base):
     # Relationships
     coin: Mapped["CoinModel"] = relationship("CoinModel", backref="die_varieties")
     die: Mapped[Optional["DieModel"]] = relationship("DieModel", back_populates="die_varieties")
+
+
+# --- Phase 2: Attribution Confidence ORM Models ---
+
+class AttributionHypothesisModel(Base):
+    """ORM model for attribution_hypotheses table - multi-hypothesis attributions with field-level confidence."""
+    __tablename__ = "attribution_hypotheses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False, index=True)
+    hypothesis_rank: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Field-level attribution with confidence
+    issuer: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    issuer_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    mint: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    mint_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    year_start: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    year_end: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    date_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    denomination: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    denomination_confidence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    # Overall confidence
+    overall_certainty: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    confidence_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), nullable=True)
+
+    # Evidence
+    attribution_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reference_support: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint('coin_id', 'hypothesis_rank', name='uq_attribution_hypothesis_rank'),
+        Index('ix_attribution_hypotheses_coin_rank', 'coin_id', 'hypothesis_rank'),
+    )
+
+    # Relationships
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="attribution_hypotheses")
