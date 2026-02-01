@@ -452,13 +452,16 @@ def update_rarity_assessment(
     # Validate rarity_context if provided (Phase 3)
     rarity_context = existing.rarity_context
     if request.rarity_context is not None:
-        try:
-            rarity_context = RarityContext(request.rarity_context)
-        except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid rarity_context '{request.rarity_context}'. Must be one of: base_type, variety_within_type, standalone"
-            )
+        if request.rarity_context == "":  # Explicit clear - empty string sets to None
+            rarity_context = None
+        else:
+            try:
+                rarity_context = RarityContext(request.rarity_context)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid rarity_context '{request.rarity_context}'. Must be one of: base_type, variety_within_type, standalone, or empty string to clear"
+                )
 
     # Build updated assessment (merge with existing)
     updated_assessment = RarityAssessment(
