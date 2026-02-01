@@ -21,7 +21,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from src.domain.coin import RarityAssessment
+from src.domain.coin import RarityAssessment, RarityContext
 from src.infrastructure.web.dependencies import get_db
 from src.infrastructure.repositories.rarity_assessment_repository import SqlAlchemyRarityAssessmentRepository
 from src.infrastructure.repositories.coin_repository import SqlAlchemyCoinRepository
@@ -54,6 +54,12 @@ class RarityAssessmentCreateRequest(BaseModel):
     confidence: str = Field("medium", description="Confidence level: high, medium, low")
     notes: Optional[str] = Field(None, description="Additional notes")
     is_primary: bool = Field(False, description="Is this the primary assessment?")
+    # Phase 3: Variety Rarity Tracking
+    variety_code: Optional[str] = Field(None, description="Die variety code (e.g., RIC 207 var. a)")
+    die_id: Optional[int] = Field(None, description="FK to dies catalog")
+    die_rarity_notes: Optional[str] = Field(None, description="Die-specific rarity observations")
+    condition_rarity_threshold: Optional[str] = Field(None, description="Grade level where coin becomes rare (e.g., VF, EF)")
+    rarity_context: Optional[str] = Field(None, description="Rarity context: base_type, variety_within_type, standalone")
 
 
 class RarityAssessmentUpdateRequest(BaseModel):
@@ -74,6 +80,12 @@ class RarityAssessmentUpdateRequest(BaseModel):
     confidence: Optional[str] = None
     notes: Optional[str] = None
     is_primary: Optional[bool] = None
+    # Phase 3: Variety Rarity Tracking
+    variety_code: Optional[str] = None
+    die_id: Optional[int] = None
+    die_rarity_notes: Optional[str] = None
+    condition_rarity_threshold: Optional[str] = None
+    rarity_context: Optional[str] = None
 
 
 class RarityAssessmentResponse(BaseModel):
@@ -97,6 +109,12 @@ class RarityAssessmentResponse(BaseModel):
     notes: Optional[str] = None
     is_primary: bool = False
     created_at: Optional[str] = None
+    # Phase 3: Variety Rarity Tracking
+    variety_code: Optional[str] = None
+    die_id: Optional[int] = None
+    die_rarity_notes: Optional[str] = None
+    condition_rarity_threshold: Optional[str] = None
+    rarity_context: Optional[str] = None
 
 
 class RarityAssessmentListResponse(BaseModel):
@@ -163,6 +181,12 @@ def assessment_to_response(assessment: RarityAssessment) -> RarityAssessmentResp
         notes=assessment.notes,
         is_primary=assessment.is_primary,
         created_at=assessment.created_at,
+        # Phase 3: Variety Rarity Tracking
+        variety_code=assessment.variety_code,
+        die_id=assessment.die_id,
+        die_rarity_notes=assessment.die_rarity_notes,
+        condition_rarity_threshold=assessment.condition_rarity_threshold,
+        rarity_context=assessment.rarity_context.value if assessment.rarity_context else None,
     )
 
 
@@ -270,6 +294,17 @@ def create_rarity_assessment(
             detail=f"Invalid rarity_code '{request.rarity_code}'. Must be one of: C, S, R, R1-R5, RR, RRR, UNIQUE"
         )
 
+    # Validate rarity_context if provided (Phase 3)
+    rarity_context = None
+    if request.rarity_context:
+        try:
+            rarity_context = RarityContext(request.rarity_context)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid rarity_context '{request.rarity_context}'. Must be one of: base_type, variety_within_type, standalone"
+            )
+
     # Create domain assessment
     assessment = RarityAssessment(
         rarity_code=rarity_code,
@@ -288,6 +323,12 @@ def create_rarity_assessment(
         confidence=request.confidence,
         notes=request.notes,
         is_primary=request.is_primary,
+        # Phase 3: Variety Rarity Tracking
+        variety_code=request.variety_code,
+        die_id=request.die_id,
+        die_rarity_notes=request.die_rarity_notes,
+        condition_rarity_threshold=request.condition_rarity_threshold,
+        rarity_context=rarity_context,
     )
 
     # If marking as primary, clear existing primary
@@ -408,6 +449,17 @@ def update_rarity_assessment(
     else:
         rarity_code = existing.rarity_code
 
+    # Validate rarity_context if provided (Phase 3)
+    rarity_context = existing.rarity_context
+    if request.rarity_context is not None:
+        try:
+            rarity_context = RarityContext(request.rarity_context)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid rarity_context '{request.rarity_context}'. Must be one of: base_type, variety_within_type, standalone"
+            )
+
     # Build updated assessment (merge with existing)
     updated_assessment = RarityAssessment(
         id=existing.id,
@@ -429,6 +481,12 @@ def update_rarity_assessment(
         notes=request.notes if request.notes is not None else existing.notes,
         is_primary=request.is_primary if request.is_primary is not None else existing.is_primary,
         created_at=existing.created_at,
+        # Phase 3: Variety Rarity Tracking
+        variety_code=request.variety_code if request.variety_code is not None else existing.variety_code,
+        die_id=request.die_id if request.die_id is not None else existing.die_id,
+        die_rarity_notes=request.die_rarity_notes if request.die_rarity_notes is not None else existing.die_rarity_notes,
+        condition_rarity_threshold=request.condition_rarity_threshold if request.condition_rarity_threshold is not None else existing.condition_rarity_threshold,
+        rarity_context=rarity_context,
     )
 
     updated = rarity_repo.update(assessment_id, updated_assessment)

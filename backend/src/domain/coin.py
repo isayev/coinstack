@@ -843,6 +843,13 @@ class RarityAssessment:
     is_primary: bool = False              # Primary rarity assessment
     created_at: str | None = None         # When this record was created (ISO timestamp)
 
+    # Variety Rarity Tracking (Phase 3)
+    variety_code: str | None = None       # Die variety code (e.g., "RIC 207 var. a")
+    die_id: int | None = None             # FK to dies catalog (enables die-level rarity)
+    die_rarity_notes: str | None = None   # Die-specific rarity observations
+    condition_rarity_threshold: str | None = None  # Grade where coin becomes rare (e.g., "VF", "EF")
+    rarity_context: RarityContext | None = None  # Type vs variety vs standalone rarity
+
 
 @dataclass(slots=True)
 class CensusSnapshot:

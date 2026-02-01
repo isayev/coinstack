@@ -9,7 +9,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from src.domain.coin import RarityAssessment
+from src.domain.coin import RarityAssessment, RarityContext
 from src.domain.repositories import IRarityAssessmentRepository
 from src.infrastructure.persistence.orm import RarityAssessmentModel
 
@@ -84,6 +84,12 @@ class SqlAlchemyRarityAssessmentRepository(IRarityAssessmentRepository):
         model.confidence = assessment.confidence
         model.notes = assessment.notes
         model.is_primary = assessment.is_primary
+        # Phase 3: Variety Rarity Tracking
+        model.variety_code = assessment.variety_code
+        model.die_id = assessment.die_id
+        model.die_rarity_notes = assessment.die_rarity_notes
+        model.condition_rarity_threshold = assessment.condition_rarity_threshold
+        model.rarity_context = assessment.rarity_context.value if assessment.rarity_context else None
 
         self.session.flush()
         return self._to_domain(model)
@@ -163,6 +169,12 @@ class SqlAlchemyRarityAssessmentRepository(IRarityAssessmentRepository):
             notes=model.notes,
             is_primary=model.is_primary or False,
             created_at=model.created_at.isoformat() if model.created_at else None,
+            # Phase 3: Variety Rarity Tracking
+            variety_code=model.variety_code,
+            die_id=model.die_id,
+            die_rarity_notes=model.die_rarity_notes,
+            condition_rarity_threshold=model.condition_rarity_threshold,
+            rarity_context=RarityContext(model.rarity_context) if model.rarity_context else None,
         )
 
     def _to_model(self, assessment: RarityAssessment) -> RarityAssessmentModel:
@@ -187,4 +199,10 @@ class SqlAlchemyRarityAssessmentRepository(IRarityAssessmentRepository):
             notes=assessment.notes,
             is_primary=assessment.is_primary,
             created_at=datetime.now(timezone.utc),
+            # Phase 3: Variety Rarity Tracking
+            variety_code=assessment.variety_code,
+            die_id=assessment.die_id,
+            die_rarity_notes=assessment.die_rarity_notes,
+            condition_rarity_threshold=assessment.condition_rarity_threshold,
+            rarity_context=assessment.rarity_context.value if assessment.rarity_context else None,
         )

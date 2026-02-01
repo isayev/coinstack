@@ -678,7 +678,15 @@ class RarityAssessmentModel(Base):
     is_primary: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
+    # Variety Rarity Tracking (Phase 3)
+    variety_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    die_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("dies.id", ondelete="SET NULL"), nullable=True, index=True)
+    die_rarity_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    condition_rarity_threshold: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    rarity_context: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
     coin: Mapped["CoinModel"] = relationship("CoinModel", backref="rarity_assessments")
+    die: Mapped[Optional["DieModel"]] = relationship("DieModel", backref="rarity_assessments")
 
 
 class CensusSnapshotModel(Base):
