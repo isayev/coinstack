@@ -1338,3 +1338,115 @@ class AttributionHypothesisModel(Base):
 
     # Relationships
     coin: Mapped["CoinModel"] = relationship("CoinModel", backref="attribution_hypotheses")
+
+# =============================================================================
+# Phase 4: Compositional Iconography (6 tables)
+# =============================================================================
+
+class IconographyElementModel(Base):
+    """Element catalog for iconographic compositions."""
+    __tablename__ = "iconography_elements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    canonical_name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    aliases: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array
+    usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    composition_elements: Mapped[List["CompositionElementModel"]] = relationship("CompositionElementModel", back_populates="element", cascade="all, delete-orphan")
+
+
+class IconographyAttributeModel(Base):
+    """Attribute vocabulary for describing iconographic elements."""
+    __tablename__ = "iconography_attributes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    attribute_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    attribute_value: Mapped[str] = mapped_column(String(100), nullable=False)
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('attribute_type', 'attribute_value', name='uq_iconography_attribute'),
+    )
+
+    # Relationships
+    element_attributes: Mapped[List["ElementAttributeModel"]] = relationship("ElementAttributeModel", back_populates="attribute", cascade="all, delete-orphan")
+
+
+class IconographyCompositionModel(Base):
+    """Full scene descriptions with compositional structure."""
+    __tablename__ = "iconography_compositions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    composition_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    canonical_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
+    composition_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Structured JSON
+    reference_system: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    reference_numbers: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON array
+    usage_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    coin_iconography: Mapped[List["CoinIconographyModel"]] = relationship("CoinIconographyModel", back_populates="composition", cascade="all, delete-orphan")
+    composition_elements: Mapped[List["CompositionElementModel"]] = relationship("CompositionElementModel", back_populates="composition", cascade="all, delete-orphan")
+
+
+class CoinIconographyModel(Base):
+    """Links coins to iconographic compositions."""
+    __tablename__ = "coin_iconography"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False, index=True)
+    composition_id: Mapped[int] = mapped_column(Integer, ForeignKey("iconography_compositions.id", ondelete="CASCADE"), nullable=False, index=True)
+    coin_side: Mapped[Optional[str]] = mapped_column(String(10), nullable=True, index=True)
+    position: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint('coin_id', 'composition_id', 'coin_side', name='uq_coin_iconography'),
+        Index('ix_coin_iconography_side_composition', 'coin_side', 'composition_id'),  # Composite index
+    )
+
+    # Relationships
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="coin_iconography")
+    composition: Mapped["IconographyCompositionModel"] = relationship("IconographyCompositionModel", back_populates="coin_iconography")
+
+
+class CompositionElementModel(Base):
+    """Elements in compositions (many-to-many with ordering and prominence)."""
+    __tablename__ = "composition_elements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    composition_id: Mapped[int] = mapped_column(Integer, ForeignKey("iconography_compositions.id", ondelete="CASCADE"), nullable=False, index=True)
+    element_id: Mapped[int] = mapped_column(Integer, ForeignKey("iconography_elements.id", ondelete="CASCADE"), nullable=False, index=True)
+    element_position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    prominence: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('composition_id', 'element_id', name='uq_composition_element'),
+    )
+
+    # Relationships
+    composition: Mapped["IconographyCompositionModel"] = relationship("IconographyCompositionModel", back_populates="composition_elements")
+    element: Mapped["IconographyElementModel"] = relationship("IconographyElementModel", back_populates="composition_elements")
+    element_attributes: Mapped[List["ElementAttributeModel"]] = relationship("ElementAttributeModel", back_populates="composition_element", cascade="all, delete-orphan")
+
+
+class ElementAttributeModel(Base):
+    """Attributes applied to elements in specific compositions."""
+    __tablename__ = "element_attributes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    composition_element_id: Mapped[int] = mapped_column(Integer, ForeignKey("composition_elements.id", ondelete="CASCADE"), nullable=False, index=True)
+    attribute_id: Mapped[int] = mapped_column(Integer, ForeignKey("iconography_attributes.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Relationships
+    composition_element: Mapped["CompositionElementModel"] = relationship("CompositionElementModel", back_populates="element_attributes")
+    attribute: Mapped["IconographyAttributeModel"] = relationship("IconographyAttributeModel", back_populates="element_attributes")

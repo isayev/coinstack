@@ -14,7 +14,7 @@ load_dotenv(env_path, override=True)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment, concordance, external_links, llm_enrichment, census_snapshot, market, valuation, wishlist, collections, dies, die_links, die_pairings, die_varieties, attribution_hypotheses  # die_study (Legacy) removed in favor of Phase 1.5d
+from src.infrastructure.web.routers import v2, audit_v2, scrape_v2, vocab, series, llm, provenance, stats, review, import_v2, catalog, catalog_v2, grading_history, rarity_assessment, concordance, external_links, llm_enrichment, census_snapshot, market, valuation, wishlist, collections, dies, die_links, die_pairings, die_varieties, attribution_hypotheses, iconography_elements, iconography_compositions, coin_iconography  # Phase 4: Compositional Iconography
 from src.infrastructure.persistence.database import init_db
 from src.infrastructure.config import get_settings
 from src.infrastructure.logging_config import configure_logging
@@ -84,6 +84,9 @@ def create_app() -> FastAPI:
     app.include_router(valuation.router)                     # Coin Valuations API (Schema V3 Phase 5)
     app.include_router(wishlist.router)                      # Wishlist API (Schema V3 Phase 5)
     app.include_router(collections.router)                   # Collections API (Schema V3 Phase 6)
+    app.include_router(iconography_elements.router)          # Iconography Elements API (Phase 4)
+    app.include_router(iconography_compositions.router)      # Iconography Compositions API (Phase 4)
+    app.include_router(coin_iconography.router)              # Coin Iconography Links API (Phase 4)
 
     # Health check endpoint
     @app.get("/health", tags=["health"])

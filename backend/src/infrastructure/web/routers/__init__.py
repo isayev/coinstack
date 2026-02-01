@@ -17,6 +17,9 @@ from . import stats
 from . import review
 from . import catalog
 from . import catalog_v2
+from . import iconography_elements
+from . import iconography_compositions
+from . import coin_iconography
 
 __all__ = [
     "v2",
@@ -37,4 +40,7 @@ __all__ = [
     "review",
     "catalog",
     "catalog_v2",
+    "iconography_elements",
+    "iconography_compositions",
+    "coin_iconography",
 ]
