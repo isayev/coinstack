@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from src.domain.coin import Die, DieSide, DieState
 from src.infrastructure.web.dependencies import get_db, get_die_repo
 from src.domain.repositories_die_study import IDieRepository
+from src.infrastructure.pagination_config import get_pagination_config
 
 router = APIRouter(tags=["Die Study"])
 
@@ -96,10 +97,30 @@ def _to_response(die: Die) -> DieResponse:
 @router.get("/api/v2/dies", response_model=list[DieResponse], status_code=status.HTTP_200_OK)
 def list_dies(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(100, ge=1, le=500, description="Max records to return"),
+    limit: Optional[int] = Query(None, description="Max records to return"),
     repo: IDieRepository = Depends(get_die_repo)
 ) -> list[DieResponse]:
     """List all dies with pagination."""
+    config = get_pagination_config()
+
+    # Use default if not specified
+    if limit is None:
+        limit = config.default_limit
+
+    # Validate limit is positive
+    if limit <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Limit must be greater than 0"
+        )
+
+    # Enforce maximum
+    if limit > config.max_limit:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Limit exceeds maximum of {config.max_limit}"
+        )
+
     dies = repo.list_all(skip=skip, limit=limit)
     return [_to_response(die) for die in dies]
 
@@ -144,8 +165,38 @@ def create_die(
         notes=request.notes
     )
 
-    created_die = repo.create(die)
+    try:
+        created_die = repo.create(die)
+    except Exception as e:
+        if "UNIQUE constraint failed" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Die '{request.die_identifier}' already exists"
+            )
+        raise
+
     return _to_response(created_die)
+
+
+@router.get("/api/v2/dies/search", response_model=list[DieResponse], status_code=status.HTTP_200_OK)
+def search_dies(
+    q: str = Query(..., min_length=1, description="Search query"),
+    die_side: Optional[str] = Query(None, description="Filter by die side (obverse/reverse)"),
+    repo: IDieRepository = Depends(get_die_repo)
+) -> list[DieResponse]:
+    """Search dies by identifier or notes."""
+    # Validate die_side if provided
+    if die_side:
+        try:
+            DieSide(die_side)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid die_side: {die_side}"
+            )
+
+    dies = repo.search(query=q, die_side=die_side)
+    return [_to_response(die) for die in dies]
 
 
 @router.get("/api/v2/dies/{die_id}", response_model=DieResponse, status_code=status.HTTP_200_OK)
@@ -215,11 +266,20 @@ def update_die(
         notes=request.notes if request.notes is not None else existing.notes
     )
 
-    result = repo.update(die_id, updated_die)
+    try:
+        result = repo.update(die_id, updated_die)
+    except Exception as e:
+        if "UNIQUE constraint failed" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Die identifier '{updated_die.die_identifier}' already exists"
+            )
+        raise
+
     if not result:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update die"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Die {die_id} not found"
         )
 
     return _to_response(result)
@@ -238,24 +298,3 @@ def delete_die(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Die {die_id} not found"
         )
-
-
-@router.get("/api/v2/dies/search", response_model=list[DieResponse], status_code=status.HTTP_200_OK)
-def search_dies(
-    q: str = Query(..., min_length=1, description="Search query"),
-    die_side: Optional[str] = Query(None, description="Filter by die side (obverse/reverse)"),
-    repo: IDieRepository = Depends(get_die_repo)
-) -> list[DieResponse]:
-    """Search dies by identifier or notes."""
-    # Validate die_side if provided
-    if die_side:
-        try:
-            DieSide(die_side)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid die_side: {die_side}"
-            )
-
-    dies = repo.search(query=q, die_side=die_side)
-    return [_to_response(die) for die in dies]

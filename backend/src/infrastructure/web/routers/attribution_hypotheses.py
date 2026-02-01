@@ -336,11 +336,20 @@ def update_attribution_hypothesis(
         source=request.source if request.source is not None else existing.source
     )
 
-    result = repo.update(hypothesis_id, updated_hypothesis)
+    try:
+        result = repo.update(hypothesis_id, updated_hypothesis)
+    except Exception as e:
+        if "UNIQUE constraint failed" in str(e):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Hypothesis with rank {updated_hypothesis.hypothesis_rank} already exists for coin {existing.coin_id}"
+            )
+        raise
+
     if not result:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update attribution hypothesis"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attribution hypothesis {hypothesis_id} not found"
         )
 
     return _to_response(result)
