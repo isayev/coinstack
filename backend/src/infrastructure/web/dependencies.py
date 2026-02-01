@@ -19,12 +19,19 @@ from src.infrastructure.repositories.llm_usage_repository import SqlAlchemyLLMUs
 from src.infrastructure.repositories.market_data_point_repository import SqlAlchemyMarketDataPointRepository
 from src.infrastructure.repositories.census_snapshot_repository import SqlAlchemyCensusSnapshotRepository
 from src.infrastructure.repositories.countermark_repository import SqlAlchemyCountermarkRepository
+from src.infrastructure.repositories.die_repository import SqlAlchemyDieRepository
+from src.infrastructure.repositories.die_link_repository import SqlAlchemyDieLinkRepository
+from src.infrastructure.repositories.die_pairing_repository import SqlAlchemyDiePairingRepository
+from src.infrastructure.repositories.die_variety_repository import SqlAlchemyDieVarietyRepository
 from src.domain.repositories import (
     ICoinRepository, IAuctionDataRepository, ICollectionRepository,
     IMarketPriceRepository, ICoinValuationRepository, IPriceAlertRepository,
     IWishlistItemRepository, IWishlistMatchRepository, ILLMEnrichmentRepository,
     IPromptTemplateRepository, ILLMFeedbackRepository, ILLMUsageRepository,
     IMarketDataPointRepository, ICensusSnapshotRepository, ICountermarkRepository,
+)
+from src.domain.repositories_die_study import (
+    IDieRepository, IDieLinkRepository, IDiePairingRepository, IDieVarietyRepository,
 )
 from src.domain.vocab import IVocabRepository
 from src.application.services.apply_enrichment import ApplyEnrichmentService
@@ -149,3 +156,23 @@ def get_census_snapshot_repo(db: Session = Depends(get_db)) -> ICensusSnapshotRe
 def get_countermark_repo(db: Session = Depends(get_db)) -> ICountermarkRepository:
     """Build CountermarkRepository for countermark management (Phase 1.5b)."""
     return SqlAlchemyCountermarkRepository(db)
+
+
+def get_die_repo(db: Session = Depends(get_db)) -> IDieRepository:
+    """Build DieRepository for die catalog management (Phase 1.5d)."""
+    return SqlAlchemyDieRepository(db)
+
+
+def get_die_link_repo(db: Session = Depends(get_db)) -> IDieLinkRepository:
+    """Build DieLinkRepository for die link management (Phase 1.5d)."""
+    return SqlAlchemyDieLinkRepository(db)
+
+
+def get_die_pairing_repo(db: Session = Depends(get_db)) -> IDiePairingRepository:
+    """Build DiePairingRepository for die pairing management (Phase 1.5d)."""
+    return SqlAlchemyDiePairingRepository(db)
+
+
+def get_die_variety_repo(db: Session = Depends(get_db)) -> IDieVarietyRepository:
+    """Build DieVarietyRepository for die variety management (Phase 1.5d)."""
+    return SqlAlchemyDieVarietyRepository(db)

@@ -6,10 +6,10 @@ from src.infrastructure.persistence.models import Base
 from src.infrastructure.config import get_settings
 
 # Import all models to register them with Base.metadata
-from src.infrastructure.persistence import orm  # CoinModel, CoinImageModel, AuctionDataModel
+from src.infrastructure.persistence import orm  # CoinModel, CoinImageModel, AuctionDataModel, DieModels (Phase 1.5d)
 from src.infrastructure.persistence import models_vocab  # IssuerModel, MintModel
 from src.infrastructure.persistence import models_series  # SeriesModel, SeriesSlotModel
-from src.infrastructure.persistence import models_die_study  # DieLinkModel, DieStudyGroupModel
+# from src.infrastructure.persistence import models_die_study  # DieLinkModel, DieStudyGroupModel (Legacy - replaced by Phase 1.5d)
 
 logger = logging.getLogger(__name__)
 

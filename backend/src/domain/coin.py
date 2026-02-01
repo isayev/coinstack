@@ -302,6 +302,90 @@ class PunchShape(str, Enum):
     UNCERTAIN = "uncertain"
 
 
+# --- Phase 1.5d: Die Study Module Enums ---
+
+class DieSide(str, Enum):
+    """Side of coin for die identification."""
+    OBVERSE = "obverse"
+    REVERSE = "reverse"
+
+
+class DieLinkConfidence(str, Enum):
+    """Confidence level for die link identification."""
+    CERTAIN = "certain"
+    PROBABLE = "probable"
+    POSSIBLE = "possible"
+
+
+class AttributionCertainty(str, Enum):
+    """Confidence level for attribution (coin-level or field-level)."""
+    CERTAIN = "certain"
+    PROBABLE = "probable"
+    POSSIBLE = "possible"
+    TENTATIVE = "tentative"
+    CONTESTED = "contested"
+
+
+class RarityContext(str, Enum):
+    """Context for rarity assessment to clarify type vs variety rarity."""
+    BASE_TYPE = "base_type"  # Type-level rarity (all varieties)
+    VARIETY_WITHIN_TYPE = "variety_within_type"  # Variety is R5 within an R2 type
+    STANDALONE = "standalone"  # Variety rarity without type context
+
+
+class IconographyCategory(str, Enum):
+    """Element categories for compositional iconography."""
+    DEITY = "deity"
+    PERSONIFICATION = "personification"
+    ANIMAL = "animal"
+    SYMBOL = "symbol"
+    BUILDING = "building"
+    OBJECT = "object"
+    IMPLEMENT = "implement"  # Weapons, tools, attributes
+
+
+class CompositionCategory(str, Enum):
+    """Scene types for iconographic compositions."""
+    DEITY_SCENE = "deity_scene"
+    PORTRAIT = "portrait"
+    MILITARY = "military"
+    ARCHITECTURAL = "architectural"
+    ANIMAL = "animal"
+    ABSTRACT = "abstract"
+
+
+class AttributeType(str, Enum):
+    """Attribute classifications for iconographic elements."""
+    POSE = "pose"  # standing, seated, advancing, kneeling
+    DIRECTION = "direction"  # left, right, frontal
+    CLOTHING = "clothing"  # draped, nude, helmeted, cuirassed
+    HELD_OBJECT = "held_object"  # What the figure holds
+    SPATIAL_RELATION = "spatial_relation"  # standing_on, between, trampling
+
+
+class CoinSide(str, Enum):
+    """Side of coin for iconography placement."""
+    OBVERSE = "obverse"
+    REVERSE = "reverse"
+
+
+class IconographyPosition(str, Enum):
+    """Position of iconographic element on coin."""
+    CENTER = "center"
+    LEFT_FIELD = "left_field"
+    RIGHT_FIELD = "right_field"
+    EXERGUE = "exergue"
+    ABOVE = "above"
+    BELOW = "below"
+
+
+class ElementProminence(str, Enum):
+    """Element importance in composition."""
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    BACKGROUND = "background"
+
+
 # --- Value Objects ---
 
 @dataclass(frozen=True, slots=True)
@@ -1377,6 +1461,149 @@ class WishlistMatch:
     saved: bool = False
     notes: str | None = None
     created_at: DateTimeType | None = None
+
+
+# --- Phase 1.5d: Die Study Module Value Objects ---
+
+@dataclass(frozen=True, slots=True)
+class Die:
+    """Master die catalog entry for die study."""
+    id: int | None = None
+    die_identifier: str = ""  # Canonical die ID (e.g., "RIC_207_OBV_A")
+    die_side: DieSide | None = None
+    die_state: DieState | None = None
+    has_die_crack: bool = False
+    has_die_clash: bool = False
+    die_rotation_angle: int | None = None  # 0-360 degrees
+    reference_system: str | None = None
+    reference_number: str | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DieLink:
+    """Links coins sharing the same die."""
+    id: int | None = None
+    die_id: int | None = None  # FK to dies table
+    coin_a_id: int | None = None
+    coin_b_id: int | None = None
+    confidence: DieLinkConfidence | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiePairing:
+    """Obverse-reverse die combinations for rarity tracking."""
+    id: int | None = None
+    obverse_die_id: int | None = None
+    reverse_die_id: int | None = None
+    reference_system: str | None = None
+    reference_number: str | None = None
+    rarity_notes: str | None = None
+    specimen_count: int | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DieVariety:
+    """Die variety classifications for numismatic research."""
+    id: int | None = None
+    coin_id: int | None = None
+    die_id: int | None = None  # FK to dies table
+    variety_code: str | None = None
+    variety_description: str | None = None
+    distinguishing_features: str | None = None
+    reference: str | None = None
+    notes: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AttributionHypothesis:
+    """Multi-hypothesis attribution with field-level confidence."""
+    id: int | None = None
+    coin_id: int | None = None
+    hypothesis_rank: int = 1
+
+    # Field-level attribution with confidence
+    issuer: str | None = None
+    issuer_confidence: AttributionCertainty | None = None
+
+    mint: str | None = None
+    mint_confidence: AttributionCertainty | None = None
+
+    year_start: int | None = None
+    year_end: int | None = None
+    date_confidence: AttributionCertainty | None = None
+
+    denomination: str | None = None
+    denomination_confidence: AttributionCertainty | None = None
+
+    # Overall confidence
+    overall_certainty: AttributionCertainty | None = None
+    confidence_score: Decimal | None = None
+
+    # Evidence
+    attribution_notes: str | None = None
+    reference_support: str | None = None
+    source: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class IconographyElement:
+    """Basic iconographic element for compositional model."""
+    id: int | None = None
+    canonical_name: str = ""
+    display_name: str = ""
+    category: IconographyCategory | None = None
+    description: str | None = None
+    aliases: list[str] = field(default_factory=list)
+    usage_count: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class IconographyAttribute:
+    """Attribute vocabulary for element description."""
+    id: int | None = None
+    attribute_type: AttributeType | None = None
+    attribute_value: str = ""
+    display_name: str = ""
+    description: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CompositionElement:
+    """Element within a composition with attributes."""
+    id: int | None = None
+    composition_id: int | None = None
+    element_id: int | None = None
+    element_position: int = 0
+    prominence: ElementProminence | None = None
+    attributes: list[IconographyAttribute] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class IconographyComposition:
+    """Full scene description using compositional model."""
+    id: int | None = None
+    composition_name: str = ""
+    canonical_description: str | None = None
+    category: CompositionCategory | None = None
+    composition_json: str | None = None  # Structured JSON
+    reference_system: str | None = None
+    reference_numbers: list[str] = field(default_factory=list)
+    usage_count: int = 0
+    elements: list[CompositionElement] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class CoinIconography:
+    """Links coin to iconographic composition."""
+    id: int | None = None
+    coin_id: int | None = None
+    composition_id: int | None = None
+    coin_side: CoinSide | None = None
+    position: IconographyPosition | None = None
+    notes: str | None = None
 
 
 # --- Aggregate Root ---

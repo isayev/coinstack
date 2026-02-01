@@ -1,7 +1,7 @@
 from typing import Optional, List
 from decimal import Decimal
 from datetime import date, datetime, timezone
-from sqlalchemy import Integer, String, Text, Numeric, Date, DateTime, Boolean, ForeignKey, Table, Column, CheckConstraint, Index
+from sqlalchemy import Integer, String, Text, Numeric, Date, DateTime, Boolean, ForeignKey, Table, Column, CheckConstraint, UniqueConstraint, Index
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from src.infrastructure.persistence.models import Base
 
@@ -1187,3 +1187,101 @@ class CollectionCoinModel(Base):
     # Relationships
     collection: Mapped["CollectionModel"] = relationship("CollectionModel", backref="coin_memberships")
     coin: Mapped["CoinModel"] = relationship("CoinModel", backref="collection_memberships")
+
+
+# --- Phase 1.5d: Die Study Module ORM Models ---
+
+class DieModel(Base):
+    """ORM model for dies table - master die catalog."""
+    __tablename__ = "dies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    die_identifier: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    die_side: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    die_state: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    has_die_crack: Mapped[bool] = mapped_column(Boolean, server_default='0')
+    has_die_clash: Mapped[bool] = mapped_column(Boolean, server_default='0')
+    die_rotation_angle: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    reference_system: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    die_links: Mapped[List["DieLinkModel"]] = relationship(
+        "DieLinkModel",
+        back_populates="die",
+        cascade="all, delete-orphan"
+    )
+    die_varieties: Mapped[List["DieVarietyModel"]] = relationship(
+        "DieVarietyModel",
+        back_populates="die",
+        cascade="all, delete-orphan"
+    )
+
+
+class DieLinkModel(Base):
+    """ORM model for die_links table - coins sharing same die."""
+    __tablename__ = "die_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    die_id: Mapped[int] = mapped_column(Integer, ForeignKey("dies.id", ondelete="CASCADE"), nullable=False, index=True)
+    coin_a_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False)
+    coin_b_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False)
+    confidence: Mapped[str] = mapped_column(String(20), nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        CheckConstraint('coin_a_id < coin_b_id', name='check_coin_order'),
+        UniqueConstraint('die_id', 'coin_a_id', 'coin_b_id', name='uq_die_link'),
+        Index('ix_die_links_coin_a', 'coin_a_id', 'die_id'),
+        Index('ix_die_links_coin_b', 'coin_b_id', 'die_id'),
+    )
+
+    # Relationships
+    die: Mapped["DieModel"] = relationship("DieModel", back_populates="die_links")
+    coin_a: Mapped["CoinModel"] = relationship("CoinModel", foreign_keys=[coin_a_id])
+    coin_b: Mapped["CoinModel"] = relationship("CoinModel", foreign_keys=[coin_b_id])
+
+
+class DiePairingModel(Base):
+    """ORM model for die_pairings table - obverse-reverse die combinations."""
+    __tablename__ = "die_pairings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    obverse_die_id: Mapped[int] = mapped_column(Integer, ForeignKey("dies.id", ondelete="CASCADE"), nullable=False, index=True)
+    reverse_die_id: Mapped[int] = mapped_column(Integer, ForeignKey("dies.id", ondelete="CASCADE"), nullable=False, index=True)
+    reference_system: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    rarity_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    specimen_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint('obverse_die_id', 'reverse_die_id', name='uq_die_pairing'),
+    )
+
+    # Relationships
+    obverse_die: Mapped["DieModel"] = relationship("DieModel", foreign_keys=[obverse_die_id])
+    reverse_die: Mapped["DieModel"] = relationship("DieModel", foreign_keys=[reverse_die_id])
+
+
+class DieVarietyModel(Base):
+    """ORM model for die_varieties table - die variety classifications."""
+    __tablename__ = "die_varieties"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    coin_id: Mapped[int] = mapped_column(Integer, ForeignKey("coins_v2.id", ondelete="CASCADE"), nullable=False, index=True)
+    die_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("dies.id", ondelete="SET NULL"), nullable=True, index=True)
+    variety_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    variety_description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    distinguishing_features: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reference: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    coin: Mapped["CoinModel"] = relationship("CoinModel", backref="die_varieties")
+    die: Mapped[Optional["DieModel"]] = relationship("DieModel", back_populates="die_varieties")
