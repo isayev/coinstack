@@ -63,7 +63,14 @@ def retry_with_exponential_backoff(
     return decorator
 
 class PlaywrightScraperBase(ABC):
-    """Base class for Playwright-based scrapers with rate limiting and anti-bot measures."""
+    """
+    Base class for Playwright-based scrapers with rate limiting and anti-bot measures.
+
+    Supports async context manager for automatic resource cleanup:
+        async with HeritageScraper() as scraper:
+            result = await scraper.scrape(url)
+        # Browser automatically closed
+    """
 
     # Class-level tracking of last request time per source
     _last_request_times: Dict[str, float] = {}
@@ -74,6 +81,16 @@ class PlaywrightScraperBase(ABC):
         self._playwright = None
         self._browser: Optional[Browser] = None
         self._context: Optional[BrowserContext] = None
+
+    async def __aenter__(self) -> "PlaywrightScraperBase":
+        """Async context manager entry - starts browser."""
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> bool:
+        """Async context manager exit - stops browser."""
+        await self.stop()
+        return False  # Don't suppress exceptions
 
     async def start(self):
         """Start the Playwright browser with stealth configurations."""

@@ -59,7 +59,16 @@ class ICoinRepository(Protocol):
     def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
         """Returns the total number of coins, optionally filtered."""
         ...
-    
+
+    def get_by_ids(self, coin_ids: List[int]) -> List[Coin]:
+        """
+        Retrieve multiple coins by their IDs in a single query.
+
+        Returns coins in the order of the input IDs where found.
+        Missing IDs are silently omitted from the result.
+        """
+        ...
+
     def get_by_reference(
         self,
         catalog: str,

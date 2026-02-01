@@ -77,11 +77,14 @@ class CountermarkMapper:
         return CountermarkModel(
             id=countermark.id,
             coin_id=coin_id or countermark.coin_id,
-            countermark_type=countermark.countermark_type.value if countermark.countermark_type else None,
+            # Core required fields (with defaults for database constraints)
+            countermark_type=countermark.countermark_type.value if countermark.countermark_type else "uncertain",
+            description=countermark.description or "",
+            placement=countermark.position.value if countermark.position else "obverse",  # Map position -> placement
+            # Optional fields
             position=countermark.position.value if countermark.position else None,
             condition=countermark.condition.value if countermark.condition else None,
             punch_shape=countermark.punch_shape.value if countermark.punch_shape else None,
-            description=countermark.description,
             authority=countermark.authority,
             reference=countermark.reference,
             date_applied=countermark.date_applied,

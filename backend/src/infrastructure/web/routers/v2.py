@@ -8,7 +8,9 @@ from src.application.commands.create_coin import (
     CreateCoinUseCase, CreateCoinDTO, ImageDTO, DesignDTO,
     # Phase 1: Schema V3 DTOs
     SecondaryAuthorityDTO, CoRulerDTO, PhysicalEnhancementsDTO, SecondaryTreatmentsV3DTO,
-    ToolingRepairsDTO, CenteringDTO, DieStudyEnhancementsDTO, GradingTPGEnhancementsDTO, ChronologyEnhancementsDTO
+    ToolingRepairsDTO, CenteringDTO, DieStudyEnhancementsDTO, GradingTPGEnhancementsDTO, ChronologyEnhancementsDTO,
+    # Phase 1.5b/c: Countermarks & Strike Quality DTOs
+    CountermarkDTO, StrikeQualityDetailDTO
 )
 from src.application.services.grade_normalizer import normalize_grade_for_storage
 from src.domain.coin import (
@@ -16,7 +18,9 @@ from src.domain.coin import (
     Category, Metal, GradingState, GradeService, IssueStatus, DieInfo, FindData, Design, ProvenanceEntry, ProvenanceEventType,
     # Phase 1: Schema V3 value objects
     SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
-    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
+    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements,
+    # Phase 1.5b/c: Countermarks & Strike Quality
+    Countermark, CountermarkType, CountermarkPosition, CountermarkCondition, PunchShape, StrikeQualityDetail
 )
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -136,6 +140,31 @@ class ChronologyEnhancementsRequest(BaseModel):
     emission_phase: Optional[str] = None  # First Issue, Second Issue
 
 
+# --- Phase 1.5b/c: Countermarks & Strike Quality ---
+
+class CountermarkRequest(BaseModel):
+    """Request model for countermark data."""
+    id: Optional[int] = None
+    countermark_type: Optional[str] = None
+    position: Optional[str] = None
+    condition: Optional[str] = None
+    punch_shape: Optional[str] = None
+    description: Optional[str] = None
+    authority: Optional[str] = None
+    reference: Optional[str] = None
+    date_applied: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class StrikeQualityDetailRequest(BaseModel):
+    """Request model for strike quality details and die errors."""
+    detail: Optional[str] = None
+    is_double_struck: bool = False
+    is_brockage: bool = False
+    is_off_center: bool = False
+    off_center_pct: Optional[int] = Field(None, ge=5, le=95)
+
+
 class CreateCoinRequest(BaseModel):
     category: str
     metal: str
@@ -194,6 +223,10 @@ class CreateCoinRequest(BaseModel):
     die_study: Optional[DieStudyEnhancementsRequest] = None
     grading_tpg: Optional[GradingTPGEnhancementsRequest] = None
     chronology: Optional[ChronologyEnhancementsRequest] = None
+
+    # --- Phase 1.5b/c: Countermarks & Strike Quality ---
+    countermarks: Optional[List[CountermarkRequest]] = None
+    strike_quality_detail: Optional[StrikeQualityDetailRequest] = None
 
 class DimensionsResponse(BaseModel):
     weight_g: Optional[Decimal] = None
@@ -343,6 +376,32 @@ class ChronologyEnhancementsResponse(BaseModel):
     emission_phase: Optional[str] = None
 
 
+# --- Phase 1.5b/c: Countermarks & Strike Quality Response Models ---
+
+class CountermarkResponse(BaseModel):
+    """Response model for countermark data."""
+    id: Optional[int] = None
+    countermark_type: Optional[str] = None
+    position: Optional[str] = None
+    condition: Optional[str] = None
+    punch_shape: Optional[str] = None
+    description: Optional[str] = None
+    authority: Optional[str] = None
+    reference: Optional[str] = None
+    date_applied: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class StrikeQualityDetailResponse(BaseModel):
+    """Response model for strike quality details and die errors."""
+    detail: Optional[str] = None
+    is_double_struck: bool = False
+    is_brockage: bool = False
+    is_off_center: bool = False
+    off_center_pct: Optional[int] = None
+
+
 class CoinResponse(BaseModel):
     id: Optional[int]
     category: str
@@ -396,6 +455,10 @@ class CoinResponse(BaseModel):
     die_study: Optional[DieStudyEnhancementsResponse] = None
     grading_tpg: Optional[GradingTPGEnhancementsResponse] = None
     chronology: Optional[ChronologyEnhancementsResponse] = None
+
+    # --- Phase 1.5b/c: Countermarks & Strike Quality ---
+    countermarks: List[CountermarkResponse] = []
+    strike_quality_detail: Optional[StrikeQualityDetailResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -570,6 +633,30 @@ class CoinResponse(BaseModel):
                 date_period_notation=coin.chronology.date_period_notation,
                 emission_phase=coin.chronology.emission_phase
             ) if coin.chronology else None,
+
+            # Phase 1.5b/c: Countermarks & Strike Quality
+            countermarks=[
+                CountermarkResponse(
+                    id=cm.id,
+                    countermark_type=cm.countermark_type.value if cm.countermark_type else None,
+                    position=cm.position.value if cm.position else None,
+                    condition=cm.condition.value if cm.condition else None,
+                    punch_shape=cm.punch_shape.value if cm.punch_shape else None,
+                    description=cm.description,
+                    authority=cm.authority,
+                    reference=cm.reference,
+                    date_applied=cm.date_applied,
+                    notes=cm.notes,
+                    created_at=None,  # Countermark doesn't have created_at in domain model
+                ) for cm in (coin.countermarks or [])
+            ],
+            strike_quality_detail=StrikeQualityDetailResponse(
+                detail=coin.strike_quality_detail.detail,
+                is_double_struck=coin.strike_quality_detail.is_double_struck,
+                is_brockage=coin.strike_quality_detail.is_brockage,
+                is_off_center=coin.strike_quality_detail.is_off_center,
+                off_center_pct=coin.strike_quality_detail.off_center_pct,
+            ) if coin.strike_quality_detail else None,
         )
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -664,6 +751,29 @@ def create_coin(
         emission_phase=request.chronology.emission_phase
     ) if request.chronology else None
 
+    # Map Phase 1.5b/c fields to DTOs
+    countermarks_dto = [
+        CountermarkDTO(
+            countermark_type=cm.countermark_type,
+            position=cm.position,
+            condition=cm.condition,
+            punch_shape=cm.punch_shape,
+            description=cm.description,
+            authority=cm.authority,
+            reference=cm.reference,
+            date_applied=cm.date_applied,
+            notes=cm.notes,
+        ) for cm in request.countermarks
+    ] if request.countermarks else None
+
+    strike_quality_dto = StrikeQualityDetailDTO(
+        detail=request.strike_quality_detail.detail,
+        is_double_struck=request.strike_quality_detail.is_double_struck,
+        is_brockage=request.strike_quality_detail.is_brockage,
+        is_off_center=request.strike_quality_detail.is_off_center,
+        off_center_pct=request.strike_quality_detail.off_center_pct,
+    ) if request.strike_quality_detail else None
+
     dto = CreateCoinDTO(
         category=request.category,
         metal=request.metal,
@@ -716,6 +826,10 @@ def create_coin(
         die_study=die_study_dto,
         grading_tpg=grading_tpg_dto,
         chronology=chronology_dto,
+
+        # Phase 1.5b/c: Countermarks & Strike Quality
+        countermarks=countermarks_dto,
+        strike_quality_detail=strike_quality_dto,
     )
     
     saved_coin = use_case.execute(dto)
@@ -1075,8 +1189,36 @@ def update_coin(
             ) if "chronology" in request.model_fields_set and request.chronology else (
                 None if "chronology" in request.model_fields_set else existing_coin.chronology
             ),
+
+            # --- Phase 1.5b/c: Countermarks & Strike Quality ---
+            countermarks=[
+                Countermark(
+                    id=cm.id if hasattr(cm, 'id') else None,
+                    coin_id=coin_id,
+                    countermark_type=CountermarkType(cm.countermark_type) if cm.countermark_type else None,
+                    position=CountermarkPosition(cm.position) if cm.position else None,
+                    condition=CountermarkCondition(cm.condition) if cm.condition else None,
+                    punch_shape=PunchShape(cm.punch_shape) if cm.punch_shape else None,
+                    description=cm.description,
+                    authority=cm.authority,
+                    reference=cm.reference,
+                    date_applied=cm.date_applied,
+                    notes=cm.notes,
+                ) for cm in request.countermarks
+            ] if "countermarks" in request.model_fields_set and request.countermarks else (
+                [] if "countermarks" in request.model_fields_set else existing_coin.countermarks
+            ),
+            strike_quality_detail=StrikeQualityDetail(
+                detail=request.strike_quality_detail.detail,
+                is_double_struck=request.strike_quality_detail.is_double_struck,
+                is_brockage=request.strike_quality_detail.is_brockage,
+                is_off_center=request.strike_quality_detail.is_off_center,
+                off_center_pct=request.strike_quality_detail.off_center_pct,
+            ) if "strike_quality_detail" in request.model_fields_set and request.strike_quality_detail else (
+                None if "strike_quality_detail" in request.model_fields_set else existing_coin.strike_quality_detail
+            ),
         )
-        
+
         # Add images manually here since DTO/UseCase flow is pending update
         for img in request.images:
             updated_coin.add_image(img.url, img.image_type, img.is_primary)

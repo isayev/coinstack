@@ -60,7 +60,7 @@ class SqlAlchemyCoinRepository(ICoinRepository):
         # Handle Monograms (Many-to-Many)
         if coin.monograms:
             # We assume monograms are already persisted or managed elsewhere for now,
-            # OR we try to find existing ones by label/id. 
+            # OR we try to find existing ones by label/id.
             # For simplicity in this iteration, we look up by ID or create if needed (simple check).
             orm_monograms = []
             for m in coin.monograms:
@@ -72,10 +72,14 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             orm_coin.monograms = orm_monograms
 
         # Merge handles both insert (if id is None) and update
+        # SQLAlchemy cascade="all, delete-orphan" handles countermarks automatically
         merged_coin = self.session.merge(orm_coin)
-        
-        self.session.flush()  # Get ID
-        
+
+        self.session.flush()  # Persist coin and all relationships (cascade)
+
+        # Refresh to ensure all relationships are loaded
+        self.session.refresh(merged_coin)
+
         # Map ORM -> Domain (return updated entity with ID)
         return CoinMapper.to_domain(merged_coin)
 
@@ -84,7 +88,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
             selectinload(CoinModel.provenance_events),  # Eager load provenance
             selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),  # Eager load references with their types
-            selectinload(CoinModel.monograms) # Eager load monograms
+            selectinload(CoinModel.monograms),  # Eager load monograms
+            selectinload(CoinModel.countermarks)  # Eager load countermarks (Phase 1.5b)
         ).filter(CoinModel.id == coin_id).first()
         if not orm_coin:
             return None
@@ -107,7 +112,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
                 selectinload(CoinModel.images),
                 selectinload(CoinModel.provenance_events),
                 selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),
-                selectinload(CoinModel.monograms)
+                selectinload(CoinModel.monograms),
+                selectinload(CoinModel.countermarks)  # Eager load countermarks (Phase 1.5b)
             ).filter(CoinModel.id.in_(chunk)).all()
 
             for orm in orm_coins:
@@ -128,7 +134,8 @@ class SqlAlchemyCoinRepository(ICoinRepository):
             selectinload(CoinModel.images),  # Eager load images to prevent N+1 queries
             selectinload(CoinModel.provenance_events),  # Eager load provenance
             selectinload(CoinModel.references).selectinload(CoinReferenceModel.reference_type),  # Eager load references
-            selectinload(CoinModel.monograms)
+            selectinload(CoinModel.monograms),
+            selectinload(CoinModel.countermarks)  # Eager load countermarks (Phase 1.5b)
         )
         
         # Apply filters

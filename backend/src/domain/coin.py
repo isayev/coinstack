@@ -1445,7 +1445,9 @@ class Coin:
 
     # Phase 1.5b: Strike quality detail (manufacturing characteristics)
     strike_quality_detail: StrikeQualityDetail | None = None
-    # Note: countermarks are in separate table, accessed via repository
+
+    # Phase 1.5b/c: Countermarks (official stamps applied after minting)
+    countermarks: List[Countermark] = field(default_factory=list)
 
     def is_dated(self) -> bool:
         return self.attribution.year_start is not None

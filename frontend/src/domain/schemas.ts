@@ -114,7 +114,7 @@ export const CountermarkSchema = z.object({
   reference: z.string().nullable().optional(),  // Howgego number
   date_applied: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  created_at: z.string().optional(),
+  created_at: z.string().nullable().optional(),  // Backend returns null, not in domain model
 })
 export type Countermark = z.infer<typeof CountermarkSchema>
 

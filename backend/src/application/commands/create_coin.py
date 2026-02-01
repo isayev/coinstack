@@ -8,7 +8,9 @@ from src.domain.coin import (
     IssueStatus, DieInfo, FindData, Design, CoinImage,
     # Phase 1: Schema V3 value objects
     SecondaryAuthority, CoRuler, PhysicalEnhancements, SecondaryTreatments,
-    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements
+    ToolingRepairs, Centering, DieStudyEnhancements, GradingTPGEnhancements, ChronologyEnhancements,
+    # Phase 1.5b/c: Countermarks & Strike Quality
+    Countermark, StrikeQualityDetail, CountermarkType, CountermarkPosition, CountermarkCondition, PunchShape
 )
 from src.domain.repositories import ICoinRepository
 
@@ -103,6 +105,32 @@ class ChronologyEnhancementsDTO:
     emission_phase: Optional[str] = None
 
 
+# --- Phase 1.5b/c: Countermarks & Strike Quality DTOs ---
+
+@dataclass
+class CountermarkDTO:
+    """DTO for countermark data."""
+    countermark_type: str | None = None
+    position: str | None = None
+    condition: str | None = None
+    punch_shape: str | None = None
+    description: str | None = None
+    authority: str | None = None
+    reference: str | None = None
+    date_applied: str | None = None
+    notes: str | None = None
+
+
+@dataclass
+class StrikeQualityDetailDTO:
+    """DTO for strike quality details and die errors."""
+    detail: str | None = None
+    is_double_struck: bool = False
+    is_brockage: bool = False
+    is_off_center: bool = False
+    off_center_pct: int | None = None
+
+
 @dataclass
 class CreateCoinDTO:
     category: str
@@ -160,6 +188,10 @@ class CreateCoinDTO:
     die_study: Optional[DieStudyEnhancementsDTO] = None
     grading_tpg: Optional[GradingTPGEnhancementsDTO] = None
     chronology: Optional[ChronologyEnhancementsDTO] = None
+
+    # --- Phase 1.5b/c: Countermarks & Strike Quality ---
+    countermarks: List[CountermarkDTO] | None = None
+    strike_quality_detail: StrikeQualityDetailDTO | None = None
 
 class CreateCoinUseCase:
     def __init__(self, repository: ICoinRepository):
@@ -313,6 +345,30 @@ class CreateCoinUseCase:
                 date_period_notation=dto.chronology.date_period_notation,
                 emission_phase=dto.chronology.emission_phase
             ) if dto.chronology else None,
+
+            # --- Phase 1.5b/c: Countermarks & Strike Quality ---
+            countermarks=[
+                Countermark(
+                    id=None,
+                    coin_id=None,  # Set after save
+                    countermark_type=CountermarkType(cm.countermark_type) if cm.countermark_type else None,
+                    position=CountermarkPosition(cm.position) if cm.position else None,
+                    condition=CountermarkCondition(cm.condition) if cm.condition else None,
+                    punch_shape=PunchShape(cm.punch_shape) if cm.punch_shape else None,
+                    description=cm.description,
+                    authority=cm.authority,
+                    reference=cm.reference,
+                    date_applied=cm.date_applied,
+                    notes=cm.notes,
+                ) for cm in (dto.countermarks or [])
+            ] if dto.countermarks else [],
+            strike_quality_detail=StrikeQualityDetail(
+                detail=dto.strike_quality_detail.detail,
+                is_double_struck=dto.strike_quality_detail.is_double_struck,
+                is_brockage=dto.strike_quality_detail.is_brockage,
+                is_off_center=dto.strike_quality_detail.is_off_center,
+                off_center_pct=dto.strike_quality_detail.off_center_pct,
+            ) if dto.strike_quality_detail else None,
         )
 
         return self.repository.save(new_coin)

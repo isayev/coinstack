@@ -12,6 +12,7 @@ from src.domain.coin import (
 )
 from src.infrastructure.persistence.orm import CoinModel, CoinImageModel, ProvenanceEventModel, CoinReferenceModel, MonogramModel
 from src.infrastructure.services.catalogs.catalog_systems import catalog_to_system, SYSTEM_TO_DISPLAY
+from src.infrastructure.mappers.countermark_mapper import CountermarkMapper
 
 class CoinMapper:
     """
@@ -228,6 +229,11 @@ class CoinMapper:
                 model.is_off_center,
                 model.off_center_pct
             ]) else None,
+
+            # Phase 1.5b/c: Countermarks (separate relationship, eager-loaded)
+            countermarks=[
+                CountermarkMapper.to_domain(cm) for cm in (model.countermarks or [])
+            ] if hasattr(model, 'countermarks') else [],
         )
 
     @staticmethod
@@ -362,6 +368,11 @@ class CoinMapper:
             # Relationships
             provenance_events=[
                 CoinMapper._provenance_to_model(p) for p in coin.provenance
+            ],
+            # Phase 1.5b/c: Countermarks (handled via relationship cascade)
+            # Don't set coin_id explicitly - let SQLAlchemy handle it via relationship
+            countermarks=[
+                CountermarkMapper.to_model(cm, coin_id=None) for cm in (coin.countermarks or [])
             ]
         )
 
