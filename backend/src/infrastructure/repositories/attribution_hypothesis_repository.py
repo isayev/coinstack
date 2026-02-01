@@ -58,9 +58,12 @@ class SqlAlchemyAttributionHypothesisRepository(IAttributionHypothesisRepository
 
     def update(self, hypothesis_id: int, hypothesis: AttributionHypothesis) -> Optional[AttributionHypothesis]:
         """Update existing attribution hypothesis."""
-        model = self.session.query(AttributionHypothesisModel).filter(
-            AttributionHypothesisModel.id == hypothesis_id
-        ).first()
+        model = (
+            self.session.query(AttributionHypothesisModel)
+            .options(selectinload(AttributionHypothesisModel.coin))
+            .filter(AttributionHypothesisModel.id == hypothesis_id)
+            .first()
+        )
 
         if not model:
             return None
@@ -91,9 +94,12 @@ class SqlAlchemyAttributionHypothesisRepository(IAttributionHypothesisRepository
 
     def delete(self, hypothesis_id: int) -> bool:
         """Delete attribution hypothesis."""
-        model = self.session.query(AttributionHypothesisModel).filter(
-            AttributionHypothesisModel.id == hypothesis_id
-        ).first()
+        model = (
+            self.session.query(AttributionHypothesisModel)
+            .options(selectinload(AttributionHypothesisModel.coin))
+            .filter(AttributionHypothesisModel.id == hypothesis_id)
+            .first()
+        )
 
         if not model:
             return False
@@ -107,7 +113,12 @@ class SqlAlchemyAttributionHypothesisRepository(IAttributionHypothesisRepository
 
         CRITICAL FIX from code review: Detailed reordering algorithm with atomic SQL updates.
         """
-        hypothesis = self.session.query(AttributionHypothesisModel).get(hypothesis_id)
+        hypothesis = (
+            self.session.query(AttributionHypothesisModel)
+            .options(selectinload(AttributionHypothesisModel.coin))
+            .filter(AttributionHypothesisModel.id == hypothesis_id)
+            .first()
+        )
         if not hypothesis:
             raise ValueError(f"Hypothesis {hypothesis_id} not found")
 
@@ -141,6 +152,7 @@ class SqlAlchemyAttributionHypothesisRepository(IAttributionHypothesisRepository
 
         # Step 3: Set promoted hypothesis to rank 1
         hypothesis.hypothesis_rank = 1
+        self.session.flush()  # CRITICAL: Flush before querying max_rank to prevent race condition
 
         # Step 4: Set temp rank to max
         max_rank = self.session.query(
@@ -162,9 +174,12 @@ class SqlAlchemyAttributionHypothesisRepository(IAttributionHypothesisRepository
     def reorder(self, coin_id: int, hypothesis_ids: list[int]) -> list[AttributionHypothesis]:
         """Reorder hypotheses for a coin (hypothesis_ids in desired rank order)."""
         # Get all hypotheses for this coin
-        hypotheses = self.session.query(AttributionHypothesisModel).filter(
-            AttributionHypothesisModel.coin_id == coin_id
-        ).all()
+        hypotheses = (
+            self.session.query(AttributionHypothesisModel)
+            .options(selectinload(AttributionHypothesisModel.coin))
+            .filter(AttributionHypothesisModel.coin_id == coin_id)
+            .all()
+        )
 
         # Create ID to hypothesis map
         hypothesis_map = {h.id: h for h in hypotheses}

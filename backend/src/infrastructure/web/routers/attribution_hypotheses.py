@@ -187,11 +187,17 @@ def create_attribution_hypothesis(
         )
 
     # Validate confidence enums
-    issuer_conf = AttributionCertainty(request.issuer_confidence) if request.issuer_confidence else None
-    mint_conf = AttributionCertainty(request.mint_confidence) if request.mint_confidence else None
-    date_conf = AttributionCertainty(request.date_confidence) if request.date_confidence else None
-    denom_conf = AttributionCertainty(request.denomination_confidence) if request.denomination_confidence else None
-    overall_cert = AttributionCertainty(request.overall_certainty) if request.overall_certainty else None
+    try:
+        issuer_conf = AttributionCertainty(request.issuer_confidence) if request.issuer_confidence else None
+        mint_conf = AttributionCertainty(request.mint_confidence) if request.mint_confidence else None
+        date_conf = AttributionCertainty(request.date_confidence) if request.date_confidence else None
+        denom_conf = AttributionCertainty(request.denomination_confidence) if request.denomination_confidence else None
+        overall_cert = AttributionCertainty(request.overall_certainty) if request.overall_certainty else None
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid confidence value: {str(e)}"
+        )
 
     # Create hypothesis
     hypothesis = AttributionHypothesis(
@@ -283,25 +289,31 @@ def update_attribution_hypothesis(
         )
 
     # Validate confidence enums if provided
-    issuer_conf = existing.issuer_confidence
-    if request.issuer_confidence:
-        issuer_conf = AttributionCertainty(request.issuer_confidence)
+    try:
+        issuer_conf = existing.issuer_confidence
+        if request.issuer_confidence:
+            issuer_conf = AttributionCertainty(request.issuer_confidence)
 
-    mint_conf = existing.mint_confidence
-    if request.mint_confidence:
-        mint_conf = AttributionCertainty(request.mint_confidence)
+        mint_conf = existing.mint_confidence
+        if request.mint_confidence:
+            mint_conf = AttributionCertainty(request.mint_confidence)
 
-    date_conf = existing.date_confidence
-    if request.date_confidence:
-        date_conf = AttributionCertainty(request.date_confidence)
+        date_conf = existing.date_confidence
+        if request.date_confidence:
+            date_conf = AttributionCertainty(request.date_confidence)
 
-    denom_conf = existing.denomination_confidence
-    if request.denomination_confidence:
-        denom_conf = AttributionCertainty(request.denomination_confidence)
+        denom_conf = existing.denomination_confidence
+        if request.denomination_confidence:
+            denom_conf = AttributionCertainty(request.denomination_confidence)
 
-    overall_cert = existing.overall_certainty
-    if request.overall_certainty:
-        overall_cert = AttributionCertainty(request.overall_certainty)
+        overall_cert = existing.overall_certainty
+        if request.overall_certainty:
+            overall_cert = AttributionCertainty(request.overall_certainty)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid confidence value: {str(e)}"
+        )
 
     # Update hypothesis
     updated_hypothesis = AttributionHypothesis(
@@ -369,7 +381,8 @@ def set_primary_hypothesis(
 def update_coin_attribution_certainty(
     coin_id: int,
     request: CoinAttributionCertaintyRequest,
-    coin_repo: ICoinRepository = Depends(get_coin_repo)
+    coin_repo: ICoinRepository = Depends(get_coin_repo),
+    db: Session = Depends(get_db)
 ):
     """Update coin-level attribution certainty."""
     coin = coin_repo.get_by_id(coin_id)
@@ -381,15 +394,16 @@ def update_coin_attribution_certainty(
 
     # Validate certainty enum
     try:
-        AttributionCertainty(request.attribution_certainty)
+        certainty = AttributionCertainty(request.attribution_certainty)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid attribution_certainty value: {request.attribution_certainty}"
         )
 
-    # TODO: Update coin attribution_certainty field when CoinModel is updated
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Coin-level attribution_certainty update not yet implemented in coin repository"
-    )
+    # Update coin's attribution_certainty field directly via ORM
+    from src.infrastructure.persistence.orm import CoinModel
+    coin_model = db.query(CoinModel).filter(CoinModel.id == coin_id).first()
+    if coin_model:
+        coin_model.attribution_certainty = certainty.value
+        db.flush()
